@@ -6,7 +6,7 @@ import WhatsAppFloat from "@/components/WhatsAppFloat"
 export const metadata = {
   title: "PT Manggala Putra Persada | General Contractor & MEP",
   description:
-    "PT Manggala Putra Persada adalah perusahaan general contractor & MEP untuk proyek pabrik dan perumahan dengan standar profesional.",
+    "PT Manggala Putra Persada adalah perusahaan general contractor & MEP untuk proyek pabrik dan perumahan.",
 }
 
 export default function RootLayout({

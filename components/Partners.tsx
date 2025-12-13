@@ -42,12 +42,6 @@ export default function Partners() {
             </div>
           ))}
         </div>
-
-        <p className="mt-10 text-sm text-gray-500 max-w-3xl">
-          Kerja sama dilakukan berdasarkan kebutuhan teknis proyek dan tidak
-          bersifat eksklusif.
-        </p>
-      </div>
     </section>
   )
 }

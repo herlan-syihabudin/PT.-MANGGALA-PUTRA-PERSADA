@@ -8,14 +8,30 @@ export const metadata: Metadata = {
   title: "PT Manggala Putra Persada | Engineering & Structured Construction",
   description:
     "PT Manggala Putra Persada adalah perusahaan engineering dan konstruksi dengan pendekatan terstruktur untuk proyek industri dan perumahan, berfokus pada mutu, keselamatan kerja, dan ketepatan pelaksanaan.",
-  keywords: [
-    "engineering construction",
-    "konstruksi industri",
-    "kontraktor pabrik",
-    "konstruksi baja",
-    "MEP",
-    "kontraktor Bekasi",
-  ],
+  openGraph: {
+    title: "PT Manggala Putra Persada",
+    description:
+      "Engineering & Structured Construction untuk proyek industri dan perumahan.",
+    url: "https://pt-manggala-putra-persada.vercel.app",
+    siteName: "PT Manggala Putra Persada",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "PT Manggala Putra Persada",
+      },
+    ],
+    locale: "id_ID",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PT Manggala Putra Persada",
+    description:
+      "Engineering & Structured Construction untuk proyek industri dan perumahan.",
+    images: ["/og-image.png"],
+  },
 }
 
 export default function RootLayout({

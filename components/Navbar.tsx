@@ -16,7 +16,7 @@ export default function Navbar() {
             priority
           />
           <span className="font-bold text-lg tracking-tight">
-            <span className="text-red-600">MP</span> Manggala Putra Persada
+            <span className="text-red-600"> Manggala Putra Persada
           </span>
         </Link>
 

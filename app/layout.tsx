@@ -7,11 +7,10 @@ import type { Metadata } from "next"
 export const metadata: Metadata = {
   title: "PT Manggala Putra Persada | Engineering & Structured Construction",
   description:
-    "PT Manggala Putra Persada adalah perusahaan engineering dan konstruksi dengan pendekatan terstruktur untuk proyek industri dan perumahan, berfokus pada mutu, keselamatan kerja, dan ketepatan pelaksanaan.",
+    "PT Manggala Putra Persada adalah perusahaan engineering dan konstruksi dengan pendekatan terstruktur untuk proyek industri dan perumahan.",
   openGraph: {
     title: "PT Manggala Putra Persada",
-    description:
-      "Engineering & Structured Construction untuk proyek industri dan perumahan.",
+    description: "Engineering & Structured Construction",
     url: "https://pt-manggala-putra-persada.vercel.app",
     siteName: "PT Manggala Putra Persada",
     images: [
@@ -25,13 +24,6 @@ export const metadata: Metadata = {
     locale: "id_ID",
     type: "website",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "PT Manggala Putra Persada",
-    description:
-      "Engineering & Structured Construction untuk proyek industri dan perumahan.",
-    images: ["/og-image.png"],
-  },
 }
 
 export default function RootLayout({
@@ -42,6 +34,33 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className="bg-white text-gray-900 antialiased">
+        {/* SCHEMA SEO */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "PT Manggala Putra Persada",
+              url: "https://pt-manggala-putra-persada.vercel.app",
+              logo: "https://pt-manggala-putra-persada.vercel.app/logo-mp.png",
+              description:
+                "Perusahaan engineering dan konstruksi dengan pendekatan terstruktur untuk proyek industri dan perumahan.",
+              address: {
+                "@type": "PostalAddress",
+                addressLocality: "Bekasi",
+                addressRegion: "Jawa Barat",
+                addressCountry: "ID",
+              },
+              contactPoint: {
+                "@type": "ContactPoint",
+                telephone: "+62-812-9739-6612",
+                contactType: "customer service",
+              },
+            }),
+          }}
+        />
+
         <Navbar />
         <main>{children}</main>
         <Footer />

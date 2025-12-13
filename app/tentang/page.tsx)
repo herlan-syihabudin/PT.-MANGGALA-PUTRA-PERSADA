@@ -1,0 +1,30 @@
+export default function TentangPage() {
+  return (
+    <section className="container mx-auto px-6 py-20 max-w-5xl">
+      <h1 className="text-4xl font-bold mb-6">
+        Tentang <span className="text-red-600">PT Manggala Putra Persada</span>
+      </h1>
+
+      <p className="text-gray-700 leading-relaxed mb-6">
+        PT Manggala Putra Persada adalah perusahaan General Contractor & MEP
+        yang bergerak di bidang konstruksi sipil, konstruksi baja, MEP, interior,
+        serta renovasi dan maintenance bangunan untuk proyek pabrik dan perumahan.
+      </p>
+
+      <h2 className="text-2xl font-semibold mt-10 mb-4">Visi</h2>
+      <p className="text-gray-700">
+        Menjadi perusahaan konstruksi nasional yang profesional, terpercaya,
+        dan berdaya saing.
+      </p>
+
+      <h2 className="text-2xl font-semibold mt-10 mb-4">Misi</h2>
+      <ul className="list-disc ml-6 text-gray-700 space-y-2">
+        <li>Menyediakan layanan konstruksi bermutu tinggi.</li>
+        <li>Melaksanakan proyek dengan perencanaan dan pengawasan yang terukur.</li>
+        <li>Mengutamakan keselamatan kerja (K3).</li>
+        <li>Membangun hubungan jangka panjang dengan klien.</li>
+        <li>Mengembangkan SDM dan sistem kerja berkelanjutan.</li>
+      </ul>
+    </section>
+  )
+}

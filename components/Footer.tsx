@@ -1,52 +1,66 @@
+import Link from "next/link"
+
 export default function Footer() {
   return (
-    <footer className="bg-gray-900 text-gray-300 py-14 mt-20">
-      <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-3 gap-10">
-        {/* Company */}
+    <footer className="bg-gray-900 text-gray-300">
+      <div className="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-4 gap-10">
+        {/* COMPANY */}
         <div>
-          <h3 className="text-white font-semibold mb-3">
+          <h3 className="text-white font-bold text-lg mb-4">
             PT Manggala Putra Persada
           </h3>
           <p className="text-sm leading-relaxed">
-            General Contractor & MEP <br />
-            Pabrik · Perumahan · Full Package
+            Engineering & Structured Construction company yang
+            menghadirkan pendekatan terukur, disiplin teknik,
+            dan komitmen terhadap mutu serta keselamatan kerja.
           </p>
         </div>
 
-        {/* Services */}
+        {/* SERVICES */}
         <div>
-          <h4 className="text-white font-semibold mb-3">Layanan</h4>
-          <ul className="text-sm space-y-2">
-            <li>Konstruksi Sipil</li>
-            <li>Konstruksi Baja</li>
+          <h4 className="text-white font-semibold mb-4">Layanan</h4>
+          <ul className="space-y-2 text-sm">
+            <li>Konstruksi Sipil & Struktur</li>
+            <li>Struktur Baja</li>
             <li>MEP</li>
-            <li>Interior & Fit Out</li>
-            <li>Renovasi & Maintenance</li>
+            <li>Interior & Finishing</li>
+            <li>Design & Build</li>
           </ul>
         </div>
 
-        {/* Contact */}
+        {/* NAVIGATION */}
         <div>
-          <h4 className="text-white font-semibold mb-3">Kontak</h4>
-          <p className="text-sm leading-relaxed">
-            Bekasi – Jawa Barat <br />
-            WhatsApp: 0812-9739-6612
-          </p>
+          <h4 className="text-white font-semibold mb-4">Navigasi</h4>
+          <ul className="space-y-2 text-sm">
+            <li><Link href="/" className="hover:text-white">Home</Link></li>
+            <li><Link href="/tentang" className="hover:text-white">Tentang Kami</Link></li>
+            <li><Link href="/layanan" className="hover:text-white">Layanan</Link></li>
+            <li><Link href="/proyek" className="hover:text-white">Proyek</Link></li>
+            <li><Link href="/kontak" className="hover:text-white">Kontak</Link></li>
+          </ul>
+        </div>
 
-          <a
-            className="inline-block mt-4 text-sm font-semibold text-white bg-green-600 px-4 py-2 rounded hover:bg-green-700 transition"
-            href="https://wa.me/6281297396612?text=Halo%20PT%20Manggala%20Putra%20Persada,%20saya%20ingin%20konsultasi%20proyek"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Konsultasi via WhatsApp
-          </a>
+        {/* CONTACT */}
+        <div>
+          <h4 className="text-white font-semibold mb-4">Kontak</h4>
+          <p className="text-sm">
+            Bekasi, Jawa Barat<br />
+            Indonesia
+          </p>
+          <p className="mt-2 text-sm">
+            Telp / WhatsApp:<br />
+            <a
+              href="https://wa.me/6281297396612"
+              className="hover:text-white"
+            >
+              +62 812-9739-6612
+            </a>
+          </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 mt-10 pt-6 border-t border-gray-800 text-xs text-gray-400 flex flex-col md:flex-row gap-2 md:items-center md:justify-between">
-        <p>© {new Date().getFullYear()} PT Manggala Putra Persada. All rights reserved.</p>
-        <p>Bekasi · Indonesia</p>
+      <div className="border-t border-gray-800 py-6 text-center text-sm text-gray-500">
+        © {new Date().getFullYear()} PT Manggala Putra Persada. All rights reserved.
       </div>
     </footer>
   )

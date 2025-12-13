@@ -42,6 +42,7 @@ export default function Partners() {
             </div>
           ))}
         </div>
+      </div>
     </section>
   )
 }

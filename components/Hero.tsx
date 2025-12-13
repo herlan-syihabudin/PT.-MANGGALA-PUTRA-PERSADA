@@ -1,28 +1,31 @@
 export default function Hero() {
   return (
-    <section className="relative min-h-[95vh] flex items-center bg-gradient-to-b from-gray-50 to-white overflow-hidden">
-      {/* Background Accent */}
+    <section className="relative min-h-[95vh] flex items-center overflow-hidden bg-gradient-to-b from-gray-50 via-white to-white">
+      {/* BACKGROUND ACCENT */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] bg-red-600/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 -left-40 w-[400px] h-[400px] bg-gray-900/5 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-[520px] h-[520px] bg-red-600/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 -left-40 w-[420px] h-[420px] bg-gray-900/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+      <div className="relative max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-14 items-center">
         {/* LEFT CONTENT */}
         <div>
-          <span className="inline-block mb-4 px-4 py-1 text-sm font-semibold text-red-600 bg-red-50 rounded-full">
+          {/* BADGE */}
+          <span className="inline-flex items-center gap-2 mb-5 px-4 py-1.5 text-sm font-semibold text-red-600 bg-red-50 rounded-full">
             General Contractor & MEP
           </span>
 
-          <h1 className="text-4xl md:text-6xl font-bold leading-tight tracking-tight">
+          {/* HEADLINE */}
+          <h1 className="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight text-gray-900">
             Solusi Konstruksi <br />
             <span className="text-red-600">Pabrik & Perumahan</span>
           </h1>
 
+          {/* DESCRIPTION */}
           <p className="mt-6 text-lg text-gray-600 max-w-xl leading-relaxed">
-            PT Manggala Putra Persada menangani pekerjaan konstruksi sipil, baja,
-            MEP, dan interior dengan pendekatan profesional, terukur, dan
-            bertanggung jawab.
+            PT Manggala Putra Persada menangani pekerjaan konstruksi sipil,
+            baja, MEP, dan interior dengan pendekatan profesional,
+            terukur, dan bertanggung jawab.
           </p>
 
           {/* CTA */}
@@ -31,41 +34,53 @@ export default function Hero() {
               href="https://wa.me/6281297396612?text=Halo%20PT%20Manggala%20Putra%20Persada,%20saya%20ingin%20konsultasi%20proyek"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center justify-center bg-red-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-red-700 transition shadow-md"
+              className="inline-flex items-center justify-center bg-red-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-red-700 transition shadow-lg shadow-red-600/20"
             >
               Konsultasi Gratis
             </a>
 
             <a
               href="/proyek"
-              className="inline-flex items-center justify-center border border-gray-300 px-8 py-4 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition"
+              className="inline-flex items-center justify-center border border-gray-300 px-8 py-4 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition"
             >
               Lihat Proyek
             </a>
           </div>
 
           {/* TRUST INDICATOR */}
-          <div className="mt-12 grid grid-cols-3 gap-6 max-w-md text-sm text-gray-600">
+          <div className="mt-14 grid grid-cols-3 gap-6 max-w-md text-sm">
             <div>
               <p className="font-bold text-gray-900">Profesional</p>
-              <p>Manajemen Proyek</p>
+              <p className="text-gray-600">Manajemen Proyek</p>
             </div>
             <div>
               <p className="font-bold text-gray-900">Terukur</p>
-              <p>Biaya & Waktu</p>
+              <p className="text-gray-600">Biaya & Waktu</p>
             </div>
             <div>
               <p className="font-bold text-gray-900">Bertanggung Jawab</p>
-              <p>Mutu & K3</p>
+              <p className="text-gray-600">Mutu & K3</p>
             </div>
           </div>
         </div>
 
-        {/* RIGHT VISUAL BLOCK */}
+        {/* RIGHT VISUAL */}
         <div className="hidden md:flex justify-end">
-          <div className="relative w-full max-w-md aspect-[4/5] bg-gray-100 rounded-2xl shadow-lg flex items-center justify-center text-gray-400 text-sm">
-            {/* Placeholder untuk foto proyek */}
-            Area Foto Proyek <br /> (Pabrik / Perumahan)
+          <div className="relative w-full max-w-md aspect-[4/5] rounded-2xl overflow-hidden shadow-xl bg-gray-100">
+            {/* MOCK IMAGE */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-gray-200 to-gray-100" />
+
+            {/* OVERLAY */}
+            <div className="absolute inset-0 flex items-end">
+              <div className="w-full bg-white/90 backdrop-blur px-5 py-4">
+                <p className="text-sm font-semibold text-gray-900">
+                  Proyek Pabrik & Perumahan
+                </p>
+                <p className="text-xs text-gray-600">
+                  Konstruksi Sipil · Baja · MEP · Interior
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

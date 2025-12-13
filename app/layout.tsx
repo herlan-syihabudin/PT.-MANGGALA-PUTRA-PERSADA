@@ -1,17 +1,12 @@
-import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-
-export const metadata = {
-  title: "PT Manggala Putra Persada | Engineering & Structured Construction",
-  description:
-    "PT Manggala Putra Persada adalah perusahaan engineering dan konstruksi dengan pendekatan terstruktur untuk proyek industri dan perumahan, berfokus pada mutu, keselamatan kerja, dan ketepatan pelaksanaan.",
-};
+import "./globals.css"
+import Navbar from "@/components/Navbar"
+import Footer from "@/components/Footer"
+import WhatsAppFloat from "@/components/WhatsAppFloat"
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <html lang="id">
@@ -19,7 +14,10 @@ export default function RootLayout({
         <Navbar />
         <main>{children}</main>
         <Footer />
+
+        {/* WHATSAPP FLOAT */}
+        <WhatsAppFloat />
       </body>
     </html>
-  );
+  )
 }

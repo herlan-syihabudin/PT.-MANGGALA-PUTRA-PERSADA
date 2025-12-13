@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===============================
+   BASE RESET & GLOBAL STYLE
+================================ */
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-white text-gray-900 antialiased;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji";
+}
+
+/* ===============================
+   TYPOGRAPHY (CORPORATE)
+================================ */
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+  @apply font-bold text-gray-900 tracking-tight;
+}
+
+p {
+  @apply text-gray-700 leading-relaxed;
+}
+
+/* ===============================
+   LINK & BUTTON
+================================ */
+
+a {
+  @apply transition-colors duration-200;
+}
+
+button {
+  @apply focus:outline-none;
+}
+
+/* ===============================
+   CONTAINER (ANTI BERANTAKAN)
+================================ */
+
+.container {
+  @apply max-w-7xl mx-auto;
+}
+
+/* ===============================
+   SECTION SPACING
+================================ */
+
+section {
+  @apply relative;
+}
+
+/* ===============================
+   NAVBAR EFFECT
+================================ */
+
+header {
+  @apply bg-white;
+}
+
+/* ===============================
+   FOOTER
+================================ */
+
+footer {
+  @apply text-sm;
+}
+
+/* ===============================
+   FORM STYLE (PROFESSIONAL)
+================================ */
+
+input,
+textarea,
+select {
+  @apply w-full border border-gray-300 rounded-md px-4 py-3 text-sm
+    focus:ring-2 focus:ring-red-600 focus:border-red-600 transition;
+}
+
+textarea {
+  resize: vertical;
+}
+
+/* ===============================
+   WHATSAPP FLOAT (AMAN)
+================================ */
+
+.whatsapp-float {
+  @apply fixed bottom-6 right-6 z-50 bg-green-600 text-white px-5 py-3 rounded-full
+    shadow-lg hover:bg-green-700 transition font-semibold text-sm;
+}
+
+/* ===============================
+   UTILITY TAMBAHAN (KELAS MAHAL)
+================================ */
+
+.shadow-soft {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.bg-grid {
+  background-image: linear-gradient(
+      rgba(0, 0, 0, 0.04) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}

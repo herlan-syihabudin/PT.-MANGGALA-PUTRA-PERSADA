@@ -1,37 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import type { Metadata } from "next"
 
-export const metadata: Metadata = {
-  title: "Kontak | PT Manggala Putra Persada",
-  description:
-    "Hubungi PT Manggala Putra Persada untuk konsultasi proyek konstruksi dan engineering. Diskusi awal proyek pabrik, perumahan, dan pekerjaan MEP.",
-  keywords: [
-    "kontak kontraktor",
-    "jasa konstruksi bekasi",
-    "konsultasi proyek konstruksi",
-    "engineering dan konstruksi",
-    "PT Manggala Putra Persada",
-  ],
-  openGraph: {
-    title: "Kontak PT Manggala Putra Persada",
-    description:
-      "Hubungi kami untuk konsultasi proyek konstruksi dan engineering.",
-    url: "https://pt-manggala-putra-persada.vercel.app/kontak",
-    siteName: "PT Manggala Putra Persada",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Kontak PT Manggala Putra Persada",
-      },
-    ],
-    locale: "id_ID",
-    type: "website",
-  },
-}
 
 export default function KontakPage() {
   const [form, setForm] = useState({

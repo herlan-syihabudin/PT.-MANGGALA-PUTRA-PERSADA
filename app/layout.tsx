@@ -3,9 +3,9 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 export const metadata = {
-  title: "PT Manggala Putra Persada | General Contractor & MEP",
+  title: "PT Manggala Putra Persada | Engineering & Structured Construction",
   description:
-    "PT Manggala Putra Persada adalah perusahaan General Contractor & MEP untuk proyek pabrik dan perumahan dengan standar profesional.",
+    "PT Manggala Putra Persada adalah perusahaan engineering dan konstruksi dengan pendekatan terstruktur untuk proyek industri dan perumahan, berfokus pada mutu, keselamatan kerja, dan ketepatan pelaksanaan.",
 };
 
 export default function RootLayout({
@@ -16,13 +16,8 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className="bg-white text-gray-900 antialiased">
-        {/* NAVBAR */}
         <Navbar />
-
-        {/* MAIN CONTENT */}
         <main>{children}</main>
-
-        {/* FOOTER */}
         <Footer />
       </body>
     </html>

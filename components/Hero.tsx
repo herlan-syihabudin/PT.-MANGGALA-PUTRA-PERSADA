@@ -73,8 +73,11 @@ export default function Hero() {
         {/* RIGHT VISUAL */}
         <div className="hidden md:flex justify-end">
           <div className="relative w-full max-w-md aspect-[4/5] rounded-2xl overflow-hidden shadow-xl bg-gray-100">
-            {/* IMAGE PLACEHOLDER */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-gray-200 to-gray-100" />
+            <img
+  src="/images/hero-project.jpg"
+  alt="PT Manggala Putra Persada Project"
+  className="absolute inset-0 w-full h-full object-cover grayscale-[20%]"
+/>
 
             {/* OVERLAY */}
             <div className="absolute inset-0 flex items-end">

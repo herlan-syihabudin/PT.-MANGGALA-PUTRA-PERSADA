@@ -12,20 +12,26 @@ export default function Hero() {
         <div>
           {/* BADGE */}
           <span className="inline-flex items-center gap-2 mb-5 px-4 py-1.5 text-sm font-semibold text-red-600 bg-red-50 rounded-full">
-            Engineering & Structured Construction
+            General Contractor &amp; MEP Solutions
           </span>
 
           {/* HEADLINE */}
           <h1 className="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight text-gray-900">
-            Membangun Struktur yang Kuat dan Presisi <br />
-            <span className="text-red-600">Berlandaskan Disiplin Teknik</span>
+            Engineering-Led Integrated <br />
+            Construction &amp; Project Execution
           </h1>
 
+          {/* SUB HEADLINE */}
+          <p className="mt-5 text-lg text-gray-700 font-medium max-w-xl">
+            A Reliable Partner from Engineering to Execution
+          </p>
+
           {/* DESCRIPTION */}
-          <p className="mt-6 text-lg text-gray-600 max-w-xl leading-relaxed">
-            PT Manggala Putra Persada menghadirkan pendekatan engineering
-            yang terukur untuk proyek industri dan perumahan, dengan fokus
-            pada mutu, keselamatan kerja, dan ketepatan pelaksanaan.
+          <p className="mt-6 text-base text-gray-600 max-w-xl leading-relaxed">
+            PT Manggala Putra Persada menyediakan solusi konstruksi dan MEP
+            berbasis rekayasa teknik yang terintegrasi, dengan pendekatan
+            terukur untuk memastikan mutu pekerjaan, keselamatan kerja,
+            serta ketepatan waktu dan biaya proyek.
           </p>
 
           {/* CTA */}
@@ -50,16 +56,16 @@ export default function Hero() {
           {/* TRUST INDICATOR */}
           <div className="mt-14 grid grid-cols-3 gap-6 max-w-md text-sm">
             <div>
-              <p className="font-bold text-gray-900">Presisi</p>
+              <p className="font-bold text-gray-900">Engineering-Led</p>
               <p className="text-gray-600">Pendekatan Teknik</p>
             </div>
             <div>
-              <p className="font-bold text-gray-900">Terstruktur</p>
-              <p className="text-gray-600">Biaya & Waktu</p>
+              <p className="font-bold text-gray-900">Terintegrasi</p>
+              <p className="text-gray-600">Biaya &amp; Waktu</p>
             </div>
             <div>
-              <p className="font-bold text-gray-900">Tanggung Jawab</p>
-              <p className="text-gray-600">Mutu & K3</p>
+              <p className="font-bold text-gray-900">Akuntabel</p>
+              <p className="text-gray-600">Mutu &amp; K3</p>
             </div>
           </div>
         </div>
@@ -67,17 +73,17 @@ export default function Hero() {
         {/* RIGHT VISUAL */}
         <div className="hidden md:flex justify-end">
           <div className="relative w-full max-w-md aspect-[4/5] rounded-2xl overflow-hidden shadow-xl bg-gray-100">
-            {/* PLACEHOLDER IMAGE */}
+            {/* IMAGE PLACEHOLDER */}
             <div className="absolute inset-0 bg-gradient-to-tr from-gray-200 to-gray-100" />
 
             {/* OVERLAY */}
             <div className="absolute inset-0 flex items-end">
               <div className="w-full bg-white/90 backdrop-blur px-5 py-4">
                 <p className="text-sm font-semibold text-gray-900">
-                  Industrial & Residential Projects
+                  Industrial &amp; Residential Projects
                 </p>
                 <p className="text-xs text-gray-600">
-                  Civil · Steel · MEP · Interior · Design & Build
+                  Civil · Steel · MEP · Interior · Design &amp; Build
                 </p>
               </div>
             </div>

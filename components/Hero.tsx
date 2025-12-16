@@ -17,9 +17,9 @@ export default function Hero() {
 
           {/* HEADLINE */}
           <h1 className="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight text-gray-900">
-            Engineering-Led Integrated <br />
-            Construction &amp; Project Execution
-          </h1>
+  Engineering-Led Integrated Construction <br />
+  &amp; Project Execution
+</h1>
 
           {/* SUB HEADLINE */}
           <p className="mt-5 text-lg text-gray-700 font-medium max-w-xl">

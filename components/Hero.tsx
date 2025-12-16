@@ -16,14 +16,14 @@ export default function Hero() {
           </span>
 
           {/* HEADLINE */}
-          <h1 className="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight text-gray-900">
-  Engineering-Led Integrated Construction <br />
-  &amp; Project Execution
-</h1>
+          <h1 className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight text-gray-900 max-w-xl">
+            Engineering-Led Integrated Construction <br />
+            &amp; Project Execution
+          </h1>
 
           {/* SUB HEADLINE */}
           <p className="mt-5 text-lg text-gray-700 font-medium max-w-xl">
-            A Reliable Partner from Engineering to Execution
+            Your Reliable Partner from Engineering to Execution
           </p>
 
           {/* DESCRIPTION */}
@@ -72,12 +72,12 @@ export default function Hero() {
 
         {/* RIGHT VISUAL */}
         <div className="hidden md:flex justify-end">
-          <div className="relative w-full max-w-md aspect-[4/5] rounded-2xl overflow-hidden shadow-xl bg-gray-100">
+          <div className="relative w-full max-w-md aspect-[4/5] rounded-2xl overflow-hidden bg-gray-100 shadow-xl shadow-black/10 ring-1 ring-black/5">
             <img
-  src="/images/hero-project.jpg"
-  alt="PT Manggala Putra Persada Project"
-  className="absolute inset-0 w-full h-full object-cover grayscale-[20%]"
-/>
+              src="/images/hero-project.jpg"
+              alt="PT Manggala Putra Persada Project"
+              className="absolute inset-0 w-full h-full object-cover grayscale-[45%] brightness-95 contrast-95"
+            />
 
             {/* OVERLAY */}
             <div className="absolute inset-0 flex items-end">

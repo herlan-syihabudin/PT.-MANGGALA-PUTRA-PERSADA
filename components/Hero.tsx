@@ -48,11 +48,11 @@ export default function Hero() {
             </a>
 
             <a
-              href="/projects"
-              className="inline-flex items-center justify-center border border-gray-300 px-8 py-4 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition"
-            >
-              View Portfolio
-            </a>
+  href="/proyek"
+  className="inline-flex items-center justify-center border border-gray-300 px-8 py-4 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition"
+>
+  Lihat Portofolio
+</a>
           </div>
 
           {/* TRUST INDICATOR */}

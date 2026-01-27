@@ -1,3 +1,5 @@
+import Image from "next/image"
+
 export default function Hero() {
   return (
     <section className="relative min-h-[95vh] flex items-center overflow-hidden bg-gradient-to-b from-gray-50 via-white to-white">
@@ -12,7 +14,7 @@ export default function Hero() {
         <div>
           {/* BADGE */}
           <span className="inline-flex items-center gap-2 mb-5 px-4 py-1.5 text-sm font-semibold text-red-600 bg-red-50 rounded-full">
-            General Contractor &amp; MEP Solutions
+            Engineering & Integrated Construction Solutions
           </span>
 
           {/* HEADLINE */}
@@ -26,30 +28,30 @@ export default function Hero() {
             Your Reliable Partner from Engineering to Execution
           </p>
 
-          {/* DESCRIPTION */}
+          {/* DESCRIPTION – HYBRID SEO */}
           <p className="mt-6 text-base text-gray-600 max-w-xl leading-relaxed">
-            PT Manggala Putra Persada menyediakan solusi konstruksi dan MEP
-            berbasis rekayasa teknik yang terintegrasi, dengan pendekatan
-            terukur untuk memastikan mutu pekerjaan, keselamatan kerja,
-            serta ketepatan waktu dan biaya proyek.
+            PT Manggala Putra Persada is an engineering and construction company
+            in Indonesia providing integrated civil, steel structure, and MEP
+            solutions with a structured approach to ensure quality, safety,
+            cost efficiency, and on-time project delivery.
           </p>
 
           {/* CTA */}
           <div className="mt-10 flex flex-col sm:flex-row gap-4">
             <a
-              href="https://wa.me/6281297396612?text=Halo%20PT%20Manggala%20Putra%20Persada,%20saya%20ingin%20konsultasi%20proyek"
+              href="https://wa.me/6281297396612?text=Hello%20PT%20Manggala%20Putra%20Persada,%20I%20would%20like%20to%20discuss%20a%20project"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center justify-center bg-red-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-red-700 transition shadow-lg shadow-red-600/20"
             >
-              Konsultasi Proyek
+              Project Consultation
             </a>
 
             <a
-              href="/proyek"
+              href="/projects"
               className="inline-flex items-center justify-center border border-gray-300 px-8 py-4 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition"
             >
-              Lihat Portofolio
+              View Portfolio
             </a>
           </div>
 
@@ -57,15 +59,15 @@ export default function Hero() {
           <div className="mt-14 grid grid-cols-3 gap-6 max-w-md text-sm">
             <div>
               <p className="font-bold text-gray-900">Engineering-Led</p>
-              <p className="text-gray-600">Pendekatan Teknik</p>
+              <p className="text-gray-600">Technical Approach</p>
             </div>
             <div>
-              <p className="font-bold text-gray-900">Terintegrasi</p>
-              <p className="text-gray-600">Biaya &amp; Waktu</p>
+              <p className="font-bold text-gray-900">Integrated</p>
+              <p className="text-gray-600">Cost &amp; Schedule Control</p>
             </div>
             <div>
-              <p className="font-bold text-gray-900">Akuntabel</p>
-              <p className="text-gray-600">Mutu &amp; K3</p>
+              <p className="font-bold text-gray-900">Accountable</p>
+              <p className="text-gray-600">Quality &amp; HSE</p>
             </div>
           </div>
         </div>
@@ -73,10 +75,12 @@ export default function Hero() {
         {/* RIGHT VISUAL */}
         <div className="hidden md:flex justify-end">
           <div className="relative w-full max-w-md aspect-[4/5] rounded-2xl overflow-hidden bg-gray-100 shadow-xl shadow-black/10 ring-1 ring-black/5">
-            <img
+            <Image
               src="/images/hero-project.jpg"
-              alt="PT Manggala Putra Persada Project"
-              className="absolute inset-0 w-full h-full object-cover grayscale-[45%] brightness-95 contrast-95"
+              alt="PT Manggala Putra Persada Engineering Project Indonesia"
+              fill
+              priority
+              className="object-cover grayscale-[45%] brightness-95 contrast-95"
             />
 
             {/* OVERLAY */}
@@ -86,7 +90,7 @@ export default function Hero() {
                   Industrial &amp; Residential Projects
                 </p>
                 <p className="text-xs text-gray-600">
-                  Civil · Steel · MEP · Interior · Design &amp; Build
+                  Civil · Steel Structure · MEP · Fit Out · Design &amp; Build
                 </p>
               </div>
             </div>

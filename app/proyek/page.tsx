@@ -1,12 +1,16 @@
+import Link from "next/link"
+
 export default function ProyekPage() {
   return (
     <section className="py-24 bg-white">
       <div className="max-w-6xl mx-auto px-6">
-        
+
+        {/* PAGE TITLE */}
         <h1 className="text-4xl font-extrabold tracking-tight mb-10 text-gray-900">
           Representative <span className="text-red-600">Projects</span>
         </h1>
 
+        {/* INTRO */}
         <p className="text-lg text-gray-700 mb-14 max-w-3xl leading-relaxed">
           PT Manggala Putra Persada delivers engineering and construction
           projects through a structured execution approach, focusing on
@@ -14,6 +18,7 @@ export default function ProyekPage() {
           across industrial, residential, and commercial sectors.
         </p>
 
+        {/* PROJECT CATEGORIES */}
         <div className="grid md:grid-cols-3 gap-10 text-gray-700">
           
           <div>
@@ -53,12 +58,12 @@ export default function ProyekPage() {
 
         {/* CTA */}
         <div className="mt-20">
-          <a
-            href="/contact"
+          <Link
+            href="/kontak"
             className="inline-flex items-center justify-center bg-red-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-red-700 transition"
           >
             Discuss Your Project Scope
-          </a>
+          </Link>
         </div>
 
       </div>

@@ -26,25 +26,23 @@ export default function Navbar() {
           <Link href="/" className="hover:text-red-600 transition">
             Home
           </Link>
-          <Link href="/about" className="hover:text-red-600 transition">
-            About
+          <Link href="/tentang" className="hover:text-red-600 transition">
+            Tentang
           </Link>
-          <Link href="/services" className="hover:text-red-600 transition">
-            Services
+          <Link href="/layanan" className="hover:text-red-600 transition">
+            Layanan
           </Link>
-          <Link href="/projects" className="hover:text-red-600 transition">
-            Projects
+          <Link href="/proyek" className="hover:text-red-600 transition">
+            Proyek
           </Link>
 
           {/* CTA */}
-          <a
-            href="https://wa.me/6281297396612?text=Hello%20PT%20Manggala%20Putra%20Persada,%20I%20would%20like%20to%20discuss%20a%20project"
-            target="_blank"
-            rel="noreferrer"
+          <Link
+            href="/kontak"
             className="bg-red-600 text-white px-5 py-2 rounded-md font-semibold hover:bg-red-700 transition shadow-sm"
           >
-            Project Inquiry
-          </a>
+            Konsultasi Proyek
+          </Link>
         </nav>
       </div>
     </header>

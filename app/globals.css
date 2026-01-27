@@ -3,9 +3,8 @@
 @tailwind utilities;
 
 /* ===============================
-   BASE RESET & GLOBAL STYLE
+   BASE RESET & GLOBAL
 ================================ */
-
 html,
 body {
   padding: 0;
@@ -22,15 +21,26 @@ body {
 }
 
 /* ===============================
-   TYPOGRAPHY (CORPORATE)
+   TYPOGRAPHY SYSTEM (CORPORATE)
 ================================ */
-
 h1,
 h2,
 h3,
 h4,
 h5 {
-  @apply font-bold text-gray-900 tracking-tight;
+  @apply font-extrabold tracking-tight text-gray-900;
+}
+
+h1 {
+  @apply text-4xl md:text-5xl;
+}
+
+h2 {
+  @apply text-3xl md:text-4xl;
+}
+
+h3 {
+  @apply text-xl md:text-2xl;
 }
 
 p {
@@ -40,56 +50,51 @@ p {
 /* ===============================
    LINK & BUTTON
 ================================ */
-
 a {
   @apply transition-colors duration-200;
 }
 
 button {
-  @apply focus:outline-none;
+  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600;
 }
 
 /* ===============================
-   CONTAINER (ANTI BERANTAKAN)
+   CONTAINER SYSTEM
 ================================ */
-
 .container {
-  @apply max-w-7xl mx-auto;
+  @apply max-w-7xl mx-auto px-6;
 }
 
 /* ===============================
-   SECTION SPACING
+   SECTION DEFAULT
 ================================ */
-
 section {
   @apply relative;
 }
 
 /* ===============================
-   NAVBAR EFFECT
+   NAVBAR
 ================================ */
-
 header {
-  @apply bg-white;
+  @apply bg-white/90 backdrop-blur border-b border-gray-200;
 }
 
 /* ===============================
    FOOTER
 ================================ */
-
 footer {
   @apply text-sm;
 }
 
 /* ===============================
-   FORM STYLE (PROFESSIONAL)
+   FORM SYSTEM (B2B READY)
 ================================ */
-
 input,
 textarea,
 select {
-  @apply w-full border border-gray-300 rounded-md px-4 py-3 text-sm
-    focus:ring-2 focus:ring-red-600 focus:border-red-600 transition;
+  @apply w-full rounded-lg border border-gray-300 px-4 py-3 text-sm
+    focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600
+    transition;
 }
 
 textarea {
@@ -97,20 +102,43 @@ textarea {
 }
 
 /* ===============================
-   WHATSAPP FLOAT (AMAN)
+   BUTTON SYSTEM
 ================================ */
+.btn-primary {
+  @apply inline-flex items-center justify-center bg-red-600 text-white
+    px-8 py-4 rounded-xl font-semibold hover:bg-red-700 transition;
+}
 
+.btn-outline {
+  @apply inline-flex items-center justify-center border border-gray-300
+    px-8 py-4 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition;
+}
+
+/* ===============================
+   CARD SYSTEM
+================================ */
+.card {
+  @apply bg-white border border-gray-200 rounded-2xl p-6;
+}
+
+.card-hover {
+  @apply hover:shadow-lg transition;
+}
+
+/* ===============================
+   WHATSAPP FLOAT (CORPORATE)
+================================ */
 .whatsapp-float {
-  @apply fixed bottom-6 right-6 z-50 bg-green-600 text-white px-5 py-3 rounded-full
+  @apply fixed bottom-6 right-6 z-50 flex items-center gap-3
+    bg-green-600 text-white px-5 py-3 rounded-full
     shadow-lg hover:bg-green-700 transition font-semibold text-sm;
 }
 
 /* ===============================
-   UTILITY TAMBAHAN (KELAS MAHAL)
+   UTILITY PREMIUM
 ================================ */
-
 .shadow-soft {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
 }
 
 .bg-grid {

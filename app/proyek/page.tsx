@@ -2,51 +2,65 @@ export default function ProyekPage() {
   return (
     <section className="py-24 bg-white">
       <div className="max-w-6xl mx-auto px-6">
+        
         <h1 className="text-4xl font-extrabold tracking-tight mb-10 text-gray-900">
-          Proyek <span className="text-red-600">Representatif</span>
+          Representative <span className="text-red-600">Projects</span>
         </h1>
 
         <p className="text-lg text-gray-700 mb-14 max-w-3xl leading-relaxed">
-          PT Manggala Putra Persada menangani berbagai pekerjaan konstruksi
-          dengan pendekatan engineering dan pelaksanaan terstruktur,
-          yang merepresentasikan standar mutu, keselamatan kerja,
-          dan ketepatan pelaksanaan proyek.
+          PT Manggala Putra Persada delivers engineering and construction
+          projects through a structured execution approach, focusing on
+          quality standards, safety compliance, and reliable project delivery
+          across industrial, residential, and commercial sectors.
         </p>
 
         <div className="grid md:grid-cols-3 gap-10 text-gray-700">
+          
           <div>
             <h2 className="text-xl font-semibold mb-3 text-gray-900">
-              Proyek Industri
+              Industrial Projects
             </h2>
             <p>
-              Pekerjaan konstruksi untuk fasilitas industri seperti pabrik,
-              gudang, dan bangunan pendukung dengan fokus pada kekuatan
-              struktur dan efisiensi operasional.
+              Construction works for industrial facilities such as factories,
+              warehouses, and supporting infrastructure, executed with
+              structural strength considerations and operational efficiency
+              in mind.
             </p>
           </div>
 
           <div>
             <h2 className="text-xl font-semibold mb-3 text-gray-900">
-              Proyek Perumahan
+              Residential Developments
             </h2>
             <p>
-              Pelaksanaan pembangunan dan pengembangan perumahan dengan
-              perencanaan yang matang, pengendalian mutu, dan
-              ketepatan waktu pengerjaan.
+              Residential construction and housing developments delivered
+              through disciplined planning, consistent quality control,
+              and schedule management to ensure timely project completion.
             </p>
           </div>
 
           <div>
             <h2 className="text-xl font-semibold mb-3 text-gray-900">
-              Engineering, MEP & Interior
+              Engineering, MEP & Interior Works
             </h2>
             <p>
-              Implementasi sistem MEP serta pekerjaan interior untuk
-              bangunan komersial dan hunian yang mendukung fungsi,
-              kenyamanan, dan keselamatan bangunan.
+              Engineering, mechanical, electrical, plumbing, and interior
+              works for commercial and residential buildings to support
+              building functionality, comfort, and safety.
             </p>
           </div>
         </div>
+
+        {/* CTA */}
+        <div className="mt-20">
+          <a
+            href="/contact"
+            className="inline-flex items-center justify-center bg-red-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-red-700 transition"
+          >
+            Discuss Your Project Scope
+          </a>
+        </div>
+
       </div>
     </section>
   )

@@ -7,9 +7,9 @@ export default function CTA() {
         </h2>
 
         <p className="mt-5 text-lg text-red-100 max-w-2xl mx-auto">
-          PT Manggala Putra Persada is ready to support your project
-          through a structured engineering approach, measurable execution,
-          and reliable construction solutions tailored to your needs.
+          PT Manggala Putra Persada is ready to support your project through
+          a structured engineering approach, measurable execution, and
+          reliable construction solutions tailored to your requirements.
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">

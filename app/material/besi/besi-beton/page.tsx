@@ -7,35 +7,36 @@ export default function BesiBetonPage() {
 
         {/* HEADER */}
         <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 mb-4">
-          Besi <span className="text-red-600">Beton Polos & Ulir</span>
+          Besi <span className="text-red-600">Beton Polos & Ulir (SNI)</span>
         </h1>
 
         <p className="text-lg text-gray-600 max-w-3xl mb-10">
-          Besi beton merupakan material utama dalam konstruksi beton bertulang
-          yang digunakan untuk pondasi, kolom, balok, dan pelat lantai.
-          Tersedia dalam tipe polos dan ulir sesuai standar SNI.
+          Besi beton adalah material utama dalam konstruksi beton bertulang
+          untuk pondasi, kolom, balok, dan pelat lantai. Tersedia tipe
+          <strong> Polos (BJTP)</strong> dan <strong>Ulir (BJTS)</strong> sesuai
+          standar SNI untuk kebutuhan proyek dan retail.
         </p>
 
         {/* IMAGE */}
         <div className="mb-12 rounded-2xl overflow-hidden border">
           <img
             src="/material/besi/besi-beton.jpg"
-            alt="Besi Beton Polos dan Ulir"
+            alt="Besi Beton Polos dan Ulir SNI"
             className="w-full h-[360px] object-cover"
           />
         </div>
 
-        {/* DESCRIPTION */}
+        {/* INFO GRID */}
         <div className="grid md:grid-cols-2 gap-12 mb-16">
           <div>
             <h2 className="text-xl font-bold mb-4">
-              Kegunaan Besi Beton
+              Aplikasi Besi Beton
             </h2>
             <ul className="list-disc list-inside text-gray-700 space-y-2">
-              <li>Pondasi bangunan</li>
+              <li>Pondasi bangunan & sloof</li>
               <li>Kolom dan balok beton bertulang</li>
-              <li>Pelat lantai & struktur gedung</li>
-              <li>Proyek perumahan, gedung & industri</li>
+              <li>Pelat lantai dan struktur gedung</li>
+              <li>Proyek perumahan, gedung, & industri</li>
             </ul>
           </div>
 
@@ -44,15 +45,16 @@ export default function BesiBetonPage() {
               Spesifikasi Umum
             </h2>
             <ul className="text-gray-700 space-y-2">
-              <li>Tipe: Polos (BJTP) & Ulir (BJTS)</li>
-              <li>Standar: SNI</li>
-              <li>Panjang: 12 Meter</li>
-              <li>Supply: Proyek & Retail</li>
+              <li>✔ Tipe: BJTP (Polos) & BJTS (Ulir)</li>
+              <li>✔ Standar: SNI</li>
+              <li>✔ Panjang standar: 12 Meter</li>
+              <li>✔ Supply: Proyek & Retail</li>
+              <li>✔ Ready Stock / Indent</li>
             </ul>
           </div>
         </div>
 
-        {/* TABLE POLOS */}
+        {/* TABLE BJTP */}
         <div className="mb-16">
           <h2 className="text-2xl font-bold mb-6">
             Tabel Berat Besi Beton Polos (BJTP)
@@ -60,7 +62,7 @@ export default function BesiBetonPage() {
 
           <div className="overflow-x-auto border rounded-xl">
             <table className="w-full text-sm">
-              <thead className="bg-gray-100">
+              <thead className="bg-gray-100 text-gray-900">
                 <tr>
                   <th className="px-4 py-3 text-left">Diameter</th>
                   <th className="px-4 py-3 text-left">Berat (kg/m)</th>
@@ -77,7 +79,7 @@ export default function BesiBetonPage() {
           </div>
         </div>
 
-        {/* TABLE ULIR */}
+        {/* TABLE BJTS */}
         <div className="mb-16">
           <h2 className="text-2xl font-bold mb-6">
             Tabel Berat Besi Beton Ulir (BJTS)
@@ -85,7 +87,7 @@ export default function BesiBetonPage() {
 
           <div className="overflow-x-auto border rounded-xl">
             <table className="w-full text-sm">
-              <thead className="bg-gray-100">
+              <thead className="bg-gray-100 text-gray-900">
                 <tr>
                   <th className="px-4 py-3 text-left">Diameter</th>
                   <th className="px-4 py-3 text-left">Berat (kg/m)</th>
@@ -103,24 +105,24 @@ export default function BesiBetonPage() {
           </div>
 
           <p className="text-xs text-gray-500 mt-3">
-            * Berat bersifat estimasi dan mengikuti standar SNI & toleransi pabrik.
+            * Berat bersifat estimasi dan mengikuti standar SNI serta toleransi pabrik.
           </p>
         </div>
 
         {/* CTA */}
         <div className="flex flex-col md:flex-row gap-4">
           <a
-            href="https://wa.me/6281297396612?text=Halo,%20saya%20ingin%20request%20harga%20dan%20stok%20Besi%20Beton%20Polos%20dan%20Ulir"
+            href="https://wa.me/6281297396612?text=Halo%20PT%20Manggala%20Putra%20Persada,%20saya%20ingin%20penawaran%20Besi%20Beton%20(SNI)%20–%20diameter,%20qty,%20dan%20lokasi%20kirim."
             className="bg-red-600 text-white px-8 py-4 rounded-xl font-semibold text-center hover:bg-red-700 transition"
           >
-            Request Price & Stock
+            Request Harga & Stok
           </a>
 
           <Link
-            href="/kontak"
+            href="/material/besi"
             className="border border-gray-300 px-8 py-4 rounded-xl font-semibold text-center hover:bg-gray-100 transition"
           >
-            Konsultasi Teknis Proyek
+            Kembali ke Daftar Material
           </Link>
         </div>
 

@@ -17,7 +17,7 @@ export default function BesiPage() {
     },
     {
       title: "Besi UNP & CNP",
-      slug: "unp-cnp",
+      slug: "unp",
       image: "/material/besi/unp.jpg",
       desc: "Material rangka atap dan secondary structure untuk konstruksi ringan hingga menengah.",
     },

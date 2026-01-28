@@ -1,3 +1,5 @@
+import Link from "next/link"
+
 export default function LayananPage() {
   return (
     <section className="py-28 bg-white">
@@ -76,12 +78,12 @@ export default function LayananPage() {
 
         {/* CTA */}
         <div className="mt-20">
-          <a
-            href="/contact"
-            className="inline-flex items-center justify-center bg-red-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-red-700 transition"
-          >
-            Discuss Your Project Requirements
-          </a>
+          <Link
+  href="/kontak"
+  className="inline-flex items-center justify-center bg-red-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-red-700 transition"
+>
+  Discuss Your Project Requirements
+</Link>
         </div>
 
       </div>

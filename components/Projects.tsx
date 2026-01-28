@@ -1,9 +1,11 @@
 import Link from "next/link"
+import ProjectCard from "@/components/ProjectCard"
 
 export default function Projects() {
   return (
     <section className="py-24 bg-gray-50">
       <div className="max-w-7xl mx-auto px-6">
+
         {/* SECTION HEADER */}
         <div className="max-w-2xl mb-16">
           <span className="inline-block mb-4 px-4 py-1.5 text-sm font-semibold text-red-600 bg-red-50 rounded-full">
@@ -21,61 +23,26 @@ export default function Projects() {
 
         {/* PROJECT GRID */}
         <div className="grid md:grid-cols-3 gap-10">
-          
-          {/* PROJECT 1 */}
-          <div className="group border border-gray-200 rounded-2xl overflow-hidden bg-white hover:shadow-xl transition">
-            <div className="h-56 bg-gradient-to-tr from-gray-200 to-gray-100" />
-            <div className="p-6">
-              <span className="text-xs font-semibold text-red-600">
-                Industrial Facility
-              </span>
-              <h3 className="mt-2 text-xl font-bold text-gray-900">
-                Manufacturing Plant Construction
-              </h3>
-              <p className="mt-3 text-gray-600 text-sm leading-relaxed">
-                Scope of work includes civil construction and steel structure
-                works for an industrial production facility, executed with
-                engineering calculations, quality control, and strict safety
-                compliance.
-              </p>
-            </div>
-          </div>
+          <ProjectCard
+            image="/projects/civil.jpg"
+            category="Industrial Facility"
+            title="Manufacturing Plant Construction"
+            description="Civil and structural works for industrial production facilities, executed with engineering calculations, quality control, and strict safety compliance."
+          />
 
-          {/* PROJECT 2 */}
-          <div className="group border border-gray-200 rounded-2xl overflow-hidden bg-white hover:shadow-xl transition">
-            <div className="h-56 bg-gradient-to-tr from-gray-200 to-gray-100" />
-            <div className="p-6">
-              <span className="text-xs font-semibold text-red-600">
-                Residential Development
-              </span>
-              <h3 className="mt-2 text-xl font-bold text-gray-900">
-                Housing Area Development
-              </h3>
-              <p className="mt-3 text-gray-600 text-sm leading-relaxed">
-                Residential construction works delivered through structured
-                planning, consistent quality control, and schedule management
-                to ensure timely and reliable project completion.
-              </p>
-            </div>
-          </div>
+          <ProjectCard
+            image="/projects/steel.jpg"
+            category="Steel Structure"
+            title="Steel Structure Engineering"
+            description="Fabrication and erection of steel structures for factories and warehouses with high precision and controlled quality."
+          />
 
-          {/* PROJECT 3 */}
-          <div className="group border border-gray-200 rounded-2xl overflow-hidden bg-white hover:shadow-xl transition">
-            <div className="h-56 bg-gradient-to-tr from-gray-200 to-gray-100" />
-            <div className="p-6">
-              <span className="text-xs font-semibold text-red-600">
-                Engineering & MEP Systems
-              </span>
-              <h3 className="mt-2 text-xl font-bold text-gray-900">
-                Commercial Building MEP Integration
-              </h3>
-              <p className="mt-3 text-gray-600 text-sm leading-relaxed">
-                Integrated mechanical, electrical, and plumbing system
-                installation to support building operations with efficiency,
-                reliability, and long-term performance.
-              </p>
-            </div>
-          </div>
+          <ProjectCard
+            image="/projects/mep.jpg"
+            category="MEP Systems"
+            title="Commercial Building MEP Integration"
+            description="Integrated mechanical, electrical, and plumbing systems to ensure efficient, reliable, and long-term building performance."
+          />
         </div>
 
         {/* CTA */}
@@ -87,6 +54,7 @@ export default function Projects() {
             View All Projects
           </Link>
         </div>
+
       </div>
     </section>
   )

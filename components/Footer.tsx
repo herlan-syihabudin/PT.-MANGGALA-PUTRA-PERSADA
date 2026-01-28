@@ -34,16 +34,36 @@ export default function Footer() {
         </div>
 
         {/* NAVIGATION */}
-        <div>
-          <h4 className="text-white font-semibold mb-4">Company</h4>
-          <ul className="space-y-2 text-sm">
-            <li><Link href="/" className="hover:text-white">Home</Link></li>
-            <li><Link href="/about" className="hover:text-white">About Us</Link></li>
-            <li><Link href="/services" className="hover:text-white">Services</Link></li>
-            <li><Link href="/projects" className="hover:text-white">Projects</Link></li>
-            <li><Link href="/contact" className="hover:text-white">Contact</Link></li>
-          </ul>
-        </div>
+<div>
+  <h4 className="text-white font-semibold mb-4">Company</h4>
+  <ul className="space-y-2 text-sm">
+    <li>
+      <Link href="/" className="hover:text-white">
+        Home
+      </Link>
+    </li>
+    <li>
+      <Link href="/tentang" className="hover:text-white">
+        Tentang Kami
+      </Link>
+    </li>
+    <li>
+      <Link href="/layanan" className="hover:text-white">
+        Layanan
+      </Link>
+    </li>
+    <li>
+      <Link href="/proyek" className="hover:text-white">
+        Proyek
+      </Link>
+    </li>
+    <li>
+      <Link href="/kontak" className="hover:text-white">
+        Kontak
+      </Link>
+    </li>
+  </ul>
+</div>
 
         {/* CONTACT */}
         <div>

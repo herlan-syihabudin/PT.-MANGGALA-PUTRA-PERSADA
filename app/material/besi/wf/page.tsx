@@ -12,15 +12,16 @@ export default function WFPage() {
 
         <p className="text-lg text-gray-600 max-w-3xl mb-10">
           Besi WF (Wide Flange / IWF) merupakan profil baja struktural yang
-          digunakan untuk kolom dan balok bangunan industri, gudang, dan
-          konstruksi menengah hingga berat dengan efisiensi struktur tinggi.
+          digunakan untuk kolom dan balok bangunan industri, gudang, pabrik,
+          serta konstruksi menengah hingga berat dengan efisiensi struktur
+          dan daya dukung tinggi.
         </p>
 
         {/* IMAGE */}
         <div className="mb-12 rounded-2xl overflow-hidden border">
           <img
             src="/material/besi/wf.jpg"
-            alt="Besi WF"
+            alt="Besi WF / IWF"
             className="w-full h-[360px] object-cover"
           />
         </div>
@@ -32,10 +33,10 @@ export default function WFPage() {
               Kegunaan Besi WF
             </h2>
             <ul className="list-disc list-inside text-gray-700 space-y-2">
-              <li>Balok dan kolom bangunan industri</li>
+              <li>Balok dan kolom struktur baja</li>
               <li>Gudang, pabrik, dan workshop</li>
-              <li>Struktur rangka baja menengah</li>
-              <li>Mezzanine dan struktur tambahan</li>
+              <li>Struktur mezzanine dan canopy</li>
+              <li>Bangunan industri & komersial</li>
             </ul>
           </div>
 
@@ -45,7 +46,7 @@ export default function WFPage() {
             </h2>
             <ul className="text-gray-700 space-y-2">
               <li>Standar: JIS / SNI</li>
-              <li>Panjang: 12 Meter</li>
+              <li>Panjang standar: 12 Meter</li>
               <li>Material: Baja struktural</li>
               <li>Supply: Proyek & Non-Proyek</li>
             </ul>
@@ -93,12 +94,24 @@ export default function WFPage() {
                   <td className="px-4 py-3">36.7</td>
                   <td className="px-4 py-3">≈ 440 kg</td>
                 </tr>
+                <tr>
+                  <td className="px-4 py-3">WF 350</td>
+                  <td className="px-4 py-3">12 / 19</td>
+                  <td className="px-4 py-3">49.6</td>
+                  <td className="px-4 py-3">≈ 595 kg</td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3">WF 400</td>
+                  <td className="px-4 py-3">13 / 21</td>
+                  <td className="px-4 py-3">66.0</td>
+                  <td className="px-4 py-3">≈ 792 kg</td>
+                </tr>
               </tbody>
             </table>
           </div>
 
           <p className="text-xs text-gray-500 mt-3">
-            * Berat bersifat estimasi, tergantung standar pabrik & toleransi produksi.
+            * Berat bersifat estimasi, tergantung standar pabrik dan toleransi produksi.
           </p>
         </div>
 
@@ -112,10 +125,10 @@ export default function WFPage() {
           </a>
 
           <Link
-            href="/kontak"
+            href="/material/besi"
             className="border border-gray-300 px-8 py-4 rounded-xl font-semibold text-center hover:bg-gray-100 transition"
           >
-            Konsultasi Teknis Proyek
+            Kembali ke Daftar Material
           </Link>
         </div>
 

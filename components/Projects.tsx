@@ -81,7 +81,7 @@ export default function Projects() {
         {/* CTA */}
         <div className="mt-16 text-center">
           <Link
-            href="/projects"
+            href="/proyek"
             className="inline-flex items-center justify-center border border-gray-300 px-8 py-4 rounded-xl font-semibold text-gray-700 hover:bg-gray-100 transition"
           >
             View All Projects

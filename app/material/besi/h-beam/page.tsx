@@ -26,7 +26,7 @@ export default function HBeamPage() {
         {/* IMAGE */}
         <div className="mb-12 rounded-2xl overflow-hidden border bg-gray-100">
           <img
-            src="/materials/besi/hbeam.jpg"
+            src="/material/besi/hbeam.jpg"
             alt="Besi H Beam"
             className="w-full h-[360px] object-cover"
           />

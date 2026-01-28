@@ -1,6 +1,13 @@
 import Link from "next/link"
 
 export default function HBeamPage() {
+  const waBase =
+    "https://wa.me/6281297396612?text="
+
+  const waText = encodeURIComponent(
+    "Halo PT Manggala Putra Persada, saya ingin request harga & stok Besi H-Beam."
+  )
+
   return (
     <section className="py-24 bg-white">
       <div className="max-w-6xl mx-auto px-6">
@@ -11,15 +18,15 @@ export default function HBeamPage() {
         </h1>
 
         <p className="text-lg text-gray-600 max-w-3xl mb-10">
-          Besi H-Beam merupakan material struktur utama untuk bangunan industri,
-          gudang, pabrik, dan konstruksi berat dengan kekuatan tinggi serta
-          standar nasional (SNI & JIS).
+          Besi H-Beam adalah material baja struktural utama untuk bangunan industri,
+          gudang, pabrik, dan konstruksi berat. Digunakan sebagai kolom dan balok
+          dengan kapasitas beban tinggi serta standar nasional (SNI & JIS).
         </p>
 
         {/* IMAGE */}
-        <div className="mb-12 rounded-2xl overflow-hidden border">
+        <div className="mb-12 rounded-2xl overflow-hidden border bg-gray-100">
           <img
-            src="/materials/hbeam.jpg"
+            src="/materials/besi/hbeam.jpg"
             alt="Besi H Beam"
             className="w-full h-[360px] object-cover"
           />
@@ -29,12 +36,12 @@ export default function HBeamPage() {
         <div className="grid md:grid-cols-2 gap-12 mb-16">
           <div>
             <h2 className="text-xl font-bold mb-4">
-              Kegunaan Besi H-Beam
+              Aplikasi Besi H-Beam
             </h2>
             <ul className="list-disc list-inside text-gray-700 space-y-2">
               <li>Struktur utama bangunan industri & pabrik</li>
               <li>Kolom dan balok baja</li>
-              <li>Gudang dan hanggar</li>
+              <li>Gudang, hanggar, dan workshop</li>
               <li>Jembatan dan struktur berat</li>
             </ul>
           </div>
@@ -44,10 +51,10 @@ export default function HBeamPage() {
               Spesifikasi Umum
             </h2>
             <ul className="text-gray-700 space-y-2">
-              <li>Standar: JIS / SNI</li>
-              <li>Panjang: 12 Meter (custom available)</li>
-              <li>Material: Baja struktural</li>
-              <li>Supply: Proyek & Non-Proyek</li>
+              <li>Standar: SNI / JIS</li>
+              <li>Panjang: 12 Meter (custom length available)</li>
+              <li>Material: Baja struktural karbon</li>
+              <li>Supply: Proyek & non-proyek</li>
             </ul>
           </div>
         </div>
@@ -55,7 +62,7 @@ export default function HBeamPage() {
         {/* WEIGHT TABLE */}
         <div className="mb-16">
           <h2 className="text-2xl font-bold mb-6">
-            Tabel Berat Besi H-Beam
+            Tabel Berat Besi H-Beam (Estimasi)
           </h2>
 
           <div className="overflow-x-auto border rounded-xl">
@@ -63,55 +70,40 @@ export default function HBeamPage() {
               <thead className="bg-gray-100 text-gray-900">
                 <tr>
                   <th className="px-4 py-3 text-left">Ukuran</th>
-                  <th className="px-4 py-3 text-left">Tebal (mm)</th>
+                  <th className="px-4 py-3 text-left">Tebal (Web / Flange)</th>
                   <th className="px-4 py-3 text-left">Berat (kg/m)</th>
-                  <th className="px-4 py-3 text-left">Berat / Batang (12m)</th>
+                  <th className="px-4 py-3 text-left">Berat / Batang (12 m)</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
-                <tr>
-                  <td className="px-4 py-3">H 200</td>
-                  <td className="px-4 py-3">8 / 12</td>
-                  <td className="px-4 py-3">49.9</td>
-                  <td className="px-4 py-3">≈ 599 kg</td>
-                </tr>
-                <tr>
-                  <td className="px-4 py-3">H 250</td>
-                  <td className="px-4 py-3">9 / 14</td>
-                  <td className="px-4 py-3">72.4</td>
-                  <td className="px-4 py-3">≈ 869 kg</td>
-                </tr>
-                <tr>
-                  <td className="px-4 py-3">H 300</td>
-                  <td className="px-4 py-3">10 / 15</td>
-                  <td className="px-4 py-3">94.0</td>
-                  <td className="px-4 py-3">≈ 1.128 kg</td>
-                </tr>
-                <tr>
-                  <td className="px-4 py-3">H 350</td>
-                  <td className="px-4 py-3">12 / 19</td>
-                  <td className="px-4 py-3">137.0</td>
-                  <td className="px-4 py-3">≈ 1.644 kg</td>
-                </tr>
-                <tr>
-                  <td className="px-4 py-3">H 400</td>
-                  <td className="px-4 py-3">13 / 21</td>
-                  <td className="px-4 py-3">172.0</td>
-                  <td className="px-4 py-3">≈ 2.064 kg</td>
-                </tr>
+                {[
+                  ["H 200", "8 / 12", "49.9", "≈ 599 kg"],
+                  ["H 250", "9 / 14", "72.4", "≈ 869 kg"],
+                  ["H 300", "10 / 15", "94.0", "≈ 1.128 kg"],
+                  ["H 350", "12 / 19", "137.0", "≈ 1.644 kg"],
+                  ["H 400", "13 / 21", "172.0", "≈ 2.064 kg"],
+                ].map((row, i) => (
+                  <tr key={i}>
+                    <td className="px-4 py-3 font-medium">{row[0]}</td>
+                    <td className="px-4 py-3">{row[1]}</td>
+                    <td className="px-4 py-3">{row[2]}</td>
+                    <td className="px-4 py-3">{row[3]}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
 
           <p className="text-xs text-gray-500 mt-3">
-            * Berat bersifat estimasi, tergantung standar pabrik & toleransi produksi.
+            * Berat bersifat estimasi dan dapat berbeda tergantung standar pabrik
+            serta toleransi produksi.
           </p>
         </div>
 
         {/* CTA */}
         <div className="flex flex-col md:flex-row gap-4">
           <a
-            href="https://wa.me/6281297396612?text=Halo,%20saya%20ingin%20request%20harga%20dan%20stok%20Besi%20H-Beam"
+            href={waBase + waText}
             className="bg-red-600 text-white px-8 py-4 rounded-xl font-semibold text-center hover:bg-red-700 transition"
           >
             Request Price & Stock

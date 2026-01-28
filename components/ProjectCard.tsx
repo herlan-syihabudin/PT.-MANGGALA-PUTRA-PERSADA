@@ -1,19 +1,13 @@
-type ProjectCardProps = {
-  image: string
-  category: string
-  title: string
-  description: string
-}
+import type { Project } from "@/lib/projects"
 
 export default function ProjectCard({
   image,
   category,
   title,
   description,
-}: ProjectCardProps) {
+}: Project) {
   return (
     <div className="group border border-gray-200 rounded-2xl overflow-hidden bg-white hover:shadow-xl transition">
-      {/* IMAGE */}
       <div className="h-56 overflow-hidden">
         <img
           src={image}
@@ -22,7 +16,6 @@ export default function ProjectCard({
         />
       </div>
 
-      {/* CONTENT */}
       <div className="p-6">
         <span className="text-xs font-semibold text-red-600">
           {category}

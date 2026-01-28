@@ -3,8 +3,8 @@ import Image from "next/image"
 export default function BesiPage() {
   const materials = [
     {
-      title: "Besi WF / H-Beam",
-      image: "/material/besi/wf.jpg",
+      title: "Besi H-Beam",
+      image: "/material/besi/heam.jpg",
       desc: "Struktur utama bangunan industri, gudang, dan pabrik dengan kekuatan tinggi dan standar nasional.",
     },
     {
@@ -14,7 +14,7 @@ export default function BesiPage() {
     },
     {
       title: "Besi UNP & CNP",
-      image: "/material/besi/unp-cnp.jpg",
+      image: "/material/besi/unp.jpg",
       desc: "Material rangka atap dan secondary structure untuk konstruksi ringan hingga menengah.",
     },
     {

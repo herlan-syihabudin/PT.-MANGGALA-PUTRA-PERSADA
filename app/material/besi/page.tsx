@@ -10,28 +10,28 @@ export default function BesiPage() {
       desc: "Struktur utama bangunan industri, gudang, dan pabrik dengan kekuatan tinggi dan standar nasional.",
     },
     {
-      title: "Besi IWF",
-      slug: "iwf",
+      title: "Besi WF / IWF",
+      slug: "wf",
       image: "/material/besi/wf.jpg",
-      desc: "Profil baja untuk struktur menengah hingga berat dengan efisiensi biaya dan presisi engineering.",
+      desc: "Profil baja struktural untuk kolom dan balok bangunan menengah hingga berat.",
     },
     {
-      title: "Besi UNP & CNP",
+      title: "Besi UNP",
       slug: "unp",
       image: "/material/besi/unp.jpg",
-      desc: "Material rangka atap dan secondary structure untuk konstruksi ringan hingga menengah.",
+      desc: "Profil U-Channel untuk secondary structure, rangka atap, dan penguat struktur.",
     },
     {
       title: "Besi Beton (Polos & Ulir)",
       slug: "besi-beton",
       image: "/material/besi/besi-beton.jpg",
-      desc: "Material utama pengecoran beton bertulang untuk pondasi, kolom, dan balok struktural.",
+      desc: "Material utama pengecoran beton bertulang untuk pondasi, kolom, dan balok.",
     },
     {
       title: "Plat Baja",
       slug: "plat-baja",
       image: "/material/besi/plat-baja.jpg",
-      desc: "Plat baja hitam & galvanis untuk fabrikasi, base plate, dan kebutuhan industri.",
+      desc: "Plat baja hitam & galvanis untuk fabrikasi dan kebutuhan industri.",
     },
     {
       title: "Pipa Baja",
@@ -63,8 +63,11 @@ export default function BesiPage() {
               key={item.slug}
               className="group bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl transition flex flex-col"
             >
-              {/* CLICKABLE IMAGE */}
-              <Link href={`/material/besi/${item.slug}`} className="relative h-56 block overflow-hidden">
+              {/* IMAGE */}
+              <Link
+                href={`/material/besi/${item.slug}`}
+                className="relative h-56 block overflow-hidden"
+              >
                 <Image
                   src={item.image}
                   alt={item.title}
@@ -76,12 +79,21 @@ export default function BesiPage() {
               {/* CONTENT */}
               <div className="p-6 flex flex-col justify-between h-full">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
                     {item.title}
                   </h3>
-                  <p className="text-gray-600 text-sm leading-relaxed mb-6">
+
+                  <p className="text-gray-600 text-sm leading-relaxed mb-4">
                     {item.desc}
                   </p>
+
+                  {/* SUPPLIER INFO */}
+                  <ul className="text-xs text-gray-500 space-y-1 mb-5">
+                    <li>✔ Standar SNI / JIS</li>
+                    <li>✔ Supply Proyek & Retail</li>
+                    <li>✔ Ready Stock / Indent</li>
+                    <li>✔ Fast Response Purchasing</li>
+                  </ul>
                 </div>
 
                 {/* ACTIONS */}
@@ -90,18 +102,18 @@ export default function BesiPage() {
                     href={`/material/besi/${item.slug}`}
                     className="text-center border border-gray-300 py-3 rounded-xl font-semibold hover:bg-gray-100 transition"
                   >
-                    View Detail
+                    Lihat Spesifikasi
                   </Link>
 
                   <a
-                    href={`https://wa.me/6281297396612?text=Halo%20PT%20Manggala%20Putra%20Persada,%20saya%20ingin%20penawaran%20material%20${encodeURIComponent(
+                    href={`https://wa.me/6281297396612?text=Halo%20PT%20Manggala%20Putra%20Persada,%20saya%20ingin%20penawaran%20${encodeURIComponent(
                       item.title
-                    )}`}
+                    )}%20(ukuran,%20qty,%20lokasi%20kirim).`}
                     target="_blank"
                     rel="noreferrer"
                     className="text-center bg-red-600 text-white py-3 rounded-xl font-semibold hover:bg-red-700 transition"
                   >
-                    Request Price & Stock
+                    Request Harga & Stok
                   </a>
                 </div>
               </div>

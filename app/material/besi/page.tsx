@@ -4,12 +4,12 @@ export default function BesiPage() {
   const materials = [
     {
       title: "Besi H-Beam",
-      image: "/material/besi/heam.jpg",
+      image: "/material/besi/hbeam.jpg",
       desc: "Struktur utama bangunan industri, gudang, dan pabrik dengan kekuatan tinggi dan standar nasional.",
     },
     {
       title: "Besi IWF",
-      image: "/material/besi/iwf.jpg",
+      image: "/material/besi/wf.jpg",
       desc: "Profil baja untuk struktur menengah hingga berat dengan efisiensi biaya dan presisi engineering.",
     },
     {

@@ -1,5 +1,7 @@
 import type { Metadata } from "next"
 import AboutSection from "@/components/AboutSection"
+import { WhyChooseUs } from "@/components/WhyChooseUs"
+
 
 export const metadata: Metadata = {
   title: "About Us | PT Manggala Putra Persada",
@@ -26,6 +28,7 @@ export default function TentangPage() {
   return (
     <main>
       <AboutSection />
+      <WhyChooseUs />
     </main>
   )
 }

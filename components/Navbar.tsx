@@ -32,36 +32,58 @@ export default function Navbar() {
           <Link href="/" className="hover:text-red-600 transition">Home</Link>
           <Link href="/tentang" className="hover:text-red-600 transition">Tentang Kami</Link>
 
-          {/* DROPDOWN LAYANAN (FIXED) */}
-          <div
-            className="relative"
-            onMouseEnter={() => setOpenService(true)}
-            onMouseLeave={() => setOpenService(false)}
-          >
-            <button className="flex items-center gap-1 hover:text-red-600 transition">
-              Layanan <span className="text-xs">▾</span>
-            </button>
+          {/* DROPDOWN LAYANAN – CLICK BASED */}
+<div className="relative">
+  <button
+    onClick={() => setOpenService(!openService)}
+    className="flex items-center gap-1 hover:text-red-600 transition"
+  >
+    Layanan <span className="text-xs">▾</span>
+  </button>
 
-            {openService && (
-              <div className="absolute left-0 top-full mt-3 w-56 bg-white border rounded-lg shadow-lg">
-                <Link href="/layanan/konstruksi-sipil" className="block px-4 py-2 hover:bg-gray-50">
-                  Konstruksi Sipil
-                </Link>
-                <Link href="/layanan/struktur-baja" className="block px-4 py-2 hover:bg-gray-50">
-                  Struktur Baja
-                </Link>
-                <Link href="/layanan/mep" className="block px-4 py-2 hover:bg-gray-50">
-                  MEP
-                </Link>
-                <Link href="/layanan/fit-out" className="block px-4 py-2 hover:bg-gray-50">
-                  Interior & Fit Out
-                </Link>
-                <Link href="/layanan/design-build" className="block px-4 py-2 hover:bg-gray-50">
-                  Design & Build
-                </Link>
-              </div>
-            )}
-          </div>
+  {openService && (
+    <div
+      className="absolute left-0 top-full mt-3 w-56 bg-white border rounded-lg shadow-lg z-50"
+      onMouseLeave={() => setOpenService(false)}
+    >
+      <Link
+        href="/layanan/konstruksi-sipil"
+        onClick={() => setOpenService(false)}
+        className="block px-4 py-2 hover:bg-gray-50"
+      >
+        Konstruksi Sipil
+      </Link>
+      <Link
+        href="/layanan/struktur-baja"
+        onClick={() => setOpenService(false)}
+        className="block px-4 py-2 hover:bg-gray-50"
+      >
+        Struktur Baja
+      </Link>
+      <Link
+        href="/layanan/mep"
+        onClick={() => setOpenService(false)}
+        className="block px-4 py-2 hover:bg-gray-50"
+      >
+        MEP
+      </Link>
+      <Link
+        href="/layanan/fit-out"
+        onClick={() => setOpenService(false)}
+        className="block px-4 py-2 hover:bg-gray-50"
+      >
+        Interior & Fit Out
+      </Link>
+      <Link
+        href="/layanan/design-build"
+        onClick={() => setOpenService(false)}
+        className="block px-4 py-2 hover:bg-gray-50"
+      >
+        Design & Build
+      </Link>
+    </div>
+  )}
+</div>
 
           <Link href="/proyek" className="hover:text-red-600 transition">Proyek</Link>
           <Link href="/klien" className="hover:text-red-600 transition">Klien & Mitra</Link>

@@ -5,6 +5,8 @@ import Projects from "@/components/Projects"
 import FAQ from "@/components/FAQ"
 import CTA from "@/components/CTA"
 import Partners from "@/components/Partners"
+import { WhyChooseUs } from "@/components/WhyChooseUs"
+
 
 export const metadata: Metadata = {
   title: "Engineering & Structured Construction | PT Manggala Putra Persada",
@@ -17,6 +19,7 @@ export default function Home() {
     <>
       <Hero />
       <Services />
+      <WhyChooseUs />
       <Projects />
       <Partners />
       <FAQ />

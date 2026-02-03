@@ -20,26 +20,27 @@ export default function Hero() {
           {/* HEADLINE */}
           <h1 className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight text-gray-900 max-w-xl">
             Engineering-Led Integrated Construction <br />
-            &amp; Project Execution
+            for Reliable Project Execution
           </h1>
 
           {/* SUB HEADLINE */}
           <p className="mt-5 text-lg text-gray-700 font-medium max-w-xl">
-            Your Reliable Partner from Engineering to Execution
+            Your Reliable Partner from Engineering Design to On-Site Execution
           </p>
 
-          {/* DESCRIPTION – HYBRID SEO */}
+          {/* DESCRIPTION – SEO + LOCAL MARKET */}
           <p className="mt-6 text-base text-gray-600 max-w-xl leading-relaxed">
             PT Manggala Putra Persada is an engineering and construction company
             in Indonesia providing integrated civil, steel structure, and MEP
-            solutions with a structured approach to ensure quality, safety,
-            cost efficiency, and on-time project delivery.
+            solutions for industrial and commercial projects, with a structured
+            approach to ensure quality, safety, cost efficiency, and on-time
+            project delivery.
           </p>
 
           {/* CTA */}
           <div className="mt-10 flex flex-col sm:flex-row gap-4">
             <a
-              href="https://wa.me/6281297396612?text=Hello%20PT%20Manggala%20Putra%20Persada,%20I%20would%20like%20to%20discuss%20a%20project"
+              href="https://wa.me/6281297396612?text=Hello%20PT%20Manggala%20Putra%20Persada,%0AI%20would%20like%20to%20request%20a%20project%20consultation."
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center justify-center bg-red-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-red-700 transition shadow-lg shadow-red-600/20"
@@ -48,11 +49,11 @@ export default function Hero() {
             </a>
 
             <a
-  href="/proyek"
-  className="inline-flex items-center justify-center border border-gray-300 px-8 py-4 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition"
->
-  Lihat Portofolio
-</a>
+              href="/proyek"
+              className="inline-flex items-center justify-center border border-gray-300 px-8 py-4 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition"
+            >
+              Lihat Portofolio
+            </a>
           </div>
 
           {/* TRUST INDICATOR */}
@@ -77,17 +78,17 @@ export default function Hero() {
           <div className="relative w-full max-w-md aspect-[4/5] rounded-2xl overflow-hidden bg-gray-100 shadow-xl shadow-black/10 ring-1 ring-black/5">
             <Image
               src="/images/hero-project.jpg"
-              alt="PT Manggala Putra Persada Engineering Project Indonesia"
+              alt="PT Manggala Putra Persada Engineering & Construction Project Indonesia"
               fill
               priority
-              className="object-cover grayscale-[45%] brightness-95 contrast-95"
+              className="object-cover grayscale-[35%] brightness-100 contrast-95"
             />
 
             {/* OVERLAY */}
             <div className="absolute inset-0 flex items-end">
               <div className="w-full bg-white/90 backdrop-blur px-5 py-4">
                 <p className="text-sm font-semibold text-gray-900">
-                  Industrial &amp; Residential Projects
+                  Industrial &amp; Commercial Projects
                 </p>
                 <p className="text-xs text-gray-600">
                   Civil · Steel Structure · MEP · Fit Out · Design &amp; Build

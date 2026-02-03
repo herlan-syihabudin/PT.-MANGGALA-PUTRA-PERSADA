@@ -3,11 +3,14 @@ import StatusItem from "@/components/dashboard/StatusItem"
 
 export default function AdminDashboard() {
   return (
-    <section className="p-6 md:p-10 bg-gray-50 min-h-screen">
+    <section className="p-6 md:p-10">
 
-      <h1 className="text-3xl font-extrabold text-gray-900 mb-10">
+      <h1 className="text-3xl font-extrabold text-gray-900">
         CRM Dashboard
       </h1>
+      <p className="text-gray-600 mt-1 mb-10">
+        Overview of inquiries, pipeline, and project status
+      </p>
 
       {/* KPI */}
       <div className="grid md:grid-cols-4 gap-6 mb-12">

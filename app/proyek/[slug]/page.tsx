@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import { projects } from "@/lib/projects"
+import Image from "next/image"
 
 type Props = {
   params: { slug: string }
@@ -16,14 +17,16 @@ export default function ProjectDetailPage({ params }: Props) {
 
         {/* IMAGE */}
         <div className="mb-12 overflow-hidden rounded-2xl">
-          <img
+          <Image
             src={project.image}
             alt={project.title}
+            width={1200}
+            height={600}
             className="w-full h-[420px] object-cover"
           />
         </div>
 
-        {/* CONTENT */}
+        {/* META */}
         <span className="inline-block mb-4 px-4 py-1 text-sm font-semibold text-red-600 bg-red-50 rounded-full">
           {project.category}
         </span>
@@ -32,9 +35,32 @@ export default function ProjectDetailPage({ params }: Props) {
           {project.title}
         </h1>
 
-        <p className="text-lg text-gray-700 leading-relaxed max-w-3xl">
+        <p className="text-lg text-gray-700 leading-relaxed max-w-3xl mb-10">
           {project.description}
         </p>
+
+        {/* DETAILS */}
+        <div className="grid md:grid-cols-2 gap-10 border-t pt-10">
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-2">
+              Scope of Work
+            </h3>
+            <p className="text-gray-700">
+              {project.scope}
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-2">
+              Execution Approach
+            </h3>
+            <p className="text-gray-700">
+              The project was executed through structured planning,
+              engineering coordination, and controlled site execution
+              to ensure quality, safety, and schedule compliance.
+            </p>
+          </div>
+        </div>
 
       </div>
     </section>

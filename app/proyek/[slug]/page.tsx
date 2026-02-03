@@ -1,11 +1,40 @@
 import { notFound } from "next/navigation"
 import { projects } from "@/lib/projects"
 import Image from "next/image"
+import type { Metadata } from "next"
 
 type Props = {
   params: { slug: string }
 }
 
+/* =========================
+   SEO METADATA PER PROJECT
+========================= */
+export async function generateMetadata(
+  { params }: Props
+): Promise<Metadata> {
+  const project = projects.find((p) => p.slug === params.slug)
+
+  if (!project) {
+    return {
+      title: "Project Not Found | PT Manggala Putra Persada",
+    }
+  }
+
+  return {
+    title: `${project.title} | PT Manggala Putra Persada`,
+    description: project.description,
+    openGraph: {
+      title: project.title,
+      description: project.description,
+      type: "article",
+    },
+  }
+}
+
+/* =========================
+   PROJECT DETAIL PAGE
+========================= */
 export default function ProjectDetailPage({ params }: Props) {
   const project = projects.find((p) => p.slug === params.slug)
 
@@ -23,6 +52,7 @@ export default function ProjectDetailPage({ params }: Props) {
             width={1200}
             height={600}
             className="w-full h-[420px] object-cover"
+            priority
           />
         </div>
 
@@ -60,6 +90,16 @@ export default function ProjectDetailPage({ params }: Props) {
               to ensure quality, safety, and schedule compliance.
             </p>
           </div>
+        </div>
+
+        {/* BACK LINK */}
+        <div className="mt-14">
+          <a
+            href="/proyek"
+            className="text-sm font-semibold text-red-600 hover:underline"
+          >
+            ← Back to Projects
+          </a>
         </div>
 
       </div>

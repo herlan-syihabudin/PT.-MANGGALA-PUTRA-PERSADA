@@ -6,6 +6,7 @@ import FAQ from "@/components/FAQ"
 import CTA from "@/components/CTA"
 import Partners from "@/components/Partners"
 import { WhyChooseUs } from "@/components/WhyChooseUs"
+import { ProjectOutcome } from "@/components/ProjectOutcome"
 
 
 export const metadata: Metadata = {
@@ -20,6 +21,7 @@ export default function Home() {
       <Hero />
       <Services />
       <WhyChooseUs />
+      <ProjectOutcome />
       <Projects />
       <Partners />
       <FAQ />

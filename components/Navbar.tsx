@@ -5,7 +5,8 @@ import Link from "next/link"
 import { useState } from "react"
 
 export default function Navbar() {
-  const [open, setOpen] = useState(false)
+  const [openMobile, setOpenMobile] = useState(false)
+  const [openService, setOpenService] = useState(false)
 
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
@@ -31,19 +32,35 @@ export default function Navbar() {
           <Link href="/" className="hover:text-red-600 transition">Home</Link>
           <Link href="/tentang" className="hover:text-red-600 transition">Tentang Kami</Link>
 
-          {/* DROPDOWN LAYANAN */}
-          <div className="relative group">
+          {/* DROPDOWN LAYANAN (FIXED) */}
+          <div
+            className="relative"
+            onMouseEnter={() => setOpenService(true)}
+            onMouseLeave={() => setOpenService(false)}
+          >
             <button className="flex items-center gap-1 hover:text-red-600 transition">
-              Layanan
-              <span className="text-xs">▾</span>
+              Layanan <span className="text-xs">▾</span>
             </button>
-            <div className="absolute left-0 top-full mt-3 w-56 bg-white border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition">
-              <Link href="/layanan/konstruksi-sipil" className="block px-4 py-2 hover:bg-gray-50">Konstruksi Sipil</Link>
-              <Link href="/layanan/struktur-baja" className="block px-4 py-2 hover:bg-gray-50">Struktur Baja</Link>
-              <Link href="/layanan/mep" className="block px-4 py-2 hover:bg-gray-50">MEP</Link>
-              <Link href="/layanan/fit-out" className="block px-4 py-2 hover:bg-gray-50">Interior & Fit Out</Link>
-              <Link href="/layanan/design-build" className="block px-4 py-2 hover:bg-gray-50">Design & Build</Link>
-            </div>
+
+            {openService && (
+              <div className="absolute left-0 top-full mt-3 w-56 bg-white border rounded-lg shadow-lg">
+                <Link href="/layanan/konstruksi-sipil" className="block px-4 py-2 hover:bg-gray-50">
+                  Konstruksi Sipil
+                </Link>
+                <Link href="/layanan/struktur-baja" className="block px-4 py-2 hover:bg-gray-50">
+                  Struktur Baja
+                </Link>
+                <Link href="/layanan/mep" className="block px-4 py-2 hover:bg-gray-50">
+                  MEP
+                </Link>
+                <Link href="/layanan/fit-out" className="block px-4 py-2 hover:bg-gray-50">
+                  Interior & Fit Out
+                </Link>
+                <Link href="/layanan/design-build" className="block px-4 py-2 hover:bg-gray-50">
+                  Design & Build
+                </Link>
+              </div>
+            )}
           </div>
 
           <Link href="/proyek" className="hover:text-red-600 transition">Proyek</Link>
@@ -61,27 +78,27 @@ export default function Navbar() {
 
         {/* MOBILE BUTTON */}
         <button
-          onClick={() => setOpen(!open)}
-          className="md:hidden text-gray-700"
+          onClick={() => setOpenMobile(!openMobile)}
+          className="md:hidden text-gray-700 text-xl"
         >
           ☰
         </button>
       </div>
 
       {/* MOBILE MENU */}
-      {open && (
+      {openMobile && (
         <div className="md:hidden bg-white border-t">
           <div className="px-6 py-4 space-y-3 text-sm">
-            <Link href="/" onClick={() => setOpen(false)}>Home</Link>
-            <Link href="/tentang" onClick={() => setOpen(false)}>Tentang Kami</Link>
-            <Link href="/layanan" onClick={() => setOpen(false)}>Layanan</Link>
-            <Link href="/proyek" onClick={() => setOpen(false)}>Proyek</Link>
-            <Link href="/klien" onClick={() => setOpen(false)}>Klien & Mitra</Link>
-            <Link href="/insight" onClick={() => setOpen(false)}>Insight</Link>
+            <Link href="/" onClick={() => setOpenMobile(false)}>Home</Link>
+            <Link href="/tentang" onClick={() => setOpenMobile(false)}>Tentang Kami</Link>
+            <Link href="/layanan" onClick={() => setOpenMobile(false)}>Layanan</Link>
+            <Link href="/proyek" onClick={() => setOpenMobile(false)}>Proyek</Link>
+            <Link href="/klien" onClick={() => setOpenMobile(false)}>Klien & Mitra</Link>
+            <Link href="/insight" onClick={() => setOpenMobile(false)}>Insight</Link>
 
             <Link
               href="/kontak"
-              onClick={() => setOpen(false)}
+              onClick={() => setOpenMobile(false)}
               className="block mt-4 text-center bg-red-600 text-white py-2 rounded-md font-semibold"
             >
               Konsultasi Proyek

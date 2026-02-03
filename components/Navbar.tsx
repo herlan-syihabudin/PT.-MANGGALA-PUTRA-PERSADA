@@ -109,25 +109,72 @@ export default function Navbar() {
 
       {/* MOBILE MENU */}
       {openMobile && (
-        <div className="md:hidden bg-white border-t">
-          <div className="px-6 py-4 space-y-3 text-sm">
-            <Link href="/" onClick={() => setOpenMobile(false)}>Home</Link>
-            <Link href="/tentang" onClick={() => setOpenMobile(false)}>Tentang Kami</Link>
-            <Link href="/layanan" onClick={() => setOpenMobile(false)}>Layanan</Link>
-            <Link href="/proyek" onClick={() => setOpenMobile(false)}>Proyek</Link>
-            <Link href="/klien" onClick={() => setOpenMobile(false)}>Klien & Mitra</Link>
-            <Link href="/insight" onClick={() => setOpenMobile(false)}>Insight</Link>
+  <div className="md:hidden bg-white border-t">
+    <div className="px-6 py-5 space-y-4 text-sm">
 
-            <Link
-              href="/kontak"
-              onClick={() => setOpenMobile(false)}
-              className="block mt-4 text-center bg-red-600 text-white py-2 rounded-md font-semibold"
-            >
-              Konsultasi Proyek
+      <Link href="/" onClick={() => setOpenMobile(false)} className="block">
+        Home
+      </Link>
+
+      <Link href="/tentang" onClick={() => setOpenMobile(false)} className="block">
+        Tentang Kami
+      </Link>
+
+      {/* MOBILE DROPDOWN LAYANAN */}
+      <div>
+        <button
+          onClick={() => setOpenService(!openService)}
+          className="w-full flex justify-between items-center font-semibold text-gray-900"
+        >
+          Layanan
+          <span>{openService ? "−" : "+"}</span>
+        </button>
+
+        {openService && (
+          <div className="mt-3 ml-3 space-y-2 text-gray-700">
+            <Link href="/layanan/konstruksi-sipil" onClick={() => setOpenMobile(false)} className="block">
+              Konstruksi Sipil
+            </Link>
+            <Link href="/layanan/struktur-baja" onClick={() => setOpenMobile(false)} className="block">
+              Struktur Baja
+            </Link>
+            <Link href="/layanan/mep" onClick={() => setOpenMobile(false)} className="block">
+              MEP
+            </Link>
+            <Link href="/layanan/fit-out" onClick={() => setOpenMobile(false)} className="block">
+              Interior & Fit Out
+            </Link>
+            <Link href="/layanan/design-build" onClick={() => setOpenMobile(false)} className="block">
+              Design & Build
             </Link>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      <Link href="/proyek" onClick={() => setOpenMobile(false)} className="block">
+        Proyek
+      </Link>
+
+      <Link href="/klien" onClick={() => setOpenMobile(false)} className="block">
+        Klien & Mitra
+      </Link>
+
+      <Link href="/insight" onClick={() => setOpenMobile(false)} className="block">
+        Insight
+      </Link>
+
+      {/* CTA */}
+      <Link
+        href="/kontak"
+        onClick={() => setOpenMobile(false)}
+        className="block mt-6 text-center bg-red-600 text-white py-3 rounded-lg font-semibold"
+      >
+        Konsultasi Proyek
+      </Link>
+
+    </div>
+  </div>
+)}
     </header>
   )
 }

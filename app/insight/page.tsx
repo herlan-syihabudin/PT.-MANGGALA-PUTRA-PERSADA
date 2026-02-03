@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { insights } from "@/lib/insights"
 
 export default function InsightPage() {
   return (
@@ -17,105 +18,33 @@ export default function InsightPage() {
           </p>
         </div>
 
-        {/* INSIGHT CATEGORIES */}
+        {/* INSIGHT LIST */}
         <div className="grid md:grid-cols-3 gap-10 mb-24">
-          <div className="border rounded-2xl p-8">
-            <h3 className="font-bold text-gray-900 mb-3">
-              Construction Execution
-            </h3>
-            <p className="text-gray-600">
-              Articles discussing structured construction execution, site
-              coordination, quality control, and safety implementation.
-            </p>
-          </div>
-
-          <div className="border rounded-2xl p-8">
-            <h3 className="font-bold text-gray-900 mb-3">
-              Engineering & Design
-            </h3>
-            <p className="text-gray-600">
-              Insights related to structural engineering, MEP coordination,
-              constructability review, and engineering-led decision making.
-            </p>
-          </div>
-
-          <div className="border rounded-2xl p-8">
-            <h3 className="font-bold text-gray-900 mb-3">
-              Project Management
-            </h3>
-            <p className="text-gray-600">
-              Topics covering planning, scheduling, cost control, risk
-              management, and professional project governance.
-            </p>
-          </div>
-        </div>
-
-        {/* FEATURED INSIGHTS */}
-        <div className="mb-24">
-          <h2 className="text-3xl font-extrabold text-gray-900 mb-10">
-            Featured <span className="text-red-600">Insights</span>
-          </h2>
-
-          <div className="grid md:grid-cols-3 gap-10">
-            {/* CARD */}
-            <div className="border rounded-2xl p-8 flex flex-col">
+          {insights.map((insight) => (
+            <div
+              key={insight.slug}
+              className="border rounded-2xl p-8 flex flex-col"
+            >
               <span className="text-sm font-semibold text-red-600 mb-2">
-                Construction Execution
+                {insight.category}
               </span>
+
               <h3 className="font-bold text-gray-900 mb-3">
-                Why Structured Execution Matters in Industrial Projects
+                {insight.title}
               </h3>
+
               <p className="text-gray-600 mb-6">
-                Understanding how structured planning and engineering
-                coordination reduce execution risks in industrial construction
-                projects.
+                {insight.excerpt}
               </p>
+
               <Link
-                href="#"
+                href={`/insight/${insight.slug}`}
                 className="mt-auto text-sm font-semibold text-red-600 hover:underline"
               >
                 Read Insight →
               </Link>
             </div>
-
-            <div className="border rounded-2xl p-8 flex flex-col">
-              <span className="text-sm font-semibold text-red-600 mb-2">
-                Engineering & Design
-              </span>
-              <h3 className="font-bold text-gray-900 mb-3">
-                The Role of Engineering Coordination in Design & Build
-              </h3>
-              <p className="text-gray-600 mb-6">
-                How early engineering coordination improves constructability,
-                cost efficiency, and schedule certainty.
-              </p>
-              <Link
-                href="#"
-                className="mt-auto text-sm font-semibold text-red-600 hover:underline"
-              >
-                Read Insight →
-              </Link>
-            </div>
-
-            <div className="border rounded-2xl p-8 flex flex-col">
-              <span className="text-sm font-semibold text-red-600 mb-2">
-                Project Management
-              </span>
-              <h3 className="font-bold text-gray-900 mb-3">
-                Managing Cost & Schedule Risks in Construction Projects
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Key approaches to maintaining cost and schedule discipline
-                through professional project management systems.
-              </p>
-              <Link
-                href="#"
-                className="mt-auto text-sm font-semibold text-red-600 hover:underline"
-              >
-                Read Insight →
-              </Link>
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* CTA */}

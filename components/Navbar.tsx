@@ -9,7 +9,7 @@ export default function Navbar() {
         {/* LOGO */}
         <Link href="/" className="flex items-center gap-2">
           <Image
-            src="/logo-mp.png"
+            src="/logo-mp1.png"
             alt="PT Manggala Putra Persada"
             width={36}
             height={36}

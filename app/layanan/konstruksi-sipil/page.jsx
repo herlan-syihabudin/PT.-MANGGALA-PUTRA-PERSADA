@@ -5,31 +5,31 @@ export default function KonstruksiSipilPage() {
   return (
     <section className="bg-white">
 
-      {/* ======================
-          HERO SECTION
-      ====================== */}
+      {/* HERO */}
       <div className="bg-gray-50 border-b">
         <div className="max-w-7xl mx-auto px-6 py-20 md:py-24 grid md:grid-cols-2 gap-12 items-center">
 
-          {/* LEFT: TEXT */}
+          {/* TEXT */}
           <div>
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900">
-              Civil & Structural Construction
+              Civil & Structural Construction Engineering
             </h1>
             <p className="mt-6 text-lg text-gray-600 max-w-2xl">
               Engineering-led civil and structural construction services for
-              industrial, commercial, and residential projects, delivered with
-              strict quality control, safety compliance, and on-time execution.
+              industrial, commercial, and residential projects in Indonesia,
+              delivered with strict quality control, safety compliance, and
+              disciplined project execution.
             </p>
           </div>
 
-          {/* RIGHT: IMAGE */}
+          {/* IMAGE */}
           <div className="relative h-[240px] md:h-[320px] rounded-2xl overflow-hidden bg-gray-200">
             <Image
               src="/projects/civil-hero.jpg"
-              alt="Civil & Structural Construction"
+              alt="Civil and structural construction contractor for industrial and commercial buildings in Indonesia"
               fill
               priority
+              sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover"
             />
           </div>
@@ -37,83 +37,80 @@ export default function KonstruksiSipilPage() {
         </div>
       </div>
 
-      {/* ======================
-          CONTENT SECTION
-      ====================== */}
+      {/* CONTENT */}
       <div className="max-w-7xl mx-auto px-6 py-24 grid md:grid-cols-3 gap-12">
-        
-        {/* MAIN CONTENT */}
+
+        {/* MAIN */}
         <div className="md:col-span-2 space-y-10">
 
           <div>
             <h2 className="text-2xl font-semibold text-gray-900 mb-3">
-              Scope of Work
+              Civil & Structural Scope of Work
             </h2>
             <p className="text-gray-700 leading-relaxed">
               Our civil and structural construction services cover the execution
-              of concrete and structural works in accordance with approved
-              drawings, specifications, and engineering standards. We focus on
-              structural integrity, constructability, and long-term performance
-              of the building.
+              of reinforced concrete and structural works in accordance with
+              approved drawings, specifications, and engineering standards.
+              We focus on structural integrity, constructability, and long-term
+              performance of each building and facility.
             </p>
           </div>
 
           <div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">
-              Key Services
-            </h3>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-3">
+              Key Civil & Structural Services
+            </h2>
             <ul className="list-disc pl-5 space-y-2 text-gray-700">
-              <li>Site preparation and earthworks</li>
-              <li>Foundation systems (shallow & deep foundation)</li>
+              <li>Site preparation, earthworks, and excavation</li>
+              <li>Foundation systems (shallow & deep foundations)</li>
               <li>Reinforced concrete structures</li>
-              <li>Structural framing and slabs</li>
-              <li>Structural repair and strengthening</li>
-              <li>Compliance with SNI and project specifications</li>
+              <li>Structural framing, slabs, and retaining walls</li>
+              <li>Structural repair, strengthening, and retrofit works</li>
+              <li>Compliance with SNI and project technical specifications</li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">
-              Engineering & Quality Control
-            </h3>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-3">
+              Engineering Supervision & Quality Control
+            </h2>
             <p className="text-gray-700 leading-relaxed">
-              All works are executed under engineering supervision, supported by
-              method statements, inspection and test plans (ITP), and systematic
-              quality control procedures to ensure accuracy, safety, and
+              All civil and structural works are executed under engineering
+              supervision and supported by method statements, inspection and
+              test plans (ITP), and systematic quality control procedures.
+              This ensures dimensional accuracy, structural safety, and
               durability throughout the project lifecycle.
             </p>
           </div>
 
         </div>
 
-        {/* ======================
-            SIDEBAR
-        ====================== */}
+        {/* SIDEBAR */}
         <aside className="space-y-8">
 
           <div className="border rounded-xl p-6">
-            <h4 className="font-semibold text-gray-900 mb-3">
-              Project Types
-            </h4>
+            <h3 className="font-semibold text-gray-900 mb-3">
+              Typical Project Types
+            </h3>
             <ul className="space-y-2 text-sm text-gray-700">
-              <li>Industrial Facilities</li>
-              <li>Commercial Buildings</li>
-              <li>Residential Developments</li>
-              <li>Warehouses & Factories</li>
-              <li>Infrastructure Support Structures</li>
+              <li>Industrial facilities & factories</li>
+              <li>Commercial buildings</li>
+              <li>Residential developments</li>
+              <li>Warehouses & logistics centers</li>
+              <li>Infrastructure support structures</li>
             </ul>
           </div>
 
           <div className="border rounded-xl p-6 bg-gray-50">
-            <h4 className="font-semibold text-gray-900 mb-3">
-              Why Choose Us
-            </h4>
+            <h3 className="font-semibold text-gray-900 mb-3">
+              Why Choose Our Civil Construction
+            </h3>
             <ul className="space-y-2 text-sm text-gray-700">
               <li>Engineering-led execution</li>
               <li>Structured project management</li>
-              <li>Strict quality & safety control</li>
+              <li>Strict quality & HSE control</li>
               <li>Cost and schedule discipline</li>
-              <li>Clear reporting and accountability</li>
+              <li>Clear reporting & accountability</li>
             </ul>
           </div>
 

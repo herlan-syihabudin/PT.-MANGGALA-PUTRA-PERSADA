@@ -6,6 +6,10 @@ export type Insight = {
   content: string
   publishedAt: string
   author?: string
+
+  // 🔥 SEO ENGINE (BARU)
+  keywords?: string[]              // long-tail keyword ranking
+  relatedServices?: string[]       // auto internal linking
 }
 
 export const insights: Insight[] = [
@@ -16,6 +20,19 @@ export const insights: Insight[] = [
     excerpt:
       "Structured execution reduces risk, improves coordination, and ensures predictable outcomes in industrial construction projects.",
     publishedAt: "2024-12-10",
+    author: "PT Manggala Putra Persada",
+    keywords: [
+      "industrial construction execution",
+      "engineering led construction indonesia",
+      "industrial project execution strategy",
+      "construction risk management industrial",
+      "structured construction methodology",
+    ],
+    relatedServices: [
+      "/layanan/design-build",
+      "/layanan/struktur-baja",
+      "/layanan/mep",
+    ],
     content: `
 Industrial projects involve multiple disciplines, tight schedules, and strict safety requirements.
 Without structured execution, coordination gaps often lead to rework, cost overruns, and delays.
@@ -36,6 +53,19 @@ while ensuring that construction outcomes align with the original engineering in
     excerpt:
       "Early engineering coordination is critical to avoid design conflicts, rework, and cost escalation in design & build projects.",
     publishedAt: "2024-12-18",
+    author: "PT Manggala Putra Persada",
+    keywords: [
+      "design and build engineering coordination",
+      "design build contractor indonesia",
+      "engineering coordination construction",
+      "integrated design build execution",
+      "construction clash detection engineering",
+    ],
+    relatedServices: [
+      "/layanan/design-build",
+      "/layanan/mep",
+      "/layanan/konstruksi-sipil",
+    ],
     content: `
 Design & build projects require seamless coordination between design and construction teams.
 Without strong engineering coordination, inconsistencies between drawings and site conditions
@@ -58,6 +88,18 @@ and improved project certainty.
     excerpt:
       "Cost and schedule control are achieved through disciplined planning, monitoring, and corrective action during project execution.",
     publishedAt: "2025-01-05",
+    author: "PT Manggala Putra Persada",
+    keywords: [
+      "construction cost control strategy",
+      "construction schedule management",
+      "project control construction indonesia",
+      "engineering based project management",
+      "industrial construction cost planning",
+    ],
+    relatedServices: [
+      "/layanan/design-build",
+      "/layanan/konstruksi-sipil",
+    ],
     content: `
 Cost overruns and schedule delays are among the most common challenges in construction projects.
 These issues often arise due to weak planning, scope creep, and lack of monitoring systems.
@@ -78,6 +120,19 @@ financial and timeline certainty throughout the project lifecycle.
     excerpt:
       "Quality control systems ensure that construction work complies with specifications, drawings, and long-term performance requirements.",
     publishedAt: "2025-01-20",
+    author: "PT Manggala Putra Persada",
+    keywords: [
+      "construction quality control system",
+      "quality assurance construction site",
+      "engineering quality control indonesia",
+      "construction inspection and testing plan",
+      "industrial construction quality management",
+    ],
+    relatedServices: [
+      "/layanan/konstruksi-sipil",
+      "/layanan/struktur-baja",
+      "/layanan/mep",
+    ],
     content: `
 Quality control is not an inspection at the end of construction,
 but a continuous process throughout project execution.

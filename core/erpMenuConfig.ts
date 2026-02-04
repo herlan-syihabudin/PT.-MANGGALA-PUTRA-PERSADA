@@ -52,7 +52,7 @@ import {
   FileSearch,
 
   Users2,
-  IdCard,
+  Badge,
   Fingerprint,
   Banknote,
   FileSignature,

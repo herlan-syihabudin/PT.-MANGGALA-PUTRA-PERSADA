@@ -158,16 +158,16 @@ export const ERP_MENU = [
   },
 
   {
-    section: "HR & GA",
-    icon: Users2,
-    items: [
-      { name: "Employees", href: "/admin/hr/employees", icon: IdCard },
-      { name: "Attendance", href: "/admin/hr/attendance", icon: Fingerprint },
-      { name: "Payroll", href: "/admin/hr/payroll", icon: Banknote },
-      { name: "Contract & Evaluation", href: "/admin/hr/contracts", icon: FileSignature },
-      { name: "General Affair", href: "/admin/hr/ga", icon: Building2 },
-    ],
-  },
+  section: "HR & GA",
+  icon: Users2,
+  items: [
+    { name: "Employees", href: "/admin/hr/employees", icon: Badge },
+    { name: "Attendance", href: "/admin/hr/attendance", icon: Fingerprint },
+    { name: "Payroll", href: "/admin/hr/payroll", icon: Banknote },
+    { name: "Contract & Evaluation", href: "/admin/hr/contracts", icon: FileSignature },
+    { name: "General Affair", href: "/admin/hr/ga", icon: Building2 },
+  ],
+},
 
   {
     section: "SYSTEM",

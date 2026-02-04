@@ -7,7 +7,7 @@ type Props = {
 }
 
 /* =========================
-   SEO METADATA
+   SEO METADATA (TOP TIER)
 ========================= */
 export async function generateMetadata(
   { params }: Props
@@ -15,16 +15,35 @@ export async function generateMetadata(
   const insight = insights.find((i) => i.slug === params.slug)
 
   if (!insight) {
-    return { title: "Insight Not Found | PT Manggala Putra Persada" }
+    return {
+      title: "Insight Not Found | PT Manggala Putra Persada",
+      robots: { index: false },
+    }
   }
 
+  const url = `https://pt-manggala-putra-persada.vercel.app/insight/${insight.slug}`
+
   return {
-    title: `${insight.title} | PT Manggala Putra Persada`,
+    title: insight.title,
     description: insight.excerpt,
+    keywords: [
+      "engineering construction",
+      "industrial construction",
+      "engineering contractor indonesia",
+      insight.category.toLowerCase(),
+    ],
+    alternates: { canonical: url },
     openGraph: {
       title: insight.title,
       description: insight.excerpt,
+      url,
+      siteName: "PT Manggala Putra Persada",
       type: "article",
+      publishedTime: insight.publishedAt,
+    },
+    robots: {
+      index: true,
+      follow: true,
     },
   }
 }
@@ -34,32 +53,93 @@ export async function generateMetadata(
 ========================= */
 export default function InsightDetailPage({ params }: Props) {
   const insight = insights.find((i) => i.slug === params.slug)
-
   if (!insight) return notFound()
+
+  const url = `https://pt-manggala-putra-persada.vercel.app/insight/${insight.slug}`
 
   return (
     <section className="py-24 bg-white">
+      {/* ===== SCHEMA SEO : ARTICLE ===== */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            mainEntityOfPage: {
+              "@type": "WebPage",
+              "@id": url,
+            },
+            headline: insight.title,
+            description: insight.excerpt,
+            articleSection: insight.category,
+            datePublished: insight.publishedAt,
+            dateModified: insight.publishedAt,
+            author: {
+              "@type": "Organization",
+              name: "PT Manggala Putra Persada",
+            },
+            publisher: {
+              "@type": "Organization",
+              name: "PT Manggala Putra Persada",
+              logo: {
+                "@type": "ImageObject",
+                url: "https://pt-manggala-putra-persada.vercel.app/logo-mp.png",
+              },
+            },
+          }),
+        }}
+      />
+
       <div className="max-w-3xl mx-auto px-6">
 
-        {/* META */}
+        {/* CATEGORY */}
         <span className="inline-block mb-4 px-4 py-1 text-sm font-semibold text-red-600 bg-red-50 rounded-full">
           {insight.category}
         </span>
 
+        {/* TITLE */}
         <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 mb-4">
           {insight.title}
         </h1>
 
+        {/* DATE */}
         <p className="text-sm text-gray-500 mb-10">
-          Published on {new Date(insight.publishedAt).toLocaleDateString()}
+          Published on{" "}
+          {new Date(insight.publishedAt).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
         </p>
 
         {/* CONTENT */}
         <article className="prose prose-gray max-w-none">
-          {insight.content.split("\n").map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
+          {insight.content
+            .trim()
+            .split("\n")
+            .filter(Boolean)
+            .map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
         </article>
+
+        {/* CTA INTERNAL LINK (SEO BOOST) */}
+        <div className="mt-16 p-6 border rounded-xl bg-gray-50">
+          <p className="font-semibold text-gray-900 mb-2">
+            Need an engineering-led construction partner?
+          </p>
+          <p className="text-gray-600 mb-4">
+            Explore our professional construction services for industrial and
+            commercial projects in Indonesia.
+          </p>
+          <a
+            href="/layanan"
+            className="inline-block text-sm font-semibold text-red-600 hover:underline"
+          >
+            View Our Services →
+          </a>
+        </div>
 
         {/* BACK */}
         <div className="mt-14">

@@ -35,6 +35,7 @@ export const metadata: Metadata = {
 export default function FAQPage() {
   return (
     <main>
+
       {/* ===== FAQ SCHEMA (RICH RESULT GOOGLE) ===== */}
       <script
         type="application/ld+json"
@@ -54,7 +55,9 @@ export default function FAQPage() {
         }}
       />
 
+      {/* ===== CONTENT ===== */}
       <FAQ items={faqItems} />
+
     </main>
   )
 }

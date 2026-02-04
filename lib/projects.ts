@@ -1,6 +1,6 @@
 export type Project = {
   slug: string
-  image: string
+  images: string[]
   category: string
   title: string
   description: string
@@ -10,7 +10,7 @@ export type Project = {
 export const projects: Project[] = [
   {
     slug: "manufacturing-plant",
-    image: "/projects/civil.jpg",
+    images: ["/projects/civil.jpg"],
     category: "Industrial Facility",
     title: "Manufacturing Plant Construction",
     description:
@@ -19,7 +19,7 @@ export const projects: Project[] = [
   },
   {
     slug: "steel-structure",
-    image: [
+    images: [
       "/projects/steel.jpg",
       "/projects/steel/steel-1.jpg",
       "/projects/steel/steel-2.jpg",
@@ -33,7 +33,7 @@ export const projects: Project[] = [
   },
   {
     slug: "mep-integration",
-    image: "/projects/mep.jpg",
+    images: ["/projects/mep.jpg"],
     category: "MEP Systems",
     title: "Commercial Building MEP Integration",
     description:
@@ -42,7 +42,7 @@ export const projects: Project[] = [
   },
   {
     slug: "interior-fitout",
-    image: "/projects/interior.jpg",
+    images: ["/projects/interior.jpg"],
     category: "Interior Works",
     title: "Interior & Architectural Finishing",
     description:
@@ -51,7 +51,7 @@ export const projects: Project[] = [
   },
   {
     slug: "design-build",
-    image: "/projects/renovation.jpg",
+    images: ["/projects/renovation.jpg"],
     category: "Design & Build",
     title: "Design & Build Solutions",
     description:

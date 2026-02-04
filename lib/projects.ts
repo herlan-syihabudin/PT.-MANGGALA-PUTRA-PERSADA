@@ -15,6 +15,8 @@ export const projects: Project[] = [
       "/projects/civil-1.jpg",
       "/projects/civil-2.jpg",
       "/projects/civil-3.jpg",
+      "/projects/civil-4.jpg",
+      "/projects/civil-5.jpg",
     ],
     category: "Industrial Facility",
     title: "Manufacturing Plant Construction",
@@ -29,6 +31,8 @@ export const projects: Project[] = [
       "/projects/steel-1.jpg",
       "/projects/steel-2.jpg",
       "/projects/steel-3.jpg",
+      "/projects/steel-4.jpg",
+      "/projects/steel-5.jpg",
     ],
     category: "Steel Structure",
     title: "Steel Structure Engineering",
@@ -38,7 +42,14 @@ export const projects: Project[] = [
   },
   {
     slug: "mep-integration",
-    images: ["/projects/mep.jpg"],
+    images: [
+      "/projects/mep.jpg",
+      "/projects/mep-1.jpg",
+      "/projects/mep-2.jpg",
+      "/projects/mep-3.jpg",
+      "/projects/mep-4.jpg",
+      "/projects/mep-5.jpg",
+    ],
     category: "MEP Systems",
     title: "Commercial Building MEP Integration",
     description:
@@ -47,7 +58,14 @@ export const projects: Project[] = [
   },
   {
     slug: "interior-fitout",
-    images: ["/projects/interior.jpg"],
+    images: [
+      "/projects/interior.jpg",
+      "/projects/interior-1.jpg",
+      "/projects/interior-2.jpg",
+      "/projects/interior-3.jpg",
+      "/projects/interior-4.jpg",
+      "/projects/interior-5.jpg",
+    ],
     category: "Interior Works",
     title: "Interior & Architectural Finishing",
     description:
@@ -56,7 +74,14 @@ export const projects: Project[] = [
   },
   {
     slug: "design-build",
-    images: ["/projects/renovation.jpg"],
+    images: [
+      "/projects/renovation.jpg",
+      "/projects/renovation-1.jpg",
+      "/projects/renovation-2.jpg",
+      "/projects/renovation-3.jpg",
+      "/projects/renovation-4.jpg",
+      "/projects/renovation-5.jpg",
+            ],
     category: "Design & Build",
     title: "Design & Build Solutions",
     description:

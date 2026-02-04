@@ -1,5 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
+import ServiceFAQ from "@/components/ServiceFAQ"
+import { faqByService } from "@/lib/faq-layanan"
 
 export default function DesignBuildPage() {
   return (
@@ -208,6 +210,30 @@ export default function DesignBuildPage() {
 
         </aside>
       </div>
+      {/* ===== FAQ SCHEMA : DESIGN & BUILD ===== */}
+<script
+  type="application/ld+json"
+  dangerouslySetInnerHTML={{
+    __html: JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqByService["design-build"].map((item) => ({
+        "@type": "Question",
+        name: item.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: item.answer,
+        },
+      })),
+    }),
+  }}
+/>
+
+{/* ===== FAQ SECTION ===== */}
+<ServiceFAQ
+  title="Frequently Asked Questions – Design & Build Construction"
+  items={faqByService["design-build"]}
+/>
     </section>
   )
 }

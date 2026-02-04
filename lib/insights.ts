@@ -5,6 +5,7 @@ export type Insight = {
   excerpt: string
   content: string
   publishedAt: string
+  author?: string
 }
 
 export const insights: Insight[] = [

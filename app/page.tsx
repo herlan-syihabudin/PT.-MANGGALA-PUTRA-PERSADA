@@ -8,23 +8,38 @@ import Partners from "@/components/Partners"
 import { WhyChooseUs } from "@/components/WhyChooseUs"
 import { ProjectOutcome } from "@/components/ProjectOutcome"
 
-
 export const metadata: Metadata = {
-  title: "Engineering & Structured Construction | PT Manggala Putra Persada",
+  title:
+    "Engineering-Led Construction Contractor Indonesia | PT Manggala Putra Persada",
   description:
-    "Solusi engineering dan konstruksi terstruktur untuk proyek industri, pabrik, dan perumahan dengan pendekatan profesional dan pengendalian mutu.",
+    "PT Manggala Putra Persada (MPP Engineering) is an engineering-led construction contractor in Indonesia providing steel structure, civil construction, MEP systems, and design & build services for industrial and commercial projects.",
 }
 
 export default function Home() {
   return (
     <>
+      {/* 
+        IMPORTANT SEO NOTE:
+        H1 WAJIB ADA DI DALAM KOMPONEN <Hero />
+        DAN HARUS MENGANDUNG KEYWORD UTAMA
+      */}
       <Hero />
+
+      {/* Internal linking power */}
       <Services />
+
+      {/* Trust & authority signals */}
       <WhyChooseUs />
       <ProjectOutcome />
+
+      {/* Proof of execution */}
       <Projects />
       <Partners />
+
+      {/* Search intent support */}
       <FAQ />
+
+      {/* Conversion */}
       <CTA />
     </>
   )

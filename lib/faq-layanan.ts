@@ -27,16 +27,34 @@ export const faqByService: Record<string, FAQItem[]> = {
     },
   ],
 
-  "mep": [
+  /* =====================
+     MEP FAQ
+  ===================== */
+  mep: [
     {
-      question: "Apa saja sistem yang termasuk pekerjaan MEP?",
+      question: "Apa saja lingkup pekerjaan MEP yang ditangani?",
       answer:
-        "Pekerjaan MEP mencakup sistem mekanikal (HVAC & piping), elektrikal (daya, panel, lighting), plumbing, serta sistem proteksi kebakaran.",
+        "Lingkup pekerjaan MEP meliputi sistem Mechanical (HVAC & piping), Electrical (LV/MV, panel, lighting), serta Plumbing & Fire Protection untuk proyek industri dan komersial.",
     },
     {
-      question: "Apakah MEP dikerjakan terkoordinasi dengan struktur dan arsitektur?",
+      question: "Apakah pekerjaan MEP terkoordinasi dengan struktur dan arsitektur?",
       answer:
-        "Ya. Seluruh pekerjaan MEP dikoordinasikan secara engineering dengan struktur dan arsitektur untuk menghindari clash dan memastikan instalasi berjalan efisien.",
+        "Ya. Seluruh pekerjaan MEP dikoordinasikan secara engineering dengan struktur dan arsitektur untuk menghindari clash dan memastikan instalasi yang rapi serta fungsional.",
+    },
+    {
+      question: "Apakah tersedia pekerjaan testing dan commissioning?",
+      answer:
+        "Kami melaksanakan testing, commissioning, dan performance verification sebelum handover untuk memastikan sistem bekerja sesuai desain dan spesifikasi.",
+    },
+    {
+      question: "Apakah MEP mencakup sistem fire protection?",
+      answer:
+        "Ya. Kami menangani fire hydrant, sprinkler, fire pump, dan sistem proteksi kebakaran sesuai standar teknis dan regulasi yang berlaku.",
+    },
+    {
+      question: "Proyek apa saja yang cocok untuk layanan MEP?",
+      answer:
+        "Layanan MEP cocok untuk pabrik, gudang, gedung perkantoran, bangunan komersial, dan fasilitas utilitas pendukung.",
     },
   ],
 }

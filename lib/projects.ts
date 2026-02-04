@@ -21,9 +21,9 @@ export const projects: Project[] = [
     slug: "steel-structure",
     images: [
       "/projects/steel.jpg",
-      "/projects/steel/steel-1.jpg",
-      "/projects/steel/steel-2.jpg",
-      "/projects/steel/steel-3.jpg",
+      "/projects/steel-1.jpg",
+      "/projects/steel-2.jpg",
+      "/projects/steel-3.jpg",
     ],
     category: "Steel Structure",
     title: "Steel Structure Engineering",

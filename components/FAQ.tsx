@@ -1,10 +1,10 @@
-import type { FAQItem } from "@/lib/faq"
+import { faqItems, FAQItem } from "@/lib/faq"
 
 type FAQProps = {
-  items: FAQItem[]
+  items?: FAQItem[]
 }
 
-export default function FAQ({ items }: FAQProps) {
+export default function FAQ({ items = faqItems }: FAQProps) {
   return (
     <section className="py-24 bg-gray-50">
       <div className="max-w-5xl mx-auto px-6">

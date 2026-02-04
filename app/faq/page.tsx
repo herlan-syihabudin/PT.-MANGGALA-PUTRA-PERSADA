@@ -5,13 +5,12 @@ import { faqItems } from "@/lib/faq"
 export const metadata: Metadata = {
   title: "FAQ Konstruksi & Engineering | PT Manggala Putra Persada",
   description:
-    "Pertanyaan yang sering diajukan seputar jasa konstruksi dan engineering PT Manggala Putra Persada, meliputi jenis proyek, standar kerja, sistem pelaporan, dan proses kerja sama.",
+    "Pertanyaan yang sering diajukan seputar jasa konstruksi dan engineering PT Manggala Putra Persada, mencakup proyek industri, struktur baja, MEP, dan sistem kerja.",
   keywords: [
     "FAQ kontraktor",
+    "kontraktor industri indonesia",
     "jasa konstruksi",
     "engineering dan konstruksi",
-    "pertanyaan kontraktor",
-    "kontraktor industri indonesia",
     "kontraktor struktur baja",
     "kontraktor MEP",
   ],
@@ -21,7 +20,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "FAQ Konstruksi & Engineering | PT Manggala Putra Persada",
     description:
-      "Jawaban lengkap seputar layanan konstruksi, engineering, struktur baja, MEP, dan sistem kerja PT Manggala Putra Persada.",
+      "Jawaban lengkap seputar layanan konstruksi, engineering, struktur baja, dan MEP di Indonesia.",
     url: "https://pt-manggala-putra-persada.vercel.app/faq",
     siteName: "PT Manggala Putra Persada",
     type: "article",
@@ -34,9 +33,9 @@ export const metadata: Metadata = {
 
 export default function FAQPage() {
   return (
-    <main className="py-24 bg-white">
+    <main className="py-24 bg-gray-50">
 
-      {/* ===== SCHEMA SEO : FAQ PAGE (AUTO) ===== */}
+      {/* ===== FAQ SCHEMA (AUTO FROM DATA) ===== */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -55,7 +54,6 @@ export default function FAQPage() {
         }}
       />
 
-      {/* ===== PAGE CONTENT ===== */}
       <div className="max-w-5xl mx-auto px-6">
         <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 mb-6">
           Frequently Asked Questions
@@ -63,8 +61,7 @@ export default function FAQPage() {
 
         <p className="text-lg text-gray-600 mb-14 max-w-3xl">
           Temukan jawaban atas pertanyaan umum seputar layanan konstruksi dan
-          engineering kami, mulai dari jenis proyek, sistem kerja, hingga
-          standar kualitas dan pelaporan.
+          engineering PT Manggala Putra Persada.
         </p>
 
         <FAQ items={faqItems} />

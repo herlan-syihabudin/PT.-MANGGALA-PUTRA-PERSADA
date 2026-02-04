@@ -2,210 +2,155 @@ import Link from "next/link"
 import Image from "next/image"
 
 export default function MEPPage() {
+  const faqs = [
+    {
+      question: "Apa saja lingkup pekerjaan MEP yang ditangani?",
+      answer:
+        "Lingkup pekerjaan MEP meliputi sistem Mechanical (HVAC & piping), Electrical (panel, distribusi daya, lighting), serta Plumbing & Fire Protection untuk proyek industri dan komersial.",
+    },
+    {
+      question: "Apakah pekerjaan MEP terkoordinasi dengan struktur dan arsitektur?",
+      answer:
+        "Ya. Seluruh pekerjaan MEP dikoordinasikan secara engineering dengan struktur dan arsitektur untuk menghindari clash serta memastikan instalasi rapi dan fungsional.",
+    },
+    {
+      question: "Apakah PT Manggala Putra Persada menangani HVAC industri?",
+      answer:
+        "Kami menangani sistem HVAC industri seperti VRV/VRF, chilled water, AHU, ventilation, dan exhaust system sesuai kebutuhan operasional bangunan.",
+    },
+    {
+      question: "Apakah tersedia pekerjaan testing dan commissioning?",
+      answer:
+        "Ya. Seluruh sistem MEP melalui proses testing, commissioning, dan performance verification sebelum handover proyek.",
+    },
+    {
+      question: "Apakah layanan MEP mencakup sistem fire protection?",
+      answer:
+        "Layanan MEP mencakup fire hydrant, sprinkler, fire pump, dan sistem proteksi kebakaran sesuai standar teknis dan regulasi yang berlaku.",
+    },
+  ]
+
   return (
     <section className="bg-white">
-      {/* ===== SCHEMA SEO: MEP ENGINEERING SERVICE ===== */}
-<script
-  type="application/ld+json"
-  dangerouslySetInnerHTML={{
-    __html: JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "Service",
-      "@id": "https://pt-manggala-putra-persada.vercel.app/layanan/mep#service",
-      name: "Mechanical, Electrical & Plumbing (MEP) Engineering Services",
-      description:
-        "Professional Mechanical, Electrical, and Plumbing (MEP) engineering and installation services in Indonesia for industrial, commercial, and building projects, delivered with coordinated design, safe execution, and full compliance with technical standards.",
-      provider: {
-        "@type": "Organization",
-        name: "PT Manggala Putra Persada",
-        alternateName: "MPP Engineering",
-        url: "https://pt-manggala-putra-persada.vercel.app",
-      },
-      areaServed: {
-        "@type": "Country",
-        name: "Indonesia",
-      },
-      serviceType: [
-        "MEP Engineering Contractor",
-        "Mechanical Electrical Plumbing Contractor",
-        "HVAC Engineering Services",
-        "Fire Protection System Contractor",
-        "Building Services Engineering",
-      ],
-      hasOfferCatalog: {
-        "@type": "OfferCatalog",
-        name: "MEP Engineering Services Scope",
-        itemListElement: [
-          {
-            "@type": "Offer",
-            itemOffered: {
-              "@type": "Service",
-              name: "HVAC Systems (Split, VRV/VRF, Chilled Water)",
+      {/* ===== SCHEMA SEO: SERVICE ===== */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Service",
+            "@id":
+              "https://pt-manggala-putra-persada.vercel.app/layanan/mep#service",
+            name: "Mechanical, Electrical & Plumbing (MEP) Engineering Services",
+            description:
+              "Professional Mechanical, Electrical, and Plumbing (MEP) engineering and installation services in Indonesia for industrial and commercial projects.",
+            provider: {
+              "@type": "Organization",
+              name: "PT Manggala Putra Persada",
+              url: "https://pt-manggala-putra-persada.vercel.app",
             },
-          },
-          {
-            "@type": "Offer",
-            itemOffered: {
-              "@type": "Service",
-              name: "Electrical Power Distribution & Lighting Systems",
-            },
-          },
-          {
-            "@type": "Offer",
-            itemOffered: {
-              "@type": "Service",
-              name: "Plumbing & Sanitary Systems",
-            },
-          },
-          {
-            "@type": "Offer",
-            itemOffered: {
-              "@type": "Service",
-              name: "Fire Protection Systems (Hydrant & Sprinkler)",
-            },
-          },
-          {
-            "@type": "Offer",
-            itemOffered: {
-              "@type": "Service",
-              name: "Testing, Commissioning & System Handover",
-            },
-          },
-        ],
-      },
-      url: "https://pt-manggala-putra-persada.vercel.app/layanan/mep",
-    }),
-  }}
-/>
+            areaServed: { "@type": "Country", name: "Indonesia" },
+            serviceType: [
+              "MEP Contractor",
+              "HVAC Contractor",
+              "Electrical Contractor",
+              "Plumbing & Fire Protection Contractor",
+            ],
+          }),
+        }}
+      />
+
+      {/* ===== SCHEMA SEO: FAQ ===== */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: faqs.map((f) => ({
+              "@type": "Question",
+              name: f.question,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: f.answer,
+              },
+            })),
+          }),
+        }}
+      />
 
       {/* HERO */}
       <div className="bg-gray-50 border-b">
         <div className="max-w-7xl mx-auto px-6 py-20 md:py-24 grid md:grid-cols-2 gap-12 items-center">
-
-          {/* TEXT */}
           <div>
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900">
               Mechanical, Electrical & Plumbing (MEP) Engineering
             </h1>
             <p className="mt-6 text-lg text-gray-600 max-w-2xl">
               Professional MEP engineering and installation services for
-              industrial, commercial, and building projects in Indonesia,
-              delivered with coordinated design, safe execution, and
-              full compliance with technical standards.
+              industrial and commercial projects in Indonesia, delivered with
+              coordinated design and strict technical compliance.
             </p>
           </div>
 
-          {/* IMAGE */}
           <div className="relative h-[240px] md:h-[320px] rounded-2xl overflow-hidden bg-gray-200">
             <Image
               src="/projects/mep-hero.jpg"
-              alt="Mechanical Electrical Plumbing MEP contractor for industrial and commercial buildings in Indonesia"
+              alt="MEP contractor for industrial and commercial buildings in Indonesia"
               fill
               priority
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover"
             />
           </div>
-
         </div>
       </div>
 
       {/* CONTENT */}
       <div className="max-w-7xl mx-auto px-6 py-24 grid md:grid-cols-3 gap-12">
-
-        {/* MAIN */}
         <div className="md:col-span-2 space-y-10">
-
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">
-              MEP Scope of Work
-            </h2>
-            <p className="text-gray-700 leading-relaxed">
-              Our Mechanical, Electrical, and Plumbing services include
-              engineering coordination, installation, testing, and
-              commissioning of building systems to ensure safety,
-              functionality, energy efficiency, and long-term reliability.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">
-              Mechanical Systems (HVAC & Piping)
-            </h2>
-            <ul className="list-disc pl-5 space-y-2 text-gray-700">
-              <li>HVAC systems (Split, VRV / VRF, Chilled Water)</li>
-              <li>Ventilation and exhaust systems</li>
-              <li>Industrial air handling units (AHU)</li>
-              <li>Mechanical equipment installation & piping</li>
-            </ul>
-          </div>
-
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">
-              Electrical Systems
-            </h2>
-            <ul className="list-disc pl-5 space-y-2 text-gray-700">
-              <li>Medium & low voltage electrical installation</li>
-              <li>Main distribution panel & sub-distribution panels</li>
-              <li>Lighting systems & power outlets</li>
-              <li>Grounding & lightning protection</li>
-              <li>Backup power systems (genset & UPS)</li>
-            </ul>
-          </div>
-
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">
-              Plumbing & Fire Protection Systems
-            </h2>
-            <ul className="list-disc pl-5 space-y-2 text-gray-700">
-              <li>Clean water & wastewater systems</li>
-              <li>Storm water drainage systems</li>
-              <li>Fire hydrant & sprinkler systems</li>
-              <li>Fire pump and water storage systems</li>
-              <li>Testing & commissioning of fire systems</li>
-            </ul>
-          </div>
-
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">
-              Engineering Coordination & Commissioning
-            </h2>
-            <p className="text-gray-700 leading-relaxed">
-              All MEP works are closely coordinated with architectural and
-              structural elements to avoid clashes and ensure smooth
-              installation. Systems are tested and commissioned before
-              handover to verify performance and compliance with project
-              requirements.
-            </p>
-          </div>
-
+          <h2 className="text-2xl font-semibold text-gray-900">
+            MEP Scope of Work
+          </h2>
+          <p className="text-gray-700 leading-relaxed">
+            Our MEP services include engineering coordination, installation,
+            testing, and commissioning of mechanical, electrical, plumbing, and
+            fire protection systems to ensure safety, efficiency, and long-term
+            reliability.
+          </p>
         </div>
 
-        {/* SIDEBAR */}
         <aside className="space-y-8">
-
-          <div className="border rounded-xl p-6">
-            <h3 className="font-semibold text-gray-900 mb-3">
-              Typical Applications
-            </h3>
-            <ul className="space-y-2 text-sm text-gray-700">
-              <li>Industrial plants & factories</li>
-              <li>Commercial buildings & offices</li>
-              <li>Warehouses & logistics centers</li>
-              <li>Residential & mixed-use buildings</li>
-              <li>Utility & support facilities</li>
-            </ul>
-          </div>
-
           <Link
             href="/kontak"
             className="block text-center bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition"
           >
             Konsultasi Proyek MEP
           </Link>
-
         </aside>
       </div>
+
+      {/* ===== FAQ UI ===== */}
+      <section className="py-24 bg-gray-50">
+        <div className="max-w-5xl mx-auto px-6">
+          <h2 className="text-3xl font-extrabold mb-10 text-gray-900">
+            Frequently Asked Questions
+          </h2>
+
+          <div className="space-y-6">
+            {faqs.map((item, i) => (
+              <div key={i} className="border rounded-xl p-6 bg-white">
+                <h3 className="font-semibold text-gray-900 mb-2">
+                  {item.question}
+                </h3>
+                <p className="text-gray-700 leading-relaxed">
+                  {item.answer}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </section>
   )
 }

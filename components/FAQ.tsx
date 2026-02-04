@@ -8,9 +8,9 @@ export default function FAQ({ items }: FAQProps) {
   return (
     <section className="py-24 bg-gray-50">
       <div className="max-w-5xl mx-auto px-6">
-        <h1 className="text-3xl font-extrabold mb-10 text-gray-900">
+        <h2 className="text-3xl font-extrabold mb-10 text-gray-900">
           Pertanyaan yang Sering Diajukan
-        </h1>
+        </h2>
 
         <div className="space-y-6">
           {items.map((item, i) => (
@@ -18,9 +18,9 @@ export default function FAQ({ items }: FAQProps) {
               key={i}
               className="border border-gray-200 rounded-xl p-6 bg-white"
             >
-              <h2 className="font-semibold text-gray-900 mb-2">
+              <h3 className="font-semibold text-gray-900 mb-2">
                 {item.question}
-              </h2>
+              </h3>
               <p className="text-gray-700 leading-relaxed">
                 {item.answer}
               </p>

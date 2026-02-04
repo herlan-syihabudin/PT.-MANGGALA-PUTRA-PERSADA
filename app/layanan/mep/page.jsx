@@ -1,28 +1,51 @@
 import Link from "next/link"
+import Image from "next/image"
 
 export default function MEPPage() {
   return (
     <section className="bg-white">
-      {/* HERO */}
+
+      {/* ======================
+          HERO SECTION
+      ====================== */}
       <div className="bg-gray-50 border-b">
-        <div className="max-w-7xl mx-auto px-6 py-24">
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 max-w-3xl">
-            Mechanical, Electrical & Plumbing (MEP) Systems
-          </h1>
-          <p className="mt-6 text-lg text-gray-600 max-w-3xl">
-            Integrated MEP engineering and installation services for industrial,
-            commercial, and building projects, delivered with coordinated
-            design, reliable execution, and full compliance with safety and
-            technical standards.
-          </p>
+        <div className="max-w-7xl mx-auto px-6 py-20 md:py-24 grid md:grid-cols-2 gap-12 items-center">
+
+          {/* LEFT: TEXT */}
+          <div>
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900">
+              Mechanical, Electrical & Plumbing (MEP) Systems
+            </h1>
+            <p className="mt-6 text-lg text-gray-600 max-w-2xl">
+              Integrated MEP engineering and installation services for industrial,
+              commercial, and building projects, delivered with coordinated
+              design, reliable execution, and full compliance with safety and
+              technical standards.
+            </p>
+          </div>
+
+          {/* RIGHT: IMAGE */}
+          <div className="relative h-[240px] md:h-[320px] rounded-2xl overflow-hidden bg-gray-200">
+            <Image
+              src="/projects/mep-hero.jpg"
+              alt="MEP Systems Engineering"
+              fill
+              priority
+              className="object-cover"
+            />
+          </div>
+
         </div>
       </div>
 
-      {/* CONTENT */}
+      {/* ======================
+          CONTENT SECTION
+      ====================== */}
       <div className="max-w-7xl mx-auto px-6 py-24 grid md:grid-cols-3 gap-12">
 
         {/* MAIN CONTENT */}
         <div className="md:col-span-2 space-y-10">
+
           <div>
             <h2 className="text-2xl font-semibold text-gray-900 mb-3">
               Scope of Work
@@ -84,10 +107,14 @@ export default function MEPPage() {
               performance and compliance with project requirements.
             </p>
           </div>
+
         </div>
 
-        {/* SIDEBAR */}
+        {/* ======================
+            SIDEBAR
+        ====================== */}
         <aside className="space-y-8">
+
           <div className="border rounded-xl p-6">
             <h4 className="font-semibold text-gray-900 mb-3">
               Typical Applications
@@ -120,6 +147,7 @@ export default function MEPPage() {
           >
             Konsultasi Proyek MEP
           </Link>
+
         </aside>
       </div>
     </section>

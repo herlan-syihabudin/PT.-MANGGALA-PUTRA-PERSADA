@@ -10,7 +10,12 @@ export type Project = {
 export const projects: Project[] = [
   {
     slug: "manufacturing-plant",
-    images: ["/projects/civil.jpg"],
+    images: [
+      "/projects/civil.jpg",
+      "/projects/civil-1.jpg",
+      "/projects/civil-2.jpg",
+      "/projects/civil-3.jpg",
+    ],
     category: "Industrial Facility",
     title: "Manufacturing Plant Construction",
     description:

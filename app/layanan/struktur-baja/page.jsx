@@ -4,6 +4,79 @@ import Image from "next/image"
 export default function StrukturBajaPage() {
   return (
     <section className="bg-white">
+      {/* ===== SCHEMA SEO: STEEL STRUCTURE ENGINEERING SERVICE ===== */}
+<script
+  type="application/ld+json"
+  dangerouslySetInnerHTML={{
+    __html: JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Service",
+      "@id": "https://pt-manggala-putra-persada.vercel.app/layanan/struktur-baja#service",
+      name: "Steel Structure Engineering & Construction Services",
+      description:
+        "Engineering-led steel structure fabrication and erection services in Indonesia for industrial, warehouse, and commercial projects, delivered with controlled execution, safety compliance, and strict quality standards.",
+      provider: {
+        "@type": "Organization",
+        name: "PT Manggala Putra Persada",
+        alternateName: "MPP Engineering",
+        url: "https://pt-manggala-putra-persada.vercel.app",
+      },
+      areaServed: {
+        "@type": "Country",
+        name: "Indonesia",
+      },
+      serviceType: [
+        "Steel Structure Contractor",
+        "Structural Steel Fabrication",
+        "Steel Erection Services",
+        "Industrial Steel Construction",
+        "Warehouse Steel Structure Contractor",
+      ],
+      hasOfferCatalog: {
+        "@type": "OfferCatalog",
+        name: "Steel Structure Services Scope",
+        itemListElement: [
+          {
+            "@type": "Offer",
+            itemOffered: {
+              "@type": "Service",
+              name: "Structural Steel Engineering & Shop Drawings",
+            },
+          },
+          {
+            "@type": "Offer",
+            itemOffered: {
+              "@type": "Service",
+              name: "Steel Fabrication (H-Beam, WF, Plate)",
+            },
+          },
+          {
+            "@type": "Offer",
+            itemOffered: {
+              "@type": "Service",
+              name: "Surface Treatment (Blasting & Coating System)",
+            },
+          },
+          {
+            "@type": "Offer",
+            itemOffered: {
+              "@type": "Service",
+              name: "Steel Erection, Alignment & Installation",
+            },
+          },
+          {
+            "@type": "Offer",
+            itemOffered: {
+              "@type": "Service",
+              name: "Bolting, Welding & As-Built Documentation",
+            },
+          },
+        ],
+      },
+      url: "https://pt-manggala-putra-persada.vercel.app/layanan/struktur-baja",
+    }),
+  }}
+/>
 
       {/* HERO */}
       <div className="bg-gray-50 border-b">

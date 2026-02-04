@@ -19,23 +19,26 @@ export default function Hero() {
             Engineering & Integrated Construction Solutions
           </span>
 
-          {/* HEADLINE */}
+          {/* ======================
+              PRIMARY SEO H1
+          ====================== */}
           <h1 className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight text-gray-900 max-w-xl">
-            Engineering-Led Integrated Construction
+            Engineering-Led Construction Contractor in Indonesia
             <span className="block mt-2 w-24 h-1 bg-gold rounded-full" />
           </h1>
 
-          {/* SUB HEADLINE */}
+          {/* SUB HEADLINE (SEO SUPPORT) */}
           <p className="mt-6 text-lg text-gray-700 font-medium max-w-xl">
-            Reliable Partner from Engineering Design to On-Site Execution
+            Steel Structure, Civil, MEP & Design-Build Services for Industrial Projects
           </p>
 
-          {/* DESCRIPTION */}
+          {/* DESCRIPTION (AUTHORITY CONTENT) */}
           <p className="mt-6 text-base text-gray-600 max-w-xl leading-relaxed">
-            PT Manggala Putra Persada is an engineering and construction company
-            in Indonesia providing integrated civil, steel structure, and MEP
-            solutions for industrial and commercial projects, delivered through
-            structured planning, quality control, and disciplined execution.
+            PT Manggala Putra Persada (MPP Engineering) is an engineering-led
+            construction contractor in Indonesia providing integrated civil,
+            steel structure, MEP, and design & build solutions for industrial
+            and commercial projects, delivered through structured planning,
+            quality control, and disciplined execution.
           </p>
 
           {/* CTA */}
@@ -79,7 +82,7 @@ export default function Hero() {
           <div className="relative w-full max-w-md aspect-[4/5] rounded-2xl overflow-hidden bg-gray-100 shadow-xl ring-1 ring-gold/40">
             <Image
               src="/images/hero-project.jpg"
-              alt="PT Manggala Putra Persada Engineering Project Indonesia"
+              alt="Engineering-led construction project in Indonesia by PT Manggala Putra Persada"
               fill
               priority
               className="object-cover grayscale-[30%] brightness-100 contrast-95"

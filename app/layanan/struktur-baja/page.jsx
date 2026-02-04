@@ -1,88 +1,49 @@
 import Link from "next/link"
 import Image from "next/image"
+import ServiceFAQ from "@/components/ServiceFAQ"
+import { faqByService } from "@/lib/faq-layanan"
 
 export default function StrukturBajaPage() {
+  const faqs = faqByService["struktur-baja"]
+
   return (
     <section className="bg-white">
-      {/* ===== SCHEMA SEO: STEEL STRUCTURE ENGINEERING SERVICE ===== */}
-<script
-  type="application/ld+json"
-  dangerouslySetInnerHTML={{
-    __html: JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "Service",
-      "@id": "https://pt-manggala-putra-persada.vercel.app/layanan/struktur-baja#service",
-      name: "Steel Structure Engineering & Construction Services",
-      description:
-        "Engineering-led steel structure fabrication and erection services in Indonesia for industrial, warehouse, and commercial projects, delivered with controlled execution, safety compliance, and strict quality standards.",
-      provider: {
-        "@type": "Organization",
-        name: "PT Manggala Putra Persada",
-        alternateName: "MPP Engineering",
-        url: "https://pt-manggala-putra-persada.vercel.app",
-      },
-      areaServed: {
-        "@type": "Country",
-        name: "Indonesia",
-      },
-      serviceType: [
-        "Steel Structure Contractor",
-        "Structural Steel Fabrication",
-        "Steel Erection Services",
-        "Industrial Steel Construction",
-        "Warehouse Steel Structure Contractor",
-      ],
-      hasOfferCatalog: {
-        "@type": "OfferCatalog",
-        name: "Steel Structure Services Scope",
-        itemListElement: [
-          {
-            "@type": "Offer",
-            itemOffered: {
-              "@type": "Service",
-              name: "Structural Steel Engineering & Shop Drawings",
+      {/* ===== SCHEMA SEO: STEEL STRUCTURE SERVICE ===== */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Service",
+            "@id":
+              "https://pt-manggala-putra-persada.vercel.app/layanan/struktur-baja#service",
+            name: "Steel Structure Engineering & Construction Services",
+            description:
+              "Engineering-led steel structure fabrication and erection services in Indonesia for industrial, warehouse, and commercial projects.",
+            provider: {
+              "@type": "Organization",
+              name: "PT Manggala Putra Persada",
+              url: "https://pt-manggala-putra-persada.vercel.app",
             },
-          },
-          {
-            "@type": "Offer",
-            itemOffered: {
-              "@type": "Service",
-              name: "Steel Fabrication (H-Beam, WF, Plate)",
+            areaServed: {
+              "@type": "Country",
+              name: "Indonesia",
             },
-          },
-          {
-            "@type": "Offer",
-            itemOffered: {
-              "@type": "Service",
-              name: "Surface Treatment (Blasting & Coating System)",
-            },
-          },
-          {
-            "@type": "Offer",
-            itemOffered: {
-              "@type": "Service",
-              name: "Steel Erection, Alignment & Installation",
-            },
-          },
-          {
-            "@type": "Offer",
-            itemOffered: {
-              "@type": "Service",
-              name: "Bolting, Welding & As-Built Documentation",
-            },
-          },
-        ],
-      },
-      url: "https://pt-manggala-putra-persada.vercel.app/layanan/struktur-baja",
-    }),
-  }}
-/>
+            serviceType: [
+              "Steel Structure Contractor",
+              "Structural Steel Fabrication",
+              "Steel Erection Services",
+              "Industrial Steel Construction",
+            ],
+            url:
+              "https://pt-manggala-putra-persada.vercel.app/layanan/struktur-baja",
+          }),
+        }}
+      />
 
       {/* HERO */}
       <div className="bg-gray-50 border-b">
         <div className="max-w-7xl mx-auto px-6 py-20 md:py-24 grid md:grid-cols-2 gap-12 items-center">
-
-          {/* TEXT */}
           <div>
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900">
               Steel Structure Engineering & Construction
@@ -94,7 +55,6 @@ export default function StrukturBajaPage() {
             </p>
           </div>
 
-          {/* IMAGE */}
           <div className="relative h-[240px] md:h-[320px] rounded-2xl overflow-hidden bg-gray-200">
             <Image
               src="/projects/steel-hero.jpg"
@@ -105,16 +65,12 @@ export default function StrukturBajaPage() {
               className="object-cover"
             />
           </div>
-
         </div>
       </div>
 
       {/* CONTENT */}
       <div className="max-w-7xl mx-auto px-6 py-24 grid md:grid-cols-3 gap-12">
-
-        {/* MAIN */}
         <div className="md:col-span-2 space-y-10">
-
           <div>
             <h2 className="text-2xl font-semibold text-gray-900 mb-3">
               Steel Structure Scope of Work
@@ -152,12 +108,9 @@ export default function StrukturBajaPage() {
               reliability.
             </p>
           </div>
-
         </div>
 
-        {/* SIDEBAR */}
         <aside className="space-y-8">
-
           <div className="border rounded-xl p-6">
             <h3 className="font-semibold text-gray-900 mb-3">
               Typical Applications
@@ -177,9 +130,30 @@ export default function StrukturBajaPage() {
           >
             Konsultasi Proyek Struktur Baja
           </Link>
-
         </aside>
       </div>
+
+      {/* ===== FAQ SECTION ===== */}
+      <ServiceFAQ items={faqs} />
+
+      {/* ===== FAQ SCHEMA (RICH RESULT) ===== */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: faqs.map((item) => ({
+              "@type": "Question",
+              name: item.question,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: item.answer,
+              },
+            })),
+          }),
+        }}
+      />
     </section>
   )
 }

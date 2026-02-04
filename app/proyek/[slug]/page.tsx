@@ -28,6 +28,7 @@ export async function generateMetadata(
       title: project.title,
       description: project.description,
       type: "article",
+      images: [project.images[0]], // ⬅️ OG pakai foto utama
     },
   }
 }
@@ -44,10 +45,10 @@ export default function ProjectDetailPage({ params }: Props) {
     <section className="py-24 bg-white">
       <div className="max-w-5xl mx-auto px-6">
 
-        {/* IMAGE */}
+        {/* HERO IMAGE */}
         <div className="mb-12 overflow-hidden rounded-2xl">
           <Image
-            src={project.image}
+            src={project.images[0]}
             alt={project.title}
             width={1200}
             height={600}
@@ -70,7 +71,7 @@ export default function ProjectDetailPage({ params }: Props) {
         </p>
 
         {/* DETAILS */}
-        <div className="grid md:grid-cols-2 gap-10 border-t pt-10">
+        <div className="grid md:grid-cols-2 gap-10 border-t pt-10 mb-16">
           <div>
             <h3 className="font-semibold text-gray-900 mb-2">
               Scope of Work
@@ -92,8 +93,30 @@ export default function ProjectDetailPage({ params }: Props) {
           </div>
         </div>
 
+        {/* PROJECT GALLERY */}
+        {project.images.length > 1 && (
+          <div className="mb-20">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              Project Gallery
+            </h2>
+
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {project.images.map((img, i) => (
+                <Image
+                  key={i}
+                  src={img}
+                  alt={`${project.title} ${i + 1}`}
+                  width={600}
+                  height={400}
+                  className="rounded-xl object-cover"
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* BACK LINK */}
-        <div className="mt-14">
+        <div>
           <a
             href="/proyek"
             className="text-sm font-semibold text-red-600 hover:underline"

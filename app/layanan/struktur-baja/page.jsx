@@ -4,18 +4,32 @@ export default function StrukturBajaPage() {
   return (
     <section className="bg-white">
       {/* HERO */}
-      <div className="bg-gray-50 border-b">
-        <div className="max-w-7xl mx-auto px-6 py-24">
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 max-w-3xl">
-            Steel Structure Engineering & Construction
-          </h1>
-          <p className="mt-6 text-lg text-gray-600 max-w-3xl">
-            Engineering-led steel structure solutions for industrial,
-            commercial, and warehouse projects, delivered with precise
-            fabrication, controlled erection, and strict quality assurance.
-          </p>
-        </div>
-      </div>
+<div className="bg-gray-50 border-b">
+  <div className="max-w-7xl mx-auto px-6 py-24 grid md:grid-cols-2 gap-12 items-center">
+    
+    {/* LEFT: TEXT */}
+    <div>
+      <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">
+        Steel Structure Engineering & Construction
+      </h1>
+      <p className="mt-6 text-lg text-gray-600">
+        Engineering-led steel structure solutions for industrial,
+        commercial, and warehouse projects, delivered with precise
+        fabrication, controlled erection, and strict quality assurance.
+      </p>
+    </div>
+
+    {/* RIGHT: IMAGE */}
+    <div className="relative h-[320px] rounded-2xl overflow-hidden">
+      <img
+        src="/projects/steel-hero.jpg"
+        alt="Steel Structure Engineering"
+        className="w-full h-full object-cover"
+      />
+    </div>
+
+  </div>
+</div>
 
       {/* CONTENT */}
       <div className="max-w-7xl mx-auto px-6 py-24 grid md:grid-cols-3 gap-12">

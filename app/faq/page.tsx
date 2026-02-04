@@ -5,14 +5,15 @@ import { faqItems } from "@/lib/faq"
 export const metadata: Metadata = {
   title: "FAQ Konstruksi & Engineering | PT Manggala Putra Persada",
   description:
-    "Pertanyaan yang sering diajukan seputar jasa konstruksi dan engineering PT Manggala Putra Persada, mencakup proyek industri, struktur baja, MEP, dan sistem kerja.",
+    "FAQ seputar jasa konstruksi dan engineering PT Manggala Putra Persada, meliputi proyek industri, struktur baja, MEP, design & build, quality control, dan sistem kerja.",
   keywords: [
     "FAQ kontraktor",
-    "kontraktor industri indonesia",
-    "jasa konstruksi",
+    "jasa konstruksi industri",
     "engineering dan konstruksi",
-    "kontraktor struktur baja",
+    "struktur baja indonesia",
     "kontraktor MEP",
+    "design and build indonesia",
+    "PT Manggala Putra Persada",
   ],
   alternates: {
     canonical: "https://pt-manggala-putra-persada.vercel.app/faq",
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "FAQ Konstruksi & Engineering | PT Manggala Putra Persada",
     description:
-      "Jawaban lengkap seputar layanan konstruksi, engineering, struktur baja, dan MEP di Indonesia.",
+      "Pertanyaan umum tentang layanan konstruksi dan engineering PT Manggala Putra Persada.",
     url: "https://pt-manggala-putra-persada.vercel.app/faq",
     siteName: "PT Manggala Putra Persada",
     type: "article",
@@ -33,9 +34,8 @@ export const metadata: Metadata = {
 
 export default function FAQPage() {
   return (
-    <main className="py-24 bg-gray-50">
-
-      {/* ===== FAQ SCHEMA (AUTO FROM DATA) ===== */}
+    <main>
+      {/* ===== FAQ SCHEMA (RICH RESULT GOOGLE) ===== */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -54,18 +54,7 @@ export default function FAQPage() {
         }}
       />
 
-      <div className="max-w-5xl mx-auto px-6">
-        <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 mb-6">
-          Frequently Asked Questions
-        </h1>
-
-        <p className="text-lg text-gray-600 mb-14 max-w-3xl">
-          Temukan jawaban atas pertanyaan umum seputar layanan konstruksi dan
-          engineering PT Manggala Putra Persada.
-        </p>
-
-        <FAQ items={faqItems} />
-      </div>
+      <FAQ items={faqItems} />
     </main>
   )
 }

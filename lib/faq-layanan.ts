@@ -21,12 +21,12 @@ export const faqByService: Record<string, FAQItem[]> = {
     {
       question: "Apakah pekerjaan struktur baja mengikuti standar SNI?",
       answer:
-        "Seluruh pekerjaan struktur baja kami mengikuti standar SNI serta praktik engineering internasional, termasuk kontrol fabrikasi, pengelasan, dan erection di lapangan.",
+        "Seluruh pekerjaan struktur baja kami mengikuti standar SNI serta praktik engineering internasional seesuai spesifikasi teknis proyek.",
     },
     {
       question: "Apakah termasuk fabrikasi dan erection di lokasi?",
       answer:
-        "Ya. Layanan struktur baja kami mencakup engineering detail, fabrikasi di workshop, surface treatment, hingga erection dan alignment di lokasi proyek.",
+        "Ya. Layanan struktur baja mencakup engineering detail, fabrikasi di workshop, surface treatment, hingga erection dan alignment di lokasi proyek.",
     },
   ],
 
@@ -37,12 +37,12 @@ export const faqByService: Record<string, FAQItem[]> = {
     {
       question: "Apa saja lingkup pekerjaan MEP yang ditangani?",
       answer:
-        "Lingkup pekerjaan MEP meliputi sistem Mechanical (HVAC & piping), Electrical (LV/MV, panel, lighting), serta Plumbing & Fire Protection untuk proyek industri dan komersial.",
+        "Lingkup pekerjaan MEP meliputi sistem Mechanical (HVAC & piping), Electrical (LV/MV, panel, lighting), serta Plumbing dan Fire Protection untuk proyek industri dan komersial.",
     },
     {
-      question: "Apakah pekerjaan MEP terkoordinasi dengan struktur dan arsitektur?",
+      question: "Apakah pekerjaan MEP dikoordinasikan dengan struktur dan arsitektur?",
       answer:
-        "Ya. Seluruh pekerjaan MEP dikoordinasikan secara engineering dengan struktur dan arsitektur untuk menghindari clash dan memastikan instalasi yang rapi serta fungsional.",
+        "Ya. Seluruh pekerjaan MEP dikoordinasikan secara engineering dengan struktur dan arsitektur untuk menghindari clash dan memastikan instalasi rapi serta fungsional.",
     },
     {
       question: "Apakah tersedia pekerjaan testing dan commissioning?",
@@ -52,12 +52,7 @@ export const faqByService: Record<string, FAQItem[]> = {
     {
       question: "Apakah MEP mencakup sistem fire protection?",
       answer:
-        "Ya. Kami menangani fire hydrant, sprinkler, fire pump, dan sistem proteksi kebakaran sesuai standar teknis dan regulasi yang berlaku.",
-    },
-    {
-      question: "Proyek apa saja yang cocok untuk layanan MEP?",
-      answer:
-        "Layanan MEP cocok untuk pabrik, gudang, gedung perkantoran, bangunan komersial, dan fasilitas utilitas pendukung.",
+        "Ya. Pekerjaan MEP mencakup fire hydrant, sprinkler, fire pump, dan sistem proteksi kebakaran sesuai standar teknis dan regulasi yang berlaku.",
     },
   ],
 
@@ -66,29 +61,24 @@ export const faqByService: Record<string, FAQItem[]> = {
   ===================== */
   "konstruksi-sipil": [
     {
-      question: "Apa saja lingkup pekerjaan konstruksi sipil yang ditangani?",
+      question: "Apa saja lingkup pekerjaan konstruksi sipil?",
       answer:
-        "Lingkup pekerjaan konstruksi sipil meliputi pekerjaan tanah, pondasi, struktur beton bertulang, slab, kolom, balok, retaining wall, hingga pekerjaan struktur pendukung bangunan.",
+        "Lingkup pekerjaan konstruksi sipil meliputi pekerjaan tanah, pondasi, struktur beton bertulang, slab, kolom, balok, retaining wall, serta struktur pendukung bangunan.",
     },
     {
-      question: "Apakah konstruksi sipil mencakup pekerjaan pondasi?",
+      question: "Apakah pekerjaan sipil mencakup pondasi?",
       answer:
         "Ya. Kami menangani pondasi dangkal dan pondasi dalam seperti footplate, pile cap, bore pile, dan tiang pancang sesuai kebutuhan struktur dan kondisi tanah.",
     },
     {
-      question: "Apakah pekerjaan konstruksi sipil mengikuti standar SNI?",
+      question: "Apakah konstruksi sipil mengikuti standar SNI?",
       answer:
-        "Seluruh pekerjaan konstruksi sipil dilaksanakan sesuai standar SNI, spesifikasi teknis proyek, dan metode kerja yang telah disetujui melalui engineering review.",
+        "Seluruh pekerjaan konstruksi sipil dilaksanakan sesuai standar SNI, spesifikasi teknis proyek, serta metode kerja yang telah melalui review engineering.",
     },
     {
       question: "Bagaimana sistem quality control pada pekerjaan sipil?",
       answer:
-        "Quality control dilakukan melalui inspection & test plan (ITP), pengawasan engineering, kontrol mutu material, serta pemeriksaan dimensi dan kekuatan struktur secara berkala.",
-    },
-    {
-      question: "Jenis proyek apa yang cocok untuk layanan konstruksi sipil?",
-      answer:
-        "Konstruksi sipil cocok untuk proyek industri, gedung komersial, perumahan, gudang, dan fasilitas pendukung infrastruktur.",
+        "Kontrol kualitas dilakukan melalui pengawasan engineering, persetujuan shop drawing, serta inspeksi material dan pekerjaan lapangan secara berkala.",
     },
   ],
 
@@ -97,49 +87,40 @@ export const faqByService: Record<string, FAQItem[]> = {
   ===================== */
   "design-build": [
     {
-      question: "Apa yang dimaksud dengan layanan design & build?",
+      question: "Apa yang dimaksud dengan sistem design & build?",
       answer:
-        "Design & build adalah metode pelaksanaan proyek di mana proses perencanaan desain dan konstruksi dilakukan secara terintegrasi oleh satu kontraktor.",
+        "Design & build adalah metode pelaksanaan proyek di mana proses desain dan konstruksi dikelola secara terintegrasi oleh satu kontraktor.",
     },
     {
-      question: "Apa keuntungan menggunakan sistem design & build?",
+      question: "Apa keuntungan menggunakan design & build?",
       answer:
-        "Keuntungan design & build meliputi koordinasi yang lebih baik, efisiensi biaya, waktu pelaksanaan lebih singkat, serta minim risiko perubahan desain saat konstruksi.",
-    },
-    {
-      question: "Apakah desain dikembangkan oleh tim engineering?",
-      answer:
-        "Ya. Desain dikembangkan oleh tim engineering dengan mempertimbangkan aspek teknis, fungsionalitas, efisiensi biaya, dan kemudahan pelaksanaan di lapangan.",
+        "Keuntungan design & build meliputi koordinasi lebih baik, efisiensi biaya, waktu pelaksanaan lebih singkat, serta risiko perubahan desain yang lebih rendah.",
     },
   ],
 
-    /* =====================
-     FIT OUT FAQ
+  /* =====================
+     FIT OUT
   ===================== */
   "fit-out": [
     {
-      question: "Apa yang dimaksud dengan pekerjaan fit out bangunan?",
+      question: "Apa yang dimaksud dengan pekerjaan fit out?",
       answer:
-        "Fit out adalah pekerjaan penyempurnaan interior bangunan setelah struktur utama selesai, mencakup partisi, ceiling, flooring, MEP interior, hingga finishing agar bangunan siap digunakan.",
+        "Fit out adalah pekerjaan penyempurnaan interior bangunan setelah struktur utama selesai, mencakup partisi, ceiling, flooring, MEP interior, dan finishing agar siap digunakan.",
     },
     {
       question: "Apakah layanan fit out mencakup kantor dan bangunan komersial?",
       answer:
-        "Ya. Layanan fit out kami mencakup kantor, showroom, retail, fasilitas komersial, hingga ruang operasional industri dengan pendekatan engineering-led.",
+        "Ya. Layanan fit out mencakup kantor, showroom, retail, dan fasilitas komersial dengan pendekatan engineering-led execution.",
     },
     {
-      question: "Apakah fit out sudah termasuk pekerjaan MEP interior?",
+      question: "Apakah fit out mencakup pekerjaan MEP interior?",
       answer:
-        "Termasuk. Fit out mencakup instalasi MEP interior seperti lighting, power outlet, data, AC, plumbing ringan, dan sistem pendukung ruang.",
+        "Ya. Fit out mencakup instalasi MEP interior seperti lighting, power outlet, data, AC, plumbing ringan, dan sistem pendukung ruang.",
     },
     {
-      question: "Apakah desain interior disediakan atau mengikuti dari klien?",
+      question: "Bagaimana kontrol kualitas pekerjaan fit out?",
       answer:
-        "Kami dapat bekerja berdasarkan desain dari klien maupun membantu penyempurnaan teknis desain agar sesuai dengan kondisi lapangan dan sistem bangunan.",
-    },
-    {
-      question: "Bagaimana kontrol kualitas pada pekerjaan fit out?",
-      answer:
-        "Kontrol kualitas dilakukan melalui pengawasan engineering, shop drawing approval, serta inspeksi material dan pekerjaan finishing agar hasil rapi, fungsional, dan tahan lama.",
+        "Kontrol kualitas dilakukan melalui pengawasan engineering, persetujuan shop drawing, serta inspeksi material dan pekerjaan finishing agar hasil rapi dan tahan lama.",
     },
   ],
+}

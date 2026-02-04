@@ -3,6 +3,91 @@ import Link from "next/link"
 export default function LayananPage() {
   return (
     <section className="py-28 bg-white">
+
+      {/* =========================
+          SCHEMA SEO – SERVICE HUB
+      ========================== */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: "Engineering & Construction Services",
+            description:
+              "Engineering-led construction services in Indonesia covering civil, structural, steel structure, MEP, fit-out, and design & build projects.",
+            url: "https://pt-manggala-putra-persada.vercel.app/layanan",
+            mainEntity: {
+              "@type": "ItemList",
+              itemListElement: [
+                {
+                  "@type": "ListItem",
+                  position: 1,
+                  name: "Civil & Structural Construction",
+                  url: "https://pt-manggala-putra-persada.vercel.app/layanan/konstruksi-sipil",
+                },
+                {
+                  "@type": "ListItem",
+                  position: 2,
+                  name: "Steel Structure Engineering",
+                  url: "https://pt-manggala-putra-persada.vercel.app/layanan/struktur-baja",
+                },
+                {
+                  "@type": "ListItem",
+                  position: 3,
+                  name: "Mechanical Electrical Plumbing (MEP)",
+                  url: "https://pt-manggala-putra-persada.vercel.app/layanan/mep",
+                },
+                {
+                  "@type": "ListItem",
+                  position: 4,
+                  name: "Interior & Fit-Out Services",
+                  url: "https://pt-manggala-putra-persada.vercel.app/layanan/fit-out",
+                },
+                {
+                  "@type": "ListItem",
+                  position: 5,
+                  name: "Design & Build Construction",
+                  url: "https://pt-manggala-putra-persada.vercel.app/layanan/design-build",
+                },
+              ],
+            },
+            provider: {
+              "@type": "Organization",
+              name: "PT Manggala Putra Persada",
+              url: "https://pt-manggala-putra-persada.vercel.app",
+            },
+          }),
+        }}
+      />
+
+      {/* =========================
+          BREADCRUMB SCHEMA
+      ========================== */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              {
+                "@type": "ListItem",
+                position: 1,
+                name: "Home",
+                item: "https://pt-manggala-putra-persada.vercel.app",
+              },
+              {
+                "@type": "ListItem",
+                position: 2,
+                name: "Services",
+                item: "https://pt-manggala-putra-persada.vercel.app/layanan",
+              },
+            ],
+          }),
+        }}
+      />
+
       <div className="max-w-7xl mx-auto px-6">
 
         {/* SECTION TITLE */}
@@ -45,11 +130,6 @@ export default function LayananPage() {
               desc: "Integrated engineering, construction, and execution.",
               link: "/layanan/design-build",
             },
-            {
-              title: "Renovation & Maintenance",
-              desc: "Building renovation and asset maintenance services.",
-              link: "/layanan/renovation",
-            },
           ].map((item) => (
             <Link
               key={item.title}
@@ -59,72 +139,12 @@ export default function LayananPage() {
               <h3 className="text-lg font-semibold text-gray-900 group-hover:text-red-600 transition">
                 {item.title}
               </h3>
-              <p className="mt-2 text-sm text-gray-600">
-                {item.desc}
-              </p>
+              <p className="mt-2 text-sm text-gray-600">{item.desc}</p>
               <span className="mt-4 inline-block text-sm font-semibold text-red-600">
                 View Details →
               </span>
             </Link>
           ))}
-        </div>
-
-        {/* DETAILED SERVICES */}
-        <div className="grid gap-12 md:grid-cols-2">
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">
-              Civil & Structural Construction
-            </h2>
-            <p className="text-gray-700 leading-relaxed">
-              Execution of civil and structural works with a focus on structural
-              strength, stability, and compliance with approved drawings,
-              specifications, and engineering standards.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">
-              Steel Structure Engineering
-            </h2>
-            <p className="text-gray-700 leading-relaxed">
-              Fabrication and erection of steel structures for factories,
-              warehouses, and industrial facilities with precise engineering
-              calculations and measurable quality control.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">
-              MEP Systems (Mechanical, Electrical & Plumbing)
-            </h2>
-            <p className="text-gray-700 leading-relaxed">
-              Engineering and installation of integrated MEP systems, including
-              electrical, plumbing, HVAC, and fire protection, in compliance
-              with safety regulations and technical standards.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">
-              Interior & Fit-Out Works
-            </h2>
-            <p className="text-gray-700 leading-relaxed">
-              Interior and fit-out services for offices, residential units, and
-              production facilities with attention to space function, material
-              quality, and clean finishing results.
-            </p>
-          </div>
-
-          <div className="md:col-span-2">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">
-              Renovation & Maintenance
-            </h2>
-            <p className="text-gray-700 leading-relaxed max-w-3xl">
-              Renovation and maintenance services for buildings and supporting
-              systems to maintain performance, safety, and asset lifespan
-              through structured maintenance planning.
-            </p>
-          </div>
         </div>
 
         {/* CTA */}

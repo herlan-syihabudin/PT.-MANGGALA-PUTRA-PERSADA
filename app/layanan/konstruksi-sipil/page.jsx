@@ -1,5 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
+import ServiceFAQ from "@/components/ServiceFAQ"
+import { faqByService } from "@/lib/faq-layanan"
 
 export default function KonstruksiSipilPage() {
   return (
@@ -196,6 +198,30 @@ export default function KonstruksiSipilPage() {
 
         </aside>
       </div>
+
+          {/* ===== FAQ CIVIL & STRUCTURAL (SEO + UX) ===== */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: faqByService["konstruksi-sipil"].map((item) => ({
+              "@type": "Question",
+              name: item.question,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: item.answer,
+              },
+            })),
+          }),
+        }}
+      />
+
+      <ServiceFAQ
+        title="FAQ Konstruksi Sipil & Struktur"
+        items={faqByService["konstruksi-sipil"]}
+      />
     </section>
   )
 }

@@ -1,27 +1,50 @@
 import Link from "next/link"
+import Image from "next/image"
 
 export default function KonstruksiSipilPage() {
   return (
     <section className="bg-white">
-      {/* HERO */}
+
+      {/* ======================
+          HERO SECTION
+      ====================== */}
       <div className="bg-gray-50 border-b">
-        <div className="max-w-7xl mx-auto px-6 py-24">
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 max-w-3xl">
-            Civil & Structural Construction
-          </h1>
-          <p className="mt-6 text-lg text-gray-600 max-w-3xl">
-            Engineering-led civil and structural construction services for
-            industrial, commercial, and residential projects, delivered with
-            strict quality control, safety compliance, and on-time execution.
-          </p>
+        <div className="max-w-7xl mx-auto px-6 py-20 md:py-24 grid md:grid-cols-2 gap-12 items-center">
+
+          {/* LEFT: TEXT */}
+          <div>
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900">
+              Civil & Structural Construction
+            </h1>
+            <p className="mt-6 text-lg text-gray-600 max-w-2xl">
+              Engineering-led civil and structural construction services for
+              industrial, commercial, and residential projects, delivered with
+              strict quality control, safety compliance, and on-time execution.
+            </p>
+          </div>
+
+          {/* RIGHT: IMAGE */}
+          <div className="relative h-[240px] md:h-[320px] rounded-2xl overflow-hidden bg-gray-200">
+            <Image
+              src="/projects/civil-hero.jpg"
+              alt="Civil & Structural Construction"
+              fill
+              priority
+              className="object-cover"
+            />
+          </div>
+
         </div>
       </div>
 
-      {/* CONTENT */}
+      {/* ======================
+          CONTENT SECTION
+      ====================== */}
       <div className="max-w-7xl mx-auto px-6 py-24 grid md:grid-cols-3 gap-12">
         
-        {/* MAIN */}
-        <div className="md:col-span-2 space-y-8">
+        {/* MAIN CONTENT */}
+        <div className="md:col-span-2 space-y-10">
+
           <div>
             <h2 className="text-2xl font-semibold text-gray-900 mb-3">
               Scope of Work
@@ -60,10 +83,14 @@ export default function KonstruksiSipilPage() {
               durability throughout the project lifecycle.
             </p>
           </div>
+
         </div>
 
-        {/* SIDEBAR */}
+        {/* ======================
+            SIDEBAR
+        ====================== */}
         <aside className="space-y-8">
+
           <div className="border rounded-xl p-6">
             <h4 className="font-semibold text-gray-900 mb-3">
               Project Types
@@ -96,6 +123,7 @@ export default function KonstruksiSipilPage() {
           >
             Konsultasi Proyek Sipil
           </Link>
+
         </aside>
       </div>
     </section>

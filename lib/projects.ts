@@ -19,7 +19,12 @@ export const projects: Project[] = [
   },
   {
     slug: "steel-structure",
-    image: "/projects/steel.jpg",
+    image: [
+      "/projects/steel.jpg",
+      "/projects/steel/steel-1.jpg",
+      "/projects/steel/steel-2.jpg",
+      "/projects/steel/steel-3.jpg",
+    ],
     category: "Steel Structure",
     title: "Steel Structure Engineering",
     description:

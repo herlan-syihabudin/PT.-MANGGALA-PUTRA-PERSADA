@@ -5,24 +5,45 @@ import WhatsAppFloat from "@/components/WhatsAppFloat"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "PT Manggala Putra Persada | Engineering & Structured Construction",
+  title: {
+    default:
+      "Engineering-Led Construction Contractor Indonesia | PT Manggala Putra Persada",
+    template: "%s | PT Manggala Putra Persada",
+  },
   description:
-    "PT Manggala Putra Persada adalah perusahaan engineering dan konstruksi dengan pendekatan terstruktur untuk proyek industri dan perumahan.",
+    "PT Manggala Putra Persada (MPP Engineering) is an engineering-led construction contractor in Indonesia specializing in steel structure, civil works, MEP systems, and design & build services for industrial and commercial projects.",
+  keywords: [
+    "engineering contractor indonesia",
+    "construction contractor indonesia",
+    "steel structure contractor indonesia",
+    "mep contractor indonesia",
+    "civil contractor indonesia",
+    "design and build contractor indonesia",
+    "industrial construction indonesia",
+  ],
+  authors: [{ name: "PT Manggala Putra Persada" }],
+  metadataBase: new URL("https://pt-manggala-putra-persada.vercel.app"),
   openGraph: {
-    title: "PT Manggala Putra Persada",
-    description: "Engineering & Structured Construction",
+    title:
+      "Engineering-Led Construction Contractor Indonesia | PT Manggala Putra Persada",
+    description:
+      "Engineering-led construction services covering steel structure, civil, MEP, and design & build for industrial and commercial projects in Indonesia.",
     url: "https://pt-manggala-putra-persada.vercel.app",
     siteName: "PT Manggala Putra Persada",
+    locale: "en_US",
+    type: "website",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "PT Manggala Putra Persada",
+        alt: "PT Manggala Putra Persada Engineering & Construction",
       },
     ],
-    locale: "id_ID",
-    type: "website",
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 }
 
@@ -32,9 +53,10 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="id">
+    <html lang="en">
       <body className="bg-white text-gray-900 antialiased">
-        {/* SCHEMA SEO */}
+
+        {/* ===== SCHEMA SEO (ORGANIZATION) ===== */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -42,20 +64,24 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "Organization",
               name: "PT Manggala Putra Persada",
+              alternateName: "MPP Engineering",
               url: "https://pt-manggala-putra-persada.vercel.app",
-              logo: "https://pt-manggala-putra-persada.vercel.app/logo-mp.png",
+              logo:
+                "https://pt-manggala-putra-persada.vercel.app/logo-mp.png",
               description:
-                "Perusahaan engineering dan konstruksi dengan pendekatan terstruktur untuk proyek industri dan perumahan.",
+                "Engineering-led construction contractor in Indonesia specializing in steel structure, civil works, MEP systems, and design & build services.",
               address: {
                 "@type": "PostalAddress",
                 addressLocality: "Bekasi",
-                addressRegion: "Jawa Barat",
+                addressRegion: "West Java",
                 addressCountry: "ID",
               },
               contactPoint: {
                 "@type": "ContactPoint",
                 telephone: "+62-812-9739-6612",
-                contactType: "customer service",
+                contactType: "Business Inquiries",
+                areaServed: "ID",
+                availableLanguage: ["English", "Indonesian"],
               },
             }),
           }}

@@ -113,24 +113,33 @@ export const faqByService: Record<string, FAQItem[]> = {
     },
   ],
 
-  /* =====================
-     PROJECT MANAGEMENT
+    /* =====================
+     FIT OUT FAQ
   ===================== */
-  "project-management": [
+  "fit-out": [
     {
-      question: "Apa peran project management dalam proyek konstruksi?",
+      question: "Apa yang dimaksud dengan pekerjaan fit out bangunan?",
       answer:
-        "Project management berperan dalam pengendalian biaya, waktu, mutu, serta koordinasi seluruh pihak agar proyek berjalan sesuai rencana dan target.",
+        "Fit out adalah pekerjaan penyempurnaan interior bangunan setelah struktur utama selesai, mencakup partisi, ceiling, flooring, MEP interior, hingga finishing agar bangunan siap digunakan.",
     },
     {
-      question: "Apakah tersedia laporan progres proyek?",
+      question: "Apakah layanan fit out mencakup kantor dan bangunan komersial?",
       answer:
-        "Ya. Kami menyediakan laporan progres berkala yang mencakup status pekerjaan, capaian jadwal, kualitas, dan isu teknis yang perlu ditindaklanjuti.",
+        "Ya. Layanan fit out kami mencakup kantor, showroom, retail, fasilitas komersial, hingga ruang operasional industri dengan pendekatan engineering-led.",
     },
     {
-      question: "Bagaimana pengendalian biaya dan jadwal dilakukan?",
+      question: "Apakah fit out sudah termasuk pekerjaan MEP interior?",
       answer:
-        "Pengendalian dilakukan melalui baseline planning, monitoring rutin, evaluasi deviasi, serta tindakan korektif berbasis data lapangan.",
+        "Termasuk. Fit out mencakup instalasi MEP interior seperti lighting, power outlet, data, AC, plumbing ringan, dan sistem pendukung ruang.",
+    },
+    {
+      question: "Apakah desain interior disediakan atau mengikuti dari klien?",
+      answer:
+        "Kami dapat bekerja berdasarkan desain dari klien maupun membantu penyempurnaan teknis desain agar sesuai dengan kondisi lapangan dan sistem bangunan.",
+    },
+    {
+      question: "Bagaimana kontrol kualitas pada pekerjaan fit out?",
+      answer:
+        "Kontrol kualitas dilakukan melalui pengawasan engineering, shop drawing approval, serta inspeksi material dan pekerjaan finishing agar hasil rapi, fungsional, dan tahan lama.",
     },
   ],
-}

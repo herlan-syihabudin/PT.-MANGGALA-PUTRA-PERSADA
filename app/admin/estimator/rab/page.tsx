@@ -1,4 +1,4 @@
-import PagePlaceholder from "@/components/ui/PagePlaceholder"
+import PagePlaceholder from "@/components/dashboard/ui/PagePlaceholder"
 
 export default function RABPage() {
   return (

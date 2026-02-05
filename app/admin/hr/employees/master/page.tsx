@@ -3,19 +3,35 @@
 import { useEffect, useState } from "react"
 import EmployeeForm from "@/components/dashboard/hr/EmployeeForm"
 
+/* ================= TYPES SEDERHANA ================= */
+
+type Employee = {
+  employee_id: string
+  nama_lengkap: string
+  nik_ktp?: string
+  divisi?: string
+  jabatan?: string
+  lokasi_kerja?: string
+  status_karyawan?: string
+  tipe_karyawan?: string
+  tgl_masuk?: string
+  is_active?: boolean
+  [key: string]: any
+}
+
 /* ================= PAGE ================= */
 
 export default function EmployeeMasterPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [open, setOpen] = useState(false)
-  const [employees, setEmployees] = useState<any[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
 
-  // ✅ DETAIL & EDIT
-  const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null)
-  const [editEmployee, setEditEmployee] = useState<any | null>(null)
+  // DETAIL & EDIT
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
+  const [editEmployee, setEditEmployee] = useState<Employee | null>(null)
 
-  // ✅ SEARCH & FILTER
+  // SEARCH & FILTER
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("aktif")
   const [divisiFilter, setDivisiFilter] = useState("")
@@ -33,9 +49,8 @@ export default function EmployeeMasterPage() {
     loadEmployees()
   }, [])
 
+  /* ================= FILTER DATA ================= */
 
-  
-  // ✅ LOGIC FILTER (data asli tidak diubah)
   const filteredEmployees = employees.filter((e) => {
     const q = search.toLowerCase()
 
@@ -56,68 +71,68 @@ export default function EmployeeMasterPage() {
 
     return matchSearch && matchStatus && matchDivisi && matchLokasi && matchTipe
   })
-  
+
   const total = filteredEmployees.length
-const totalTetap = filteredEmployees.filter(
-  (e) => e.tipe_karyawan === "Tetap"
-).length
+  const totalTetap = filteredEmployees.filter(
+    (e) => e.tipe_karyawan === "Tetap"
+  ).length
+  const totalKontrak = filteredEmployees.filter(
+    (e) => e.tipe_karyawan === "Kontrak"
+  ).length
+  const totalHarian = filteredEmployees.filter(
+    (e) => e.tipe_karyawan === "Harian"
+  ).length
 
-const totalKontrak = filteredEmployees.filter(
-  (e) => e.tipe_karyawan === "Kontrak"
-).length
-
-const totalHarian = filteredEmployees.filter(
-  (e) => e.tipe_karyawan === "Harian"
-).length
+  /* ================= EXPORT CSV ================= */
 
   function exportCSV() {
-  const dataToExport =
-    selectedIds.length > 0
-      ? filteredEmployees.filter((e) =>
-          selectedIds.includes(e.employee_id)
-        )
-      : filteredEmployees
+    const dataToExport =
+      selectedIds.length > 0
+        ? filteredEmployees.filter((e) => selectedIds.includes(e.employee_id))
+        : filteredEmployees
 
-  if (dataToExport.length === 0) {
-    alert("Tidak ada data untuk diexport")
-    return
+    if (dataToExport.length === 0) {
+      alert("Tidak ada data untuk diexport")
+      return
+    }
+
+    const headers = [
+      "employee_id",
+      "nama_lengkap",
+      "nik_ktp",
+      "divisi",
+      "jabatan",
+      "lokasi_kerja",
+      "status_karyawan",
+      "tipe_karyawan",
+      "tgl_masuk",
+      "is_active",
+    ]
+
+    const rows = dataToExport.map((e) =>
+      headers.map((h) => `"${(e as any)[h] ?? ""}"`).join(",")
+    )
+
+    const csvContent = [headers.join(","), ...rows].join("\n")
+
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;",
+    })
+    const url = URL.createObjectURL(blob)
+
+    const link = document.createElement("a")
+    link.href = url
+    link.download =
+      selectedIds.length > 0
+        ? `employee_selected_${Date.now()}.csv`
+        : `employee_filtered_${Date.now()}.csv`
+
+    link.click()
+    URL.revokeObjectURL(url)
   }
 
-  const headers = [
-    "employee_id",
-    "nama_lengkap",
-    "nik_ktp",
-    "divisi",
-    "jabatan",
-    "lokasi_kerja",
-    "status_karyawan",
-    "tipe_karyawan",
-    "tgl_masuk",
-    "is_active",
-  ]
+  /* ================= RENDER ================= */
 
-  const rows = dataToExport.map((e) =>
-    headers.map((h) => `"${e[h] ?? ""}"`).join(",")
-  )
-
-  const csvContent = [headers.join(","), ...rows].join("\n")
-
-  const blob = new Blob([csvContent], {
-    type: "text/csv;charset=utf-8;",
-  })
-  const url = URL.createObjectURL(blob)
-
-  const link = document.createElement("a")
-  link.href = url
-  link.download =
-    selectedIds.length > 0
-      ? `employee_selected_${Date.now()}.csv`
-      : `employee_filtered_${Date.now()}.csv`
-
-  link.click()
-  URL.revokeObjectURL(url)
-}
-  
   return (
     <section className="p-6 md:p-10 space-y-8">
       {/* HEADER */}
@@ -126,9 +141,7 @@ const totalHarian = filteredEmployees.filter(
           <h1 className="text-3xl font-extrabold text-gray-900">
             Employee Master
           </h1>
-          <p className="text-gray-600 mt-1">
-            Daftar & data inti karyawan
-          </p>
+          <p className="text-gray-600 mt-1">Daftar & data inti karyawan</p>
         </div>
 
         <button
@@ -144,236 +157,227 @@ const totalHarian = filteredEmployees.filter(
         Input data inti karyawan (master HR)
       </div>
 
-      {/* INDICATOR JUMLAH */}
-<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-  <button
-    onClick={() => setTipeFilter("")}
-    className="border rounded-lg px-4 py-2 text-left hover:bg-gray-50 transition"
-  >
-    <p className="text-xs text-gray-500">Total</p>
-    <p className="text-xl font-bold">{total}</p>
-  </button>
+      {/* CARD JUMLAH */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <button
+          onClick={() => setTipeFilter("")}
+          className="border rounded-lg px-4 py-2 text-left hover:bg-gray-50 transition"
+        >
+          <p className="text-xs text-gray-500">Total</p>
+          <p className="text-xl font-bold">{total}</p>
+        </button>
 
-  <button
-    onClick={() => setTipeFilter("Tetap")}
-    className="border rounded-lg px-4 py-2 text-left text-green-700 hover:bg-green-50 transition"
-  >
-    <p className="text-xs">Tetap</p>
-    <p className="text-xl font-bold">{totalTetap}</p>
-  </button>
+        <button
+          onClick={() => setTipeFilter("Tetap")}
+          className="border rounded-lg px-4 py-2 text-left text-green-700 hover:bg-green-50 transition"
+        >
+          <p className="text-xs">Tetap</p>
+          <p className="text-xl font-bold">{totalTetap}</p>
+        </button>
 
-  <button
-    onClick={() => setTipeFilter("Kontrak")}
-    className="border rounded-lg px-4 py-2 text-left text-blue-700 hover:bg-blue-50 transition"
-  >
-    <p className="text-xs">Kontrak</p>
-    <p className="text-xl font-bold">{totalKontrak}</p>
-  </button>
+        <button
+          onClick={() => setTipeFilter("Kontrak")}
+          className="border rounded-lg px-4 py-2 text-left text-blue-700 hover:bg-blue-50 transition"
+        >
+          <p className="text-xs">Kontrak</p>
+          <p className="text-xl font-bold">{totalKontrak}</p>
+        </button>
 
-  <button
-    onClick={() => setTipeFilter("Harian")}
-    className="border rounded-lg px-4 py-2 text-left text-orange-700 hover:bg-orange-50 transition"
-  >
-    <p className="text-xs">Harian</p>
-    <p className="text-xl font-bold">{totalHarian}</p>
-  </button>
-</div>
-      
-      {/* FILTER BAR */}
-<div className="bg-white border rounded-xl p-4 grid grid-cols-12 gap-3 items-center">
-  
-  <div className="bg-white border rounded-xl p-4 flex items-center gap-3">
+        <button
+          onClick={() => setTipeFilter("Harian")}
+          className="border rounded-lg px-4 py-2 text-left text-orange-700 hover:bg-orange-50 transition"
+        >
+          <p className="text-xs">Harian</p>
+          <p className="text-xl font-bold">{totalHarian}</p>
+        </button>
+      </div>
 
-  {/* SEARCH */}
-  <input
-    className="border p-2 rounded w-64"
-    placeholder="Cari nama / divisi / jabatan"
-    value={search}
-    onChange={(e) => setSearch(e.target.value)}
-  />
-
-  {/* STATUS */}
-  <select
-    className="border p-2 rounded"
-    value={statusFilter}
-    onChange={(e) => setStatusFilter(e.target.value)}
-  >
-    <option value="aktif">Aktif</option>
-    <option value="nonaktif">Nonaktif</option>
-    <option value="all">Semua</option>
-  </select>
-
-  {/* DIVISI */}
-  <select
-    className="border p-2 rounded"
-    value={divisiFilter}
-    onChange={(e) => setDivisiFilter(e.target.value)}
-  >
-    <option value="">Semua Divisi</option>
-    <option>Engineering</option>
-    <option>HRGA</option>
-    <option>Finance</option>
-    <option>Project</option>
-  </select>
-
-  {/* LOKASI */}
-  <select
-    className="border p-2 rounded"
-    value={lokasiFilter}
-    onChange={(e) => setLokasiFilter(e.target.value)}
-  >
-    <option value="">Semua Lokasi</option>
-    <option>Head Office</option>
-    <option>Site Project</option>
-  </select>
-
-  {/* TIPE */}
-  <select
-    className="border p-2 rounded"
-    value={tipeFilter}
-    onChange={(e) => setTipeFilter(e.target.value)}
-  >
-    <option value="">Semua Tipe</option>
-    <option>Tetap</option>
-    <option>Kontrak</option>
-    <option>Harian</option>
-  </select>
-
-  {/* SPACER */}
-  <div className="flex-1" />
-
-  {/* EXPORT */}
-  <button
-  onClick={exportCSV}
-  disabled={filteredEmployees.length === 0}
-  className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
->
-  {selectedIds.length > 0
-    ? `Export (${selectedIds.length}) Terpilih`
-    : "Export (Filter)"}
-</button>
-
-</div>
-
-      <div className="flex items-center justify-between text-sm">
-  <label className="flex items-center gap-2">
-    <input
-      type="checkbox"
-      checked={
-        filteredEmployees.length > 0 &&
-        selectedIds.length === filteredEmployees.length
-      }
-      onChange={(e) => {
-        if (e.target.checked) {
-          setSelectedIds(filteredEmployees.map((e) => e.employee_id))
-        } else {
-          setSelectedIds([])
-        }
-      }}
-    />
-    Pilih semua
-  </label>
-
-  {selectedIds.length > 0 && (
-    <button
-      className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700"
-      onClick={async () => {
-        if (
-          !confirm(
-            `Nonaktifkan ${selectedIds.length} karyawan terpilih?`
-          )
-        )
-          return
-
-        const res = await fetch("/api/hr/employees", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "bulk_nonaktif",
-            employee_ids: selectedIds,
-          }),
-        })
-
-        if (!res.ok) {
-          alert("Gagal nonaktifkan karyawan")
-          return
-        }
-
-        alert("Karyawan berhasil dinonaktifkan")
-        setSelectedIds([])
-        loadEmployees()
-      }}
-    >
-      Nonaktifkan Terpilih
-    </button>
-  )}
-</div>
-
-      
-      {/* LIST */}
-<div className="bg-white border rounded-xl divide-y text-sm">
-  {loading ? (
-    <p className="p-6 text-gray-400">Loading...</p>
-  ) : filteredEmployees.length === 0 ? (
-    <p className="p-6 text-gray-400">Data tidak ditemukan</p>
-  ) : (
-    filteredEmployees.map((e, i) => (
-      <div
-        key={i}
-        className="grid grid-cols-[32px_1fr_auto] items-center gap-4 p-4 hover:bg-gray-50"
-      >
-        {/* CHECKBOX */}
+      {/* FILTER + EXPORT */}
+      <div className="bg-white border rounded-xl p-4 flex flex-wrap items-center gap-3">
         <input
-          type="checkbox"
-          checked={selectedIds.includes(e.employee_id)}
-          onChange={(ev) => {
-            if (ev.target.checked) {
-              setSelectedIds([...selectedIds, e.employee_id])
-            } else {
-              setSelectedIds(
-                selectedIds.filter((id) => id !== e.employee_id)
-              )
-            }
-          }}
+          className="border p-2 rounded w-64"
+          placeholder="Cari nama / divisi / jabatan"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
         />
 
-        {/* INFO */}
-        <div
-          className="cursor-pointer"
-          onClick={() => setSelectedEmployee(e)}
+        <select
+          className="border p-2 rounded"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
         >
-          <p className="font-semibold text-gray-900">{e.nama_lengkap}</p>
-          <p className="text-[11px] text-gray-400">
-            ID: {e.employee_id}
-          </p>
-          <p className="text-xs text-gray-500">
-            {e.divisi} • {e.jabatan}
-          </p>
-        </div>
+          <option value="aktif">Aktif</option>
+          <option value="nonaktif">Nonaktif</option>
+          <option value="all">Semua</option>
+        </select>
 
-        {/* ACTION */}
-        <div className="flex items-center gap-3">
-          <span
-            className={`px-2 py-1 text-xs rounded font-semibold ${
-              e.is_active
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-700"
-            }`}
-          >
-            {e.is_active ? "AKTIF" : "NONAKTIF"}
-          </span>
+        <select
+          className="border p-2 rounded"
+          value={divisiFilter}
+          onChange={(e) => setDivisiFilter(e.target.value)}
+        >
+          <option value="">Semua Divisi</option>
+          <option>Engineering</option>
+          <option>HRGA</option>
+          <option>Finance</option>
+          <option>Project</option>
+        </select>
 
-          <button
-            className="text-blue-600 text-xs hover:underline"
-            onClick={() => setEditEmployee(e)}
-          >
-            Edit
-          </button>
-        </div>
+        <select
+          className="border p-2 rounded"
+          value={lokasiFilter}
+          onChange={(e) => setLokasiFilter(e.target.value)}
+        >
+          <option value="">Semua Lokasi</option>
+          <option>Head Office</option>
+          <option>Site Project</option>
+        </select>
+
+        <select
+          className="border p-2 rounded"
+          value={tipeFilter}
+          onChange={(e) => setTipeFilter(e.target.value)}
+        >
+          <option value="">Semua Tipe</option>
+          <option>Tetap</option>
+          <option>Kontrak</option>
+          <option>Harian</option>
+        </select>
+
+        <div className="flex-1" />
+
+        <button
+          onClick={exportCSV}
+          disabled={filteredEmployees.length === 0}
+          className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
+        >
+          {selectedIds.length > 0
+            ? `Export (${selectedIds.length}) Terpilih`
+            : "Export (Filter)"}
+        </button>
       </div>
-    ))
-  )}
-</div>
+
+      {/* BULK ACTION BAR */}
+      <div className="flex items-center justify-between text-sm">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={
+              filteredEmployees.length > 0 &&
+              selectedIds.length === filteredEmployees.length
+            }
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedIds(filteredEmployees.map((e) => e.employee_id))
+              } else {
+                setSelectedIds([])
+              }
+            }}
+          />
+          Pilih semua
+        </label>
+
+        {selectedIds.length > 0 && (
+          <button
+            className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700"
+            onClick={async () => {
+              if (
+                !confirm(
+                  `Nonaktifkan ${selectedIds.length} karyawan terpilih?`
+                )
+              )
+                return
+
+              const res = await fetch("/api/hr/employees", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  action: "bulk_nonaktif",
+                  employee_ids: selectedIds,
+                }),
+              })
+
+              if (!res.ok) {
+                alert("Gagal nonaktifkan karyawan")
+                return
+              }
+
+              alert("Karyawan berhasil dinonaktifkan")
+              setSelectedIds([])
+              loadEmployees()
+            }}
+          >
+            Nonaktifkan Terpilih
+          </button>
+        )}
+      </div>
+
+      {/* LIST */}
+      <div className="bg-white border rounded-xl divide-y text-sm">
+        {loading ? (
+          <p className="p-6 text-gray-400">Loading...</p>
+        ) : filteredEmployees.length === 0 ? (
+          <p className="p-6 text-gray-400">Data tidak ditemukan</p>
+        ) : (
+          filteredEmployees.map((e, i) => (
+            <div
+              key={i}
+              className="grid grid-cols-[32px_1fr_auto] items-center gap-4 p-4 hover:bg-gray-50"
+            >
+              {/* CHECKBOX */}
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(e.employee_id)}
+                onChange={(ev) => {
+                  if (ev.target.checked) {
+                    setSelectedIds([...selectedIds, e.employee_id])
+                  } else {
+                    setSelectedIds(
+                      selectedIds.filter((id) => id !== e.employee_id)
+                    )
+                  }
+                }}
+              />
+
+              {/* INFO */}
+              <div
+                className="cursor-pointer"
+                onClick={() => setSelectedEmployee(e)}
+              >
+                <p className="font-semibold text-gray-900">
+                  {e.nama_lengkap}
+                </p>
+                <p className="text-[11px] text-gray-400">
+                  ID: {e.employee_id}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {e.divisi} • {e.jabatan}
+                </p>
+              </div>
+
+              {/* ACTION */}
+              <div className="flex items-center gap-3">
+                <span
+                  className={`px-2 py-1 text-xs rounded font-semibold ${
+                    e.is_active
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {e.is_active ? "AKTIF" : "NONAKTIF"}
+                </span>
+
+                <button
+                  className="text-blue-600 text-xs hover:underline"
+                  onClick={() => setEditEmployee(e)}
+                >
+                  Edit
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
 
       {/* MODAL ADD */}
       {open && (
@@ -406,7 +410,7 @@ function EmployeeDetailModal({
   employee,
   onClose,
 }: {
-  employee: any
+  employee: Employee
   onClose: () => void
 }) {
   return (
@@ -462,7 +466,7 @@ function EditEmployeeModal({
   onClose,
   onSaved,
 }: {
-  employee: any
+  employee: Employee
   onClose: () => void
   onSaved: () => void
 }) {
@@ -474,7 +478,7 @@ function EditEmployeeModal({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "update",
-        employee_id: employee.employee_id, // ❗ ID DIKUNCI
+        employee_id: employee.employee_id,
         ...form,
       }),
     })
@@ -584,7 +588,6 @@ function AddEmployeeModal({
       <div className="bg-white w-full max-w-4xl rounded-2xl p-6 space-y-6">
         <h2 className="text-xl font-bold">Tambah Karyawan</h2>
 
-        {/* 🔥 FORM SATU PINTU */}
         <EmployeeForm mode="add" form={form} setForm={setForm} employeeID={employeeID} />
 
         <div className="flex justify-end gap-2 pt-4 border-t">

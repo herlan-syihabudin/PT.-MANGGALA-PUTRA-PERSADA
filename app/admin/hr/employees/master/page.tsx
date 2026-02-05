@@ -238,6 +238,10 @@ function EmployeeDetailModal({
         </div>
 
         <div className="grid md:grid-cols-2 gap-4 text-sm">
+          <Detail
+  label="ID Karyawan"
+  value={employee.employee_id}
+/>
           <Detail label="Nama Lengkap" value={employee.nama_lengkap} />
           <Detail label="NIK KTP" value={employee.nik_ktp} />
           <Detail label="Jenis Kelamin" value={employee.jenis_kelamin} />

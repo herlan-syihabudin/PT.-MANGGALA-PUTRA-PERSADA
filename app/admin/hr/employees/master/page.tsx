@@ -53,19 +53,6 @@ export default function EmployeeMasterPage() {
 
     return matchSearch && matchStatus && matchDivisi && matchLokasi && matchTipe
   })
-
-  const total = filteredEmployees.length
-const totalTetap = filteredEmployees.filter(
-  (e) => e.tipe_karyawan === "Tetap"
-).length
-
-const totalKontrak = filteredEmployees.filter(
-  (e) => e.tipe_karyawan === "Kontrak"
-).length
-
-const totalHarian = filteredEmployees.filter(
-  (e) => e.tipe_karyawan === "Harian"
-).length
   
   const total = filteredEmployees.length
 const totalTetap = filteredEmployees.filter(

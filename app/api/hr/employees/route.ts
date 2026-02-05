@@ -1,31 +1,42 @@
 import { NextResponse } from "next/server"
 import { google } from "googleapis"
 
+export const runtime = "nodejs" // ⬅️ WAJIB (biar gak edge)
+
 export async function GET() {
-  const auth = new google.auth.JWT(
-    process.env.GOOGLE_CLIENT_EMAIL,
-    undefined,
-    process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    ["https://www.googleapis.com/auth/spreadsheets.readonly"]
-  )
+  try {
+    const auth = new google.auth.JWT({
+      email: process.env.GOOGLE_CLIENT_EMAIL,
+      key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+      scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+    })
 
-  const sheets = google.sheets({ version: "v4", auth })
+    const sheets = google.sheets({ version: "v4", auth })
 
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: process.env.HR_SHEET_ID,
-    range: "EMPLOYEE_MASTER!A1:T",
-  })
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.HR_SHEET_ID, // PASTI ID, BUKAN URL
+      range: "EMPLOYEE_MASTER!A1:T",
+    })
 
-  const [headers, ...rows] = res.data.values || []
+    const values = res.data.values || []
+    if (values.length === 0) return NextResponse.json([])
 
-  const data =
-    rows?.map((row) => {
-      const obj: any = {}
-      headers.forEach((h: string, i: number) => {
+    const [headers, ...rows] = values
+
+    const data = rows.map((row) => {
+      const obj: Record<string, string> = {}
+      headers.forEach((h, i) => {
         obj[h] = row[i] || ""
       })
       return obj
-    }) || []
+    })
 
-  return NextResponse.json(data)
+    return NextResponse.json(data)
+  } catch (err: any) {
+    console.error("HR API ERROR:", err.message)
+    return NextResponse.json(
+      { error: "Failed to fetch employee data" },
+      { status: 500 }
+    )
+  }
 }

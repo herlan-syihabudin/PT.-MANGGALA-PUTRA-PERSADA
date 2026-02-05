@@ -297,34 +297,6 @@ const totalHarian = filteredEmployees.filter(
           >
             Edit
           </button>
-
-          {e.is_active && (
-            <button
-              className="text-red-600 text-xs hover:underline"
-              onClick={async () => {
-                if (!confirm(`Nonaktifkan ${e.nama_lengkap}?`)) return
-
-                const res = await fetch("/api/hr/employees", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    action: "nonaktif",
-                    employee_id: e.employee_id,
-                  }),
-                })
-
-                if (!res.ok) {
-                  alert("Gagal menonaktifkan karyawan")
-                  return
-                }
-
-                alert("Karyawan berhasil dinonaktifkan")
-                loadEmployees()
-              }}
-            >
-              Nonaktif
-            </button>
-          )}
         </div>
       </div>
     ))

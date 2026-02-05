@@ -10,6 +10,7 @@ export default function EmployeeMasterPage() {
   const [loading, setLoading] = useState(true)
 
   async function loadEmployees() {
+    setLoading(true)
     const res = await fetch("/api/hr/employees", { cache: "no-store" })
     const data = await res.json()
     setEmployees(data || [])
@@ -44,27 +45,79 @@ export default function EmployeeMasterPage() {
 
       {/* INFO */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
-        Input data inti karyawan (master HR)
+        Master data karyawan (sumber utama HR, Payroll & Contract)
       </div>
 
-      {/* LIST */}
-      <div className="bg-white border rounded-xl p-6 text-sm">
+      {/* TABLE */}
+      <div className="bg-white border rounded-xl overflow-x-auto">
         {loading ? (
-          <p className="text-gray-400">Loading...</p>
+          <p className="p-6 text-gray-400 text-sm">Loading...</p>
         ) : employees.length === 0 ? (
-          <p className="text-gray-400">Belum ada data karyawan</p>
+          <p className="p-6 text-gray-400 text-sm">Belum ada data karyawan</p>
         ) : (
-          <div className="space-y-2">
-            {employees.map((e, i) => (
-              <div key={i} className="border-b pb-2">
-                <b>{e.nama_lengkap}</b> — {e.divisi} — {e.jabatan}
-              </div>
-            ))}
-          </div>
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr className="text-left">
+                <th className="p-3">Nama</th>
+                <th className="p-3">Divisi</th>
+                <th className="p-3">Jabatan</th>
+                <th className="p-3">Status</th>
+                <th className="p-3 text-center">Aksi</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {employees.map((e, i) => (
+                <tr key={i} className="border-b hover:bg-gray-50">
+                  <td className="p-3 font-medium text-gray-900">
+                    {e.nama_lengkap}
+                  </td>
+
+                  <td className="p-3">{e.divisi}</td>
+                  <td className="p-3">{e.jabatan}</td>
+
+                  <td className="p-3">
+                    <span
+                      className={`px-2 py-1 text-xs rounded font-semibold
+                        ${
+                          e.is_active
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                    >
+                      {e.is_active ? "AKTIF" : "NONAKTIF"}
+                    </span>
+                  </td>
+
+                  <td className="p-3 text-center space-x-2">
+                    <button
+                      className="text-blue-600 hover:underline text-xs"
+                      onClick={() =>
+                        alert("EDIT akan dibuka (next step)")
+                      }
+                    >
+                      Edit
+                    </button>
+
+                    {e.is_active && (
+                      <button
+                        className="text-red-600 hover:underline text-xs"
+                        onClick={() =>
+                          alert("NONAKTIF akan diproses (next step)")
+                        }
+                      >
+                        Nonaktif
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
 
-      {/* MODAL */}
+      {/* MODAL ADD */}
       {open && (
         <AddEmployeeModal
           onClose={() => setOpen(false)}
@@ -75,7 +128,7 @@ export default function EmployeeMasterPage() {
   )
 }
 
-/* ================= MODAL ================= */
+/* ================= MODAL ADD ================= */
 
 function generateEmployeeID(divisi: string) {
   const company = "MPP"
@@ -92,23 +145,13 @@ function AddEmployeeModal({
   onClose: () => void
   onSaved: () => void
 }) {
+  const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<any>({
     nama_lengkap: "",
     nik_ktp: "",
-    jenis_kelamin: "",
-    tgl_lahir: "",
-    tempat_lahir: "",
-    status_pernikahan: "",
-    alamat_domisili: "",
-    email: "",
-    no_hp: "",
     divisi: "",
     jabatan: "",
-    atasan_langsung: "",
-    lokasi_kerja: "",
     status_karyawan: "",
-    tipe_karyawan: "",
-    tgl_masuk: "",
   })
 
   const employeeID = form.divisi
@@ -116,10 +159,14 @@ function AddEmployeeModal({
     : ""
 
   async function submit() {
-    if (form.nik_ktp.length !== 16 || !form.divisi || !form.nama_lengkap) {
-      alert("Lengkapi Nama, NIK (16 digit), dan Divisi")
+    if (saving) return
+
+    if (!form.nama_lengkap || !form.divisi || form.nik_ktp.length !== 16) {
+      alert("Nama, Divisi & NIK wajib diisi")
       return
     }
+
+    setSaving(true)
 
     const res = await fetch("/api/hr/employees", {
       method: "POST",
@@ -134,124 +181,74 @@ function AddEmployeeModal({
 
     if (!res.ok) {
       alert(data.error || "Gagal menyimpan")
+      setSaving(false)
       return
     }
 
-    alert("Karyawan berhasil ditambahkan")
     onSaved()
     onClose()
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white w-full max-w-4xl rounded-2xl p-6 space-y-6">
+      <div className="bg-white w-full max-w-xl rounded-2xl p-6 space-y-4">
 
         <h2 className="text-xl font-bold">Tambah Karyawan</h2>
 
-        <div className="grid md:grid-cols-2 gap-3 text-sm">
-          <input className="border p-2" placeholder="Nama Lengkap *"
-            onChange={(e) => setForm({ ...form, nama_lengkap: e.target.value })}
-          />
+        <input
+          className="border p-2 w-full"
+          placeholder="Nama Lengkap *"
+          onChange={(e) =>
+            setForm({ ...form, nama_lengkap: e.target.value })
+          }
+        />
 
-          <input className="border p-2" placeholder="NIK KTP (16 digit) *"
-            maxLength={16}
-            onChange={(e) => setForm({ ...form, nik_ktp: e.target.value })}
-          />
+        <input
+          className="border p-2 w-full"
+          placeholder="NIK KTP (16 digit) *"
+          maxLength={16}
+          onChange={(e) =>
+            setForm({ ...form, nik_ktp: e.target.value })
+          }
+        />
 
-          <select className="border p-2"
-            onChange={(e) => setForm({ ...form, jenis_kelamin: e.target.value })}
-          >
-            <option value="">Jenis Kelamin</option>
-            <option>Laki-laki</option>
-            <option>Perempuan</option>
-          </select>
+        <select
+          className="border p-2 w-full"
+          onChange={(e) =>
+            setForm({ ...form, divisi: e.target.value })
+          }
+        >
+          <option value="">Divisi *</option>
+          <option>Engineering</option>
+          <option>HRGA</option>
+          <option>Finance</option>
+          <option>Project</option>
+        </select>
 
-          <input type="date" className="border p-2"
-            onChange={(e) => setForm({ ...form, tgl_lahir: e.target.value })}
-          />
+        <input
+          className="border p-2 w-full bg-gray-100"
+          value={employeeID}
+          disabled
+        />
 
-          <input className="border p-2" placeholder="Tempat Lahir"
-            onChange={(e) => setForm({ ...form, tempat_lahir: e.target.value })}
-          />
-
-          <select className="border p-2"
-            onChange={(e) => setForm({ ...form, status_pernikahan: e.target.value })}
-          >
-            <option>Status Pernikahan</option>
-            <option>Belum Menikah</option>
-            <option>Menikah</option>
-            <option>Cerai</option>
-          </select>
-
-          <input className="border p-2 md:col-span-2" placeholder="Alamat Domisili"
-            onChange={(e) => setForm({ ...form, alamat_domisili: e.target.value })}
-          />
-
-          <input className="border p-2" placeholder="Email"
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-          />
-
-          <input className="border p-2" placeholder="No HP"
-            onChange={(e) => setForm({ ...form, no_hp: e.target.value })}
-          />
-
-          <select className="border p-2"
-            onChange={(e) => setForm({ ...form, divisi: e.target.value })}
-          >
-            <option value="">Divisi *</option>
-            <option>Engineering</option>
-            <option>HRGA</option>
-            <option>Finance</option>
-            <option>Project</option>
-          </select>
-
-          <input className="border p-2 bg-gray-100" value={employeeID} disabled />
-
-          <input className="border p-2" placeholder="Jabatan"
-            onChange={(e) => setForm({ ...form, jabatan: e.target.value })}
-          />
-
-          <select className="border p-2"
-            onChange={(e) => setForm({ ...form, lokasi_kerja: e.target.value })}
-          >
-            <option>Lokasi Kerja</option>
-            <option>Head Office</option>
-            <option>Site Project</option>
-          </select>
-
-          <input className="border p-2" placeholder="Atasan Langsung"
-            onChange={(e) => setForm({ ...form, atasan_langsung: e.target.value })}
-          />
-
-          <select className="border p-2"
-            onChange={(e) => setForm({ ...form, status_karyawan: e.target.value })}
-          >
-            <option>Status Karyawan</option>
-            <option>Tetap</option>
-            <option>Kontrak</option>
-            <option>Probation</option>
-          </select>
-
-          <input type="date" className="border p-2"
-            onChange={(e) => setForm({ ...form, tgl_masuk: e.target.value })}
-          />
-
-          <select className="border p-2"
-            onChange={(e) => setForm({ ...form, tipe_karyawan: e.target.value })}
-          >
-            <option>Tipe Karyawan</option>
-            <option>HO</option>
-            <option>Project</option>
-            <option>Site</option>
-          </select>
-        </div>
+        <input
+          className="border p-2 w-full"
+          placeholder="Jabatan"
+          onChange={(e) =>
+            setForm({ ...form, jabatan: e.target.value })
+          }
+        />
 
         <div className="flex justify-end gap-2 pt-4 border-t">
           <button onClick={onClose} className="px-4 py-2 border rounded">
             Batal
           </button>
-          <button onClick={submit} className="px-4 py-2 bg-gray-900 text-white rounded">
-            Simpan
+          <button
+            onClick={submit}
+            disabled={saving}
+            className="px-4 py-2 bg-gray-900 text-white rounded"
+          >
+            {saving ? "Menyimpan..." : "Simpan"}
           </button>
         </div>
       </div>

@@ -6,6 +6,7 @@ import EmployeeForm from "@/components/dashboard/hr/EmployeeForm"
 /* ================= PAGE ================= */
 
 export default function EmployeeMasterPage() {
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [open, setOpen] = useState(false)
   const [employees, setEmployees] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -95,46 +96,42 @@ const totalHarian = filteredEmployees.filter(
 
       {/* INDICATOR JUMLAH */}
 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-  <div className="border rounded-lg px-4 py-2">
+  <button
+    onClick={() => setTipeFilter("")}
+    className="border rounded-lg px-4 py-2 text-left hover:bg-gray-50 transition"
+  >
     <p className="text-xs text-gray-500">Total</p>
     <p className="text-xl font-bold">{total}</p>
-  </div>
+  </button>
 
-  <div className="border rounded-lg px-4 py-2 text-green-700">
+  <button
+    onClick={() => setTipeFilter("Tetap")}
+    className="border rounded-lg px-4 py-2 text-left text-green-700 hover:bg-green-50 transition"
+  >
     <p className="text-xs">Tetap</p>
     <p className="text-xl font-bold">{totalTetap}</p>
-  </div>
+  </button>
 
-  <div className="border rounded-lg px-4 py-2 text-blue-700">
+  <button
+    onClick={() => setTipeFilter("Kontrak")}
+    className="border rounded-lg px-4 py-2 text-left text-blue-700 hover:bg-blue-50 transition"
+  >
     <p className="text-xs">Kontrak</p>
     <p className="text-xl font-bold">{totalKontrak}</p>
-  </div>
+  </button>
 
-  <div className="border rounded-lg px-4 py-2 text-orange-700">
+  <button
+    onClick={() => setTipeFilter("Harian")}
+    className="border rounded-lg px-4 py-2 text-left text-orange-700 hover:bg-orange-50 transition"
+  >
     <p className="text-xs">Harian</p>
     <p className="text-xl font-bold">{totalHarian}</p>
-  </div>
+  </button>
 </div>
       
       {/* FILTER BAR */}
       <div className="bg-white border rounded-xl p-4 flex flex-wrap gap-3 text-sm">
-        <div className="bg-white border rounded-xl px-4 py-3 text-sm flex flex-wrap gap-4">
-  <span className="font-semibold text-gray-700">
-    Total: {total}
-  </span>
-
-  <span className="text-green-700">
-    Tetap: {totalTetap}
-  </span>
-
-  <span className="text-blue-700">
-    Kontrak: {totalKontrak}
-  </span>
-
-  <span className="text-orange-700">
-    Harian: {totalHarian}
-  </span>
-</div>
+        
         <input
           className="border p-2 rounded w-64"
           placeholder="Cari nama / divisi / jabatan"
@@ -187,6 +184,60 @@ const totalHarian = filteredEmployees.filter(
         </select>
       </div>
 
+      <div className="flex items-center justify-between text-sm">
+  <label className="flex items-center gap-2">
+    <input
+      type="checkbox"
+      checked={
+        filteredEmployees.length > 0 &&
+        selectedIds.length === filteredEmployees.length
+      }
+      onChange={(e) => {
+        if (e.target.checked) {
+          setSelectedIds(filteredEmployees.map((e) => e.employee_id))
+        } else {
+          setSelectedIds([])
+        }
+      }}
+    />
+    Pilih semua
+  </label>
+
+  {selectedIds.length > 0 && (
+    <button
+      className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700"
+      onClick={async () => {
+        if (
+          !confirm(
+            `Nonaktifkan ${selectedIds.length} karyawan terpilih?`
+          )
+        )
+          return
+
+        const res = await fetch("/api/hr/employees", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "bulk_nonaktif",
+            employee_ids: selectedIds,
+          }),
+        })
+
+        if (!res.ok) {
+          alert("Gagal nonaktifkan karyawan")
+          return
+        }
+
+        alert("Karyawan berhasil dinonaktifkan")
+        setSelectedIds([])
+        loadEmployees()
+      }}
+    >
+      Nonaktifkan Terpilih
+    </button>
+  )}
+</div>
+      
       {/* LIST */}
       <div className="bg-white border rounded-xl divide-y text-sm">
         {loading ? (
@@ -195,33 +246,54 @@ const totalHarian = filteredEmployees.filter(
           <p className="p-6 text-gray-400">Data tidak ditemukan</p>
         ) : (
           filteredEmployees.map((e, i) => (
-            <div
-              key={i}
-              className="p-4 flex items-center justify-between hover:bg-gray-50 cursor-pointer"
-              onClick={() => setSelectedEmployee(e)}
-            >
-              {/* LEFT INFO */}
-              <div>
-                <p className="font-semibold text-gray-900">{e.nama_lengkap}</p>
-                <p className="text-[11px] text-gray-400">
-                  ID: {e.employee_id || "-"}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {e.divisi} • {e.jabatan}
-                </p>
-              </div>
+  <div
+    key={i}
+    className="p-4 flex items-center justify-between hover:bg-gray-50"
+  >
+    {/* LEFT */}
+    <div className="flex items-start gap-3">
+      <input
+        type="checkbox"
+        checked={selectedIds.includes(e.employee_id)}
+        onChange={(ev) => {
+          if (ev.target.checked) {
+            setSelectedIds([...selectedIds, e.employee_id])
+          } else {
+            setSelectedIds(
+              selectedIds.filter((id) => id !== e.employee_id)
+            )
+          }
+        }}
+      />
 
-              {/* RIGHT ACTION */}
-              <div className="flex items-center gap-3">
-                <span
-                  className={`px-2 py-1 text-xs rounded font-semibold ${
-                    e.is_active
-                      ? "bg-green-100 text-green-700"
-                      : "bg-red-100 text-red-700"
-                  }`}
-                >
-                  {e.is_active ? "AKTIF" : "NONAKTIF"}
-                </span>
+      <div
+        className="cursor-pointer"
+        onClick={() => setSelectedEmployee(e)}
+      >
+        <p className="font-semibold text-gray-900">
+          {e.nama_lengkap}
+        </p>
+        <p className="text-[11px] text-gray-400">
+          ID: {e.employee_id}
+        </p>
+        <p className="text-xs text-gray-500">
+          {e.divisi} • {e.jabatan}
+        </p>
+      </div>
+    </div>
+
+    {/* RIGHT */}
+    <span
+      className={`px-2 py-1 text-xs rounded font-semibold ${
+        e.is_active
+          ? "bg-green-100 text-green-700"
+          : "bg-red-100 text-red-700"
+      }`}
+    >
+      {e.is_active ? "AKTIF" : "NONAKTIF"}
+    </span>
+  </div>
+))
 
                 <button
                   className="text-blue-600 text-xs hover:underline"

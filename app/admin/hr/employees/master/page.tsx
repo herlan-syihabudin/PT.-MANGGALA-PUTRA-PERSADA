@@ -239,61 +239,100 @@ const totalHarian = filteredEmployees.filter(
 </div>
       
       {/* LIST */}
-      <div className="bg-white border rounded-xl divide-y text-sm">
-        {loading ? (
-          <p className="p-6 text-gray-400">Loading...</p>
-        ) : filteredEmployees.length === 0 ? (
-          <p className="p-6 text-gray-400">Data tidak ditemukan</p>
-        ) : (
-          filteredEmployees.map((e, i) => (
-  <div
-    key={i}
-    className="p-4 flex items-center justify-between hover:bg-gray-50"
-  >
-    {/* LEFT */}
-    <div className="flex items-start gap-3">
-      <input
-        type="checkbox"
-        checked={selectedIds.includes(e.employee_id)}
-        onChange={(ev) => {
-          if (ev.target.checked) {
-            setSelectedIds([...selectedIds, e.employee_id])
-          } else {
-            setSelectedIds(
-              selectedIds.filter((id) => id !== e.employee_id)
-            )
-          }
-        }}
-      />
-
+<div className="bg-white border rounded-xl divide-y text-sm">
+  {loading ? (
+    <p className="p-6 text-gray-400">Loading...</p>
+  ) : filteredEmployees.length === 0 ? (
+    <p className="p-6 text-gray-400">Data tidak ditemukan</p>
+  ) : (
+    filteredEmployees.map((e, i) => (
       <div
-        className="cursor-pointer"
-        onClick={() => setSelectedEmployee(e)}
+        key={i}
+        className="p-4 flex items-center justify-between hover:bg-gray-50"
       >
-        <p className="font-semibold text-gray-900">
-          {e.nama_lengkap}
-        </p>
-        <p className="text-[11px] text-gray-400">
-          ID: {e.employee_id}
-        </p>
-        <p className="text-xs text-gray-500">
-          {e.divisi} • {e.jabatan}
-        </p>
-      </div>
-    </div>
+        {/* LEFT */}
+        <div className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            checked={selectedIds.includes(e.employee_id)}
+            onChange={(ev) => {
+              if (ev.target.checked) {
+                setSelectedIds([...selectedIds, e.employee_id])
+              } else {
+                setSelectedIds(
+                  selectedIds.filter((id) => id !== e.employee_id)
+                )
+              }
+            }}
+          />
 
-    {/* RIGHT */}
-    <span
-      className={`px-2 py-1 text-xs rounded font-semibold ${
-        e.is_active
-          ? "bg-green-100 text-green-700"
-          : "bg-red-100 text-red-700"
-      }`}
-    >
-      {e.is_active ? "AKTIF" : "NONAKTIF"}
-    </span>
-  </div>
-))
+          <div
+            className="cursor-pointer"
+            onClick={() => setSelectedEmployee(e)}
+          >
+            <p className="font-semibold text-gray-900">
+              {e.nama_lengkap}
+            </p>
+            <p className="text-[11px] text-gray-400">
+              ID: {e.employee_id}
+            </p>
+            <p className="text-xs text-gray-500">
+              {e.divisi} • {e.jabatan}
+            </p>
+          </div>
+        </div>
+
+        {/* RIGHT */}
+        <div className="flex items-center gap-3">
+          <span
+            className={`px-2 py-1 text-xs rounded font-semibold ${
+              e.is_active
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
+            {e.is_active ? "AKTIF" : "NONAKTIF"}
+          </span>
+
+          <button
+            className="text-blue-600 text-xs hover:underline"
+            onClick={() => setEditEmployee(e)}
+          >
+            Edit
+          </button>
+
+          {e.is_active && (
+            <button
+              className="text-red-600 text-xs hover:underline"
+              onClick={async () => {
+                if (!confirm(`Nonaktifkan ${e.nama_lengkap}?`)) return
+
+                const res = await fetch("/api/hr/employees", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    action: "nonaktif",
+                    employee_id: e.employee_id,
+                  }),
+                })
+
+                if (!res.ok) {
+                  alert("Gagal menonaktifkan karyawan")
+                  return
+                }
+
+                alert("Karyawan berhasil dinonaktifkan")
+                loadEmployees()
+              }}
+            >
+              Nonaktif
+            </button>
+          )}
+        </div>
+      </div>
+    ))
+  )}
+</div>
 
                 <button
                   className="text-blue-600 text-xs hover:underline"

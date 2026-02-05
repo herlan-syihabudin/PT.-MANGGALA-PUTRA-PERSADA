@@ -245,98 +245,91 @@ const totalHarian = filteredEmployees.filter(
   ) : filteredEmployees.length === 0 ? (
     <p className="p-6 text-gray-400">Data tidak ditemukan</p>
   ) : (
-    filteredEmployees.map((e, i) => (
-      <div
-        key={i}
-        className="p-4 flex items-center justify-between hover:bg-gray-50"
+    {filteredEmployees.map((e, i) => (
+  <div
+    key={i}
+    className="grid grid-cols-[32px_1fr_auto] items-center gap-4 p-4 hover:bg-gray-50"
+  >
+    {/* CHECKBOX */}
+    <input
+      type="checkbox"
+      checked={selectedIds.includes(e.employee_id)}
+      onChange={(ev) => {
+        if (ev.target.checked) {
+          setSelectedIds([...selectedIds, e.employee_id])
+        } else {
+          setSelectedIds(
+            selectedIds.filter((id) => id !== e.employee_id)
+          )
+        }
+      }}
+    />
+
+    {/* INFO */}
+    <div
+      className="cursor-pointer"
+      onClick={() => setSelectedEmployee(e)}
+    >
+      <p className="font-semibold text-gray-900">
+        {e.nama_lengkap}
+      </p>
+      <p className="text-[11px] text-gray-400">
+        ID: {e.employee_id}
+      </p>
+      <p className="text-xs text-gray-500">
+        {e.divisi} • {e.jabatan}
+      </p>
+    </div>
+
+    {/* ACTION */}
+    <div className="flex items-center gap-3">
+      <span
+        className={`px-2 py-1 text-xs rounded font-semibold ${
+          e.is_active
+            ? "bg-green-100 text-green-700"
+            : "bg-red-100 text-red-700"
+        }`}
       >
-        {/* LEFT */}
-        <div className="flex items-start gap-3">
-          <input
-            type="checkbox"
-            checked={selectedIds.includes(e.employee_id)}
-            onChange={(ev) => {
-              if (ev.target.checked) {
-                setSelectedIds([...selectedIds, e.employee_id])
-              } else {
-                setSelectedIds(
-                  selectedIds.filter((id) => id !== e.employee_id)
-                )
-              }
-            }}
-          />
+        {e.is_active ? "AKTIF" : "NONAKTIF"}
+      </span>
 
-          <div
-            className="cursor-pointer"
-            onClick={() => setSelectedEmployee(e)}
-          >
-            <p className="font-semibold text-gray-900">
-              {e.nama_lengkap}
-            </p>
-            <p className="text-[11px] text-gray-400">
-              ID: {e.employee_id}
-            </p>
-            <p className="text-xs text-gray-500">
-              {e.divisi} • {e.jabatan}
-            </p>
-          </div>
-        </div>
+      <button
+        className="text-blue-600 text-xs hover:underline"
+        onClick={() => setEditEmployee(e)}
+      >
+        Edit
+      </button>
 
-        {/* RIGHT */}
-        <div className="flex items-center gap-3">
-          <span
-            className={`px-2 py-1 text-xs rounded font-semibold ${
-              e.is_active
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-700"
-            }`}
-          >
-            {e.is_active ? "AKTIF" : "NONAKTIF"}
-          </span>
+      {e.is_active && (
+        <button
+          className="text-red-600 text-xs hover:underline"
+          onClick={async () => {
+            if (!confirm(`Nonaktifkan ${e.nama_lengkap}?`)) return
 
-                <button
-                  className="text-blue-600 text-xs hover:underline"
-                  onClick={(ev) => {
-                    ev.stopPropagation()
-                    setEditEmployee(e)
-                  }}
-                >
-                  Edit
-                </button>
+            const res = await fetch("/api/hr/employees", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "nonaktif",
+                employee_id: e.employee_id,
+              }),
+            })
 
-                {e.is_active && (
-                  <button
-                    className="text-red-600 text-xs hover:underline"
-                    onClick={async (ev) => {
-                      ev.stopPropagation()
-                      if (!confirm(`Nonaktifkan ${e.nama_lengkap}?`)) return
+            if (!res.ok) {
+              alert("Gagal menonaktifkan karyawan")
+              return
+            }
 
-                      const res = await fetch("/api/hr/employees", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          action: "nonaktif",
-                          employee_id: e.employee_id,
-                        }),
-                      })
-
-                      if (!res.ok) {
-                        alert("Gagal menonaktifkan karyawan")
-                        return
-                      }
-
-                      alert("Karyawan berhasil dinonaktifkan")
-                      loadEmployees()
-                    }}
-                  >
-                    Nonaktif
-                  </button>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+            alert("Karyawan berhasil dinonaktifkan")
+            loadEmployees()
+          }}
+        >
+          Nonaktif
+        </button>
+      )}
+    </div>
+  </div>
+))}
 
       {/* MODAL ADD */}
       {open && (

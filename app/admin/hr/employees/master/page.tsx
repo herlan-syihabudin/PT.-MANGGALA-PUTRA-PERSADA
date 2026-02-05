@@ -87,94 +87,115 @@ function AddEmployeeModal({ onClose }: { onClose: () => void }) {
         {/* FORM */}
         <form className="grid md:grid-cols-2 gap-4 text-sm">
 
-          {/* IDENTITAS */}
-          <input className="border rounded-lg p-2" placeholder="Nama Lengkap *" />
+  {/* ================= IDENTITAS ================= */}
+  <input className="border rounded-lg p-2" placeholder="Nama Lengkap *" />
 
-          <input
-            type="text"
-            maxLength={16}
-            value={nikKTP}
-            onChange={(e) => setNikKTP(e.target.value)}
-            className="border rounded-lg p-2"
-            placeholder="NIK KTP (16 digit) *"
-          />
+  <input
+    type="text"
+    maxLength={16}
+    value={nikKTP}
+    onChange={(e) => setNikKTP(e.target.value)}
+    className="border rounded-lg p-2"
+    placeholder="NIK KTP (16 digit) *"
+  />
 
-          <select className="border rounded-lg p-2">
-            <option>Jenis Kelamin *</option>
-            <option>Laki-laki</option>
-            <option>Perempuan</option>
-          </select>
+  <select className="border rounded-lg p-2">
+    <option>Jenis Kelamin *</option>
+    <option>Laki-laki</option>
+    <option>Perempuan</option>
+  </select>
 
-          <input type="date" className="border rounded-lg p-2" />
+  {/* TANGGAL LAHIR */}
+  <div className="space-y-1">
+    <label className="text-xs text-gray-500">
+      Tanggal Lahir
+    </label>
+    <input
+      type="date"
+      className="border rounded-lg p-2 w-full"
+    />
+  </div>
 
-          <input className="border rounded-lg p-2" placeholder="Tempat Lahir" />
+  <input
+    className="border rounded-lg p-2"
+    placeholder="Tempat Lahir"
+  />
 
-          <select className="border rounded-lg p-2">
-            <option>Status Pernikahan</option>
-            <option>Belum Menikah</option>
-            <option>Menikah</option>
-            <option>Cerai</option>
-          </select>
+  <select className="border rounded-lg p-2">
+    <option>Status Pernikahan</option>
+    <option>Belum Menikah</option>
+    <option>Menikah</option>
+    <option>Cerai</option>
+  </select>
 
-          {/* KONTAK */}
-          <input
-            className="border rounded-lg p-2 md:col-span-2"
-            placeholder="Alamat Domisili"
-          />
-          <input className="border rounded-lg p-2" placeholder="Email" />
-          <input className="border rounded-lg p-2" placeholder="No HP" />
+  {/* ================= KONTAK ================= */}
+  <input
+    className="border rounded-lg p-2 md:col-span-2"
+    placeholder="Alamat Domisili"
+  />
+  <input className="border rounded-lg p-2" placeholder="Email" />
+  <input className="border rounded-lg p-2" placeholder="No HP" />
 
-          {/* ORGANISASI */}
-          <select
-            className="border rounded-lg p-2"
-            value={division}
-            onChange={(e) => setDivision(e.target.value)}
-          >
-            <option value="">Divisi *</option>
-            <option value="Engineering">Engineering</option>
-            <option value="HRGA">HR & GA</option>
-            <option value="Finance">Finance</option>
-            <option value="Project">Project</option>
-          </select>
+  {/* ================= ORGANISASI ================= */}
+  <select
+    className="border rounded-lg p-2"
+    value={division}
+    onChange={(e) => setDivision(e.target.value)}
+  >
+    <option value="">Divisi *</option>
+    <option value="Engineering">Engineering</option>
+    <option value="HRGA">HR & GA</option>
+    <option value="Finance">Finance</option>
+    <option value="Project">Project</option>
+  </select>
 
-          <input
-            className="border rounded-lg p-2 bg-gray-100"
-            value={employeeID}
-            disabled
-            placeholder="Employee ID (Auto)"
-          />
+  <input
+    className="border rounded-lg p-2 bg-gray-100"
+    value={employeeID}
+    disabled
+    placeholder="Employee ID (Auto)"
+  />
 
-          <input className="border rounded-lg p-2" placeholder="Jabatan *" />
+  <input className="border rounded-lg p-2" placeholder="Jabatan *" />
 
-          <select className="border rounded-lg p-2">
-            <option>Lokasi Kerja</option>
-            <option>Head Office</option>
-            <option>Site Project</option>
-          </select>
+  <select className="border rounded-lg p-2">
+    <option>Lokasi Kerja</option>
+    <option>Head Office</option>
+    <option>Site Project</option>
+  </select>
 
-          <input className="border rounded-lg p-2" placeholder="Atasan Langsung" />
+  <input
+    className="border rounded-lg p-2"
+    placeholder="Atasan Langsung"
+  />
 
-          {/* STATUS */}
-<select className="border rounded-lg p-2">
-  <option>Status Karyawan *</option>
-  <option>Tetap</option>
-  <option>Kontrak</option>
-  <option>Probation</option>
-</select>
+  {/* ================= STATUS KERJA ================= */}
+  <select className="border rounded-lg p-2">
+    <option>Status Karyawan *</option>
+    <option>Tetap</option>
+    <option>Kontrak</option>
+    <option>Probation</option>
+  </select>
 
-<input
-  type="date"
-  className="border rounded-lg p-2"
-  placeholder="Tanggal Masuk Kerja"
-/>
+  {/* TANGGAL MASUK KERJA */}
+  <div className="space-y-1">
+    <label className="text-xs text-gray-500">
+      Tanggal Masuk Kerja
+    </label>
+    <input
+      type="date"
+      className="border rounded-lg p-2 w-full"
+    />
+  </div>
 
-<select className="border rounded-lg p-2">
-  <option>Tipe Karyawan</option>
-  <option>HO</option>
-  <option>Project</option>
-  <option>Site</option>
-</select>
-        </form>
+  <select className="border rounded-lg p-2">
+    <option>Tipe Karyawan</option>
+    <option>HO</option>
+    <option>Project</option>
+    <option>Site</option>
+  </select>
+
+</form>
 
         {/* ACTION */}
         <div className="flex justify-end gap-2 pt-4 border-t">

@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from "next/server"
 const SCRIPT_URL = process.env.HR_SCRIPT_URL!
 const API_TOKEN = process.env.HR_API_TOKEN!
 
-/* ================= GET ================= */
+/* ======================================================
+   GET : LIST & DETAIL KARYAWAN
+====================================================== */
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,10 +15,10 @@ export async function GET(req: NextRequest) {
     let url = ""
 
     if (employee_id) {
-      // detail karyawan
+      // DETAIL KARYAWAN
       url = `${SCRIPT_URL}?action=employee_detail&employee_id=${employee_id}&token=${API_TOKEN}`
     } else {
-      // list karyawan
+      // LIST KARYAWAN
       url = `${SCRIPT_URL}?action=employees&token=${API_TOKEN}`
     }
 
@@ -33,16 +35,18 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/* ================= POST ================= */
+/* ======================================================
+   POST : ADD / UPDATE / NONAKTIF / BULK NONAKTIF
+====================================================== */
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const action = body.action || "add"
 
-    /* ================= UPGRADE VALIDATION ================= */
+    /* ================= VALIDATION ================= */
 
-    // aksi yang wajib punya employee_id
+    // aksi yg butuh employee_id tunggal
     const needEmployeeId = ["update", "nonaktif", "aktif"]
 
     if (needEmployeeId.includes(action) && !body.employee_id) {
@@ -52,7 +56,23 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    /* ====================================================== */
+    // BULK NONAKTIF
+    if (action === "bulk_nonaktif") {
+      if (
+        !Array.isArray(body.employee_ids) ||
+        body.employee_ids.length === 0
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "employee_ids wajib berupa array dan tidak boleh kosong",
+          },
+          { status: 400 }
+        )
+      }
+    }
+
+    /* ============================================= */
 
     const res = await fetch(
       `${SCRIPT_URL}?action=${action}&token=${API_TOKEN}`,

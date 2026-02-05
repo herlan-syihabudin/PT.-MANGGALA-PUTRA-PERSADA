@@ -155,21 +155,25 @@ function AddEmployeeModal({ onClose }: { onClose: () => void }) {
           <input className="border rounded-lg p-2" placeholder="Atasan Langsung" />
 
           {/* STATUS */}
-          <select className="border rounded-lg p-2">
-            <option>Status Karyawan *</option>
-            <option>Tetap</option>
-            <option>Kontrak</option>
-            <option>Probation</option>
-          </select>
+<select className="border rounded-lg p-2">
+  <option>Status Karyawan *</option>
+  <option>Tetap</option>
+  <option>Kontrak</option>
+  <option>Probation</option>
+</select>
 
-          <input type="date" className="border rounded-lg p-2" />
+<input
+  type="date"
+  className="border rounded-lg p-2"
+  placeholder="Tanggal Masuk Kerja"
+/>
 
-          <select className="border rounded-lg p-2">
-            <option>Tipe Karyawan</option>
-            <option>HO</option>
-            <option>Project</option>
-            <option>Site</option>
-          </select>
+<select className="border rounded-lg p-2">
+  <option>Tipe Karyawan</option>
+  <option>HO</option>
+  <option>Project</option>
+  <option>Site</option>
+</select>
         </form>
 
         {/* ACTION */}

@@ -345,11 +345,12 @@ function EditEmployeeModal({
 
         <h2 className="text-xl font-bold">Edit Data Karyawan</h2>
 
-        <EmployeeForm
-  mode="edit"
-  form={form}
-  setForm={setForm}
-/>
+        interface EmployeeFormProps {
+  mode: "add" | "edit"
+  form: any
+  setForm: React.Dispatch<any>
+  employeeID?: string
+}
 
         <div className="flex justify-end gap-2 pt-4 border-t">
           <button onClick={onClose} className="px-4 py-2 border rounded">

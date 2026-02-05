@@ -182,9 +182,11 @@ const totalHarian = filteredEmployees.filter(
       {/* FILTER BAR */}
 <div className="bg-white border rounded-xl p-4 grid grid-cols-12 gap-3 items-center">
   
+  <div className="bg-white border rounded-xl p-4 flex items-center gap-3">
+
   {/* SEARCH */}
   <input
-    className="border p-2 rounded col-span-4"
+    className="border p-2 rounded w-64"
     placeholder="Cari nama / divisi / jabatan"
     value={search}
     onChange={(e) => setSearch(e.target.value)}
@@ -192,7 +194,7 @@ const totalHarian = filteredEmployees.filter(
 
   {/* STATUS */}
   <select
-    className="border p-2 rounded col-span-2"
+    className="border p-2 rounded"
     value={statusFilter}
     onChange={(e) => setStatusFilter(e.target.value)}
   >
@@ -203,7 +205,7 @@ const totalHarian = filteredEmployees.filter(
 
   {/* DIVISI */}
   <select
-    className="border p-2 rounded col-span-2"
+    className="border p-2 rounded"
     value={divisiFilter}
     onChange={(e) => setDivisiFilter(e.target.value)}
   >
@@ -216,7 +218,7 @@ const totalHarian = filteredEmployees.filter(
 
   {/* LOKASI */}
   <select
-    className="border p-2 rounded col-span-2"
+    className="border p-2 rounded"
     value={lokasiFilter}
     onChange={(e) => setLokasiFilter(e.target.value)}
   >
@@ -227,7 +229,7 @@ const totalHarian = filteredEmployees.filter(
 
   {/* TIPE */}
   <select
-    className="border p-2 rounded col-span-2"
+    className="border p-2 rounded"
     value={tipeFilter}
     onChange={(e) => setTipeFilter(e.target.value)}
   >
@@ -236,6 +238,20 @@ const totalHarian = filteredEmployees.filter(
     <option>Kontrak</option>
     <option>Harian</option>
   </select>
+
+  {/* SPACER */}
+  <div className="flex-1" />
+
+  {/* EXPORT */}
+  <button
+  onClick={exportCSV}
+  disabled={filteredEmployees.length === 0}
+  className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
+>
+  {selectedIds.length > 0
+    ? `Export (${selectedIds.length}) Terpilih`
+    : "Export (Filter)"}
+</button>
 
 </div>
 
@@ -293,15 +309,6 @@ const totalHarian = filteredEmployees.filter(
   )}
 </div>
 
-      <button
-  onClick={exportCSV}
-  disabled={filteredEmployees.length === 0}
-  className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
->
-  {selectedIds.length > 0
-    ? `Export (${selectedIds.length}) Terpilih`
-    : "Export (Filter)"}
-</button>
       
       {/* LIST */}
 <div className="bg-white border rounded-xl divide-y text-sm">

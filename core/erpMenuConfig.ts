@@ -164,7 +164,7 @@ export const ERP_MENU = [
     { name: "Employees", href: "/admin/hr/employees", icon: Badge },
     { name: "Attendance", href: "/admin/hr/attendance", icon: Fingerprint },
     { name: "Payroll", href: "/admin/hr/payroll", icon: Banknote },
-    { name: "Contract & Evaluation", href: "/admin/hr/contracts", icon: FileSignature },
+    { name: "Contract & Evaluation", href: "/admin/hr/contract-evaluation", icon: FileSignature },
     { name: "General Affair", href: "/admin/hr/ga", icon: Building2 },
   ],
 },

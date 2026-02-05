@@ -9,6 +9,16 @@ export default function EmployeeMasterPage() {
   const [employees, setEmployees] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
+  // ✅ DETAIL
+  const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null)
+
+  // ✅ SEARCH & FILTER
+  const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState("aktif")
+  const [divisiFilter, setDivisiFilter] = useState("")
+  const [lokasiFilter, setLokasiFilter] = useState("")
+  const [tipeFilter, setTipeFilter] = useState("")
+
   async function loadEmployees() {
     const res = await fetch("/api/hr/employees", { cache: "no-store" })
     const data = await res.json()
@@ -19,6 +29,28 @@ export default function EmployeeMasterPage() {
   useEffect(() => {
     loadEmployees()
   }, [])
+
+  // ✅ LOGIC FILTER (data asli tidak diubah)
+  const filteredEmployees = employees.filter((e) => {
+    const q = search.toLowerCase()
+
+    const matchSearch =
+      !search ||
+      e.nama_lengkap?.toLowerCase().includes(q) ||
+      e.divisi?.toLowerCase().includes(q) ||
+      e.jabatan?.toLowerCase().includes(q)
+
+    const matchStatus =
+      statusFilter === "all" ||
+      (statusFilter === "aktif" && e.is_active) ||
+      (statusFilter === "nonaktif" && !e.is_active)
+
+    const matchDivisi = !divisiFilter || e.divisi === divisiFilter
+    const matchLokasi = !lokasiFilter || e.lokasi_kerja === lokasiFilter
+    const matchTipe = !tipeFilter || e.tipe_karyawan === tipeFilter
+
+    return matchSearch && matchStatus && matchDivisi && matchLokasi && matchTipe
+  })
 
   return (
     <section className="p-6 md:p-10 space-y-8">
@@ -47,78 +79,199 @@ export default function EmployeeMasterPage() {
         Input data inti karyawan (master HR)
       </div>
 
-      {/* LIST */}
-<div className="bg-white border rounded-xl divide-y text-sm">
-  {loading ? (
-    <p className="p-6 text-gray-400">Loading...</p>
-  ) : employees.length === 0 ? (
-    <p className="p-6 text-gray-400">Belum ada data karyawan</p>
-  ) : (
-    employees.map((e, i) => (
-      <div
-        key={i}
-        className="p-4 flex items-center justify-between hover:bg-gray-50"
-      >
-        {/* LEFT INFO */}
-        <div>
-          <p className="font-semibold text-gray-900">
-            {e.nama_lengkap}
-          </p>
-          <p className="text-xs text-gray-500">
-            {e.divisi} • {e.jabatan}
-          </p>
-        </div>
+      {/* FILTER BAR */}
+      <div className="bg-white border rounded-xl p-4 flex flex-wrap gap-3 text-sm">
+        <input
+          className="border p-2 rounded w-64"
+          placeholder="Cari nama / divisi / jabatan"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
-        {/* RIGHT ACTION */}
-        <div className="flex items-center gap-3">
-          <span
-            className={`px-2 py-1 text-xs rounded font-semibold
-              ${
-                e.is_active
-                  ? "bg-green-100 text-green-700"
-                  : "bg-red-100 text-red-700"
-              }`}
-          >
-            {e.is_active ? "AKTIF" : "NONAKTIF"}
-          </span>
+        <select
+          className="border p-2 rounded"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="aktif">Aktif</option>
+          <option value="nonaktif">Nonaktif</option>
+          <option value="all">Semua Status</option>
+        </select>
 
-          <button
-            className="text-blue-600 text-xs hover:underline"
-            onClick={() =>
-              alert(`EDIT ${e.employee_id} (next step)`)
-            }
-          >
-            Edit
-          </button>
+        <select
+          className="border p-2 rounded"
+          value={divisiFilter}
+          onChange={(e) => setDivisiFilter(e.target.value)}
+        >
+          <option value="">Semua Divisi</option>
+          <option>Engineering</option>
+          <option>HRGA</option>
+          <option>Finance</option>
+          <option>Project</option>
+        </select>
 
-          {e.is_active && (
-            <button
-              className="text-red-600 text-xs hover:underline"
-              onClick={() =>
-                alert(`NONAKTIF ${e.employee_id} (next step)`)
-              }
-            >
-              Nonaktif
-            </button>
-          )}
-        </div>
+        <select
+          className="border p-2 rounded"
+          value={lokasiFilter}
+          onChange={(e) => setLokasiFilter(e.target.value)}
+        >
+          <option value="">Semua Lokasi</option>
+          <option>Head Office</option>
+          <option>Site Project</option>
+        </select>
+
+        <select
+          className="border p-2 rounded"
+          value={tipeFilter}
+          onChange={(e) => setTipeFilter(e.target.value)}
+        >
+          <option value="">Semua Tipe</option>
+          <option>Tetap</option>
+          <option>Kontrak</option>
+          <option>Probation</option>
+          <option>Intern</option>
+        </select>
       </div>
-    ))
-  )}
-</div>
 
-      {/* MODAL */}
+      {/* LIST */}
+      <div className="bg-white border rounded-xl divide-y text-sm">
+        {loading ? (
+          <p className="p-6 text-gray-400">Loading...</p>
+        ) : filteredEmployees.length === 0 ? (
+          <p className="p-6 text-gray-400">Data tidak ditemukan</p>
+        ) : (
+          filteredEmployees.map((e, i) => (
+            <div
+              key={i}
+              className="p-4 flex items-center justify-between hover:bg-gray-50 cursor-pointer"
+              onClick={() => setSelectedEmployee(e)}
+            >
+              {/* LEFT INFO */}
+              <div>
+                <p className="font-semibold text-gray-900">
+                  {e.nama_lengkap}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {e.divisi} • {e.jabatan}
+                </p>
+              </div>
+
+              {/* RIGHT ACTION */}
+              <div className="flex items-center gap-3">
+                <span
+                  className={`px-2 py-1 text-xs rounded font-semibold
+                    ${
+                      e.is_active
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                >
+                  {e.is_active ? "AKTIF" : "NONAKTIF"}
+                </span>
+
+                <button
+                  className="text-blue-600 text-xs hover:underline"
+                  onClick={(ev) => {
+                    ev.stopPropagation()
+                    alert(`EDIT ${e.employee_id} (next step)`)
+                  }}
+                >
+                  Edit
+                </button>
+
+                {e.is_active && (
+                  <button
+                    className="text-red-600 text-xs hover:underline"
+                    onClick={(ev) => {
+                      ev.stopPropagation()
+                      alert(`NONAKTIF ${e.employee_id} (next step)`)
+                    }}
+                  >
+                    Nonaktif
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* MODAL ADD */}
       {open && (
         <AddEmployeeModal
           onClose={() => setOpen(false)}
           onSaved={loadEmployees}
         />
       )}
+
+      {/* MODAL DETAIL */}
+      {selectedEmployee && (
+        <EmployeeDetailModal
+          employee={selectedEmployee}
+          onClose={() => setSelectedEmployee(null)}
+        />
+      )}
     </section>
   )
 }
 
-/* ================= MODAL ================= */
+/* ================= DETAIL MODAL ================= */
+
+function EmployeeDetailModal({
+  employee,
+  onClose,
+}: {
+  employee: any
+  onClose: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white w-full max-w-3xl rounded-2xl p-6 space-y-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold">Detail Karyawan</h2>
+          <button
+            onClick={onClose}
+            className="text-sm text-gray-500 hover:underline"
+          >
+            Tutup
+          </button>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4 text-sm">
+          <Detail label="Nama Lengkap" value={employee.nama_lengkap} />
+          <Detail label="NIK KTP" value={employee.nik_ktp} />
+          <Detail label="Jenis Kelamin" value={employee.jenis_kelamin} />
+          <Detail label="Tanggal Lahir" value={employee.tgl_lahir} />
+          <Detail label="Tempat Lahir" value={employee.tempat_lahir} />
+          <Detail label="Status Pernikahan" value={employee.status_pernikahan} />
+          <Detail label="Alamat Domisili" value={employee.alamat_domisili} />
+          <Detail label="Email" value={employee.email} />
+          <Detail label="No HP" value={employee.no_hp} />
+          <Detail label="Divisi" value={employee.divisi} />
+          <Detail label="Jabatan" value={employee.jabatan} />
+          <Detail label="Atasan Langsung" value={employee.atasan_langsung} />
+          <Detail label="Lokasi Kerja" value={employee.lokasi_kerja} />
+          <Detail label="Status Karyawan" value={employee.status_karyawan} />
+          <Detail label="Tipe Karyawan" value={employee.tipe_karyawan} />
+          <Detail label="Tanggal Masuk" value={employee.tgl_masuk} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Detail({ label, value }: { label: string; value: any }) {
+  return (
+    <div>
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className="font-medium text-gray-900">
+        {value || "-"}
+      </p>
+    </div>
+  )
+}
+
+/* ================= MODAL TAMBAH (PERSIS ASLI) ================= */
 
 function generateEmployeeID(divisi: string) {
   const company = "MPP"

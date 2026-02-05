@@ -48,21 +48,64 @@ export default function EmployeeMasterPage() {
       </div>
 
       {/* LIST */}
-      <div className="bg-white border rounded-xl p-6 text-sm">
-        {loading ? (
-          <p className="text-gray-400">Loading...</p>
-        ) : employees.length === 0 ? (
-          <p className="text-gray-400">Belum ada data karyawan</p>
-        ) : (
-          <div className="space-y-2">
-            {employees.map((e, i) => (
-              <div key={i} className="border-b pb-2">
-                <b>{e.nama_lengkap}</b> — {e.divisi} — {e.jabatan}
-              </div>
-            ))}
-          </div>
-        )}
+<div className="bg-white border rounded-xl divide-y text-sm">
+  {loading ? (
+    <p className="p-6 text-gray-400">Loading...</p>
+  ) : employees.length === 0 ? (
+    <p className="p-6 text-gray-400">Belum ada data karyawan</p>
+  ) : (
+    employees.map((e, i) => (
+      <div
+        key={i}
+        className="p-4 flex items-center justify-between hover:bg-gray-50"
+      >
+        {/* LEFT INFO */}
+        <div>
+          <p className="font-semibold text-gray-900">
+            {e.nama_lengkap}
+          </p>
+          <p className="text-xs text-gray-500">
+            {e.divisi} • {e.jabatan}
+          </p>
+        </div>
+
+        {/* RIGHT ACTION */}
+        <div className="flex items-center gap-3">
+          <span
+            className={`px-2 py-1 text-xs rounded font-semibold
+              ${
+                e.is_active
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+          >
+            {e.is_active ? "AKTIF" : "NONAKTIF"}
+          </span>
+
+          <button
+            className="text-blue-600 text-xs hover:underline"
+            onClick={() =>
+              alert(`EDIT ${e.employee_id} (next step)`)
+            }
+          >
+            Edit
+          </button>
+
+          {e.is_active && (
+            <button
+              className="text-red-600 text-xs hover:underline"
+              onClick={() =>
+                alert(`NONAKTIF ${e.employee_id} (next step)`)
+              }
+            >
+              Nonaktif
+            </button>
+          )}
+        </div>
       </div>
+    ))
+  )}
+</div>
 
       {/* MODAL */}
       {open && (

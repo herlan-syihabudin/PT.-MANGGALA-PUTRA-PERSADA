@@ -192,70 +192,78 @@ export default function EmployeeMasterPage() {
         </button>
       </div>
 
-      {/* FILTER + EXPORT */}
-      <div className="bg-white border rounded-xl p-4 flex flex-wrap items-center gap-3">
-        <input
-          className="border p-2 rounded w-64"
-          placeholder="Cari nama / divisi / jabatan"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      {/* FILTER BAR (COMPACT & INLINE) */}
+<div className="bg-white border rounded-xl p-4 flex flex-wrap items-center gap-3">
 
-        <select
-          className="border p-2 rounded"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="aktif">Aktif</option>
-          <option value="nonaktif">Nonaktif</option>
-          <option value="all">Semua</option>
-        </select>
+  {/* SEARCH */}
+  <input
+    className="border p-2 rounded w-64"
+    placeholder="Cari nama / divisi / jabatan"
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+  />
 
-        <select
-          className="border p-2 rounded"
-          value={divisiFilter}
-          onChange={(e) => setDivisiFilter(e.target.value)}
-        >
-          <option value="">Semua Divisi</option>
-          <option>Engineering</option>
-          <option>HRGA</option>
-          <option>Finance</option>
-          <option>Project</option>
-        </select>
+  {/* STATUS */}
+  <select
+    className="border p-2 rounded w-32"
+    value={statusFilter}
+    onChange={(e) => setStatusFilter(e.target.value)}
+  >
+    <option value="aktif">Aktif</option>
+    <option value="nonaktif">Nonaktif</option>
+    <option value="all">Semua</option>
+  </select>
 
-        <select
-          className="border p-2 rounded"
-          value={lokasiFilter}
-          onChange={(e) => setLokasiFilter(e.target.value)}
-        >
-          <option value="">Semua Lokasi</option>
-          <option>Head Office</option>
-          <option>Site Project</option>
-        </select>
+  {/* DIVISI */}
+  <select
+    className="border p-2 rounded w-40"
+    value={divisiFilter}
+    onChange={(e) => setDivisiFilter(e.target.value)}
+  >
+    <option value="">Semua Divisi</option>
+    <option>Engineering</option>
+    <option>HRGA</option>
+    <option>Finance</option>
+    <option>Project</option>
+  </select>
 
-        <select
-          className="border p-2 rounded"
-          value={tipeFilter}
-          onChange={(e) => setTipeFilter(e.target.value)}
-        >
-          <option value="">Semua Tipe</option>
-          <option>Tetap</option>
-          <option>Kontrak</option>
-          <option>Harian</option>
-        </select>
+  {/* LOKASI */}
+  <select
+    className="border p-2 rounded w-40"
+    value={lokasiFilter}
+    onChange={(e) => setLokasiFilter(e.target.value)}
+  >
+    <option value="">Semua Lokasi</option>
+    <option>Head Office</option>
+    <option>Site Project</option>
+  </select>
 
-        <div className="flex-1" />
+  {/* TIPE */}
+  <select
+    className="border p-2 rounded w-36"
+    value={tipeFilter}
+    onChange={(e) => setTipeFilter(e.target.value)}
+  >
+    <option value="">Semua Tipe</option>
+    <option>Tetap</option>
+    <option>Kontrak</option>
+    <option>Harian</option>
+  </select>
 
-        <button
-          onClick={exportCSV}
-          disabled={filteredEmployees.length === 0}
-          className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
-        >
-          {selectedIds.length > 0
-            ? `Export (${selectedIds.length}) Terpilih`
-            : "Export (Filter)"}
-        </button>
-      </div>
+  {/* SPACER */}
+  <div className="flex-1" />
+
+  {/* EXPORT */}
+  <button
+    onClick={exportCSV}
+    disabled={filteredEmployees.length === 0}
+    className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
+  >
+    {selectedIds.length > 0
+      ? `Export (${selectedIds.length})`
+      : "Export"}
+  </button>
+</div>
 
       {/* BULK ACTION BAR */}
       <div className="flex items-center justify-between text-sm">

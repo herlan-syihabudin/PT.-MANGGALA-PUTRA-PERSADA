@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import EmployeeForm from "@/components/dashboard/hr/EmployeeForm"
 
 /* ================= PAGE ================= */
 
@@ -344,39 +345,11 @@ function EditEmployeeModal({
 
         <h2 className="text-xl font-bold">Edit Data Karyawan</h2>
 
-        <div className="grid md:grid-cols-2 gap-3 text-sm">
-          <input className="border p-2 bg-gray-100" value={form.employee_id} disabled />
-
-          <input className="border p-2"
-            value={form.nama_lengkap || ""}
-            onChange={(e) => setForm({ ...form, nama_lengkap: e.target.value })}
-          />
-
-          <input className="border p-2"
-            value={form.nik_ktp || ""}
-            onChange={(e) => setForm({ ...form, nik_ktp: e.target.value })}
-          />
-
-          <input className="border p-2"
-            value={form.jabatan || ""}
-            onChange={(e) => setForm({ ...form, jabatan: e.target.value })}
-          />
-
-          <input className="border p-2"
-            value={form.divisi || ""}
-            onChange={(e) => setForm({ ...form, divisi: e.target.value })}
-          />
-
-          <input className="border p-2"
-            value={form.lokasi_kerja || ""}
-            onChange={(e) => setForm({ ...form, lokasi_kerja: e.target.value })}
-          />
-
-          <input className="border p-2"
-            value={form.atasan_langsung || ""}
-            onChange={(e) => setForm({ ...form, atasan_langsung: e.target.value })}
-          />
-        </div>
+        <EmployeeForm
+  mode="edit"
+  form={form}
+  setForm={setForm}
+/>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
           <button onClick={onClose} className="px-4 py-2 border rounded">
@@ -464,103 +437,13 @@ function AddEmployeeModal({
 
         <h2 className="text-xl font-bold">Tambah Karyawan</h2>
 
-        <div className="grid md:grid-cols-2 gap-3 text-sm">
-          <input className="border p-2" placeholder="Nama Lengkap *"
-            onChange={(e) => setForm({ ...form, nama_lengkap: e.target.value })}
-          />
-
-          <input className="border p-2" placeholder="NIK KTP (16 digit) *"
-            maxLength={16}
-            onChange={(e) => setForm({ ...form, nik_ktp: e.target.value })}
-          />
-
-          <select className="border p-2"
-            onChange={(e) => setForm({ ...form, jenis_kelamin: e.target.value })}
-          >
-            <option value="">Jenis Kelamin</option>
-            <option>Laki-laki</option>
-            <option>Perempuan</option>
-          </select>
-
-          <input type="date" className="border p-2"
-            onChange={(e) => setForm({ ...form, tgl_lahir: e.target.value })}
-          />
-
-          <input className="border p-2" placeholder="Tempat Lahir"
-            onChange={(e) => setForm({ ...form, tempat_lahir: e.target.value })}
-          />
-
-          <select className="border p-2"
-            onChange={(e) => setForm({ ...form, status_pernikahan: e.target.value })}
-          >
-            <option>Status Pernikahan</option>
-            <option>Belum Menikah</option>
-            <option>Menikah</option>
-            <option>Cerai</option>
-          </select>
-
-          <input className="border p-2 md:col-span-2" placeholder="Alamat Domisili"
-            onChange={(e) => setForm({ ...form, alamat_domisili: e.target.value })}
-          />
-
-          <input className="border p-2" placeholder="Email"
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-          />
-
-          <input className="border p-2" placeholder="No HP"
-            onChange={(e) => setForm({ ...form, no_hp: e.target.value })}
-          />
-
-          <select className="border p-2"
-            onChange={(e) => setForm({ ...form, divisi: e.target.value })}
-          >
-            <option value="">Divisi *</option>
-            <option>Engineering</option>
-            <option>HRGA</option>
-            <option>Finance</option>
-            <option>Project</option>
-          </select>
-
-          <input className="border p-2 bg-gray-100" value={employeeID} disabled />
-
-          <input className="border p-2" placeholder="Jabatan"
-            onChange={(e) => setForm({ ...form, jabatan: e.target.value })}
-          />
-
-          <select className="border p-2"
-            onChange={(e) => setForm({ ...form, lokasi_kerja: e.target.value })}
-          >
-            <option>Lokasi Kerja</option>
-            <option>Head Office</option>
-            <option>Site Project</option>
-          </select>
-
-          <input className="border p-2" placeholder="Atasan Langsung"
-            onChange={(e) => setForm({ ...form, atasan_langsung: e.target.value })}
-          />
-
-          <select className="border p-2"
-            onChange={(e) => setForm({ ...form, status_karyawan: e.target.value })}
-          >
-            <option>Status Karyawan</option>
-            <option>Tetap</option>
-            <option>Kontrak</option>
-            <option>Probation</option>
-          </select>
-
-          <input type="date" className="border p-2"
-            onChange={(e) => setForm({ ...form, tgl_masuk: e.target.value })}
-          />
-
-          <select className="border p-2"
-            onChange={(e) => setForm({ ...form, tipe_karyawan: e.target.value })}
-          >
-            <option>Tipe Karyawan</option>
-            <option>HO</option>
-            <option>Project</option>
-            <option>Site</option>
-          </select>
-        </div>
+        {/* 🔥 FORM SATU PINTU */}
+        <EmployeeForm
+          mode="add"
+          form={form}
+          setForm={setForm}
+          employeeID={employeeID}
+        />
 
         <div className="flex justify-end gap-2 pt-4 border-t">
           <button onClick={onClose} className="px-4 py-2 border rounded">

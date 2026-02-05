@@ -40,6 +40,20 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const action = body.action || "add"
 
+    /* ================= UPGRADE VALIDATION ================= */
+
+    // aksi yang wajib punya employee_id
+    const needEmployeeId = ["update", "nonaktif", "aktif"]
+
+    if (needEmployeeId.includes(action) && !body.employee_id) {
+      return NextResponse.json(
+        { error: "employee_id wajib diisi" },
+        { status: 400 }
+      )
+    }
+
+    /* ====================================================== */
+
     const res = await fetch(
       `${SCRIPT_URL}?action=${action}&token=${API_TOKEN}`,
       {
@@ -51,14 +65,18 @@ export async function POST(req: NextRequest) {
 
     const data = await res.json()
 
-    if (!res.ok || data.error) {
+    if (!res.ok || data?.error) {
       return NextResponse.json(
-        { error: data.error || "HR API error" },
+        { error: data?.error || "HR API error" },
         { status: 400 }
       )
     }
 
-    return NextResponse.json(data)
+    return NextResponse.json({
+      success: true,
+      action,
+      data,
+    })
   } catch (err) {
     console.error("HR POST ERROR:", err)
     return NextResponse.json(

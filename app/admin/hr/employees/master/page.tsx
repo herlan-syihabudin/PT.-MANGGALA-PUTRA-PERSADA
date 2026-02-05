@@ -54,6 +54,19 @@ export default function EmployeeMasterPage() {
     return matchSearch && matchStatus && matchDivisi && matchLokasi && matchTipe
   })
 
+  const total = filteredEmployees.length
+const totalTetap = filteredEmployees.filter(
+  (e) => e.tipe_karyawan === "Tetap"
+).length
+
+const totalKontrak = filteredEmployees.filter(
+  (e) => e.tipe_karyawan === "Kontrak"
+).length
+
+const totalHarian = filteredEmployees.filter(
+  (e) => e.tipe_karyawan === "Harian"
+).length
+  
   return (
     <section className="p-6 md:p-10 space-y-8">
       {/* HEADER */}
@@ -82,6 +95,23 @@ export default function EmployeeMasterPage() {
 
       {/* FILTER BAR */}
       <div className="bg-white border rounded-xl p-4 flex flex-wrap gap-3 text-sm">
+        <div className="bg-white border rounded-xl px-4 py-3 text-sm flex flex-wrap gap-4">
+  <span className="font-semibold text-gray-700">
+    Total: {total}
+  </span>
+
+  <span className="text-green-700">
+    Tetap: {totalTetap}
+  </span>
+
+  <span className="text-blue-700">
+    Kontrak: {totalKontrak}
+  </span>
+
+  <span className="text-orange-700">
+    Harian: {totalHarian}
+  </span>
+</div>
         <input
           className="border p-2 rounded w-64"
           placeholder="Cari nama / divisi / jabatan"

@@ -3,9 +3,22 @@ import { NextRequest, NextResponse } from "next/server"
 const SCRIPT_URL = process.env.HR_SCRIPT_URL!
 const API_TOKEN = process.env.HR_API_TOKEN!
 
-export async function GET() {
+/* ================= GET ================= */
+
+export async function GET(req: NextRequest) {
   try {
-    const url = `${SCRIPT_URL}?action=employees&token=${API_TOKEN}`
+    const { searchParams } = new URL(req.url)
+    const employee_id = searchParams.get("employee_id")
+
+    let url = ""
+
+    if (employee_id) {
+      // detail karyawan
+      url = `${SCRIPT_URL}?action=employee_detail&employee_id=${employee_id}&token=${API_TOKEN}`
+    } else {
+      // list karyawan
+      url = `${SCRIPT_URL}?action=employees&token=${API_TOKEN}`
+    }
 
     const res = await fetch(url, { cache: "no-store" })
     const data = await res.json()
@@ -20,21 +33,27 @@ export async function GET() {
   }
 }
 
+/* ================= POST ================= */
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
+    const action = body.action || "add"
 
-    const res = await fetch(`${SCRIPT_URL}?token=${API_TOKEN}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    })
+    const res = await fetch(
+      `${SCRIPT_URL}?action=${action}&token=${API_TOKEN}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    )
 
     const data = await res.json()
 
     if (!res.ok || data.error) {
       return NextResponse.json(
-        { error: data.error || "Failed to save employee" },
+        { error: data.error || "HR API error" },
         { status: 400 }
       )
     }
@@ -43,7 +62,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("HR POST ERROR:", err)
     return NextResponse.json(
-      { error: "Failed to save employee" },
+      { error: "Failed to process HR request" },
       { status: 500 }
     )
   }

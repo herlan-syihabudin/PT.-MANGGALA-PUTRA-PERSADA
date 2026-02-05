@@ -11,6 +11,7 @@ export default function EmployeeMasterPage() {
 
   // ✅ DETAIL
   const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null)
+  const [editEmployee, setEditEmployee] = useState<any | null>(null)
 
   // ✅ SEARCH & FILTER
   const [search, setSearch] = useState("")
@@ -177,23 +178,41 @@ export default function EmployeeMasterPage() {
                 <button
                   className="text-blue-600 text-xs hover:underline"
                   onClick={(ev) => {
-                    ev.stopPropagation()
-                    alert(`EDIT ${e.employee_id} (next step)`)
-                  }}
+  ev.stopPropagation()
+  setEditEmployee(e)
+}}
                 >
                   Edit
                 </button>
 
                 {e.is_active && (
                   <button
-                    className="text-red-600 text-xs hover:underline"
-                    onClick={(ev) => {
-                      ev.stopPropagation()
-                      alert(`NONAKTIF ${e.employee_id} (next step)`)
-                    }}
-                  >
-                    Nonaktif
-                  </button>
+  className="text-red-600 text-xs hover:underline"
+  onClick={async (ev) => {
+    ev.stopPropagation()
+
+    if (!confirm(`Nonaktifkan ${e.nama_lengkap}?`)) return
+
+    const res = await fetch("/api/hr/employees", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "nonaktif",
+        employee_id: e.employee_id,
+      }),
+    })
+
+    if (!res.ok) {
+      alert("Gagal menonaktifkan karyawan")
+      return
+    }
+
+    alert("Karyawan berhasil dinonaktifkan")
+    loadEmployees()
+  }}
+>
+  Nonaktif
+</button>
                 )}
               </div>
             </div>
@@ -216,6 +235,13 @@ export default function EmployeeMasterPage() {
           onClose={() => setSelectedEmployee(null)}
         />
       )}
+      {editEmployee && (
+  <EditEmployeeModal
+    employee={editEmployee}
+    onClose={() => setEditEmployee(null)}
+    onSaved={loadEmployees}
+  />
+)}
     </section>
   )
 }
@@ -276,6 +302,91 @@ function Detail({ label, value }: { label: string; value: any }) {
       <p className="font-medium text-gray-900">
         {value || "-"}
       </p>
+    </div>
+  )
+}
+
+function EditEmployeeModal({
+  employee,
+  onClose,
+  onSaved,
+}: {
+  employee: any
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [form, setForm] = useState<any>({ ...employee })
+
+  async function submit() {
+    const res = await fetch("/api/hr/employees", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "update",
+        employee_id: employee.employee_id, // ❗ ID DIKUNCI
+        ...form,
+      }),
+    })
+
+    if (!res.ok) {
+      alert("Gagal update data")
+      return
+    }
+
+    alert("Data karyawan berhasil diperbarui")
+    onSaved()
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white w-full max-w-4xl rounded-2xl p-6 space-y-6">
+
+        <h2 className="text-xl font-bold">Edit Data Karyawan</h2>
+
+        <div className="grid md:grid-cols-2 gap-3 text-sm">
+          <input className="border p-2 bg-gray-100" value={form.employee_id} disabled />
+
+          <input className="border p-2"
+            value={form.nama_lengkap || ""}
+            onChange={(e) => setForm({ ...form, nama_lengkap: e.target.value })}
+          />
+
+          <input className="border p-2"
+            value={form.nik_ktp || ""}
+            onChange={(e) => setForm({ ...form, nik_ktp: e.target.value })}
+          />
+
+          <input className="border p-2"
+            value={form.jabatan || ""}
+            onChange={(e) => setForm({ ...form, jabatan: e.target.value })}
+          />
+
+          <input className="border p-2"
+            value={form.divisi || ""}
+            onChange={(e) => setForm({ ...form, divisi: e.target.value })}
+          />
+
+          <input className="border p-2"
+            value={form.lokasi_kerja || ""}
+            onChange={(e) => setForm({ ...form, lokasi_kerja: e.target.value })}
+          />
+
+          <input className="border p-2"
+            value={form.atasan_langsung || ""}
+            onChange={(e) => setForm({ ...form, atasan_langsung: e.target.value })}
+          />
+        </div>
+
+        <div className="flex justify-end gap-2 pt-4 border-t">
+          <button onClick={onClose} className="px-4 py-2 border rounded">
+            Batal
+          </button>
+          <button onClick={submit} className="px-4 py-2 bg-gray-900 text-white rounded">
+            Simpan Perubahan
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

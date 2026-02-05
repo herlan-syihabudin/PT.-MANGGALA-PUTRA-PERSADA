@@ -5,25 +5,16 @@ export const runtime = "nodejs"
 
 export async function GET() {
   try {
-    const email = process.env.GOOGLE_CLIENT_EMAIL
-    const key = process.env.GOOGLE_PRIVATE_KEY
-    const sheetId = process.env.HR_SHEET_ID
-
-    if (!email || !key || !sheetId) {
-      throw new Error("ENV_NOT_SET")
-    }
-
-    const auth = new google.auth.JWT(
-      email,
-      undefined,
-      key.replace(/\\n/g, "\n"),
-      ["https://www.googleapis.com/auth/spreadsheets.readonly"]
-    )
+    const auth = new google.auth.JWT({
+      email: process.env.GOOGLE_CLIENT_EMAIL,
+      key: process.env.GOOGLE_PRIVATE_KEY,
+      scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+    })
 
     const sheets = google.sheets({ version: "v4", auth })
 
     const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
+      spreadsheetId: process.env.HR_SHEET_ID!,
       range: "EMPLOYEE_MASTER!A1:T",
     })
 
@@ -40,10 +31,7 @@ export async function GET() {
 
     return NextResponse.json(data)
   } catch (err: any) {
-    console.error("HR API ERROR:", err)
-    return NextResponse.json(
-      { error: err.message || "Failed to fetch employee data" },
-      { status: 500 }
-    )
+    console.error("HR API ERROR FULL:", err)
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }

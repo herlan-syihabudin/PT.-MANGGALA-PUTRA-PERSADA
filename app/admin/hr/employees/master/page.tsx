@@ -149,11 +149,16 @@ export default function EmployeeMasterPage() {
               {/* LEFT INFO */}
               <div>
                 <p className="font-semibold text-gray-900">
-                  {e.nama_lengkap}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {e.divisi} • {e.jabatan}
-                </p>
+  {e.nama_lengkap}
+</p>
+
+<p className="text-[11px] text-gray-400">
+  ID: {e.employee_id || "-"}
+</p>
+
+<p className="text-xs text-gray-500">
+  {e.divisi} • {e.jabatan}
+</p>
               </div>
 
               {/* RIGHT ACTION */}

@@ -9,9 +9,6 @@ export default function EmployeeMasterPage() {
   const [employees, setEmployees] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  // ✅ TAMBAHAN (DETAIL KARYAWAN)
-  const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null)
-
   async function loadEmployees() {
     const res = await fetch("/api/hr/employees", { cache: "no-store" })
     const data = await res.json()
@@ -51,144 +48,77 @@ export default function EmployeeMasterPage() {
       </div>
 
       {/* LIST */}
-      <div className="bg-white border rounded-xl divide-y text-sm">
-        {loading ? (
-          <p className="p-6 text-gray-400">Loading...</p>
-        ) : employees.length === 0 ? (
-          <p className="p-6 text-gray-400">Belum ada data karyawan</p>
-        ) : (
-          employees.map((e, i) => (
-            <div
-              key={i}
-              className="p-4 flex items-center justify-between hover:bg-gray-50 cursor-pointer"
-              onClick={() => setSelectedEmployee(e)}
+<div className="bg-white border rounded-xl divide-y text-sm">
+  {loading ? (
+    <p className="p-6 text-gray-400">Loading...</p>
+  ) : employees.length === 0 ? (
+    <p className="p-6 text-gray-400">Belum ada data karyawan</p>
+  ) : (
+    employees.map((e, i) => (
+      <div
+        key={i}
+        className="p-4 flex items-center justify-between hover:bg-gray-50"
+      >
+        {/* LEFT INFO */}
+        <div>
+          <p className="font-semibold text-gray-900">
+            {e.nama_lengkap}
+          </p>
+          <p className="text-xs text-gray-500">
+            {e.divisi} • {e.jabatan}
+          </p>
+        </div>
+
+        {/* RIGHT ACTION */}
+        <div className="flex items-center gap-3">
+          <span
+            className={`px-2 py-1 text-xs rounded font-semibold
+              ${
+                e.is_active
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+          >
+            {e.is_active ? "AKTIF" : "NONAKTIF"}
+          </span>
+
+          <button
+            className="text-blue-600 text-xs hover:underline"
+            onClick={() =>
+              alert(`EDIT ${e.employee_id} (next step)`)
+            }
+          >
+            Edit
+          </button>
+
+          {e.is_active && (
+            <button
+              className="text-red-600 text-xs hover:underline"
+              onClick={() =>
+                alert(`NONAKTIF ${e.employee_id} (next step)`)
+              }
             >
-              {/* LEFT */}
-              <div>
-                <p className="font-semibold text-gray-900">
-                  {e.nama_lengkap}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {e.divisi} • {e.jabatan}
-                </p>
-              </div>
-
-              {/* RIGHT */}
-              <div className="flex items-center gap-3">
-                <span
-                  className={`px-2 py-1 text-xs rounded font-semibold
-                    ${
-                      e.is_active
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                >
-                  {e.is_active ? "AKTIF" : "NONAKTIF"}
-                </span>
-
-                <button
-                  className="text-blue-600 text-xs hover:underline"
-                  onClick={(ev) => {
-                    ev.stopPropagation()
-                    alert(`EDIT ${e.employee_id} (next step)`)
-                  }}
-                >
-                  Edit
-                </button>
-
-                {e.is_active && (
-                  <button
-                    className="text-red-600 text-xs hover:underline"
-                    onClick={(ev) => {
-                      ev.stopPropagation()
-                      alert(`NONAKTIF ${e.employee_id} (next step)`)
-                    }}
-                  >
-                    Nonaktif
-                  </button>
-                )}
-              </div>
-            </div>
-          ))
-        )}
+              Nonaktif
+            </button>
+          )}
+        </div>
       </div>
+    ))
+  )}
+</div>
 
-      {/* MODAL ADD */}
+      {/* MODAL */}
       {open && (
         <AddEmployeeModal
           onClose={() => setOpen(false)}
           onSaved={loadEmployees}
         />
       )}
-
-      {/* MODAL DETAIL */}
-      {selectedEmployee && (
-        <EmployeeDetailModal
-          employee={selectedEmployee}
-          onClose={() => setSelectedEmployee(null)}
-        />
-      )}
     </section>
   )
 }
 
-/* ================= DETAIL MODAL ================= */
-
-function EmployeeDetailModal({
-  employee,
-  onClose,
-}: {
-  employee: any
-  onClose: () => void
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white w-full max-w-3xl rounded-2xl p-6 space-y-5">
-
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">Detail Karyawan</h2>
-          <button
-            onClick={onClose}
-            className="text-sm text-gray-500 hover:underline"
-          >
-            Tutup
-          </button>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-4 text-sm">
-          <Detail label="Nama Lengkap" value={employee.nama_lengkap} />
-          <Detail label="NIK KTP" value={employee.nik_ktp} />
-          <Detail label="Jenis Kelamin" value={employee.jenis_kelamin} />
-          <Detail label="Tanggal Lahir" value={employee.tgl_lahir} />
-          <Detail label="Tempat Lahir" value={employee.tempat_lahir} />
-          <Detail label="Status Pernikahan" value={employee.status_pernikahan} />
-          <Detail label="Email" value={employee.email} />
-          <Detail label="No HP" value={employee.no_hp} />
-          <Detail label="Divisi" value={employee.divisi} />
-          <Detail label="Jabatan" value={employee.jabatan} />
-          <Detail label="Atasan Langsung" value={employee.atasan_langsung} />
-          <Detail label="Lokasi Kerja" value={employee.lokasi_kerja} />
-          <Detail label="Status Karyawan" value={employee.status_karyawan} />
-          <Detail label="Tipe Karyawan" value={employee.tipe_karyawan} />
-          <Detail label="Tanggal Masuk" value={employee.tgl_masuk} />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function Detail({ label, value }: { label: string; value: any }) {
-  return (
-    <div>
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="font-medium text-gray-900">
-        {value || "-"}
-      </p>
-    </div>
-  )
-}
-
-/* ================= ADD MODAL (TETAP) ================= */
+/* ================= MODAL ================= */
 
 function generateEmployeeID(divisi: string) {
   const company = "MPP"
@@ -243,11 +173,14 @@ function AddEmployeeModal({
       }),
     })
 
+    const data = await res.json()
+
     if (!res.ok) {
-      alert("Gagal menyimpan")
+      alert(data.error || "Gagal menyimpan")
       return
     }
 
+    alert("Karyawan berhasil ditambahkan")
     onSaved()
     onClose()
   }
@@ -258,8 +191,103 @@ function AddEmployeeModal({
 
         <h2 className="text-xl font-bold">Tambah Karyawan</h2>
 
-        {/* FORM TIDAK DIUBAH */}
-        {/* (form lu tetap sama persis) */}
+        <div className="grid md:grid-cols-2 gap-3 text-sm">
+          <input className="border p-2" placeholder="Nama Lengkap *"
+            onChange={(e) => setForm({ ...form, nama_lengkap: e.target.value })}
+          />
+
+          <input className="border p-2" placeholder="NIK KTP (16 digit) *"
+            maxLength={16}
+            onChange={(e) => setForm({ ...form, nik_ktp: e.target.value })}
+          />
+
+          <select className="border p-2"
+            onChange={(e) => setForm({ ...form, jenis_kelamin: e.target.value })}
+          >
+            <option value="">Jenis Kelamin</option>
+            <option>Laki-laki</option>
+            <option>Perempuan</option>
+          </select>
+
+          <input type="date" className="border p-2"
+            onChange={(e) => setForm({ ...form, tgl_lahir: e.target.value })}
+          />
+
+          <input className="border p-2" placeholder="Tempat Lahir"
+            onChange={(e) => setForm({ ...form, tempat_lahir: e.target.value })}
+          />
+
+          <select className="border p-2"
+            onChange={(e) => setForm({ ...form, status_pernikahan: e.target.value })}
+          >
+            <option>Status Pernikahan</option>
+            <option>Belum Menikah</option>
+            <option>Menikah</option>
+            <option>Cerai</option>
+          </select>
+
+          <input className="border p-2 md:col-span-2" placeholder="Alamat Domisili"
+            onChange={(e) => setForm({ ...form, alamat_domisili: e.target.value })}
+          />
+
+          <input className="border p-2" placeholder="Email"
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
+
+          <input className="border p-2" placeholder="No HP"
+            onChange={(e) => setForm({ ...form, no_hp: e.target.value })}
+          />
+
+          <select className="border p-2"
+            onChange={(e) => setForm({ ...form, divisi: e.target.value })}
+          >
+            <option value="">Divisi *</option>
+            <option>Engineering</option>
+            <option>HRGA</option>
+            <option>Finance</option>
+            <option>Project</option>
+          </select>
+
+          <input className="border p-2 bg-gray-100" value={employeeID} disabled />
+
+          <input className="border p-2" placeholder="Jabatan"
+            onChange={(e) => setForm({ ...form, jabatan: e.target.value })}
+          />
+
+          <select className="border p-2"
+            onChange={(e) => setForm({ ...form, lokasi_kerja: e.target.value })}
+          >
+            <option>Lokasi Kerja</option>
+            <option>Head Office</option>
+            <option>Site Project</option>
+          </select>
+
+          <input className="border p-2" placeholder="Atasan Langsung"
+            onChange={(e) => setForm({ ...form, atasan_langsung: e.target.value })}
+          />
+
+          <select className="border p-2"
+            onChange={(e) => setForm({ ...form, status_karyawan: e.target.value })}
+          >
+            <option>Status Karyawan</option>
+            <option>Tetap</option>
+            <option>Kontrak</option>
+            <option>Probation</option>
+          </select>
+
+          <input type="date" className="border p-2"
+            onChange={(e) => setForm({ ...form, tgl_masuk: e.target.value })}
+          />
+
+          <select className="border p-2"
+            onChange={(e) => setForm({ ...form, tipe_karyawan: e.target.value })}
+          >
+            <option>Tipe Karyawan</option>
+            <option>HO</option>
+            <option>Project</option>
+            <option>Site</option>
+          </select>
+        </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
           <button onClick={onClose} className="px-4 py-2 border rounded">

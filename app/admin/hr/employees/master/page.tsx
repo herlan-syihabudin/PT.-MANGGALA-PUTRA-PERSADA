@@ -10,7 +10,7 @@ export default function EmployeeMasterPage() {
   const [employees, setEmployees] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  // ✅ DETAIL
+  // ✅ DETAIL & EDIT
   const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null)
   const [editEmployee, setEditEmployee] = useState<any | null>(null)
 
@@ -56,7 +56,6 @@ export default function EmployeeMasterPage() {
 
   return (
     <section className="p-6 md:p-10 space-y-8">
-
       {/* HEADER */}
       <div className="flex items-center justify-between">
         <div>
@@ -150,28 +149,23 @@ export default function EmployeeMasterPage() {
             >
               {/* LEFT INFO */}
               <div>
-                <p className="font-semibold text-gray-900">
-  {e.nama_lengkap}
-</p>
-
-<p className="text-[11px] text-gray-400">
-  ID: {e.employee_id || "-"}
-</p>
-
-<p className="text-xs text-gray-500">
-  {e.divisi} • {e.jabatan}
-</p>
+                <p className="font-semibold text-gray-900">{e.nama_lengkap}</p>
+                <p className="text-[11px] text-gray-400">
+                  ID: {e.employee_id || "-"}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {e.divisi} • {e.jabatan}
+                </p>
               </div>
 
               {/* RIGHT ACTION */}
               <div className="flex items-center gap-3">
                 <span
-                  className={`px-2 py-1 text-xs rounded font-semibold
-                    ${
-                      e.is_active
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
+                  className={`px-2 py-1 text-xs rounded font-semibold ${
+                    e.is_active
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
                 >
                   {e.is_active ? "AKTIF" : "NONAKTIF"}
                 </span>
@@ -179,41 +173,40 @@ export default function EmployeeMasterPage() {
                 <button
                   className="text-blue-600 text-xs hover:underline"
                   onClick={(ev) => {
-  ev.stopPropagation()
-  setEditEmployee(e)
-}}
+                    ev.stopPropagation()
+                    setEditEmployee(e)
+                  }}
                 >
                   Edit
                 </button>
 
                 {e.is_active && (
                   <button
-  className="text-red-600 text-xs hover:underline"
-  onClick={async (ev) => {
-    ev.stopPropagation()
+                    className="text-red-600 text-xs hover:underline"
+                    onClick={async (ev) => {
+                      ev.stopPropagation()
+                      if (!confirm(`Nonaktifkan ${e.nama_lengkap}?`)) return
 
-    if (!confirm(`Nonaktifkan ${e.nama_lengkap}?`)) return
+                      const res = await fetch("/api/hr/employees", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          action: "nonaktif",
+                          employee_id: e.employee_id,
+                        }),
+                      })
 
-    const res = await fetch("/api/hr/employees", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "nonaktif",
-        employee_id: e.employee_id,
-      }),
-    })
+                      if (!res.ok) {
+                        alert("Gagal menonaktifkan karyawan")
+                        return
+                      }
 
-    if (!res.ok) {
-      alert("Gagal menonaktifkan karyawan")
-      return
-    }
-
-    alert("Karyawan berhasil dinonaktifkan")
-    loadEmployees()
-  }}
->
-  Nonaktif
-</button>
+                      alert("Karyawan berhasil dinonaktifkan")
+                      loadEmployees()
+                    }}
+                  >
+                    Nonaktif
+                  </button>
                 )}
               </div>
             </div>
@@ -223,10 +216,7 @@ export default function EmployeeMasterPage() {
 
       {/* MODAL ADD */}
       {open && (
-        <AddEmployeeModal
-          onClose={() => setOpen(false)}
-          onSaved={loadEmployees}
-        />
+        <AddEmployeeModal onClose={() => setOpen(false)} onSaved={loadEmployees} />
       )}
 
       {/* MODAL DETAIL */}
@@ -236,13 +226,15 @@ export default function EmployeeMasterPage() {
           onClose={() => setSelectedEmployee(null)}
         />
       )}
+
+      {/* MODAL EDIT */}
       {editEmployee && (
-  <EditEmployeeModal
-    employee={editEmployee}
-    onClose={() => setEditEmployee(null)}
-    onSaved={loadEmployees}
-  />
-)}
+        <EditEmployeeModal
+          employee={editEmployee}
+          onClose={() => setEditEmployee(null)}
+          onSaved={loadEmployees}
+        />
+      )}
     </section>
   )
 }
@@ -270,10 +262,7 @@ function EmployeeDetailModal({
         </div>
 
         <div className="grid md:grid-cols-2 gap-4 text-sm">
-          <Detail
-  label="ID Karyawan"
-  value={employee.employee_id}
-/>
+          <Detail label="ID Karyawan" value={employee.employee_id} />
           <Detail label="Nama Lengkap" value={employee.nama_lengkap} />
           <Detail label="NIK KTP" value={employee.nik_ktp} />
           <Detail label="Jenis Kelamin" value={employee.jenis_kelamin} />
@@ -300,12 +289,12 @@ function Detail({ label, value }: { label: string; value: any }) {
   return (
     <div>
       <p className="text-xs text-gray-500">{label}</p>
-      <p className="font-medium text-gray-900">
-        {value || "-"}
-      </p>
+      <p className="font-medium text-gray-900">{value || "-"}</p>
     </div>
   )
 }
+
+/* ================= MODAL EDIT ================= */
 
 function EditEmployeeModal({
   employee,
@@ -342,15 +331,14 @@ function EditEmployeeModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white w-full max-w-4xl rounded-2xl p-6 space-y-6">
-
         <h2 className="text-xl font-bold">Edit Data Karyawan</h2>
 
-        interface EmployeeFormProps {
-  mode: "add" | "edit"
-  form: any
-  setForm: React.Dispatch<any>
-  employeeID?: string
-}
+        <EmployeeForm
+          mode="edit"
+          form={form}
+          setForm={setForm}
+          employeeID={form.employee_id}
+        />
 
         <div className="flex justify-end gap-2 pt-4 border-t">
           <button onClick={onClose} className="px-4 py-2 border rounded">
@@ -365,7 +353,7 @@ function EditEmployeeModal({
   )
 }
 
-/* ================= MODAL TAMBAH (PERSIS ASLI) ================= */
+/* ================= MODAL TAMBAH ================= */
 
 function generateEmployeeID(divisi: string) {
   const company = "MPP"
@@ -401,9 +389,7 @@ function AddEmployeeModal({
     tgl_masuk: "",
   })
 
-  const employeeID = form.divisi
-    ? generateEmployeeID(form.divisi)
-    : ""
+  const employeeID = form.divisi ? generateEmployeeID(form.divisi) : ""
 
   async function submit() {
     if (form.nik_ktp.length !== 16 || !form.divisi || !form.nama_lengkap) {
@@ -435,16 +421,10 @@ function AddEmployeeModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white w-full max-w-4xl rounded-2xl p-6 space-y-6">
-
         <h2 className="text-xl font-bold">Tambah Karyawan</h2>
 
         {/* 🔥 FORM SATU PINTU */}
-        <EmployeeForm
-          mode="add"
-          form={form}
-          setForm={setForm}
-          employeeID={employeeID}
-        />
+        <EmployeeForm mode="add" form={form} setForm={setForm} employeeID={employeeID} />
 
         <div className="flex justify-end gap-2 pt-4 border-t">
           <button onClick={onClose} className="px-4 py-2 border rounded">

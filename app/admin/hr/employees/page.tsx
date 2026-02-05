@@ -1,3 +1,5 @@
+import Link from "next/link"
+
 export default function EmployeePage() {
   return (
     <section className="p-6 md:p-10 space-y-8">
@@ -20,10 +22,12 @@ export default function EmployeePage() {
       {/* SUB MODULE GRID */}
       <div className="grid md:grid-cols-3 gap-6">
 
+        {/* ✅ CLICKABLE */}
         <SubModule
           title="Employee Master"
           desc="Data inti karyawan (identitas & kontak)"
           status="ACTIVE"
+          href="/admin/hr/employees/master"
         />
 
         <SubModule
@@ -86,13 +90,22 @@ function SubModule({
   title,
   desc,
   status,
+  href,
 }: {
   title: string
   desc: string
   status: "ACTIVE" | "LINK"
+  href?: string
 }) {
+  const Wrapper = href ? Link : "div"
+
   return (
-    <div className="bg-white border rounded-xl p-6 space-y-2 hover:shadow transition">
+    <Wrapper
+      href={href || ""}
+      className={`bg-white border rounded-xl p-6 space-y-2 transition
+        ${href ? "hover:shadow cursor-pointer" : ""}
+      `}
+    >
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-gray-900">
           {title}
@@ -108,12 +121,14 @@ function SubModule({
           {status}
         </span>
       </div>
+
       <p className="text-sm text-gray-600">
         {desc}
       </p>
+
       <p className="text-xs text-gray-400">
         Modul Employee
       </p>
-    </div>
+    </Wrapper>
   )
 }

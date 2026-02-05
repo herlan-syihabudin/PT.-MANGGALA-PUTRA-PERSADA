@@ -192,12 +192,12 @@ export default function EmployeeMasterPage() {
         </button>
       </div>
 
-      {/* FILTER BAR (COMPACT & INLINE) */}
-<div className="bg-white border rounded-xl p-4 flex flex-wrap items-center gap-3">
+      {/* FILTER BAR – FIX 1 ROW */}
+<div className="bg-white border rounded-xl p-4 flex items-center gap-3">
 
-  {/* SEARCH */}
+  {/* SEARCH (flexible) */}
   <input
-    className="border p-2 rounded w-64"
+    className="border p-2 rounded flex-1 min-w-[240px]"
     placeholder="Cari nama / divisi / jabatan"
     value={search}
     onChange={(e) => setSearch(e.target.value)}
@@ -205,7 +205,7 @@ export default function EmployeeMasterPage() {
 
   {/* STATUS */}
   <select
-    className="border p-2 rounded w-32"
+    className="border p-2 rounded w-28"
     value={statusFilter}
     onChange={(e) => setStatusFilter(e.target.value)}
   >
@@ -216,11 +216,11 @@ export default function EmployeeMasterPage() {
 
   {/* DIVISI */}
   <select
-    className="border p-2 rounded w-40"
+    className="border p-2 rounded w-36"
     value={divisiFilter}
     onChange={(e) => setDivisiFilter(e.target.value)}
   >
-    <option value="">Semua Divisi</option>
+    <option value="">Divisi</option>
     <option>Engineering</option>
     <option>HRGA</option>
     <option>Finance</option>
@@ -229,35 +229,32 @@ export default function EmployeeMasterPage() {
 
   {/* LOKASI */}
   <select
-    className="border p-2 rounded w-40"
+    className="border p-2 rounded w-36"
     value={lokasiFilter}
     onChange={(e) => setLokasiFilter(e.target.value)}
   >
-    <option value="">Semua Lokasi</option>
+    <option value="">Lokasi</option>
     <option>Head Office</option>
     <option>Site Project</option>
   </select>
 
   {/* TIPE */}
   <select
-    className="border p-2 rounded w-36"
+    className="border p-2 rounded w-32"
     value={tipeFilter}
     onChange={(e) => setTipeFilter(e.target.value)}
   >
-    <option value="">Semua Tipe</option>
+    <option value="">Tipe</option>
     <option>Tetap</option>
     <option>Kontrak</option>
     <option>Harian</option>
   </select>
 
-  {/* SPACER */}
-  <div className="flex-1" />
-
   {/* EXPORT */}
   <button
     onClick={exportCSV}
     disabled={filteredEmployees.length === 0}
-    className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
+    className="ml-2 px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
   >
     {selectedIds.length > 0
       ? `Export (${selectedIds.length})`

@@ -130,59 +130,64 @@ const totalHarian = filteredEmployees.filter(
 </div>
       
       {/* FILTER BAR */}
-      <div className="bg-white border rounded-xl p-4 flex flex-wrap gap-3 text-sm">
-        
-        <input
-          className="border p-2 rounded w-64"
-          placeholder="Cari nama / divisi / jabatan"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+<div className="bg-white border rounded-xl p-4 flex flex-wrap gap-3 items-center">
+  
+  {/* SEARCH */}
+  <input
+    className="border p-2 rounded w-72"
+    placeholder="Cari nama / divisi / jabatan"
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+  />
 
-        <select
-          className="border p-2 rounded"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="aktif">Aktif</option>
-          <option value="nonaktif">Nonaktif</option>
-          <option value="all">Semua Status</option>
-        </select>
+  {/* STATUS */}
+  <select
+    className="border p-2 rounded w-36"
+    value={statusFilter}
+    onChange={(e) => setStatusFilter(e.target.value)}
+  >
+    <option value="aktif">Aktif</option>
+    <option value="nonaktif">Nonaktif</option>
+    <option value="all">Semua</option>
+  </select>
 
-        <select
-          className="border p-2 rounded"
-          value={divisiFilter}
-          onChange={(e) => setDivisiFilter(e.target.value)}
-        >
-          <option value="">Semua Divisi</option>
-          <option>Engineering</option>
-          <option>HRGA</option>
-          <option>Finance</option>
-          <option>Project</option>
-        </select>
+  {/* DIVISI */}
+  <select
+    className="border p-2 rounded w-40"
+    value={divisiFilter}
+    onChange={(e) => setDivisiFilter(e.target.value)}
+  >
+    <option value="">Semua Divisi</option>
+    <option>Engineering</option>
+    <option>HRGA</option>
+    <option>Finance</option>
+    <option>Project</option>
+  </select>
 
-        <select
-          className="border p-2 rounded"
-          value={lokasiFilter}
-          onChange={(e) => setLokasiFilter(e.target.value)}
-        >
-          <option value="">Semua Lokasi</option>
-          <option>Head Office</option>
-          <option>Site Project</option>
-        </select>
+  {/* LOKASI */}
+  <select
+    className="border p-2 rounded w-40"
+    value={lokasiFilter}
+    onChange={(e) => setLokasiFilter(e.target.value)}
+  >
+    <option value="">Semua Lokasi</option>
+    <option>Head Office</option>
+    <option>Site Project</option>
+  </select>
 
-        <select
-          className="border p-2 rounded"
-          value={tipeFilter}
-          onChange={(e) => setTipeFilter(e.target.value)}
-        >
-          <option value="">Semua Tipe</option>
-          <option>Tetap</option>
-          <option>Kontrak</option>
-          <option>Probation</option>
-          <option>Intern</option>
-        </select>
-      </div>
+  {/* TIPE */}
+  <select
+    className="border p-2 rounded w-36"
+    value={tipeFilter}
+    onChange={(e) => setTipeFilter(e.target.value)}
+  >
+    <option value="">Semua Tipe</option>
+    <option>Tetap</option>
+    <option>Kontrak</option>
+    <option>Harian</option>
+  </select>
+
+</div>
 
       <div className="flex items-center justify-between text-sm">
   <label className="flex items-center gap-2">

@@ -33,6 +33,8 @@ export default function EmployeeMasterPage() {
     loadEmployees()
   }, [])
 
+
+  
   // ✅ LOGIC FILTER (data asli tidak diubah)
   const filteredEmployees = employees.filter((e) => {
     const q = search.toLowerCase()
@@ -67,6 +69,54 @@ const totalKontrak = filteredEmployees.filter(
 const totalHarian = filteredEmployees.filter(
   (e) => e.tipe_karyawan === "Harian"
 ).length
+
+  function exportCSV() {
+  const dataToExport =
+    selectedIds.length > 0
+      ? filteredEmployees.filter((e) =>
+          selectedIds.includes(e.employee_id)
+        )
+      : filteredEmployees
+
+  if (dataToExport.length === 0) {
+    alert("Tidak ada data untuk diexport")
+    return
+  }
+
+  const headers = [
+    "employee_id",
+    "nama_lengkap",
+    "nik_ktp",
+    "divisi",
+    "jabatan",
+    "lokasi_kerja",
+    "status_karyawan",
+    "tipe_karyawan",
+    "tgl_masuk",
+    "is_active",
+  ]
+
+  const rows = dataToExport.map((e) =>
+    headers.map((h) => `"${e[h] ?? ""}"`).join(",")
+  )
+
+  const csvContent = [headers.join(","), ...rows].join("\n")
+
+  const blob = new Blob([csvContent], {
+    type: "text/csv;charset=utf-8;",
+  })
+  const url = URL.createObjectURL(blob)
+
+  const link = document.createElement("a")
+  link.href = url
+  link.download =
+    selectedIds.length > 0
+      ? `employee_selected_${Date.now()}.csv`
+      : `employee_filtered_${Date.now()}.csv`
+
+  link.click()
+  URL.revokeObjectURL(url)
+}
   
   return (
     <section className="p-6 md:p-10 space-y-8">
@@ -130,11 +180,11 @@ const totalHarian = filteredEmployees.filter(
 </div>
       
       {/* FILTER BAR */}
-<div className="bg-white border rounded-xl p-4 flex flex-wrap gap-3 items-center">
+<div className="bg-white border rounded-xl p-4 grid grid-cols-12 gap-3 items-center">
   
   {/* SEARCH */}
   <input
-    className="border p-2 rounded w-72"
+    className="border p-2 rounded col-span-4"
     placeholder="Cari nama / divisi / jabatan"
     value={search}
     onChange={(e) => setSearch(e.target.value)}
@@ -142,7 +192,7 @@ const totalHarian = filteredEmployees.filter(
 
   {/* STATUS */}
   <select
-    className="border p-2 rounded w-36"
+    className="border p-2 rounded col-span-2"
     value={statusFilter}
     onChange={(e) => setStatusFilter(e.target.value)}
   >
@@ -153,7 +203,7 @@ const totalHarian = filteredEmployees.filter(
 
   {/* DIVISI */}
   <select
-    className="border p-2 rounded w-40"
+    className="border p-2 rounded col-span-2"
     value={divisiFilter}
     onChange={(e) => setDivisiFilter(e.target.value)}
   >
@@ -166,7 +216,7 @@ const totalHarian = filteredEmployees.filter(
 
   {/* LOKASI */}
   <select
-    className="border p-2 rounded w-40"
+    className="border p-2 rounded col-span-2"
     value={lokasiFilter}
     onChange={(e) => setLokasiFilter(e.target.value)}
   >
@@ -177,7 +227,7 @@ const totalHarian = filteredEmployees.filter(
 
   {/* TIPE */}
   <select
-    className="border p-2 rounded w-36"
+    className="border p-2 rounded col-span-2"
     value={tipeFilter}
     onChange={(e) => setTipeFilter(e.target.value)}
   >
@@ -242,6 +292,16 @@ const totalHarian = filteredEmployees.filter(
     </button>
   )}
 </div>
+
+      <button
+  onClick={exportCSV}
+  disabled={filteredEmployees.length === 0}
+  className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
+>
+  {selectedIds.length > 0
+    ? `Export (${selectedIds.length}) Terpilih`
+    : "Export (Filter)"}
+</button>
       
       {/* LIST */}
 <div className="bg-white border rounded-xl divide-y text-sm">

@@ -67,6 +67,19 @@ const totalHarian = filteredEmployees.filter(
   (e) => e.tipe_karyawan === "Harian"
 ).length
   
+  const total = filteredEmployees.length
+const totalTetap = filteredEmployees.filter(
+  (e) => e.tipe_karyawan === "Tetap"
+).length
+
+const totalKontrak = filteredEmployees.filter(
+  (e) => e.tipe_karyawan === "Kontrak"
+).length
+
+const totalHarian = filteredEmployees.filter(
+  (e) => e.tipe_karyawan === "Harian"
+).length
+  
   return (
     <section className="p-6 md:p-10 space-y-8">
       {/* HEADER */}
@@ -93,6 +106,29 @@ const totalHarian = filteredEmployees.filter(
         Input data inti karyawan (master HR)
       </div>
 
+      {/* INDICATOR JUMLAH */}
+<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+  <div className="border rounded-lg px-4 py-2">
+    <p className="text-xs text-gray-500">Total</p>
+    <p className="text-xl font-bold">{total}</p>
+  </div>
+
+  <div className="border rounded-lg px-4 py-2 text-green-700">
+    <p className="text-xs">Tetap</p>
+    <p className="text-xl font-bold">{totalTetap}</p>
+  </div>
+
+  <div className="border rounded-lg px-4 py-2 text-blue-700">
+    <p className="text-xs">Kontrak</p>
+    <p className="text-xl font-bold">{totalKontrak}</p>
+  </div>
+
+  <div className="border rounded-lg px-4 py-2 text-orange-700">
+    <p className="text-xs">Harian</p>
+    <p className="text-xl font-bold">{totalHarian}</p>
+  </div>
+</div>
+      
       {/* FILTER BAR */}
       <div className="bg-white border rounded-xl p-4 flex flex-wrap gap-3 text-sm">
         <div className="bg-white border rounded-xl px-4 py-3 text-sm flex flex-wrap gap-4">

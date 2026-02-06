@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 type Employee = {
   employee_id: string;
   nama_lengkap: string;
@@ -15,7 +17,7 @@ export default function EmployeeStatusPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/hr/employees")
+    fetch("/api/hr/employees", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         setEmployees(data || []);
@@ -25,20 +27,22 @@ export default function EmployeeStatusPage() {
   }, []);
 
   return (
-    <div className="p-6 relative z-10 pointer-events-auto">
+    <section className="p-6 md:p-10 space-y-6">
       {/* HEADER */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Employment Status</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Employment Status
+        </h1>
         <p className="text-sm text-gray-500">
           Kelola status kerja karyawan (aktif, mutasi, resign, dll)
         </p>
       </div>
 
-      {/* CONTENT */}
+      {/* TABLE */}
       {loading ? (
-        <div className="text-gray-500">Loading data karyawan...</div>
+        <p className="text-gray-500">Loading data karyawan...</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border bg-white">
+        <div className="overflow-x-auto bg-white border rounded-xl">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left">
               <tr>
@@ -62,14 +66,14 @@ export default function EmployeeStatusPage() {
                   <td className="p-3">{emp.nama_lengkap}</td>
                   <td className="p-3">{emp.divisi || "-"}</td>
                   <td className="p-3">{emp.jabatan || "-"}</td>
-                  <td className="p-3 relative z-20 pointer-events-auto">
-  <Link
-    href={`/admin/hr/employee-status/${emp.employee_id}`}
-    className="text-blue-600 hover:underline relative z-30 pointer-events-auto"
-  >
-    Lihat Status
-  </Link>
-</td>
+                  <td className="p-3">
+                    <Link
+                      href={`/admin/hr/employee-status/${emp.employee_id}`}
+                      className="text-blue-600 hover:underline font-medium"
+                    >
+                      Lihat Status →
+                    </Link>
+                  </td>
                 </tr>
               ))}
 
@@ -87,6 +91,6 @@ export default function EmployeeStatusPage() {
           </table>
         </div>
       )}
-    </div>
+    </section>
   );
 }

@@ -67,66 +67,73 @@ export default function EmployeePage() {
       {/* MODULE GRID */}
       <div className="grid md:grid-cols-3 gap-6">
 
-        <SubModule
-          title="Employee Master"
-          desc="Data inti karyawan (identitas & kontak)"
-          status={HR_STATUS.master ? "ACTIVE" : "DRAFT"}
-          href="/admin/hr/employees/master"
-        />
+  <SubModule
+    title="Employee Master"
+    desc="Data inti karyawan (identitas & kontak)"
+    status={HR_STATUS.master ? "ACTIVE" : "DRAFT"}
+    href="/admin/hr/employees/master"
+  />
 
-        <SubModule
-  title="Employment Status"
-  desc="Status kerja, tanggal masuk/keluar, lokasi"
-  status={HR_STATUS.employment ? "ACTIVE" : "DRAFT"}
-  href="/admin/hr/employment-status"
-/>
+  <SubModule
+    title="Employment Status"
+    desc="Status kerja, tanggal masuk/keluar, lokasi"
+    status={HR_STATUS.employment ? "ACTIVE" : "DRAFT"}
+    href="/admin/hr/employment-status"
+  />
 
-        <SubModule
-          title="Organization & Position"
-          desc="Divisi, jabatan, atasan langsung"
-          status={HR_STATUS.organization ? "ACTIVE" : "DRAFT"}
-        />
+  <SubModule
+    title="Organization & Position"
+    desc="Divisi, jabatan, atasan langsung"
+    status={HR_STATUS.organization ? "ACTIVE" : "DRAFT"}
+    href="/admin/hr/organization"
+  />
 
-        <SubModule
-          title="Contract Management"
-          desc="Kontrak PKWT / PKWTT & masa berlaku"
-          status={HR_STATUS.contract ? "ACTIVE" : "LOCKED"}
-          lockedReason="Lengkapi data organisasi terlebih dahulu"
-        />
+  <SubModule
+    title="Contract Management"
+    desc="Kontrak PKWT / PKWTT & masa berlaku"
+    status={HR_STATUS.contract ? "ACTIVE" : "LOCKED"}
+    href="/admin/hr/contract"
+    lockedReason="Lengkapi data organisasi terlebih dahulu"
+  />
 
-        <SubModule
-          title="Compensation & Payroll"
-          desc="Gaji pokok, tunjangan, rekening"
-          status={HR_STATUS.payroll ? "ACTIVE" : "LOCKED"}
-          lockedReason="Kontrak belum lengkap"
-        />
+  <SubModule
+    title="Compensation & Payroll"
+    desc="Gaji pokok, tunjangan, rekening"
+    status={HR_STATUS.payroll ? "ACTIVE" : "LOCKED"}
+    href="/admin/hr/payroll"
+    lockedReason="Kontrak belum lengkap"
+  />
 
-        <SubModule
-          title="BPJS & Tax"
-          desc="BPJS Kesehatan, TK, NPWP"
-          status={HR_STATUS.bpjs ? "ACTIVE" : "LOCKED"}
-          lockedReason="Payroll belum aktif"
-        />
+  <SubModule
+    title="BPJS & Tax"
+    desc="BPJS Kesehatan, TK, NPWP"
+    status={HR_STATUS.bpjs ? "ACTIVE" : "LOCKED"}
+    href="/admin/hr/bpjs-tax"
+    lockedReason="Payroll belum aktif"
+  />
 
-        <SubModule
-          title="Attendance"
-          desc="Relasi absensi & lembur"
-          status="LINK"
-        />
+  <SubModule
+    title="Attendance"
+    desc="Relasi absensi & lembur"
+    status="LINK"
+    href="/admin/hr/attendance"
+  />
 
-        <SubModule
-          title="Performance"
-          desc="KPI, OKR & penilaian"
-          status="LINK"
-        />
+  <SubModule
+    title="Performance"
+    desc="KPI, OKR & penilaian"
+    status="LINK"
+    href="/admin/hr/performance"
+  />
 
-        <SubModule
-          title="Employee Exit"
-          desc="Resign, clearance & nonaktif"
-          status="ACTIVE"
-        />
+  <SubModule
+    title="Employee Exit"
+    desc="Resign, clearance & nonaktif"
+    status="ACTIVE"
+    href="/admin/hr/employee-exit"
+  />
 
-      </div>
+</div>
 
     </section>
   )

@@ -17,11 +17,13 @@ const sheets = google.sheets({ version: "v4", auth })
 const SHEET_ID = process.env.GOOGLE_SHEET_ID!
 const SHEET_NAME = "EMPLOYEE_MASTER"
 
-/* ================= HELPER ================= */
+/* ================= HELPERS ================= */
 
-const isAktif = (value: any) => {
-  return String(value).trim().toLowerCase() === "true"
-}
+const isAktif = (v: any) =>
+  String(v).trim().toLowerCase() === "true"
+
+const norm = (v: any) =>
+  String(v || "").trim().toLowerCase()
 
 /* ================= GET DASHBOARD ================= */
 
@@ -44,19 +46,23 @@ export async function GET() {
 
     const total = employees.length
 
-    const aktif = employees.filter((e) => isAktif(e.is_active)).length
+    const aktifEmployees = employees.filter((e) =>
+      isAktif(e.is_active)
+    )
+
+    const aktif = aktifEmployees.length
     const nonaktif = total - aktif
 
-    const tetap = employees.filter(
-      (e) => e.tipe_karyawan === "Tetap" && isAktif(e.is_active)
+    const tetap = aktifEmployees.filter(
+      (e) => norm(e.tipe_karyawan) === "tetap"
     ).length
 
-    const kontrak = employees.filter(
-      (e) => e.tipe_karyawan === "Kontrak" && isAktif(e.is_active)
+    const kontrak = aktifEmployees.filter(
+      (e) => norm(e.tipe_karyawan) === "kontrak"
     ).length
 
-    const harian = employees.filter(
-      (e) => e.tipe_karyawan === "Harian" && isAktif(e.is_active)
+    const harian = aktifEmployees.filter(
+      (e) => norm(e.tipe_karyawan) === "harian"
     ).length
 
     return NextResponse.json({

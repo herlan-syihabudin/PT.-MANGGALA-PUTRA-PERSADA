@@ -20,8 +20,11 @@ type StatusRow = {
 /* ================= DATA FETCH ================= */
 
 async function getStatus(employee_id: string) {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/hr/employment-status?employee_id=${employee_id}`,
+    `${baseUrl}/api/hr/employment-status?employee_id=${employee_id}`,
     { cache: "no-store" }
   )
 

@@ -1,106 +1,203 @@
 import { NextRequest, NextResponse } from "next/server"
+import { google } from "googleapis"
 
-const SCRIPT_URL = process.env.HR_SCRIPT_URL!
-const API_TOKEN = process.env.HR_API_TOKEN!
+export const dynamic = "force-dynamic"
 
-/* ======================================================
-   GET : LIST & DETAIL KARYAWAN
-====================================================== */
+/* ================= GOOGLE AUTH ================= */
+
+const auth = new google.auth.JWT(
+  process.env.GOOGLE_CLIENT_EMAIL,
+  undefined,
+  process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+  ["https://www.googleapis.com/auth/spreadsheets"]
+)
+
+const sheets = google.sheets({ version: "v4", auth })
+const SHEET_ID = process.env.GOOGLE_SHEET_ID!
+const SHEET_NAME = "EMPLOYEE_MASTER"
+
+/* ================= UTIL ================= */
+
+async function getAllRows() {
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${SHEET_NAME}!A1:T`,
+  })
+
+  const [headers, ...rows] = res.data.values || []
+  return rows.map((r) => {
+    const obj: any = {}
+    headers.forEach((h: string, i: number) => {
+      obj[h] = r[i] ?? ""
+    })
+    return obj
+  })
+}
+
+/* ================= GET ================= */
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const employee_id = searchParams.get("employee_id")
 
-    let url = ""
+    const rows = await getAllRows()
 
     if (employee_id) {
-      // DETAIL KARYAWAN
-      url = `${SCRIPT_URL}?action=employee_detail&employee_id=${employee_id}&token=${API_TOKEN}`
-    } else {
-      // LIST KARYAWAN
-      url = `${SCRIPT_URL}?action=employees&token=${API_TOKEN}`
+      const emp = rows.find((r) => r.employee_id === employee_id)
+      if (!emp)
+        return NextResponse.json(
+          { error: "Employee not found" },
+          { status: 404 }
+        )
+
+      return NextResponse.json(emp)
     }
 
-    const res = await fetch(url, { cache: "no-store" })
-    const data = await res.json()
-
-    return NextResponse.json(data)
+    return NextResponse.json(rows)
   } catch (err) {
-    console.error("HR GET ERROR:", err)
+    console.error(err)
     return NextResponse.json(
-      { error: "Failed to fetch employee data" },
+      { error: "Failed to fetch employees" },
       { status: 500 }
     )
   }
 }
 
-/* ======================================================
-   POST : ADD / UPDATE / NONAKTIF / BULK NONAKTIF
-====================================================== */
+/* ================= POST ================= */
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const action = body.action || "add"
 
-    /* ================= VALIDATION ================= */
+    const rows = await getAllRows()
 
-    // aksi yg butuh employee_id tunggal
-    const needEmployeeId = ["update", "nonaktif", "aktif"]
+    /* ===== ADD ===== */
+    if (action === "add") {
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: SHEET_ID,
+        range: SHEET_NAME,
+        valueInputOption: "RAW",
+        requestBody: {
+          values: [[
+            body.employee_id,
+            body.nama_lengkap,
+            body.nik_ktp,
+            body.jenis_kelamin,
+            body.tgl_lahir,
+            body.tempat_lahir,
+            body.status_pernikahan,
+            body.alamat_domisili,
+            body.email,
+            body.no_hp,
+            body.divisi,
+            body.jabatan,
+            body.atasan_langsung,
+            body.lokasi_kerja,
+            body.status_karyawan,
+            body.tipe_karyawan,
+            body.tgl_masuk,
+            true,
+            new Date().toISOString(),
+            new Date().toISOString(),
+          ]],
+        },
+      })
 
-    if (needEmployeeId.includes(action) && !body.employee_id) {
-      return NextResponse.json(
-        { error: "employee_id wajib diisi" },
-        { status: 400 }
-      )
+      return NextResponse.json({ success: true })
     }
 
-    // BULK NONAKTIF
-    if (action === "bulk_nonaktif") {
-      if (
-        !Array.isArray(body.employee_ids) ||
-        body.employee_ids.length === 0
-      ) {
+    /* ===== UPDATE ===== */
+    if (action === "update") {
+      const index = rows.findIndex(
+        (r) => r.employee_id === body.employee_id
+      )
+      if (index === -1)
         return NextResponse.json(
-          {
-            error:
-              "employee_ids wajib berupa array dan tidak boleh kosong",
-          },
-          { status: 400 }
+          { error: "Employee not found" },
+          { status: 404 }
         )
-      }
+
+      const rowNumber = index + 2
+
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `${SHEET_NAME}!B${rowNumber}:P${rowNumber}`,
+        valueInputOption: "RAW",
+        requestBody: {
+          values: [[
+            body.nama_lengkap,
+            body.nik_ktp,
+            body.jenis_kelamin,
+            body.tgl_lahir,
+            body.tempat_lahir,
+            body.status_pernikahan,
+            body.alamat_domisili,
+            body.email,
+            body.no_hp,
+            body.divisi,
+            body.jabatan,
+            body.atasan_langsung,
+            body.lokasi_kerja,
+            body.status_karyawan,
+            body.tipe_karyawan,
+          ]],
+        },
+      })
+
+      return NextResponse.json({ success: true })
     }
 
-    /* ============================================= */
-
-    const res = await fetch(
-      `${SCRIPT_URL}?action=${action}&token=${API_TOKEN}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      }
-    )
-
-    const data = await res.json()
-
-    if (!res.ok || data?.error) {
-      return NextResponse.json(
-        { error: data?.error || "HR API error" },
-        { status: 400 }
+    /* ===== NONAKTIF ===== */
+    if (action === "nonaktif") {
+      const index = rows.findIndex(
+        (r) => r.employee_id === body.employee_id
       )
+      if (index === -1)
+        return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+      const rowNumber = index + 2
+
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `${SHEET_NAME}!R${rowNumber}:T${rowNumber}`,
+        valueInputOption: "RAW",
+        requestBody: {
+          values: [[false, "", new Date().toISOString()]],
+        },
+      })
+
+      return NextResponse.json({ success: true })
     }
 
-    return NextResponse.json({
-      success: true,
-      action,
-      data,
-    })
+    /* ===== BULK NONAKTIF ===== */
+    if (action === "bulk_nonaktif") {
+      let count = 0
+
+      for (let i = 0; i < rows.length; i++) {
+        if (body.employee_ids.includes(rows[i].employee_id)) {
+          const rowNumber = i + 2
+          await sheets.spreadsheets.values.update({
+            spreadsheetId: SHEET_ID,
+            range: `${SHEET_NAME}!R${rowNumber}:T${rowNumber}`,
+            valueInputOption: "RAW",
+            requestBody: {
+              values: [[false, "", new Date().toISOString()]],
+            },
+          })
+          count++
+        }
+      }
+
+      return NextResponse.json({ success: true, total: count })
+    }
+
+    return NextResponse.json({ error: "Invalid action" }, { status: 400 })
   } catch (err) {
-    console.error("HR POST ERROR:", err)
+    console.error(err)
     return NextResponse.json(
-      { error: "Failed to process HR request" },
+      { error: "HR API error" },
       { status: 500 }
     )
   }

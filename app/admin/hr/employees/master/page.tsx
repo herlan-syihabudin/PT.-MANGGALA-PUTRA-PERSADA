@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import EmployeeForm from "@/components/dashboard/hr/EmployeeForm"
 
-/* ================= TYPES SEDERHANA ================= */
+/* ================= TYPES ================= */
 
 type Employee = {
   employee_id: string
@@ -17,6 +17,15 @@ type Employee = {
   tgl_masuk?: string
   is_active?: boolean
   [key: string]: any
+}
+
+type DashboardStats = {
+  total: number
+  aktif: number
+  nonaktif: number
+  tetap: number
+  kontrak: number
+  harian: number
 }
 
 /* ================= PAGE ================= */
@@ -38,6 +47,16 @@ export default function EmployeeMasterPage() {
   const [lokasiFilter, setLokasiFilter] = useState("")
   const [tipeFilter, setTipeFilter] = useState("")
 
+  // ✅ DASHBOARD STATS DARI API
+  const [stats, setStats] = useState<DashboardStats>({
+    total: 0,
+    aktif: 0,
+    nonaktif: 0,
+    tetap: 0,
+    kontrak: 0,
+    harian: 0,
+  })
+
   async function loadEmployees() {
     const res = await fetch("/api/hr/employees", { cache: "no-store" })
     const data = await res.json()
@@ -45,11 +64,23 @@ export default function EmployeeMasterPage() {
     setLoading(false)
   }
 
+  async function loadDashboard() {
+    try {
+      const res = await fetch("/api/hr/dashboard", { cache: "no-store" })
+      if (!res.ok) return
+      const data = await res.json()
+      setStats(data)
+    } catch (err) {
+      console.error("LOAD DASHBOARD ERROR:", err)
+    }
+  }
+
   useEffect(() => {
     loadEmployees()
+    loadDashboard()
   }, [])
 
-  /* ================= FILTER DATA ================= */
+  /* ================= FILTER DATA UNTUK LIST ================= */
 
   const filteredEmployees = employees.filter((e) => {
     const q = search.toLowerCase()
@@ -71,17 +102,6 @@ export default function EmployeeMasterPage() {
 
     return matchSearch && matchStatus && matchDivisi && matchLokasi && matchTipe
   })
-
-  const total = filteredEmployees.length
-  const totalTetap = filteredEmployees.filter(
-    (e) => e.tipe_karyawan === "Tetap"
-  ).length
-  const totalKontrak = filteredEmployees.filter(
-    (e) => e.tipe_karyawan === "Kontrak"
-  ).length
-  const totalHarian = filteredEmployees.filter(
-    (e) => e.tipe_karyawan === "Harian"
-  ).length
 
   /* ================= EXPORT CSV ================= */
 
@@ -157,14 +177,17 @@ export default function EmployeeMasterPage() {
         Input data inti karyawan (master HR)
       </div>
 
-      {/* CARD JUMLAH */}
+      {/* ✅ CARD JUMLAH PAKAI DATA API */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <button
           onClick={() => setTipeFilter("")}
           className="border rounded-lg px-4 py-2 text-left hover:bg-gray-50 transition"
         >
           <p className="text-xs text-gray-500">Total</p>
-          <p className="text-xl font-bold">{total}</p>
+          <p className="text-xl font-bold">{stats.total}</p>
+          <p className="text-[11px] text-gray-400">
+            Aktif: {stats.aktif} • Nonaktif: {stats.nonaktif}
+          </p>
         </button>
 
         <button
@@ -172,7 +195,7 @@ export default function EmployeeMasterPage() {
           className="border rounded-lg px-4 py-2 text-left text-green-700 hover:bg-green-50 transition"
         >
           <p className="text-xs">Tetap</p>
-          <p className="text-xl font-bold">{totalTetap}</p>
+          <p className="text-xl font-bold">{stats.tetap}</p>
         </button>
 
         <button
@@ -180,7 +203,7 @@ export default function EmployeeMasterPage() {
           className="border rounded-lg px-4 py-2 text-left text-blue-700 hover:bg-blue-50 transition"
         >
           <p className="text-xs">Kontrak</p>
-          <p className="text-xl font-bold">{totalKontrak}</p>
+          <p className="text-xl font-bold">{stats.kontrak}</p>
         </button>
 
         <button
@@ -188,79 +211,78 @@ export default function EmployeeMasterPage() {
           className="border rounded-lg px-4 py-2 text-left text-orange-700 hover:bg-orange-50 transition"
         >
           <p className="text-xs">Harian</p>
-          <p className="text-xl font-bold">{totalHarian}</p>
+          <p className="text-xl font-bold">{stats.harian}</p>
         </button>
       </div>
 
       {/* FILTER BAR – FIX 1 ROW */}
-<div className="bg-white border rounded-xl p-4 flex items-center gap-3">
+      <div className="bg-white border rounded-xl p-4 flex items-center gap-3">
+        {/* SEARCH (flexible) */}
+        <input
+          className="border p-2 rounded flex-1 min-w-[240px]"
+          placeholder="Cari nama / divisi / jabatan"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
-  {/* SEARCH (flexible) */}
-  <input
-    className="border p-2 rounded flex-1 min-w-[240px]"
-    placeholder="Cari nama / divisi / jabatan"
-    value={search}
-    onChange={(e) => setSearch(e.target.value)}
-  />
+        {/* STATUS */}
+        <select
+          className="border p-2 rounded w-28"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="aktif">Aktif</option>
+          <option value="nonaktif">Nonaktif</option>
+          <option value="all">Semua</option>
+        </select>
 
-  {/* STATUS */}
-  <select
-    className="border p-2 rounded w-28"
-    value={statusFilter}
-    onChange={(e) => setStatusFilter(e.target.value)}
-  >
-    <option value="aktif">Aktif</option>
-    <option value="nonaktif">Nonaktif</option>
-    <option value="all">Semua</option>
-  </select>
+        {/* DIVISI */}
+        <select
+          className="border p-2 rounded w-36"
+          value={divisiFilter}
+          onChange={(e) => setDivisiFilter(e.target.value)}
+        >
+          <option value="">Divisi</option>
+          <option>Engineering</option>
+          <option>HRGA</option>
+          <option>Finance</option>
+          <option>Project</option>
+        </select>
 
-  {/* DIVISI */}
-  <select
-    className="border p-2 rounded w-36"
-    value={divisiFilter}
-    onChange={(e) => setDivisiFilter(e.target.value)}
-  >
-    <option value="">Divisi</option>
-    <option>Engineering</option>
-    <option>HRGA</option>
-    <option>Finance</option>
-    <option>Project</option>
-  </select>
+        {/* LOKASI */}
+        <select
+          className="border p-2 rounded w-36"
+          value={lokasiFilter}
+          onChange={(e) => setLokasiFilter(e.target.value)}
+        >
+          <option value="">Lokasi</option>
+          <option>Head Office</option>
+          <option>Site Project</option>
+        </select>
 
-  {/* LOKASI */}
-  <select
-    className="border p-2 rounded w-36"
-    value={lokasiFilter}
-    onChange={(e) => setLokasiFilter(e.target.value)}
-  >
-    <option value="">Lokasi</option>
-    <option>Head Office</option>
-    <option>Site Project</option>
-  </select>
+        {/* TIPE */}
+        <select
+          className="border p-2 rounded w-32"
+          value={tipeFilter}
+          onChange={(e) => setTipeFilter(e.target.value)}
+        >
+          <option value="">Tipe</option>
+          <option>Tetap</option>
+          <option>Kontrak</option>
+          <option>Harian</option>
+        </select>
 
-  {/* TIPE */}
-  <select
-    className="border p-2 rounded w-32"
-    value={tipeFilter}
-    onChange={(e) => setTipeFilter(e.target.value)}
-  >
-    <option value="">Tipe</option>
-    <option>Tetap</option>
-    <option>Kontrak</option>
-    <option>Harian</option>
-  </select>
-
-  {/* EXPORT */}
-  <button
-    onClick={exportCSV}
-    disabled={filteredEmployees.length === 0}
-    className="ml-2 px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
-  >
-    {selectedIds.length > 0
-      ? `Export (${selectedIds.length})`
-      : "Export"}
-  </button>
-</div>
+        {/* EXPORT */}
+        <button
+          onClick={exportCSV}
+          disabled={filteredEmployees.length === 0}
+          className="ml-2 px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
+        >
+          {selectedIds.length > 0
+            ? `Export (${selectedIds.length})`
+            : "Export"}
+        </button>
+      </div>
 
       {/* BULK ACTION BAR */}
       <div className="flex items-center justify-between text-sm">
@@ -310,6 +332,7 @@ export default function EmployeeMasterPage() {
               alert("Karyawan berhasil dinonaktifkan")
               setSelectedIds([])
               loadEmployees()
+              loadDashboard() // 🔁 refresh stats juga
             }}
           >
             Nonaktifkan Terpilih
@@ -386,7 +409,13 @@ export default function EmployeeMasterPage() {
 
       {/* MODAL ADD */}
       {open && (
-        <AddEmployeeModal onClose={() => setOpen(false)} onSaved={loadEmployees} />
+        <AddEmployeeModal
+          onClose={() => setOpen(false)}
+          onSaved={() => {
+            loadEmployees()
+            loadDashboard()
+          }}
+        />
       )}
 
       {/* MODAL DETAIL */}
@@ -402,7 +431,10 @@ export default function EmployeeMasterPage() {
         <EditEmployeeModal
           employee={editEmployee}
           onClose={() => setEditEmployee(null)}
-          onSaved={loadEmployees}
+          onSaved={() => {
+            loadEmployees()
+            loadDashboard()
+          }}
         />
       )}
     </section>

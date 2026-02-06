@@ -2,34 +2,30 @@
 
 import { useEffect, useState } from "react"
 
-type Contract = {
-  contract_id: string
+type ContractRow = {
   employee_id: string
-  nama_lengkap: string
-  type_karyawan: string
+  nama: string
+  type: string
   jabatan: string
-  project_code: string
-  lokasi_kerja: string
-  start_date: string
-  end_date: string
-  status_kontrak: string
-  sistem_bayar: string
+  project: string
+  mulai: string
+  akhir: string
+  sistem: string
   rate: string
-  keterangan: string
+  status: "AKTIF" | "BELUM ADA KONTRAK"
 }
 
 export default function ContractPage() {
-  const [data, setData] = useState<Contract[]>([])
+  const [data, setData] = useState<ContractRow[]>([])
   const [loading, setLoading] = useState(true)
-  const [status, setStatus] = useState("AKTIF")
 
   useEffect(() => {
     loadData()
-  }, [status])
+  }, [])
 
   async function loadData() {
     setLoading(true)
-    const res = await fetch(`/api/hr/contract?status=${status}`)
+    const res = await fetch("/api/hr/contract-management")
     const json = await res.json()
     setData(json.data || [])
     setLoading(false)
@@ -43,32 +39,8 @@ export default function ContractPage() {
           Contract Management
         </h1>
         <p className="text-gray-600">
-          Kontrak karyawan, tenaga harian, mandor, dan tim lapangan
+          Kontrak karyawan tetap, kontrak, tenaga harian, mandor, dan tim lapangan
         </p>
-      </div>
-
-      {/* FILTER */}
-      <div className="flex gap-3">
-        <button
-          onClick={() => setStatus("AKTIF")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            status === "AKTIF"
-              ? "bg-green-600 text-white"
-              : "bg-gray-200"
-          }`}
-        >
-          Aktif
-        </button>
-        <button
-          onClick={() => setStatus("NONAKTIF")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            status === "NONAKTIF"
-              ? "bg-gray-900 text-white"
-              : "bg-gray-200"
-          }`}
-        >
-          Nonaktif
-        </button>
       </div>
 
       {/* TABLE */}
@@ -85,13 +57,14 @@ export default function ContractPage() {
               <th className="px-4 py-3">Sistem</th>
               <th className="px-4 py-3">Rate</th>
               <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Aksi</th>
             </tr>
           </thead>
 
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={9} className="p-6 text-center text-gray-400">
+                <td colSpan={10} className="p-6 text-center text-gray-400">
                   Loading data...
                 </td>
               </tr>
@@ -99,44 +72,61 @@ export default function ContractPage() {
 
             {!loading && data.length === 0 && (
               <tr>
-                <td colSpan={9} className="p-6 text-center text-gray-400">
-                  Tidak ada kontrak
+                <td colSpan={10} className="p-6 text-center text-gray-400">
+                  Tidak ada data karyawan
                 </td>
               </tr>
             )}
 
-            {data.map((c) => (
+            {data.map((row) => (
               <tr
-                key={c.contract_id}
+                key={row.employee_id}
                 className="border-t hover:bg-gray-50"
               >
                 <td className="px-4 py-3 text-left font-medium">
-                  {c.nama_lengkap}
+                  {row.nama}
                   <div className="text-xs text-gray-400">
-                    {c.employee_id}
+                    {row.employee_id}
                   </div>
                 </td>
-                <td className="px-4 py-3">{c.type_karyawan}</td>
-                <td className="px-4 py-3">{c.jabatan}</td>
-                <td className="px-4 py-3">{c.project_code}</td>
-                <td className="px-4 py-3">{c.start_date}</td>
+
+                <td className="px-4 py-3">{row.type}</td>
+                <td className="px-4 py-3">{row.jabatan}</td>
+                <td className="px-4 py-3">{row.project}</td>
+                <td className="px-4 py-3">{row.mulai}</td>
+                <td className="px-4 py-3">{row.akhir}</td>
+                <td className="px-4 py-3">{row.sistem}</td>
+
                 <td className="px-4 py-3">
-                  {c.end_date || "-"}
+                  {row.rate !== "-" ? (
+                    <>Rp {Number(row.rate).toLocaleString("id-ID")}</>
+                  ) : (
+                    "-"
+                  )}
                 </td>
-                <td className="px-4 py-3">{c.sistem_bayar}</td>
-                <td className="px-4 py-3">
-                  Rp {Number(c.rate).toLocaleString()}
-                </td>
+
                 <td className="px-4 py-3">
                   <span
                     className={`px-2 py-1 rounded text-xs font-semibold ${
-                      c.status_kontrak === "AKTIF"
+                      row.status === "AKTIF"
                         ? "bg-green-100 text-green-700"
-                        : "bg-gray-200 text-gray-700"
+                        : "bg-yellow-100 text-yellow-700"
                     }`}
                   >
-                    {c.status_kontrak}
+                    {row.status}
                   </span>
+                </td>
+
+                <td className="px-4 py-3">
+                  {row.status === "BELUM ADA KONTRAK" ? (
+                    <button className="text-blue-600 hover:underline text-xs font-medium">
+                      + Buat Kontrak
+                    </button>
+                  ) : (
+                    <button className="text-gray-600 hover:underline text-xs">
+                      Lihat / Edit
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

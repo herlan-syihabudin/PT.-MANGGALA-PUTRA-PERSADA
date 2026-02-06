@@ -75,10 +75,11 @@ export default function EmployeePage() {
         />
 
         <SubModule
-          title="Employment Status"
-          desc="Status kerja, tanggal masuk/keluar, lokasi"
-          status={HR_STATUS.employment ? "ACTIVE" : "DRAFT"}
-        />
+  title="Employment Status"
+  desc="Status kerja, tanggal masuk/keluar, lokasi"
+  status={HR_STATUS.employment ? "ACTIVE" : "DRAFT"}
+  href="/admin/hr/employment-status"
+/>
 
         <SubModule
           title="Organization & Position"

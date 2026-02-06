@@ -2,8 +2,6 @@ import { notFound } from "next/navigation"
 
 export const dynamic = "force-dynamic"
 
-/* ================= TYPES ================= */
-
 type StatusRow = {
   employee_id: string
   status: string
@@ -17,14 +15,9 @@ type StatusRow = {
   keterangan: string
 }
 
-/* ================= DATA FETCH ================= */
-
 async function getStatus(employee_id: string) {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-
   const res = await fetch(
-    `${baseUrl}/api/hr/employment-status?employee_id=${employee_id}`,
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/hr/employment-status?employee_id=${employee_id}`,
     { cache: "no-store" }
   )
 
@@ -32,18 +25,16 @@ async function getStatus(employee_id: string) {
   return res.json()
 }
 
-/* ================= PAGE ================= */
-
-export default async function EmploymentStatusDetail({
+export default async function Page({
   params,
 }: {
   params: { employee_id: string }
 }) {
+  if (!params?.employee_id) return notFound()
+
   const data = await getStatus(params.employee_id)
 
-  if (!data) return notFound()
-
-  const rows: StatusRow[] = data.data || []
+  const rows: StatusRow[] = data?.data ?? []
 
   return (
     <section className="p-6 md:p-10 space-y-6">
@@ -62,8 +53,7 @@ export default async function EmploymentStatusDetail({
         )}
 
         {rows.map((row, i) => {
-          const isActive =
-            String(row.is_current).toUpperCase() === "TRUE"
+          const isActive = row.is_current === "TRUE"
 
           return (
             <div key={i} className="p-5 flex gap-4">
@@ -81,13 +71,16 @@ export default async function EmploymentStatusDetail({
                     </span>
                   )}
                 </p>
+
                 <p className="text-sm text-gray-600">
                   {row.jenis_status} • {row.lokasi_kerja}
                 </p>
+
                 <p className="text-xs text-gray-500">
                   {row.start_date}
                   {row.end_date && ` → ${row.end_date}`}
                 </p>
+
                 {row.keterangan && (
                   <p className="text-xs text-gray-400 mt-1">
                     {row.keterangan}

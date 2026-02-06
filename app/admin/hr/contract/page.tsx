@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 
 type ContractRow = {
   employee_id: string
@@ -25,7 +26,9 @@ export default function ContractPage() {
 
   async function loadData() {
     setLoading(true)
-    const res = await fetch("/api/hr/contract-management")
+    const res = await fetch("/api/hr/contract-management", {
+      cache: "no-store",
+    })
     const json = await res.json()
     setData(json.data || [])
     setLoading(false)
@@ -57,7 +60,7 @@ export default function ContractPage() {
               <th className="px-4 py-3">Sistem</th>
               <th className="px-4 py-3">Rate</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Aksi</th>
+              <th className="px-4 py-3 text-right">Aksi</th>
             </tr>
           </thead>
 
@@ -117,15 +120,21 @@ export default function ContractPage() {
                   </span>
                 </td>
 
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 text-right">
                   {row.status === "BELUM ADA KONTRAK" ? (
-                    <button className="text-blue-600 hover:underline text-xs font-medium">
+                    <Link
+                      href={`/admin/hr/contract/${row.employee_id}`}
+                      className="text-blue-600 hover:underline text-xs font-semibold"
+                    >
                       + Buat Kontrak
-                    </button>
+                    </Link>
                   ) : (
-                    <button className="text-gray-600 hover:underline text-xs">
+                    <Link
+                      href={`/admin/hr/contract/${row.employee_id}`}
+                      className="text-gray-700 hover:underline text-xs"
+                    >
                       Lihat / Edit
-                    </button>
+                    </Link>
                   )}
                 </td>
               </tr>

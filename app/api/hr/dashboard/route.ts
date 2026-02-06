@@ -17,6 +17,12 @@ const sheets = google.sheets({ version: "v4", auth })
 const SHEET_ID = process.env.GOOGLE_SHEET_ID!
 const SHEET_NAME = "EMPLOYEE_MASTER"
 
+/* ================= HELPER ================= */
+
+const isAktif = (value: any) => {
+  return String(value).trim().toLowerCase() === "true"
+}
+
 /* ================= GET DASHBOARD ================= */
 
 export async function GET() {
@@ -37,19 +43,20 @@ export async function GET() {
     })
 
     const total = employees.length
-    const aktif = employees.filter((e) => e.is_active === true || e.is_active === "TRUE").length
+
+    const aktif = employees.filter((e) => isAktif(e.is_active)).length
     const nonaktif = total - aktif
 
     const tetap = employees.filter(
-      (e) => e.tipe_karyawan === "Tetap" && (e.is_active === true || e.is_active === "TRUE")
+      (e) => e.tipe_karyawan === "Tetap" && isAktif(e.is_active)
     ).length
 
     const kontrak = employees.filter(
-      (e) => e.tipe_karyawan === "Kontrak" && (e.is_active === true || e.is_active === "TRUE")
+      (e) => e.tipe_karyawan === "Kontrak" && isAktif(e.is_active)
     ).length
 
     const harian = employees.filter(
-      (e) => e.tipe_karyawan === "Harian" && (e.is_active === true || e.is_active === "TRUE")
+      (e) => e.tipe_karyawan === "Harian" && isAktif(e.is_active)
     ).length
 
     return NextResponse.json({

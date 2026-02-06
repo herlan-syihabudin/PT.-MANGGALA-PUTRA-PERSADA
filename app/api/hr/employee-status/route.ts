@@ -34,7 +34,10 @@ export async function GET(req: NextRequest) {
     const [headers, ...rows] = res.data.values || []
 
     const data = rows
-      .filter((r) => r[0] === employee_id)
+      .filter(
+        (r) =>
+          String(r[0]).trim() === employee_id.trim()
+      )
       .map((r) =>
         headers.reduce((obj, h, i) => {
           obj[h] = r[i] ?? ""
@@ -45,7 +48,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ data })
   } catch (err) {
     console.error("EMPLOYMENT STATUS GET ERROR:", err)
-    return NextResponse.json({ error: "Failed get status" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed get employment status" },
+      { status: 500 }
+    )
   }
 }
 
@@ -53,6 +59,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
+
     const {
       employee_id,
       status,
@@ -77,11 +84,14 @@ export async function POST(req: NextRequest) {
 
     const values = res.data.values || []
 
-    /* === TUTUP STATUS LAMA === */
+    /* === TUTUP STATUS AKTIF LAMA === */
     for (let i = 1; i < values.length; i++) {
-      if (values[i][0] === employee_id && values[i][6] === "TRUE") {
+      if (
+        String(values[i][0]).trim() === employee_id.trim() &&
+        String(values[i][6]).toUpperCase() === "TRUE"
+      ) {
         values[i][5] = start_date // end_date
-        values[i][6] = "FALSE"    // is_current
+        values[i][6] = "FALSE"
       }
     }
 
@@ -92,14 +102,14 @@ export async function POST(req: NextRequest) {
       requestBody: { values },
     })
 
-    /* === STATUS BARU === */
+    /* === TAMBAH STATUS BARU === */
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A1`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          employee_id,
+          employee_id.trim(),
           status,
           jenis_status,
           lokasi_kerja || "",
@@ -116,6 +126,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error("EMPLOYMENT STATUS POST ERROR:", err)
-    return NextResponse.json({ error: "Failed save status" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed save employment status" },
+      { status: 500 }
+    )
   }
 }

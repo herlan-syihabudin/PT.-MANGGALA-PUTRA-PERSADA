@@ -14,7 +14,7 @@ export default function EmployeeForm({
   return (
     <div className="grid md:grid-cols-2 gap-3 text-sm">
 
-      {/* ID */}
+      {/* EMPLOYEE ID */}
       <input
         className="border p-2 bg-gray-100"
         value={employeeID}
@@ -48,8 +48,8 @@ export default function EmployeeForm({
         }
       >
         <option value="">Jenis Kelamin</option>
-        <option>Laki-laki</option>
-        <option>Perempuan</option>
+        <option value="Laki-laki">Laki-laki</option>
+        <option value="Perempuan">Perempuan</option>
       </select>
 
       <input
@@ -103,13 +103,13 @@ export default function EmployeeForm({
         onChange={(e) =>
           setForm({ ...form, divisi: e.target.value })
         }
-        disabled={mode === "edit"} // opsional
+        disabled={mode === "edit"}
       >
         <option value="">Divisi *</option>
-        <option>Engineering</option>
-        <option>HRGA</option>
-        <option>Finance</option>
-        <option>Project</option>
+        <option value="Engineering">Engineering</option>
+        <option value="HRGA">HRGA</option>
+        <option value="Finance">Finance</option>
+        <option value="Project">Project</option>
       </select>
 
       <input
@@ -120,18 +120,6 @@ export default function EmployeeForm({
           setForm({ ...form, jabatan: e.target.value })
         }
       />
-
-      <select
-        className="border p-2"
-        value={form.lokasi_kerja || ""}
-        onChange={(e) =>
-          setForm({ ...form, lokasi_kerja: e.target.value })
-        }
-      >
-        <option value="">Lokasi Kerja</option>
-        <option>Head Office</option>
-        <option>Site Project</option>
-      </select>
 
       <input
         className="border p-2"
@@ -144,15 +132,45 @@ export default function EmployeeForm({
 
       <select
         className="border p-2"
-        value={form.status_karyawan || ""}
+        value={form.lokasi_kerja || ""}
         onChange={(e) =>
-          setForm({ ...form, status_karyawan: e.target.value })
+          setForm({ ...form, lokasi_kerja: e.target.value })
         }
       >
-        <option>Status Karyawan</option>
-        <option>Tetap</option>
-        <option>Kontrak</option>
-        <option>Probation</option>
+        <option value="">Lokasi Kerja</option>
+        <option value="Head Office">Head Office</option>
+        <option value="Site Project">Site Project</option>
+      </select>
+
+      {/* STATUS KARYAWAN (LOGIC HR) */}
+      <select
+        className="border p-2"
+        value={form.status_karyawan || "Aktif"}
+        onChange={(e) =>
+          setForm({
+            ...form,
+            status_karyawan: e.target.value,
+            is_active: e.target.value === "Aktif",
+          })
+        }
+      >
+        <option value="Aktif">Aktif</option>
+        <option value="Nonaktif">Nonaktif</option>
+        <option value="Resign">Resign</option>
+      </select>
+
+      {/* TIPE KARYAWAN (DASHBOARD COUNT) */}
+      <select
+        className="border p-2"
+        value={form.tipe_karyawan || ""}
+        onChange={(e) =>
+          setForm({ ...form, tipe_karyawan: e.target.value })
+        }
+      >
+        <option value="">Tipe Karyawan *</option>
+        <option value="Tetap">Tetap</option>
+        <option value="Kontrak">Kontrak</option>
+        <option value="Harian">Harian</option>
       </select>
 
       <input

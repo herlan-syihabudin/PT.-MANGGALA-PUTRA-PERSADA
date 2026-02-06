@@ -528,25 +528,42 @@ function EditEmployeeModal({
   const [form, setForm] = useState<any>({ ...employee })
 
   async function submit() {
-    const res = await fetch("/api/hr/employees", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "update",
-        employee_id: employee.employee_id,
-        ...form,
-      }),
-    })
+  // 1️⃣ UPDATE EMPLOYEE MASTER
+  const res = await fetch("/api/hr/employees", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "update",
+      employee_id: employee.employee_id,
+      ...form,
+    }),
+  })
 
-    if (!res.ok) {
-      alert("Gagal update data")
-      return
-    }
-
-    alert("Data karyawan berhasil diperbarui")
-    onSaved()
-    onClose()
+  if (!res.ok) {
+    alert("Gagal update data")
+    return
   }
+
+  // 2️⃣ CATAT STATUS TERBARU (AMAN, HISTORICAL)
+  await fetch("/api/hr/employment-status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      employee_id: employee.employee_id,
+      status: form.status_karyawan || "AKTIF",
+      jenis_status: form.tipe_karyawan || "Tetap",
+      lokasi_kerja: form.lokasi_kerja || "",
+      start_date:
+        form.tgl_masuk || new Date().toISOString().slice(0, 10),
+      updated_by: "admin",
+      keterangan: "Update data karyawan",
+    }),
+  })
+
+  alert("Data karyawan berhasil diperbarui")
+  onSaved()
+  onClose()
+}
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -612,31 +629,47 @@ function AddEmployeeModal({
   const employeeID = form.divisi ? generateEmployeeID(form.divisi) : ""
 
   async function submit() {
-    if (form.nik_ktp.length !== 16 || !form.divisi || !form.nama_lengkap) {
-      alert("Lengkapi Nama, NIK (16 digit), dan Divisi")
-      return
-    }
-
-    const res = await fetch("/api/hr/employees", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        employee_id: employeeID,
-      }),
-    })
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      alert(data.error || "Gagal menyimpan")
-      return
-    }
-
-    alert("Karyawan berhasil ditambahkan")
-    onSaved()
-    onClose()
+  if (form.nik_ktp.length !== 16 || !form.divisi || !form.nama_lengkap) {
+    alert("Lengkapi Nama, NIK (16 digit), dan Divisi")
+    return
   }
+
+  // 1️⃣ SIMPAN EMPLOYEE MASTER
+  const res = await fetch("/api/hr/employees", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...form,
+      employee_id: employeeID,
+    }),
+  })
+
+  const data = await res.json()
+  if (!res.ok) {
+    alert(data.error || "Gagal menyimpan")
+    return
+  }
+
+  // 2️⃣ SIMPAN STATUS AWAL (INI KUNCI 🔥)
+  await fetch("/api/hr/employment-status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      employee_id: employeeID,
+      status: "AKTIF",
+      jenis_status: form.tipe_karyawan || "Tetap",
+      lokasi_kerja: form.lokasi_kerja || "",
+      start_date:
+        form.tgl_masuk || new Date().toISOString().slice(0, 10),
+      updated_by: "admin",
+      keterangan: "Karyawan baru",
+    }),
+  })
+
+  alert("Karyawan berhasil ditambahkan")
+  onSaved()
+  onClose()
+}
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">

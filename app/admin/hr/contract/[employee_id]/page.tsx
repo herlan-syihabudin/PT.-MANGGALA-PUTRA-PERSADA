@@ -30,23 +30,52 @@ export default function ContractDetail({
     keterangan: "",
   })
 
-  /* ================= LOAD EMPLOYEE MASTER ================= */
+  /* ================= LOAD EMPLOYEE (DARI CONTRACT-MANAGEMENT) ================= */
   useEffect(() => {
     loadEmployee()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function loadEmployee() {
-    const res = await fetch(
-      `/api/hr/employee?employee_id=${params.employee_id}`,
-      { cache: "no-store" }
-    )
-    const json = await res.json()
-    setEmployee(json.data)
-    setLoading(false)
+    try {
+      const res = await fetch("/api/hr/contract-management", {
+        cache: "no-store",
+      })
+
+      if (!res.ok) {
+        console.error("Failed load contract-management")
+        setLoading(false)
+        return
+      }
+
+      const json = await res.json()
+      const rows = (json.data || []) as any[]
+
+      const row = rows.find(
+        (r) => r.employee_id === params.employee_id
+      )
+
+      if (!row) {
+        setEmployee(null)
+      } else {
+        setEmployee({
+          employee_id: row.employee_id,
+          nama_lengkap: row.nama,
+          type_karyawan: row.type,
+          jabatan: row.jabatan,
+        })
+      }
+    } catch (err) {
+      console.error("LOAD EMPLOYEE ERROR:", err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   /* ================= SUBMIT CONTRACT ================= */
   async function submitContract() {
+    if (!employee) return
+
     if (!form.start_date || !form.rate) {
       alert("Tanggal mulai & rate wajib diisi")
       return
@@ -54,28 +83,39 @@ export default function ContractDetail({
 
     setSaving(true)
 
-    await fetch("/api/hr/contract", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        employee_id: employee?.employee_id,
-        jenis_kontrak: employee?.type_karyawan,
-        start_date: form.start_date,
-        end_date: form.end_date,
-        sistem_bayar: form.sistem_bayar,
-        rate: form.rate,
-        project_code: form.project_code,
-        lokasi_kerja: form.lokasi_kerja,
-        keterangan: form.keterangan,
-      }),
-    })
+    try {
+      const res = await fetch("/api/hr/contract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employee_id: employee.employee_id,
+          jenis_kontrak: employee.type_karyawan,
+          start_date: form.start_date,
+          end_date: form.end_date,
+          sistem_bayar: form.sistem_bayar,
+          rate: form.rate,
+          project_code: form.project_code,
+          lokasi_kerja: form.lokasi_kerja,
+          keterangan: form.keterangan,
+        }),
+      })
 
-    setSaving(false)
-    router.push("/admin/hr/contract")
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        console.error("SAVE CONTRACT ERROR:", err)
+        alert(err?.error || "Gagal menyimpan kontrak")
+        return
+      }
+
+      router.push("/admin/hr/contract")
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (loading) return <p className="p-6">Loading...</p>
-  if (!employee) return <p className="p-6">Employee tidak ditemukan</p>
+  if (!employee)
+    return <p className="p-6">Employee tidak ditemukan</p>
 
   return (
     <section className="p-6 max-w-3xl space-y-6">
@@ -85,7 +125,7 @@ export default function ContractDetail({
       <div className="bg-white border rounded-xl p-4 grid grid-cols-2 gap-4 text-sm">
         <Info label="Employee ID" value={employee.employee_id} />
         <Info label="Nama" value={employee.nama_lengkap} />
-        <Info label="Tipe" value={employee.type_karyawan} />
+        <Info label="Tipe Karyawan" value={employee.type_karyawan} />
         <Info label="Jabatan" value={employee.jabatan} />
       </div>
 
@@ -174,7 +214,12 @@ function Input({
   value,
   onChange,
   type = "text",
-}: any) {
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  type?: string
+}) {
   return (
     <div>
       <label className="text-sm">{label}</label>
@@ -188,7 +233,17 @@ function Input({
   )
 }
 
-function Select({ label, value, options, onChange }: any) {
+function Select({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string
+  value: string
+  options: string[]
+  onChange: (v: string) => void
+}) {
   return (
     <div>
       <label className="text-sm">{label}</label>
@@ -197,15 +252,25 @@ function Select({ label, value, options, onChange }: any) {
         onChange={(e) => onChange(e.target.value)}
         className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
       >
-        {options.map((o: string) => (
-          <option key={o}>{o}</option>
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
         ))}
       </select>
     </div>
   )
 }
 
-function Textarea({ label, value, onChange }: any) {
+function Textarea({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+}) {
   return (
     <div>
       <label className="text-sm">{label}</label>

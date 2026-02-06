@@ -1,35 +1,26 @@
 // app/admin/hr/page.tsx
 
-export default async function HRDashboardPage() {
-  // DUMMY DATA HR
-  const data = {
-    totalEmployee: 32,
-    hadirHariIni: 28,
-    cutiIzin: 4,
-    kontrakHabis: 3,
+export const dynamic = "force-dynamic"
 
-    statusPegawai: {
-      tetap: 18,
-      kontrak: 11,
-      probasi: 3,
-    },
+async function getHRDashboard() {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/hr/dashboard`,
+    { cache: "no-store" }
+  )
 
-    absensi: {
-      tepatWaktu: 24,
-      terlambat: 4,
-      alpha: 2,
-      lembur: 5,
-    },
-
-    reminder: [
-      "3 kontrak karyawan akan habis bulan ini",
-      "2 pengajuan cuti menunggu approval",
-      "5 KPI karyawan belum direview",
-    ],
+  if (!res.ok) {
+    throw new Error("Failed load HR dashboard")
   }
+
+  return res.json()
+}
+
+export default async function HRDashboardPage() {
+  const data = await getHRDashboard()
 
   return (
     <section className="p-6 md:p-10 space-y-10">
+
       {/* HEADER */}
       <div>
         <h1 className="text-3xl font-extrabold text-gray-900">
@@ -42,40 +33,29 @@ export default async function HRDashboardPage() {
 
       {/* KPI */}
       <div className="grid md:grid-cols-4 gap-6">
-        <Kpi title="Total Karyawan" value={data.totalEmployee} />
-        <Kpi title="Hadir Hari Ini" value={data.hadirHariIni} />
-        <Kpi title="Cuti / Izin" value={data.cutiIzin} />
-        <Kpi
-          title="Kontrak Habis"
-          value={data.kontrakHabis}
-          highlight
-        />
+        <Kpi title="Total Karyawan" value={data.total} />
+        <Kpi title="Aktif" value={data.aktif} />
+        <Kpi title="Nonaktif" value={data.nonaktif} />
+        <Kpi title="Kontrak" value={data.kontrak} highlight />
       </div>
 
-      {/* STATUS & ABSENSI */}
+      {/* STATUS PEGAWAI */}
       <div className="grid md:grid-cols-2 gap-6">
         <Card title="Status Kepegawaian">
-          <Item label="Tetap" value={data.statusPegawai.tetap} />
-          <Item label="Kontrak" value={data.statusPegawai.kontrak} />
-          <Item label="Probasi" value={data.statusPegawai.probasi} />
+          <Item label="Tetap" value={data.tetap} />
+          <Item label="Kontrak" value={data.kontrak} />
+          <Item label="Harian / Tukang" value={data.harian} />
         </Card>
 
-        <Card title="Absensi Hari Ini">
-          <Item label="Tepat Waktu" value={data.absensi.tepatWaktu} />
-          <Item label="Terlambat" value={data.absensi.terlambat} />
-          <Item label="Alpha" value={data.absensi.alpha} />
-          <Item label="Lembur" value={data.absensi.lembur} />
+        <Card title="Catatan Sistem">
+          <p className="text-sm text-gray-600">
+            Data ditarik langsung dari <b>EMPLOYEE_MASTER</b> Google Sheet.
+          </p>
+          <p className="text-xs text-gray-400">
+            Update realtime, tanpa input ganda.
+          </p>
         </Card>
       </div>
-
-      {/* REMINDER */}
-      <Card title="Reminder HR">
-        <ul className="list-disc ml-5 text-sm text-red-600 space-y-2">
-          {data.reminder.map((r, i) => (
-            <li key={i}>{r}</li>
-          ))}
-        </ul>
-      </Card>
 
       {/* QUICK ACTION */}
       <div className="bg-gray-50 border rounded-xl p-6">
@@ -84,16 +64,16 @@ export default async function HRDashboardPage() {
         </h3>
         <div className="flex flex-wrap gap-3">
           <ActionButton label="Tambah Karyawan" />
-          <ActionButton label="Absensi" />
+          <ActionButton label="Employment Status" />
+          <ActionButton label="Kontrak" />
           <ActionButton label="Payroll" />
-          <ActionButton label="Cuti" />
         </div>
       </div>
     </section>
   )
 }
 
-/* ===== KOMPONEN KECIL ===== */
+/* ===== KOMPONEN ===== */
 
 function Kpi({
   title,
@@ -154,7 +134,7 @@ function Item({
 
 function ActionButton({ label }: { label: string }) {
   return (
-    <button className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm">
+    <button className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-gray-800">
       {label}
     </button>
   )

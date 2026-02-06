@@ -1,4 +1,173 @@
-import Link from "next/link"
+import Link from "next/link";
+
+export const dynamic = "force-dynamic";
+
+type HrModuleCard = {
+  title: string;
+  description: string;
+  status: "ACTIVE" | "LOCKED" | "LINK";
+  href: string;
+  note?: string;
+};
+
+const hrModules: HrModuleCard[] = [
+  {
+    title: "Employee Master",
+    description: "Data inti karyawan (identitas & kontak)",
+    status: "ACTIVE",
+    href: "/admin/hr/employees",
+    note: "Modul Employee",
+  },
+  {
+    title: "Employment Status",
+    description: "Status kerja, tanggal masuk/keluar, lokasi",
+    status: "ACTIVE",
+    href: "/admin/hr/employment-status",
+    note: "Modul Employee",
+  },
+  {
+    title: "Organization & Position",
+    description: "Divisi, jabatan, atasan langsung",
+    status: "ACTIVE",
+    href: "/admin/hr/organization",
+    note: "Modul Employee",
+  },
+  {
+    title: "Contract Management",
+    description: "Kontrak PKWT / PKWTT & masa berlaku",
+    status: "LOCKED",
+    href: "/admin/hr/contract",
+    note: "Lengkapi data organisasi terlebih dahulu",
+  },
+  {
+    title: "Compensation & Payroll",
+    description: "Gaji pokok, tunjangan, rekening",
+    status: "LOCKED",
+    href: "/admin/hr/payroll",
+    note: "Payroll belum aktif (menunggu kontrak)",
+  },
+  {
+    title: "BPJS & Tax",
+    description: "BPJS Kesehatan, TK, NPWP",
+    status: "LOCKED",
+    href: "/admin/hr/bpjs-tax",
+    note: "Aktif jika payroll sudah jalan",
+  },
+  {
+    title: "Attendance",
+    description: "Relasi absensi & lembur",
+    status: "LINK",
+    href: "/admin/hr/attendance",
+    note: "Terkait dengan timesheet / absensi",
+  },
+  {
+    title: "Performance",
+    description: "KPI, OKR & penilaian",
+    status: "LINK",
+    href: "/admin/hr/performance",
+    note: "Modul penilaian & review",
+  },
+  {
+    title: "Employee Exit",
+    description: "Resign, clearance & nonaktif",
+    status: "ACTIVE",
+    href: "/admin/hr/employee-exit",
+    note: "Modul Employee",
+  },
+];
+
+function StatusBadge({ status }: { status: HrModuleCard["status"] }) {
+  if (status === "ACTIVE") {
+    return (
+      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+        ACTIVE
+      </span>
+    );
+  }
+
+  if (status === "LOCKED") {
+    return (
+      <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-600">
+        LOCKED
+      </span>
+    );
+  }
+
+  // LINK
+  return (
+    <span className="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700">
+      LINK
+    </span>
+  );
+}
+
+export default function HrDashboardPage() {
+  return (
+    <section className="p-6 md:p-10 space-y-6">
+      {/* HEADER */}
+      <div className="space-y-2">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+          Employee Module
+        </h1>
+        <p className="text-sm text-gray-500">
+          Modul HR untuk mengelola data karyawan, status, organisasi, kontrak,
+          payroll, dan exit.
+        </p>
+      </div>
+
+      {/* ALUR UMUM */}
+      <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-xs md:text-sm text-gray-600">
+        <span className="font-medium text-gray-700">Alur umum:</span>{" "}
+        <span className="font-semibold text-blue-700">Employee Master</span>{" "}
+        <span className="text-gray-400">→</span>{" "}
+        <span className="font-semibold text-blue-700">Status</span>{" "}
+        <span className="text-gray-400">→</span>{" "}
+        <span className="font-semibold text-blue-700">Organisasi</span>{" "}
+        <span className="text-gray-400">→</span>{" "}
+        <span className="font-semibold text-blue-700">Kontrak</span>{" "}
+        <span className="text-gray-400">→</span>{" "}
+        <span className="font-semibold text-blue-700">Payroll</span>{" "}
+        <span className="text-gray-400">→</span>{" "}
+        <span className="font-semibold text-blue-700">Exit</span>
+      </div>
+
+      {/* GRID MODULES */}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {hrModules.map((mod) => (
+          <Link
+            key={mod.title}
+            href={mod.href}
+            className="group flex flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-500/60 hover:shadow-md"
+          >
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <div className="space-y-1">
+                <h2 className="text-base md:text-lg font-semibold text-gray-900">
+                  {mod.title}
+                </h2>
+                <p className="text-xs text-gray-500">{mod.description}</p>
+              </div>
+              <StatusBadge status={mod.status} />
+            </div>
+
+            {mod.note && (
+              <p className="mt-auto text-[11px] text-gray-400">
+                {mod.status === "LOCKED" && "⚠ "}
+                {mod.note}
+              </p>
+            )}
+
+            <div className="mt-3 flex items-center gap-1 text-xs font-medium text-blue-600">
+              <span>Masuk modul</span>
+              <span className="transition-transform group-hover:translate-x-0.5">
+                →
+              </span>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}import Link from "next/link"
 
 /* ================= MOCK STATUS (NANTI DIGANTI API) ================= */
 

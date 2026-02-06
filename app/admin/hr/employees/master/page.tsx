@@ -305,40 +305,57 @@ export default function EmployeeMasterPage() {
         </label>
 
         {selectedIds.length > 0 && (
-          <button
-            className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700"
-            onClick={async () => {
-              if (
-                !confirm(
-                  `Nonaktifkan ${selectedIds.length} karyawan terpilih?`
-                )
-              )
-                return
+  <div className="flex gap-2">
+    {/* NONAKTIF */}
+    <button
+      className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700"
+      onClick={async () => {
+        if (!confirm(`Nonaktifkan ${selectedIds.length} karyawan?`)) return
 
-              const res = await fetch("/api/hr/employees", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  action: "bulk_nonaktif",
-                  employee_ids: selectedIds,
-                }),
-              })
+        await fetch("/api/hr/employees", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "bulk_nonaktif",
+            employee_ids: selectedIds,
+          }),
+        })
 
-              if (!res.ok) {
-                alert("Gagal nonaktifkan karyawan")
-                return
-              }
+        setSelectedIds([])
+        loadEmployees()
+        loadDashboard()
+      }}
+    >
+      Nonaktifkan
+    </button>
 
-              alert("Karyawan berhasil dinonaktifkan")
-              setSelectedIds([])
-              loadEmployees()
-              loadDashboard() // 🔁 refresh stats juga
-            }}
-          >
-            Nonaktifkan Terpilih
-          </button>
-        )}
-      </div>
+    {/* DELETE PERMANEN */}
+    <button
+      className="px-4 py-2 bg-black text-white rounded-lg text-sm hover:bg-gray-800"
+      onClick={async () => {
+        const confirmText = prompt(
+          "Ketik: DELETE untuk hapus permanen"
+        )
+        if (confirmText !== "DELETE") return
+
+        await fetch("/api/hr/employees", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "bulk_delete",
+            employee_ids: selectedIds,
+          }),
+        })
+
+        setSelectedIds([])
+        loadEmployees()
+        loadDashboard()
+      }}
+    >
+      Hapus Permanen
+    </button>
+  </div>
+)}
 
       {/* LIST */}
       <div className="bg-white border rounded-xl divide-y text-sm">

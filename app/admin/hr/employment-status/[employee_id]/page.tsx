@@ -1,40 +1,40 @@
-import { notFound } from "next/navigation";
+import { notFound } from "next/navigation"
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
 type StatusRow = {
-  employee_id: string;
-  status: string;
-  jenis_status: string;
-  lokasi_kerja: string;
-  start_date: string;
-  end_date: string;
-  is_current: string;
-  created_at: string;
-  updated_by: string;
-  keterangan: string;
-};
+  employee_id: string
+  status: string
+  jenis_status: string
+  lokasi_kerja: string
+  start_date: string
+  end_date: string
+  is_current: string
+  created_at: string
+  updated_by: string
+  keterangan: string
+}
 
 async function getStatus(employee_id: string) {
   const res = await fetch(
-    `/api/hr/employee-status?employee_id=${employee_id}`,
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/hr/employment-status?employee_id=${employee_id}`,
     { cache: "no-store" }
-  );
+  )
 
-  if (!res.ok) return null;
-  return res.json();
+  if (!res.ok) return null
+  return res.json()
 }
 
 export default async function EmploymentStatusDetail({
   params,
 }: {
-  params: { employee_id: string };
+  params: { employee_id: string }
 }) {
-  const data = await getStatus(params.employee_id);
+  const data = await getStatus(params.employee_id)
 
-  if (!data) return notFound();
+  if (!data) return notFound()
 
-  const rows: StatusRow[] = data.data || [];
+  const rows: StatusRow[] = data.data || []
 
   return (
     <section className="p-6 md:p-10 space-y-6">
@@ -56,13 +56,6 @@ export default async function EmploymentStatusDetail({
         </p>
       </div>
 
-      {/* ACTION */}
-      <div>
-        <button className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
-          + Tambah Status
-        </button>
-      </div>
-
       {/* TIMELINE */}
       <div className="bg-white border rounded-xl divide-y">
         {rows.length === 0 && (
@@ -73,11 +66,10 @@ export default async function EmploymentStatusDetail({
 
         {rows.map((row, i) => {
           const isActive =
-            String(row.is_current).toUpperCase() === "TRUE";
+            String(row.is_current).toUpperCase() === "TRUE"
 
           return (
             <div key={i} className="p-5 flex gap-4">
-              {/* DOT */}
               <div className="pt-1">
                 <span
                   className={`inline-block w-3 h-3 rounded-full ${
@@ -86,7 +78,6 @@ export default async function EmploymentStatusDetail({
                 />
               </div>
 
-              {/* CONTENT */}
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-gray-900">
@@ -115,9 +106,9 @@ export default async function EmploymentStatusDetail({
                 )}
               </div>
             </div>
-          );
+          )
         })}
       </div>
     </section>
-  );
+  )
 }

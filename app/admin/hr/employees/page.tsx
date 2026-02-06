@@ -138,7 +138,7 @@ function SubModule({
   title,
   desc,
   status,
-  href,
+  href = "#",
   lockedReason,
 }: {
   title: string
@@ -147,31 +147,28 @@ function SubModule({
   href?: string
   lockedReason?: string
 }) {
-  const isClickable = status === "ACTIVE" || status === "LINK"
-  const Wrapper: any = isClickable && href ? Link : "div"
-
   return (
-    <Wrapper
-      href={isClickable && href ? href : ""}
-      className={`relative bg-white border rounded-xl p-6 space-y-2 transition
-        ${isClickable ? "hover:shadow cursor-pointer" : "opacity-60"}
-      `}
+    <Link
+      href={href}
+      className="relative bg-white border rounded-xl p-6 space-y-2 transition hover:shadow hover:-translate-y-0.5 cursor-pointer"
     >
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-gray-900">
           {title}
         </h3>
 
-        <span className={`text-xs font-semibold px-2 py-1 rounded
-          ${
-            status === "ACTIVE"
-              ? "bg-green-100 text-green-700"
-              : status === "DRAFT"
-              ? "bg-yellow-100 text-yellow-700"
-              : status === "LOCKED"
-              ? "bg-red-100 text-red-700"
-              : "bg-gray-100 text-gray-600"
-          }`}>
+        <span
+          className={`text-xs font-semibold px-2 py-1 rounded
+            ${
+              status === "ACTIVE"
+                ? "bg-green-100 text-green-700"
+                : status === "DRAFT"
+                ? "bg-yellow-100 text-yellow-700"
+                : status === "LOCKED"
+                ? "bg-red-100 text-red-700"
+                : "bg-gray-100 text-gray-600"
+            }`}
+        >
           {status}
         </span>
       </div>
@@ -180,7 +177,7 @@ function SubModule({
         {desc}
       </p>
 
-      {status === "LOCKED" && lockedReason && (
+      {lockedReason && (
         <p className="text-xs text-red-500">
           ⚠️ {lockedReason}
         </p>
@@ -189,6 +186,6 @@ function SubModule({
       <p className="text-xs text-gray-400">
         Modul Employee
       </p>
-    </Wrapper>
+    </Link>
   )
 }

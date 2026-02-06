@@ -25,7 +25,7 @@ export default function EmployeeStatusPage() {
   }, []);
 
   return (
-    <div className="p-6">
+    <div className="p-6 relative z-10 pointer-events-auto">
       {/* HEADER */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Employment Status</h1>
@@ -62,14 +62,14 @@ export default function EmployeeStatusPage() {
                   <td className="p-3">{emp.nama_lengkap}</td>
                   <td className="p-3">{emp.divisi || "-"}</td>
                   <td className="p-3">{emp.jabatan || "-"}</td>
-                  <td className="p-3">
-                    <Link
-                      href={`/admin/hr/employee-status/${emp.employee_id}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      Lihat Status
-                    </Link>
-                  </td>
+                  <td className="p-3 relative z-20 pointer-events-auto">
+  <Link
+    href={`/admin/hr/employee-status/${emp.employee_id}`}
+    className="text-blue-600 hover:underline relative z-30 pointer-events-auto"
+  >
+    Lihat Status
+  </Link>
+</td>
                 </tr>
               ))}
 

@@ -59,36 +59,42 @@ export async function POST(req: NextRequest) {
       keterangan,
     } = body
 
-    if (!employee_id || !status || !jenis_status || !start_date)
-      return NextResponse.json({ error: "Field wajib belum lengkap" }, { status: 400 })
+    if (!employee_id || !status || !jenis_status || !start_date) {
+      return NextResponse.json(
+        { error: "Field wajib belum lengkap" },
+        { status: 400 }
+      )
+    }
 
-    // ambil data lama
+    const sheetId = process.env.GOOGLE_SHEET_ID!
+
     const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      spreadsheetId: sheetId,
       range: SHEET_NAME,
     })
 
     const values = res.data.values || []
 
-    // tutup status lama
+    /* ===== TUTUP STATUS LAMA ===== */
     for (let i = 1; i < values.length; i++) {
       if (values[i][0] === employee_id && values[i][6] === "TRUE") {
-        values[i][5] = new Date().toISOString().slice(0, 10)
-        values[i][6] = "FALSE"
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: sheetId,
+          range: `${SHEET_NAME}!F${i + 1}:G${i + 1}`,
+          valueInputOption: "RAW",
+          requestBody: {
+            values: [[
+              new Date().toISOString().slice(0, 10),
+              "FALSE"
+            ]]
+          }
+        })
       }
     }
 
-    // overwrite update lama
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: SHEET_NAME,
-      valueInputOption: "RAW",
-      requestBody: { values },
-    })
-
-    // append status baru
+    /* ===== TAMBAH STATUS BARU ===== */
     await sheets.spreadsheets.values.append({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      spreadsheetId: sheetId,
       range: SHEET_NAME,
       valueInputOption: "RAW",
       requestBody: {
@@ -110,6 +116,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error(err)
-    return NextResponse.json({ error: "Failed save status" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed save status" },
+      { status: 500 }
+    )
   }
 }

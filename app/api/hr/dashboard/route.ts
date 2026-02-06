@@ -19,11 +19,15 @@ const SHEET_NAME = "EMPLOYEE_MASTER"
 
 /* ================= HELPERS ================= */
 
-const isAktif = (v: any) =>
-  String(v).trim().toLowerCase() === "true"
+const isAktif = (v: any) => String(v).trim().toLowerCase() === "true"
+const norm = (v: any) => String(v || "").trim().toLowerCase()
 
-const norm = (v: any) =>
-  String(v || "").trim().toLowerCase()
+/* pakai tipe_karyawan, kalau kosong fallback ke status_karyawan */
+const getTipe = (e: any) => {
+  const tipe = norm(e.tipe_karyawan)
+  if (tipe) return tipe
+  return norm(e.status_karyawan)
+}
 
 /* ================= GET DASHBOARD ================= */
 
@@ -46,23 +50,21 @@ export async function GET() {
 
     const total = employees.length
 
-    const aktifEmployees = employees.filter((e) =>
-      isAktif(e.is_active)
-    )
-
+    const aktifEmployees = employees.filter((e) => isAktif(e.is_active))
     const aktif = aktifEmployees.length
     const nonaktif = total - aktif
 
+    // ⬇️ sekarang pakai getTipe (tipe_karyawan || status_karyawan)
     const tetap = aktifEmployees.filter(
-      (e) => norm(e.tipe_karyawan) === "tetap"
+      (e) => getTipe(e) === "tetap"
     ).length
 
     const kontrak = aktifEmployees.filter(
-      (e) => norm(e.tipe_karyawan) === "kontrak"
+      (e) => getTipe(e) === "kontrak"
     ).length
 
     const harian = aktifEmployees.filter(
-      (e) => norm(e.tipe_karyawan) === "harian"
+      (e) => getTipe(e) === "harian"
     ).length
 
     return NextResponse.json({

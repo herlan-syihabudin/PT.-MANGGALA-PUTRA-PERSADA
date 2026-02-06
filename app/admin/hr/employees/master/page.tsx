@@ -356,6 +356,7 @@ export default function EmployeeMasterPage() {
     </button>
   </div>
 )}
+        </div>
 
       {/* LIST */}
       <div className="bg-white border rounded-xl divide-y text-sm">

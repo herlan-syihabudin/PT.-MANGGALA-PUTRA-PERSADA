@@ -16,6 +16,18 @@ const sheets = google.sheets({ version: "v4", auth })
 const SHEET_ID = process.env.GOOGLE_SHEET_ID!
 const SHEET_NAME = "EMPLOYEE_MASTER"
 
+/* ================= NORMALIZER ================= */
+
+function normalizeEmployee(obj: any) {
+  return {
+    ...obj,
+    is_active:
+      String(obj.is_active).trim().toLowerCase() === "true",
+    tipe_karyawan: String(obj.tipe_karyawan || "").trim(),
+    status_karyawan: String(obj.status_karyawan || "").trim(),
+  }
+}
+
 /* ================= UTIL ================= */
 
 async function getAllRows() {
@@ -25,12 +37,13 @@ async function getAllRows() {
   })
 
   const [headers, ...rows] = res.data.values || []
+
   return rows.map((r) => {
     const obj: any = {}
     headers.forEach((h: string, i: number) => {
       obj[h] = r[i] ?? ""
     })
-    return obj
+    return normalizeEmployee(obj)
   })
 }
 
@@ -45,18 +58,18 @@ export async function GET(req: NextRequest) {
 
     if (employee_id) {
       const emp = rows.find((r) => r.employee_id === employee_id)
-      if (!emp)
+      if (!emp) {
         return NextResponse.json(
           { error: "Employee not found" },
           { status: 404 }
         )
-
+      }
       return NextResponse.json(emp)
     }
 
     return NextResponse.json(rows)
   } catch (err) {
-    console.error(err)
+    console.error("GET EMPLOYEES ERROR:", err)
     return NextResponse.json(
       { error: "Failed to fetch employees" },
       { status: 500 }
@@ -95,10 +108,10 @@ export async function POST(req: NextRequest) {
             body.jabatan,
             body.atasan_langsung,
             body.lokasi_kerja,
-            body.status_karyawan,
-            body.tipe_karyawan,
+            body.status_karyawan ?? "",
+            body.tipe_karyawan ?? "",
             body.tgl_masuk,
-            true,
+            "TRUE", // ⬅ konsisten STRING
             new Date().toISOString(),
             new Date().toISOString(),
           ]],
@@ -113,11 +126,12 @@ export async function POST(req: NextRequest) {
       const index = rows.findIndex(
         (r) => r.employee_id === body.employee_id
       )
-      if (index === -1)
+      if (index === -1) {
         return NextResponse.json(
           { error: "Employee not found" },
           { status: 404 }
         )
+      }
 
       const rowNumber = index + 2
 
@@ -140,8 +154,8 @@ export async function POST(req: NextRequest) {
             body.jabatan,
             body.atasan_langsung,
             body.lokasi_kerja,
-            body.status_karyawan,
-            body.tipe_karyawan,
+            body.status_karyawan ?? "",
+            body.tipe_karyawan ?? "",
           ]],
         },
       })
@@ -154,8 +168,9 @@ export async function POST(req: NextRequest) {
       const index = rows.findIndex(
         (r) => r.employee_id === body.employee_id
       )
-      if (index === -1)
+      if (index === -1) {
         return NextResponse.json({ error: "Not found" }, { status: 404 })
+      }
 
       const rowNumber = index + 2
 
@@ -164,7 +179,11 @@ export async function POST(req: NextRequest) {
         range: `${SHEET_NAME}!R${rowNumber}:T${rowNumber}`,
         valueInputOption: "RAW",
         requestBody: {
-          values: [[false, "", new Date().toISOString()]],
+          values: [[
+            "FALSE",
+            "",
+            new Date().toISOString()
+          ]],
         },
       })
 
@@ -183,7 +202,11 @@ export async function POST(req: NextRequest) {
             range: `${SHEET_NAME}!R${rowNumber}:T${rowNumber}`,
             valueInputOption: "RAW",
             requestBody: {
-              values: [[false, "", new Date().toISOString()]],
+              values: [[
+                "FALSE",
+                "",
+                new Date().toISOString()
+              ]],
             },
           })
           count++
@@ -195,7 +218,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 })
   } catch (err) {
-    console.error(err)
+    console.error("HR API ERROR:", err)
     return NextResponse.json(
       { error: "HR API error" },
       { status: 500 }

@@ -136,29 +136,33 @@ export async function POST(req: NextRequest) {
       const rowNumber = index + 2
 
       await sheets.spreadsheets.values.update({
-        spreadsheetId: SHEET_ID,
-        range: `${SHEET_NAME}!B${rowNumber}:P${rowNumber}`,
-        valueInputOption: "RAW",
-        requestBody: {
-          values: [[
-            body.nama_lengkap,
-            body.nik_ktp,
-            body.jenis_kelamin,
-            body.tgl_lahir,
-            body.tempat_lahir,
-            body.status_pernikahan,
-            body.alamat_domisili,
-            body.email,
-            body.no_hp,
-            body.divisi,
-            body.jabatan,
-            body.atasan_langsung,
-            body.lokasi_kerja,
-            body.status_karyawan ?? "",
-            body.tipe_karyawan ?? "",
-          ]],
-        },
-      })
+  spreadsheetId: SHEET_ID,
+  range: `${SHEET_NAME}!B${rowNumber}:T${rowNumber}`,
+  valueInputOption: "RAW",
+  requestBody: {
+    values: [[
+      body.nama_lengkap,
+      body.nik_ktp,
+      body.jenis_kelamin,
+      body.tgl_lahir,
+      body.tempat_lahir,
+      body.status_pernikahan,
+      body.alamat_domisili,
+      body.email,
+      body.no_hp,
+      body.divisi,
+      body.jabatan,
+      body.atasan_langsung,
+      body.lokasi_kerja,
+      body.status_karyawan ?? "",
+      body.tipe_karyawan ?? "",
+      body.tgl_masuk ?? "",
+      rows[index].is_active ? "TRUE" : "FALSE",
+      rows[index].created_at,
+      new Date().toISOString(), // ✅ updated_at
+    ]],
+  },
+})
 
       return NextResponse.json({ success: true })
     }
@@ -216,6 +220,52 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, total: count })
     }
 
+    /* ===== BULK DELETE ===== */
+if (action === "bulk_delete") {
+  const remaining = rows.filter(
+    (r) => !body.employee_ids.includes(r.employee_id)
+  )
+
+  // rewrite sheet (AMAN kalau jumlah kecil)
+  await sheets.spreadsheets.values.clear({
+    spreadsheetId: SHEET_ID,
+    range: `${SHEET_NAME}!A2:T`,
+  })
+
+  if (remaining.length > 0) {
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!A2`,
+      valueInputOption: "RAW",
+      requestBody: {
+        values: remaining.map((r) => [
+          r.employee_id,
+          r.nama_lengkap,
+          r.nik_ktp,
+          r.jenis_kelamin,
+          r.tgl_lahir,
+          r.tempat_lahir,
+          r.status_pernikahan,
+          r.alamat_domisili,
+          r.email,
+          r.no_hp,
+          r.divisi,
+          r.jabatan,
+          r.atasan_langsung,
+          r.lokasi_kerja,
+          r.status_karyawan,
+          r.tipe_karyawan,
+          r.tgl_masuk,
+          r.is_active ? "TRUE" : "FALSE",
+          r.created_at,
+          r.updated_at,
+        ]),
+      },
+    })
+  }
+
+  return NextResponse.json({ success: true })
+}
     return NextResponse.json({ error: "Invalid action" }, { status: 400 })
   } catch (err) {
     console.error("HR API ERROR:", err)

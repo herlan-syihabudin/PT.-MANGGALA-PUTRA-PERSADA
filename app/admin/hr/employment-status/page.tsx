@@ -68,11 +68,11 @@ export default function EmployeeStatusPage() {
                   <td className="p-3">{emp.jabatan || "-"}</td>
                   <td className="p-3">
                     <Link
-                      href={`/admin/hr/employee-status/${emp.employee_id}`}
-                      className="text-blue-600 hover:underline font-medium"
-                    >
-                      Lihat Status →
-                    </Link>
+          href={`/admin/hr/employment-status/${emp.employee_id}`}
+          className="text-blue-600 hover:underline font-medium"
+        >
+          Lihat Status →
+        </Link>
                   </td>
                 </tr>
               ))}

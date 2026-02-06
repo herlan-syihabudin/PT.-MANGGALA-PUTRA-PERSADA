@@ -4,7 +4,6 @@ import { google } from "googleapis"
 export const dynamic = "force-dynamic"
 
 /* ================= GOOGLE AUTH ================= */
-
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL!,
   undefined,
@@ -13,6 +12,7 @@ const auth = new google.auth.JWT(
 )
 
 const sheets = google.sheets({ version: "v4", auth })
+
 const SHEET_ID = process.env.GOOGLE_SHEET_ID!
 const SHEET_NAME = "CONTRACT"
 
@@ -22,10 +22,11 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const employee_id = searchParams.get("employee_id")
     const status = searchParams.get("status")
+    const project_code = searchParams.get("project_code")
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A1:H`,
+      range: `${SHEET_NAME}!A1:N`,
     })
 
     const [headers, ...rows] = res.data.values || []
@@ -45,7 +46,14 @@ export async function GET(req: NextRequest) {
 
     if (status) {
       data = data.filter(
-        (d) => String(d.status_kontrak).toUpperCase() === status.toUpperCase()
+        (d) =>
+          String(d.status_kontrak).toUpperCase() === status.toUpperCase()
+      )
+    }
+
+    if (project_code) {
+      data = data.filter(
+        (d) => String(d.project_code).trim() === project_code.trim()
       )
     }
 
@@ -66,22 +74,36 @@ export async function POST(req: NextRequest) {
 
     const {
       employee_id,
-      jenis_kontrak,
+      nama_lengkap,
+      type_karyawan,
+      jabatan,
+      project_code,
+      lokasi_kerja,
       start_date,
       end_date,
+      sistem_bayar,
+      rate,
       keterangan,
     } = body
 
-    if (!employee_id || !jenis_kontrak || !start_date) {
+    if (
+      !employee_id ||
+      !nama_lengkap ||
+      !type_karyawan ||
+      !jabatan ||
+      !start_date ||
+      !sistem_bayar ||
+      !rate
+    ) {
       return NextResponse.json(
-        { error: "employee_id, jenis_kontrak, start_date wajib" },
+        { error: "Field wajib belum lengkap" },
         { status: 400 }
       )
     }
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A1:H`,
+      range: `${SHEET_NAME}!A1:N`,
     })
 
     const values = res.data.values || []
@@ -90,15 +112,15 @@ export async function POST(req: NextRequest) {
     for (let i = 1; i < values.length; i++) {
       if (
         String(values[i][1]).trim() === employee_id.trim() &&
-        String(values[i][5]).toUpperCase() === "AKTIF"
+        String(values[i][9]).toUpperCase() === "AKTIF"
       ) {
-        values[i][5] = "NONAKTIF"
+        values[i][9] = "NONAKTIF"
       }
     }
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A1:H${values.length}`,
+      range: `${SHEET_NAME}!A1:N${values.length}`,
       valueInputOption: "USER_ENTERED",
       requestBody: { values },
     })
@@ -115,10 +137,16 @@ export async function POST(req: NextRequest) {
         values: [[
           contract_id,
           employee_id.trim(),
-          jenis_kontrak,
+          nama_lengkap,
+          type_karyawan.toUpperCase(),
+          jabatan,
+          project_code || "",
+          lokasi_kerja || "",
           start_date,
           end_date || "",
           "AKTIF",
+          sistem_bayar.toUpperCase(),
+          rate,
           keterangan || "",
           new Date().toISOString(),
         ]],

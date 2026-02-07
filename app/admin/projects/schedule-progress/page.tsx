@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react"
 
-type Project = {
+type ProjectProgress = {
   project_id: string
   project_name: string
+  start_date: string
+  end_date: string
   status: string
   progress: {
     mep: number
@@ -16,118 +18,73 @@ type Project = {
 }
 
 export default function ScheduleProgressPage() {
-  const [projects, setProjects] = useState<Project[]>([])
-  const [saving, setSaving] = useState<string | null>(null)
+  const [data, setData] = useState<ProjectProgress[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetch("/api/projects/progress", { cache: "no-store" })
       .then((res) => res.json())
-      .then(setProjects)
+      .then(setData)
+      .finally(() => setLoading(false))
   }, [])
 
-  const updateProgress = async (p: Project) => {
-    setSaving(p.project_id)
-
-    await fetch(`/api/projects/progress/${p.project_id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mep: p.progress.mep,
-        civil: p.progress.civil,
-        steel: p.progress.steel,
-        interior: p.progress.interior,
-      }),
-    })
-
-    setSaving(null)
-  }
-
-  const setValue = (
-    pid: string,
-    key: "mep" | "civil" | "steel" | "interior",
-    value: number
-  ) => {
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.project_id === pid
-          ? {
-              ...p,
-              progress: { ...p.progress, [key]: value },
-            }
-          : p
-      )
-    )
-  }
+  if (loading) return <div className="p-6">Loading...</div>
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Schedule & Progress</h1>
+      <h1 className="text-2xl font-bold">Schedule &amp; Progress</h1>
 
-      {projects.map((p) => (
-        <div
-          key={p.project_id}
-          className="bg-white border rounded p-5 space-y-4"
-        >
-          <div className="font-semibold">
-            {p.project_name}
-          </div>
+      <div className="overflow-x-auto bg-white border rounded">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="p-3 text-left">Project</th>
+              <th>MEP</th>
+              <th>Civil</th>
+              <th>Steel</th>
+              <th>Interior</th>
+              <th>Total</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((p) => (
+              <tr key={p.project_id} className="border-t">
+                <td className="p-3 font-medium">{p.project_name}</td>
 
-          {(["mep", "civil", "steel", "interior"] as const).map(
-            (k) => (
-              <ProgressSlider
-                key={k}
-                label={k.toUpperCase()}
-                value={p.progress[k]}
-                onChange={(v) =>
-                  setValue(p.project_id, k, v)
-                }
-              />
-            )
-          )}
+                <ProgressCell value={p.progress.mep} />
+                <ProgressCell value={p.progress.civil} />
+                <ProgressCell value={p.progress.steel} />
+                <ProgressCell value={p.progress.interior} />
 
-          <button
-            onClick={() => updateProgress(p)}
-            disabled={saving === p.project_id}
-            className="bg-red-600 text-white px-4 py-2 rounded"
-          >
-            {saving === p.project_id
-              ? "Menyimpan..."
-              : "Simpan Progress"}
-          </button>
-        </div>
-      ))}
+                <td className="text-center font-bold">
+                  {p.progress.overall}%
+                </td>
+
+                <td className="text-center">
+                  <span className="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-800">
+                    {p.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
 
-/* ==============================
-   SLIDER COMPONENT
-================================ */
-function ProgressSlider({
-  label,
-  value,
-  onChange,
-}: {
-  label: string
-  value: number
-  onChange: (v: number) => void
-}) {
+function ProgressCell({ value }: { value: number }) {
   return (
-    <div>
-      <div className="flex justify-between text-sm mb-1">
-        <span>{label}</span>
-        <span>{value}%</span>
+    <td className="p-3 w-32">
+      <div className="w-full bg-gray-200 rounded h-2">
+        <div
+          className="bg-green-600 h-2 rounded"
+          style={{ width: `${value}%` }}
+        />
       </div>
-      <input
-        type="range"
-        min={0}
-        max={100}
-        value={value}
-        onChange={(e) =>
-          onChange(Number(e.target.value))
-        }
-        className="w-full"
-      />
-    </div>
+      <div className="text-xs text-center mt-1">{value}%</div>
+    </td>
   )
 }

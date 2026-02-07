@@ -3,9 +3,20 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 
+function generateProjectCode() {
+  const date = new Date()
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, "0")
+  const d = String(date.getDate()).padStart(2, "0")
+  const rand = Math.floor(100 + Math.random() * 900)
+  return `PRJ-${y}${m}${d}-${rand}`
+}
+
 export default function CreateProjectPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+
+  const [projectCode] = useState(generateProjectCode())
 
   const [form, setForm] = useState({
     project_name: "",
@@ -30,7 +41,10 @@ export default function CreateProjectPage() {
     const res = await fetch("/api/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        ...form,
+        project_code: projectCode,
+      }),
     })
 
     setLoading(false)
@@ -43,90 +57,30 @@ export default function CreateProjectPage() {
   }
 
   return (
-  <div className="max-w-3xl mx-auto py-10">
-    {/* ================= HEADER INFO ================= */}
-    <div className="mb-8">
-      <h1 className="text-2xl font-bold">Create Project</h1>
-      <p className="text-sm text-gray-600 mt-1">
-        Form ini digunakan untuk membuat <b>Project Master</b> yang akan menjadi
-        dasar seluruh proses ERP (Estimator, Engineering, Finance, dan Project Management).
-      </p>
-    </div>
+    <div className="max-w-3xl mx-auto py-10">
 
-    {/* ================= FORM CONTAINER ================= */}
-    <div className="bg-white border rounded-lg p-6">
-      <form onSubmit={handleSubmit} className="space-y-5">
-
-        {/* Nama Project */}
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Nama Project
-          </label>
-          <input
-            name="project_name"
-            placeholder="Contoh: Pembangunan Gudang Cikarang"
-            value={form.project_name}
-            onChange={handleChange}
-            className="w-full border rounded px-4 py-2"
-            required
-          />
+      {/* ===== HEADER ===== */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Create Project</h1>
+        <div className="text-sm text-gray-600 mt-1">
+          Project Code:{" "}
+          <span className="font-mono font-semibold text-gray-900">
+            {projectCode}
+          </span>
         </div>
+      </div>
 
-        {/* Client */}
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Client / Owner
-          </label>
-          <input
-            name="client"
-            placeholder="Nama perusahaan atau pemilik project"
-            value={form.client}
-            onChange={handleChange}
-            className="w-full border rounded px-4 py-2"
-            required
-          />
-        </div>
+      {/* ===== FORM CONTAINER ===== */}
+      <div className="bg-white border rounded-lg p-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
 
-        {/* Lokasi */}
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Lokasi Project
-          </label>
-          <input
-            name="lokasi"
-            placeholder="Contoh: Cikarang, Bekasi"
-            value={form.lokasi}
-            onChange={handleChange}
-            className="w-full border rounded px-4 py-2"
-          />
-        </div>
-
-        {/* Nilai Kontrak */}
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Nilai Kontrak (Rp)
-          </label>
-          <input
-            type="number"
-            name="nilai_kontrak"
-            placeholder="Contoh: 2500000000"
-            value={form.nilai_kontrak}
-            onChange={handleChange}
-            className="w-full border rounded px-4 py-2"
-            required
-          />
-        </div>
-
-        {/* Tanggal */}
-        <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">
-              Tanggal Mulai
+              Nama Project
             </label>
             <input
-              type="date"
-              name="start_date"
-              value={form.start_date}
+              name="project_name"
+              value={form.project_name}
               onChange={handleChange}
               className="w-full border rounded px-4 py-2"
               required
@@ -135,46 +89,100 @@ export default function CreateProjectPage() {
 
           <div>
             <label className="block text-sm font-medium mb-1">
-              Tanggal Selesai
+              Client / Owner
             </label>
             <input
-              type="date"
-              name="end_date"
-              value={form.end_date}
+              name="client"
+              value={form.client}
+              onChange={handleChange}
+              className="w-full border rounded px-4 py-2"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Lokasi Project
+            </label>
+            <input
+              name="lokasi"
+              value={form.lokasi}
               onChange={handleChange}
               className="w-full border rounded px-4 py-2"
             />
           </div>
-        </div>
 
-        {/* Status */}
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Status Project
-          </label>
-          <select
-            name="status"
-            value={form.status}
-            onChange={handleChange}
-            className="w-full border rounded px-4 py-2"
-          >
-            <option value="planning">Planning</option>
-            <option value="running">Running</option>
-            <option value="finish">Finish</option>
-          </select>
-        </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Nilai Kontrak (Rp)
+            </label>
+            <input
+              type="number"
+              name="nilai_kontrak"
+              value={form.nilai_kontrak}
+              onChange={handleChange}
+              className="w-full border rounded px-4 py-2"
+              required
+            />
+          </div>
 
-        {/* ACTION */}
-        <div className="pt-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-red-600 text-white px-6 py-2 rounded"
-          >
-            {loading ? "Menyimpan..." : "Simpan Project"}
-          </button>
-        </div>
-      </form>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Tanggal Mulai
+              </label>
+              <input
+                type="date"
+                name="start_date"
+                value={form.start_date}
+                onChange={handleChange}
+                className="w-full border rounded px-4 py-2"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Tanggal Selesai
+              </label>
+              <input
+                type="date"
+                name="end_date"
+                value={form.end_date}
+                onChange={handleChange}
+                className="w-full border rounded px-4 py-2"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Status Project
+            </label>
+            <select
+              name="status"
+              value={form.status}
+              onChange={handleChange}
+              className="w-full border rounded px-4 py-2"
+            >
+              <option value="planning">Planning</option>
+              <option value="running">Running</option>
+              <option value="finish">Finish</option>
+            </select>
+          </div>
+
+          <div className="pt-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-red-600 text-white px-6 py-2 rounded"
+            >
+              {loading ? "Menyimpan..." : "Simpan Project"}
+            </button>
+          </div>
+
+        </form>
+      </div>
     </div>
-  </div>
-)
+  )
+}

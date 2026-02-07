@@ -47,7 +47,7 @@ export default function EmployeeForm({
           setForm({ ...form, jenis_kelamin: e.target.value })
         }
       >
-        <option value="">Jenis Kelamin</option>
+        <option value="">Jenis Kelamin *</option>
         <option value="Laki-laki">Laki-laki</option>
         <option value="Perempuan">Perempuan</option>
       </select>
@@ -69,6 +69,20 @@ export default function EmployeeForm({
           setForm({ ...form, tempat_lahir: e.target.value })
         }
       />
+
+      {/* STATUS PERNIKAHAN */}
+      <select
+        className="border p-2"
+        value={form.status_pernikahan || ""}
+        onChange={(e) =>
+          setForm({ ...form, status_pernikahan: e.target.value })
+        }
+      >
+        <option value="">Status Pernikahan *</option>
+        <option value="Lajang">Lajang</option>
+        <option value="Menikah">Menikah</option>
+        <option value="Cerai">Cerai</option>
+      </select>
 
       <input
         className="border p-2 md:col-span-2"
@@ -137,29 +151,12 @@ export default function EmployeeForm({
           setForm({ ...form, lokasi_kerja: e.target.value })
         }
       >
-        <option value="">Lokasi Kerja</option>
+        <option value="">Lokasi Kerja *</option>
         <option value="Head Office">Head Office</option>
         <option value="Site Project">Site Project</option>
       </select>
 
-      {/* STATUS KARYAWAN (LOGIC HR) */}
-      <select
-        className="border p-2"
-        value={form.status_karyawan || "Aktif"}
-        onChange={(e) =>
-          setForm({
-            ...form,
-            status_karyawan: e.target.value,
-            is_active: e.target.value === "Aktif",
-          })
-        }
-      >
-        <option value="Aktif">Aktif</option>
-        <option value="Nonaktif">Nonaktif</option>
-        <option value="Resign">Resign</option>
-      </select>
-
-      {/* TIPE KARYAWAN (DASHBOARD COUNT) */}
+      {/* TIPE KARYAWAN */}
       <select
         className="border p-2"
         value={form.tipe_karyawan || ""}

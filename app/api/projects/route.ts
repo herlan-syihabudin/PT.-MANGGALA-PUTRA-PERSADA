@@ -18,6 +18,7 @@ const sheets = google.sheets({ version: "v4", auth })
 const SHEET_ID = process.env.GSHEET_PROJECT_ID! // 🔥 SATU ID
 const PROJECT_SHEET = "PROJECT MASTER"
 const CUSTOMER_SHEET = "CUSTOMERS"
+const PROGRESS_SHEET = "PROJECT_SCOPE_PROGRESS"
 
 /* ==============================
    GET : PROJECT LIST (JOIN CUSTOMER)
@@ -89,7 +90,7 @@ export async function POST(req: Request) {
       project_code,
       project_name,
       customer_id,
-       project_type,
+      project_type,
       lokasi,
       nilai_kontrak,
       start_date,
@@ -100,7 +101,7 @@ export async function POST(req: Request) {
     if (
       !project_name ||
       !customer_id ||
-       !project_type ||
+      !project_type ||
       !nilai_kontrak ||
       !start_date ||
       !status
@@ -111,26 +112,52 @@ export async function POST(req: Request) {
       )
     }
 
+    // ==============================
+    // GENERATE ID & TIME (WAJIB DI ATAS)
+    // ==============================
     const project_id = project_code || `PRJ-${Date.now()}`
     const created_at = new Date().toISOString()
 
+    // ==============================
+    // INSERT PROJECT MASTER
+    // ==============================
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: `${PROJECT_SHEET}!A:J`,
-requestBody: {
-  values: [[
-    project_id,        // A
-    project_name,      // B
-    customer_id,       // C
-    lokasi || "",      // D
-    nilai_kontrak,     // E
-    start_date,        // F
-    end_date || "",    // G
-    status,            // H
-    created_at,        // I
-    project_type,      // J ✅ BARU
-  ]],
-},
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [[
+          project_id,        // A
+          project_name,      // B
+          customer_id,       // C
+          lokasi || "",      // D
+          nilai_kontrak,     // E
+          start_date,        // F
+          end_date || "",    // G
+          status,            // H
+          created_at,        // I
+          project_type,      // J
+        ]],
+      },
+    })
+
+    // ==============================
+    // AUTO CREATE PROJECT PROGRESS
+    // ==============================
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: `${PROGRESS_SHEET}!A:F`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [[
+          project_id, // A
+          0,          // B mep_progress
+          0,          // C civil_progress
+          0,          // D steel_progress
+          0,          // E interior_progress
+          created_at // F updated_at
+        ]],
+      },
     })
 
     return NextResponse.json(

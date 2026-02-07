@@ -30,16 +30,19 @@ export async function GET() {
 
     const rows = res.data.values || []
 
-    const projects = rows.map((r) => ({
-      project_id: r[0],
-      project_name: r[1],
-      client: r[2],
-      lokasi: r[3],
-      nilai_kontrak: Number(r[4] || 0),
-      start_date: r[5],
-      end_date: r[6],
-      status: r[7],
-      created_at: r[8],
+    // 🔥 skip header (row 1)
+    const dataRows = rows.slice(1)
+
+    const projects = dataRows.map((r) => ({
+      project_id: r[0] ?? "",
+      project_name: r[1] ?? "",
+      client: r[2] ?? "",
+      lokasi: r[3] ?? "",
+      nilai_kontrak: Number(r[4] ?? 0),
+      start_date: r[5] ?? "",
+      end_date: r[6] ?? "",
+      status: r[7] ?? "",
+      created_at: r[8] ?? "",
     }))
 
     return NextResponse.json(projects)

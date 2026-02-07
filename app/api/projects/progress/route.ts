@@ -3,10 +3,8 @@ import { NextResponse } from "next/server"
 import { google } from "googleapis"
 
 export const dynamic = "force-dynamic"
+export const runtime = "nodejs" // ⬅️ WAJIB
 
-/* ==============================
-   GOOGLE AUTH
-================================ */
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL,
   undefined,
@@ -20,9 +18,6 @@ const SHEET_ID = process.env.GSHEET_PROJECT_ID!
 const PROJECT_SHEET = "PROJECT MASTER"
 const PROGRESS_SHEET = "PROJECT_SCOPE_PROGRESS"
 
-/* ==============================
-   GET : SCHEDULE & PROGRESS
-================================ */
 export async function GET() {
   try {
     const [projectRes, progressRes] = await Promise.all([
@@ -52,8 +47,7 @@ export async function GET() {
     }
 
     const result = projectRows.map((r) => {
-      const project_id = r[0]
-      const prog = progressMap[project_id] || {
+      const prog = progressMap[r[0]] || {
         mep: 0,
         civil: 0,
         steel: 0,
@@ -65,23 +59,18 @@ export async function GET() {
       )
 
       return {
-        project_id,
+        project_id: r[0],
         project_name: r[1],
         start_date: r[5],
         end_date: r[6],
         status: r[7],
-        progress: {
-          ...prog,
-          overall,
-        },
+        progress: { ...prog, overall },
       }
     })
 
     return NextResponse.json(result)
-  } catch (error) {
-    console.error("GET PROJECT PROGRESS LIST ERROR:", error)
-
-    // ⛑️ JANGAN 500, BIAR UI TIDAK CRASH
+  } catch (e) {
+    console.error(e)
     return NextResponse.json([])
   }
 }

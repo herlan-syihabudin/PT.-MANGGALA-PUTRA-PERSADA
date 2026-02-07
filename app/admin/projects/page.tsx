@@ -17,12 +17,13 @@ type Project = {
 ================================ */
 async function getProjects(): Promise<Project[]> {
   try {
-    const res = await fetch("/api/projects", {
-      cache: "no-store",
-    })
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/projects`,
+      { cache: "no-store" }
+    )
 
     if (!res.ok) {
-      console.error("Failed fetch /api/projects", res.status)
+      console.error("Failed fetch projects", res.status)
       return []
     }
 

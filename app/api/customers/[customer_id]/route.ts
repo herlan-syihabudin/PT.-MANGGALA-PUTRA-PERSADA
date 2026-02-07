@@ -15,8 +15,11 @@ const auth = new google.auth.JWT(
 
 const sheets = google.sheets({ version: "v4", auth })
 
-const SHEET_ID = process.env.GSHEET_CRM_ID!
-const SHEET_NAME = "CUSTOMER_MASTER"
+/* ==============================
+   CONFIG
+================================ */
+const SHEET_ID = process.env.GSHEET_PROJECT_ID!
+const SHEET_NAME = "CUSTOMERS"
 
 /* ==============================
    GET : CUSTOMER DETAIL
@@ -28,7 +31,7 @@ export async function GET(
   try {
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2:Z`,
+      range: `${SHEET_NAME}!A2:P`,
     })
 
     const rows = res.data.values || []
@@ -47,12 +50,20 @@ export async function GET(
     return NextResponse.json({
       customer_id: row[0],
       company_name: row[1],
-      pic_name: row[2],
-      phone: row[3],
-      email: row[4],
-      address: row[5],
-      npwp: row[6],
-      created_at: row[7],
+      customer_type: row[2],
+      pic_name: row[3],
+      pic_position: row[4],
+      email: row[5],
+      phone: row[6],
+      npwp: row[7],
+      address: row[8],
+      city: row[9],
+      province: row[10],
+      postal_code: row[11],
+      status: row[12],
+      notes: row[13],
+      created_at: row[14],
+      created_by: row[15],
     })
   } catch (error) {
     console.error("GET CUSTOMER DETAIL ERROR:", error)

@@ -59,20 +59,19 @@ export async function GET() {
       )
 
       return {
-        employee_id: e.employee_id,
-        nama: e.nama_lengkap,
-        divisi: e.divisi,
-        jabatan: e.jabatan,
-        tipe_karyawan: e.tipe_karyawan,
-        lokasi_master: e.lokasi_kerja,
+  employee_id: e.employee_id,
+  nama_lengkap: e.nama_lengkap,
+  divisi: e.divisi,
+  jabatan: e.jabatan,
+  tipe_karyawan: e.tipe_karyawan,
 
-        status_aktif: current?.status || "Belum diset",
-        jenis_status: current?.jenis_status || "-",
-        lokasi_kerja: current?.lokasi_kerja || e.lokasi_kerja,
-        sejak: current?.start_date || "-",
-        sampai: current?.end_date || "",
-        is_current: current ? true : false,
-      }
+  status_aktif: current?.status?.toUpperCase() || "BELUM DISET",
+  jenis_status: current?.jenis_status || "-",
+  lokasi_kerja: current?.lokasi_kerja || e.lokasi_kerja,
+  sejak: current?.start_date || "-",
+  sampai: current?.end_date || "",
+  is_current: Boolean(current),
+}
     })
 
     return NextResponse.json({ data })

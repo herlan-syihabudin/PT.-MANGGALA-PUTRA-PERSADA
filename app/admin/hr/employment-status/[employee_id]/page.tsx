@@ -230,7 +230,6 @@ export default function EmploymentStatusDetail({ params }: PageProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
-  const [employee, setEmployee] = useState<any>(null)
 
   async function loadStatus() {
     try {
@@ -252,18 +251,16 @@ export default function EmploymentStatusDetail({ params }: PageProps) {
         return
       }
 
-      setEmployee(data.employee || null)
+      const list: StatusRow[] = data.data || []
 
-const list: StatusRow[] = data.statuses || []
+      // Sort: status terbaru di atas (start_date desc)
+      list.sort((a, b) => {
+        const da = a.start_date ? new Date(a.start_date).getTime() : 0
+        const db = b.start_date ? new Date(b.start_date).getTime() : 0
+        return db - da
+      })
 
-// Sort: status terbaru di atas (start_date desc)
-list.sort((a, b) => {
-  const da = a.start_date ? new Date(a.start_date).getTime() : 0
-  const db = b.start_date ? new Date(b.start_date).getTime() : 0
-  return db - da
-})
-
-setRows(list)
+      setRows(list)
     } catch (e) {
       console.error("LOAD STATUS ERROR:", e)
       setError("Gagal memuat status karyawan")
@@ -302,16 +299,6 @@ setRows(list)
 
       {/* EMPLOYEE INFO */}
       <div className="flex flex-col gap-4 rounded-xl border bg-white p-5">
-        {employee && (
-  <div className="space-y-0.5">
-    <div className="text-sm font-semibold text-gray-900">
-      {employee.nama_lengkap}
-    </div>
-    <div className="text-xs text-gray-600">
-      {employee.jabatan} • {employee.divisi}
-    </div>
-  </div>
-)}
         <div className="text-xs text-gray-500">Employee ID</div>
         <div className="font-mono text-sm font-semibold text-gray-900">
           {employeeId}

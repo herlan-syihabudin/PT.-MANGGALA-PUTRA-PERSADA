@@ -4,6 +4,9 @@ import { google } from "googleapis"
 
 export const dynamic = "force-dynamic"
 
+/* ==============================
+   GOOGLE AUTH
+================================ */
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL,
   undefined,
@@ -17,6 +20,9 @@ const SHEET_ID = process.env.GSHEET_PROJECT_ID!
 const PROJECT_SHEET = "PROJECT MASTER"
 const PROGRESS_SHEET = "PROJECT_SCOPE_PROGRESS"
 
+/* ==============================
+   GET : SCHEDULE & PROGRESS
+================================ */
 export async function GET() {
   try {
     const [projectRes, progressRes] = await Promise.all([
@@ -30,22 +36,20 @@ export async function GET() {
       }),
     ])
 
-    const projectRows = projectRes.data.values?.slice(1) || []
-    const progressRows = progressRes.data.values?.slice(1) || []
+    const projectRows = projectRes.data.values?.slice(1) ?? []
+    const progressRows = progressRes.data.values?.slice(1) ?? []
 
-    const progressMap = Object.fromEntries(
-      progressRows
-        .filter((r) => r[0]) // skip baris kosong
-        .map((r) => [
-          r[0],
-          {
-            mep: Number(r[1] || 0),
-            civil: Number(r[2] || 0),
-            steel: Number(r[3] || 0),
-            interior: Number(r[4] || 0),
-          },
-        ])
-    )
+    const progressMap: Record<string, any> = {}
+
+    for (const r of progressRows) {
+      if (!r[0]) continue
+      progressMap[r[0]] = {
+        mep: Number(r[1] || 0),
+        civil: Number(r[2] || 0),
+        steel: Number(r[3] || 0),
+        interior: Number(r[4] || 0),
+      }
+    }
 
     const result = projectRows.map((r) => {
       const project_id = r[0]
@@ -75,10 +79,9 @@ export async function GET() {
 
     return NextResponse.json(result)
   } catch (error) {
-  console.error("GET PROJECT PROGRESS LIST ERROR:", error)
+    console.error("GET PROJECT PROGRESS LIST ERROR:", error)
 
-  // ⛑️ PENTING: return array kosong
-  return NextResponse.json([], { status: 200 })
-}
+    // ⛑️ JANGAN 500, BIAR UI TIDAK CRASH
+    return NextResponse.json([])
   }
 }

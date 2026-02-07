@@ -8,16 +8,16 @@ export const dynamic = "force-dynamic"
 type Customer = {
   customer_id: string
   company_name: string
-  customer_type: string
+  customer_type?: string
   pic_name: string
   phone: string
-  email: string
-  city: string
+  email?: string
+  city?: string
   status: string
 }
 
 /* ==============================
-   PAGE
+   CUSTOMER LIST PAGE
 ================================ */
 export default function CustomerListPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -58,7 +58,7 @@ export default function CustomerListPage() {
         </div>
 
         <Link
-          href="/admin/crm/clients/create"
+          href="/admin/crm/customers/create"
           className="bg-red-600 text-white px-4 py-2 rounded"
         >
           + Tambah Customer
@@ -130,7 +130,7 @@ export default function CustomerListPage() {
                     {c.status}
                   </span>
                 </td>
-                <td className="p-3 space-x-2">
+                <td className="p-3 space-x-3">
                   <Link
                     href={`/admin/crm/customers/${c.customer_id}`}
                     className="text-blue-600 hover:underline text-xs"

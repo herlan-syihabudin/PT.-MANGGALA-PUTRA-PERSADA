@@ -25,7 +25,32 @@ export default function ProjectListPage() {
 
   const [search, setSearch] = useState("")
   const [filterStatus, setFilterStatus] = useState("")
-  const [filterType, setFilterType] = useState("")
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+  <KPI
+    title="MEP"
+    value={countType("MEP")}
+    onClick={() => setFilterType("MEP")}
+    active={filterType === "MEP"}
+  />
+  <KPI
+    title="Civil"
+    value={countType("CIVIL")}
+    onClick={() => setFilterType("CIVIL")}
+    active={filterType === "CIVIL"}
+  />
+  <KPI
+    title="Steel"
+    value={countType("STEEL")}
+    onClick={() => setFilterType("STEEL")}
+    active={filterType === "STEEL"}
+  />
+  <KPI
+    title="Interior"
+    value={countType("INTERIOR")}
+    onClick={() => setFilterType("INTERIOR")}
+    active={filterType === "INTERIOR"}
+  />
+</div>
 
   /* ==============================
      FETCH PROJECT LIST
@@ -282,7 +307,33 @@ export default function ProjectListPage() {
 
 /* ================= COMPONENT ================= */
 
-function KPI({ title, value }: { title: string; value: number }) {
+function KPI({
+  title,
+  value,
+  onClick,
+  active,
+}: {
+  title: string
+  value: number
+  onClick?: () => void
+  active?: boolean
+}) {
+  return (
+    <div
+      onClick={onClick}
+      className={`
+        cursor-pointer
+        bg-white border rounded p-4 text-center
+        transition
+        ${active ? "border-red-500 ring-2 ring-red-200" : "hover:border-gray-400"}
+      `}
+    >
+      <p className="text-xs text-gray-500">{title}</p>
+      <p className="text-2xl font-bold">{value}</p>
+    </div>
+  )
+}
+
   return (
     <div className="bg-white border rounded p-4 text-center">
       <p className="text-xs text-gray-500">{title}</p>

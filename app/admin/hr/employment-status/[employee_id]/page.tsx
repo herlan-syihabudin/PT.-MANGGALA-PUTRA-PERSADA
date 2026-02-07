@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 
 export const dynamic = "force-dynamic"
 
+/* ================= TYPE ================= */
+
 type StatusRow = {
   employee_id: string
   status: string
@@ -18,11 +20,18 @@ type StatusRow = {
   keterangan: string
 }
 
+type EmployeeInfo = {
+  employee_id: string
+  nama_lengkap: string
+  divisi?: string
+  jabatan?: string
+}
+
 type PageProps = {
   params: { employee_id: string }
 }
 
-/* =============== MODAL TAMBAH STATUS =============== */
+/* ================= MODAL ================= */
 
 type AddStatusModalProps = {
   employeeId: string
@@ -48,169 +57,92 @@ function AddStatusModal({ employeeId, onClose, onSaved }: AddStatusModalProps) {
 
     try {
       setSaving(true)
-
       const res = await fetch("/api/hr/employment-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           employee_id: employeeId,
-          status: form.status,
-          jenis_status: form.jenis_status,
-          lokasi_kerja: form.lokasi_kerja,
-          start_date: form.start_date,
+          ...form,
           updated_by: "Admin ERP",
-          keterangan: form.keterangan,
         }),
       })
 
-      const data = await res.json()
-
       if (!res.ok) {
-        console.error("SAVE STATUS ERROR:", data)
+        const data = await res.json()
         alert(data.error || "Gagal menyimpan status")
         return
       }
 
-      alert("Status karyawan berhasil disimpan")
       onSaved()
       onClose()
-    } catch (e) {
-      console.error("SAVE STATUS ERROR:", e)
-      alert("Terjadi kesalahan saat menyimpan status")
     } finally {
       setSaving(false)
     }
   }
 
-  function handleChange(
-    field: keyof typeof form,
-    value: string
-  ) {
-    setForm((prev) => ({ ...prev, [field]: value }))
-  }
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl space-y-5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Tambah Status Karyawan
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-sm text-gray-500 hover:text-gray-800"
-          >
-            ✕
-          </button>
-        </div>
+      <div className="w-full max-w-xl rounded-xl bg-white p-6 space-y-4">
+        <h2 className="text-lg font-semibold">Tambah Status Karyawan</h2>
 
         <p className="text-xs text-gray-500">
-          Employee ID:{" "}
-          <span className="font-mono font-semibold">
-            {employeeId}
-          </span>
+          Employee ID: <span className="font-mono font-semibold">{employeeId}</span>
         </p>
 
-        <div className="space-y-4">
-          {/* Status */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-700">
-              Status
-            </label>
-            <select
-              value={form.status}
-              onChange={(e) => handleChange("status", e.target.value)}
-              className="w-full rounded-lg border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900/10"
-            >
-              <option value="">Pilih status...</option>
-              <option value="AKTIF">AKTIF</option>
-              <option value="KONTRAK">KONTRAK</option>
-              <option value="MUTASI">MUTASI</option>
-              <option value="RESIGN">RESIGN</option>
-              <option value="CUTI">CUTI</option>
-            </select>
-          </div>
+        <select className="w-full border rounded px-3 py-2 text-sm"
+          value={form.status}
+          onChange={(e) => setForm({ ...form, status: e.target.value })}
+        >
+          <option value="">Pilih status</option>
+          <option value="AKTIF">AKTIF</option>
+          <option value="KONTRAK">KONTRAK</option>
+          <option value="MUTASI">MUTASI</option>
+          <option value="RESIGN">RESIGN</option>
+          <option value="CUTI">CUTI</option>
+        </select>
 
-          {/* Jenis Status */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-700">
-              Jenis Status
-            </label>
-            <select
-              value={form.jenis_status}
-              onChange={(e) =>
-                handleChange("jenis_status", e.target.value)
-              }
-              className="w-full rounded-lg border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900/10"
-            >
-              <option value="">Pilih jenis status...</option>
-              <option value="Tetap">Tetap</option>
-              <option value="Kontrak 1 Tahun">Kontrak 1 Tahun</option>
-              <option value="Kontrak 6 Bulan">Kontrak 6 Bulan</option>
-              <option value="Probation">Probation</option>
-              <option value="Project Based">Project Based</option>
-            </select>
-          </div>
+        <select className="w-full border rounded px-3 py-2 text-sm"
+          value={form.jenis_status}
+          onChange={(e) => setForm({ ...form, jenis_status: e.target.value })}
+        >
+          <option value="">Pilih jenis status</option>
+          <option value="Tetap">Tetap</option>
+          <option value="Kontrak 1 Tahun">Kontrak 1 Tahun</option>
+          <option value="Kontrak 6 Bulan">Kontrak 6 Bulan</option>
+          <option value="Probation">Probation</option>
+          <option value="Project Based">Project Based</option>
+        </select>
 
-          {/* Lokasi Kerja */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-700">
-              Lokasi Kerja
-            </label>
-            <input
-              value={form.lokasi_kerja}
-              onChange={(e) =>
-                handleChange("lokasi_kerja", e.target.value)
-              }
-              placeholder="Contoh: Head Office Bekasi / Site Cigading"
-              className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10"
-            />
-          </div>
+        <input
+          className="w-full border rounded px-3 py-2 text-sm"
+          placeholder="Lokasi kerja"
+          value={form.lokasi_kerja}
+          onChange={(e) => setForm({ ...form, lokasi_kerja: e.target.value })}
+        />
 
-          {/* Start Date */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-700">
-              Tanggal Mulai
-            </label>
-            <input
-              type="date"
-              value={form.start_date}
-              onChange={(e) =>
-                handleChange("start_date", e.target.value)
-              }
-              className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10"
-            />
-          </div>
+        <input
+          type="date"
+          className="w-full border rounded px-3 py-2 text-sm"
+          value={form.start_date}
+          onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+        />
 
-          {/* Keterangan */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-700">
-              Keterangan (optional)
-            </label>
-            <textarea
-              rows={3}
-              value={form.keterangan}
-              onChange={(e) =>
-                handleChange("keterangan", e.target.value)
-              }
-              placeholder="Catatan HR, misal: Promosi dari Site Engineer menjadi Project Manager"
-              className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10"
-            />
-          </div>
-        </div>
+        <textarea
+          className="w-full border rounded px-3 py-2 text-sm"
+          rows={3}
+          placeholder="Keterangan"
+          value={form.keterangan}
+          onChange={(e) => setForm({ ...form, keterangan: e.target.value })}
+        />
 
-        <div className="flex justify-end gap-2 pt-3 border-t">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm rounded-lg border text-gray-700 hover:bg-gray-50"
-            disabled={saving}
-          >
+        <div className="flex justify-end gap-2 pt-3">
+          <button onClick={onClose} className="border px-4 py-2 rounded text-sm">
             Batal
           </button>
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="px-4 py-2 text-sm rounded-lg bg-gray-900 text-white hover:bg-black disabled:opacity-60 disabled:cursor-not-allowed"
+            className="bg-gray-900 text-white px-4 py-2 rounded text-sm"
           >
             {saving ? "Menyimpan..." : "Simpan Status"}
           </button>
@@ -220,219 +152,93 @@ function AddStatusModal({ employeeId, onClose, onSaved }: AddStatusModalProps) {
   )
 }
 
-/* =============== PAGE DETAIL =============== */
+/* ================= PAGE ================= */
 
 export default function EmploymentStatusDetail({ params }: PageProps) {
   const router = useRouter()
   const employeeId = params.employee_id
 
+  const [employee, setEmployee] = useState<EmployeeInfo | null>(null)
   const [rows, setRows] = useState<StatusRow[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
 
   async function loadStatus() {
-    try {
-      setLoading(true)
-      setError(null)
+    setLoading(true)
+    const res = await fetch(`/api/hr/employment-status?employee_id=${employeeId}`, {
+      cache: "no-store",
+    })
+    const data = await res.json()
 
-      const res = await fetch(
-        `/api/hr/employment-status?employee_id=${encodeURIComponent(
-          employeeId
-        )}`,
-        { cache: "no-store" }
-      )
+    setEmployee(data.employee || null)
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        console.error("LOAD STATUS ERROR:", data)
-        setError(data.error || "Gagal memuat status karyawan")
-        return
-      }
-
-      const list: StatusRow[] = data.data || []
-
-      // Sort: status terbaru di atas (start_date desc)
-      list.sort((a, b) => {
-        const da = a.start_date ? new Date(a.start_date).getTime() : 0
-        const db = b.start_date ? new Date(b.start_date).getTime() : 0
-        return db - da
-      })
-
-      setRows(list)
-    } catch (e) {
-      console.error("LOAD STATUS ERROR:", e)
-      setError("Gagal memuat status karyawan")
-    } finally {
-      setLoading(false)
-    }
+    const list: StatusRow[] = data.data || []
+    list.sort(
+      (a, b) =>
+        new Date(b.start_date).getTime() -
+        new Date(a.start_date).getTime()
+    )
+    setRows(list)
+    setLoading(false)
   }
 
   useEffect(() => {
     loadStatus()
   }, [employeeId])
 
-  const current = rows.find(
-    (r) => String(r.is_current).toUpperCase() === "TRUE"
-  )
+  const current = rows.find((r) => r.is_current === "TRUE")
 
   return (
-    <section className="p-6 md:p-10 space-y-6">
-      {/* BREADCRUMB */}
-      <button
-        onClick={() => router.back()}
-        className="text-xs text-gray-500 hover:text-gray-800"
-      >
-        ← Kembali ke daftar
+    <section className="p-6 space-y-6">
+      <button onClick={() => router.back()} className="text-xs text-gray-500">
+        ← Kembali
       </button>
 
-      {/* HEADER */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Employment Status
-        </h1>
-        <p className="text-sm text-gray-500">
-          Riwayat status kerja karyawan
-        </p>
-      </div>
-
-      {/* EMPLOYEE INFO */}
-      <div className="flex flex-col gap-4 rounded-xl border bg-white p-5">
-        <div className="text-xs text-gray-500">Employee ID</div>
-        <div className="font-mono text-sm font-semibold text-gray-900">
-          {employeeId}
+      {/* EMPLOYEE HEADER */}
+      <div className="rounded-xl border bg-white p-5 space-y-1">
+        <div className="text-lg font-semibold">
+          {employee?.nama_lengkap || "Nama tidak ditemukan"}
         </div>
+        <div className="text-sm text-gray-600">
+          {employee?.divisi} • {employee?.jabatan}
+        </div>
+        <div className="font-mono text-xs text-gray-500">{employeeId}</div>
 
         {current && (
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <span className="text-xs text-gray-500">
-              Status Saat Ini:
-            </span>
-            <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 border border-emerald-100">
+          <div className="mt-3 flex gap-2 text-xs">
+            <span className="bg-emerald-50 border px-2 py-1 rounded-full font-semibold text-emerald-700">
               {current.status} • {current.jenis_status}
             </span>
-            {current.lokasi_kerja && (
-              <span className="text-xs text-gray-600">
-                Lokasi: {current.lokasi_kerja}
-              </span>
-            )}
-            <span className="text-xs text-gray-500">
-              Sejak {current.start_date}
-            </span>
+            <span className="text-gray-600">Sejak {current.start_date}</span>
           </div>
         )}
 
-        {!current && !loading && (
-          <p className="text-xs text-amber-600">
-            ⚠️ Karyawan ini belum memiliki status aktif.
-          </p>
-        )}
-
-        <div className="mt-2">
-          <button
-            onClick={() => setShowModal(true)}
-            className="rounded-lg bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-black"
-          >
-            + Tambah Status
-          </button>
-        </div>
+        <button
+          onClick={() => setShowModal(true)}
+          className="mt-3 bg-gray-900 text-white px-4 py-2 rounded text-xs"
+        >
+          + Tambah Status
+        </button>
       </div>
 
       {/* TIMELINE */}
-      <div className="rounded-xl border bg-white">
-        <div className="border-b px-5 py-3">
-          <h2 className="text-sm font-semibold text-gray-900">
-            Riwayat Status
-          </h2>
-        </div>
-
-        {loading && (
-          <p className="px-5 py-4 text-sm text-gray-500">
-            Memuat riwayat status...
-          </p>
-        )}
-
-        {error && !loading && (
-          <p className="px-5 py-4 text-sm text-rose-600">{error}</p>
-        )}
-
-        {!loading && !error && rows.length === 0 && (
-          <p className="px-5 py-4 text-sm text-gray-500">
-            Belum ada riwayat status. Tambahkan status pertama untuk
-            karyawan ini.
-          </p>
-        )}
-
-        {!loading &&
-          !error &&
-          rows.length > 0 && (
-            <div className="divide-y">
-              {rows.map((row, idx) => {
-                const isActive =
-                  String(row.is_current).toUpperCase() === "TRUE"
-
-                return (
-                  <div
-                    key={idx}
-                    className="flex gap-4 px-5 py-4 text-sm"
-                  >
-                    {/* TIMELINE DOT */}
-                    <div className="pt-1">
-                      <span
-                        className={`inline-block h-3 w-3 rounded-full ${
-                          isActive
-                            ? "bg-emerald-600"
-                            : "bg-gray-400"
-                        }`}
-                      />
-                    </div>
-
-                    {/* CONTENT */}
-                    <div className="flex-1 space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-semibold text-gray-900">
-                          {row.status}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {row.jenis_status}
-                        </span>
-                        {isActive && (
-                          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-100">
-                            AKTIF
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="text-xs text-gray-600">
-                        {row.lokasi_kerja && (
-                          <>
-                            Lokasi: {row.lokasi_kerja} •{" "}
-                          </>
-                        )}
-                        Mulai: {row.start_date}
-                        {row.end_date && ` → ${row.end_date}`}
-                      </div>
-
-                      {row.keterangan && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          {row.keterangan}
-                        </p>
-                      )}
-
-                      {row.updated_by && (
-                        <p className="text-[11px] text-gray-400 mt-1">
-                          Diupdate oleh {row.updated_by} pada{" "}
-                          {row.created_at}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
+      {rows.length > 0 && (
+        <div className="rounded-xl border bg-white divide-y">
+          {rows.map((row, i) => (
+            <div key={i} className="px-5 py-4 text-sm">
+              <div className="font-semibold">{row.status}</div>
+              <div className="text-xs text-gray-600">
+                {row.jenis_status} • {row.start_date}
+              </div>
+              {row.keterangan && (
+                <div className="text-xs text-gray-500 mt-1">
+                  {row.keterangan}
+                </div>
+              )}
             </div>
-          )}
-      </div>
+          ))}
+        </div>
+      )}
 
       {showModal && (
         <AddStatusModal

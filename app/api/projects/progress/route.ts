@@ -75,10 +75,10 @@ export async function GET() {
 
     return NextResponse.json(result)
   } catch (error) {
-    console.error("GET PROJECT PROGRESS LIST ERROR:", error)
-    return NextResponse.json(
-      { message: "Gagal mengambil data schedule & progress" },
-      { status: 500 }
-    )
+  console.error("GET PROJECT PROGRESS LIST ERROR:", error)
+
+  // ⛑️ PENTING: return array kosong
+  return NextResponse.json([], { status: 200 })
+}
   }
 }

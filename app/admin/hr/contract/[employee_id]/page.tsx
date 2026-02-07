@@ -16,9 +16,12 @@ export default function ContractDetail({
   params: { employee_id: string }
 }) {
   const router = useRouter()
+
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  const [lokasiKerja, setLokasiKerja] = useState("")
 
   const [form, setForm] = useState({
     project_code: "",
@@ -30,9 +33,12 @@ export default function ContractDetail({
     keterangan: "",
   })
 
-  /* ================= LOAD EMPLOYEE (DARI CONTRACT-MANAGEMENT) ================= */
+  /* ======================================================
+     LOAD EMPLOYEE (IDENTITAS)
+  ====================================================== */
   useEffect(() => {
     loadEmployee()
+    loadLokasiKerja()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -44,7 +50,7 @@ export default function ContractDetail({
 
       if (!res.ok) {
         console.error("Failed load contract-management")
-        setLoading(false)
+        setEmployee(null)
         return
       }
 
@@ -72,12 +78,53 @@ export default function ContractDetail({
     }
   }
 
-  /* ================= SUBMIT CONTRACT ================= */
+  /* ======================================================
+     LOAD LOKASI KERJA (EMPLOYMENT STATUS AKTIF)
+  ====================================================== */
+  async function loadLokasiKerja() {
+    try {
+      const res = await fetch(
+        `/api/hr/employment-status?employee_id=${params.employee_id}&active=1`,
+        { cache: "no-store" }
+      )
+
+      if (!res.ok) {
+        console.error("Failed load employment-status")
+        return
+      }
+
+      const json = await res.json()
+
+      const lokasi = json?.lokasi_kerja || ""
+
+      setLokasiKerja(lokasi)
+      setForm((prev) => ({
+        ...prev,
+        lokasi_kerja: lokasi,
+      }))
+    } catch (err) {
+      console.error("LOAD LOKASI ERROR:", err)
+    }
+  }
+
+  /* ======================================================
+     SUBMIT CONTRACT
+  ====================================================== */
   async function submitContract() {
     if (!employee) return
 
     if (!form.start_date || !form.rate) {
       alert("Tanggal mulai & rate wajib diisi")
+      return
+    }
+
+    if (!form.project_code) {
+      alert("Project Code wajib dipilih")
+      return
+    }
+
+    if (!form.lokasi_kerja) {
+      alert("Lokasi kerja tidak valid")
       return
     }
 
@@ -121,7 +168,7 @@ export default function ContractDetail({
     <section className="p-6 max-w-3xl space-y-6">
       <h1 className="text-xl font-bold">Buat Kontrak</h1>
 
-      {/* EMPLOYEE INFO */}
+      {/* ================= EMPLOYEE INFO ================= */}
       <div className="bg-white border rounded-xl p-4 grid grid-cols-2 gap-4 text-sm">
         <Info label="Employee ID" value={employee.employee_id} />
         <Info label="Nama" value={employee.nama_lengkap} />
@@ -129,31 +176,39 @@ export default function ContractDetail({
         <Info label="Jabatan" value={employee.jabatan} />
       </div>
 
-      {/* FORM */}
+      {/* ================= FORM ================= */}
       <div className="bg-white border rounded-xl p-6 space-y-4">
         <Input
           label="Project Code"
           value={form.project_code}
-          onChange={(v) => setForm({ ...form, project_code: v })}
+          onChange={(v) =>
+            setForm({ ...form, project_code: v })
+          }
         />
+
         <Input
           label="Lokasi Kerja"
-          value={form.lokasi_kerja}
-          onChange={(v) => setForm({ ...form, lokasi_kerja: v })}
+          value={lokasiKerja}
+          onChange={() => {}}
+          disabled
         />
 
         <Select
           label="Sistem Bayar"
           value={form.sistem_bayar}
           options={["BULANAN", "HARIAN", "BORONGAN"]}
-          onChange={(v) => setForm({ ...form, sistem_bayar: v })}
+          onChange={(v) =>
+            setForm({ ...form, sistem_bayar: v })
+          }
         />
 
         <Input
           label="Rate / Gaji Pokok"
           type="number"
           value={form.rate}
-          onChange={(v) => setForm({ ...form, rate: v })}
+          onChange={(v) =>
+            setForm({ ...form, rate: v })
+          }
         />
 
         <div className="grid grid-cols-2 gap-4">
@@ -161,24 +216,30 @@ export default function ContractDetail({
             label="Tanggal Mulai"
             type="date"
             value={form.start_date}
-            onChange={(v) => setForm({ ...form, start_date: v })}
+            onChange={(v) =>
+              setForm({ ...form, start_date: v })
+            }
           />
           <Input
             label="Tanggal Akhir (opsional)"
             type="date"
             value={form.end_date}
-            onChange={(v) => setForm({ ...form, end_date: v })}
+            onChange={(v) =>
+              setForm({ ...form, end_date: v })
+            }
           />
         </div>
 
         <Textarea
           label="Keterangan"
           value={form.keterangan}
-          onChange={(v) => setForm({ ...form, keterangan: v })}
+          onChange={(v) =>
+            setForm({ ...form, keterangan: v })
+          }
         />
       </div>
 
-      {/* ACTION */}
+      {/* ================= ACTION ================= */}
       <div className="flex justify-end gap-3">
         <button
           onClick={() => router.back()}
@@ -214,11 +275,13 @@ function Input({
   value,
   onChange,
   type = "text",
+  disabled = false,
 }: {
   label: string
   value: string
   onChange: (v: string) => void
   type?: string
+  disabled?: boolean
 }) {
   return (
     <div>
@@ -226,8 +289,9 @@ function Input({
       <input
         type={type}
         value={value}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+        className="mt-1 w-full border rounded-lg px-3 py-2 text-sm disabled:bg-gray-100"
       />
     </div>
   )

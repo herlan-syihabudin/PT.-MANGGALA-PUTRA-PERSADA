@@ -75,16 +75,16 @@ export const ERP_MENU = [
   },
 
   {
-    section: "MARKETING & CRM",
-    icon: MessagesSquare,
-    items: [
-      { name: "Inquiry Masuk", href: "/admin/crm/inquiry", icon: Inbox },
-      { name: "Pipeline & Deal", href: "/admin/crm/pipeline", icon: GitBranch },
-      { name: "Klien", href: "/admin/crm/clients", icon: Users },
-      { name: "Penawaran & Proposal", href: "/admin/crm/proposals", icon: FileText },
-      { name: "Kontrak Project", href: "/admin/crm/contracts", icon: ScrollText },
-    ],
-  },
+  section: "MARKETING & CRM",
+  icon: Users,
+  items: [
+    { name: "Inquiry", href: "/admin/crm/inquiry", icon: Inbox },
+    { name: "Sales Pipeline", href: "/admin/crm/pipeline", icon: GitBranch },
+    { name: "Customers", href: "/admin/crm/customers", icon: Users },
+    { name: "Proposals", href: "/admin/crm/proposals", icon: FileText },
+    { name: "Contracts", href: "/admin/crm/contracts", icon: ScrollText },
+  ],
+},
 
   {
     section: "ESTIMATOR",
@@ -110,16 +110,16 @@ export const ERP_MENU = [
   },
 
   {
-    section: "PROJECT MANAGEMENT",
-    icon: FolderKanban,
-    items: [
-      { name: "Project List", href: "/admin/projects", icon: FolderKanban },
-      { name: "Progress & Timeline", href: "/admin/projects/progress", icon: Timer },
-      { name: "Site Report", href: "/admin/projects/site-report", icon: ClipboardList },
-      { name: "VO / Claim", href: "/admin/projects/vo", icon: FilePlus },
-      { name: "Issue & NCR", href: "/admin/projects/issue-ncr", icon: AlertOctagon },
-    ],
-  },
+  section: "PROJECT MANAGEMENT",
+  icon: FolderKanban,
+  items: [
+    { name: "Project List", href: "/admin/projects", icon: FolderKanban },
+    { name: "Schedule & Progress", href: "/admin/projects/progress", icon: Timer },
+    { name: "Site Report", href: "/admin/projects/site-report", icon: ClipboardList },
+    { name: "Variation Order (VO)", href: "/admin/projects/vo", icon: FilePlus },
+    { name: "Issue & NCR", href: "/admin/projects/issue-ncr", icon: AlertOctagon },
+  ],
+},
 
   {
     section: "PROCUREMENT",

@@ -27,7 +27,7 @@ export async function GET() {
     const [projectRes, customerRes] = await Promise.all([
       sheets.spreadsheets.values.get({
         spreadsheetId: SHEET_ID,
-        range: `${PROJECT_SHEET}!A:I`,
+        range: `${PROJECT_SHEET}!A:J`,
       }),
       sheets.spreadsheets.values.get({
         spreadsheetId: SHEET_ID, // ✅ FIX
@@ -64,6 +64,7 @@ export async function GET() {
         end_date: r[6],
         status: r[7],
         created_at: r[8],
+         project_type: r[9] || null,
       }
     })
 
@@ -88,6 +89,7 @@ export async function POST(req: Request) {
       project_code,
       project_name,
       customer_id,
+       project_type,
       lokasi,
       nilai_kontrak,
       start_date,
@@ -98,6 +100,7 @@ export async function POST(req: Request) {
     if (
       !project_name ||
       !customer_id ||
+       !project_type ||
       !nilai_kontrak ||
       !start_date ||
       !status
@@ -113,21 +116,21 @@ export async function POST(req: Request) {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${PROJECT_SHEET}!A:I`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [[
-          project_id,
-          project_name,
-          customer_id,
-          lokasi || "",
-          nilai_kontrak,
-          start_date,
-          end_date || "",
-          status,
-          created_at,
-        ]],
-      },
+      range: `${PROJECT_SHEET}!A:J`,
+requestBody: {
+  values: [[
+    project_id,        // A
+    project_name,      // B
+    customer_id,       // C
+    lokasi || "",      // D
+    nilai_kontrak,     // E
+    start_date,        // F
+    end_date || "",    // G
+    status,            // H
+    created_at,        // I
+    project_type,      // J ✅ BARU
+  ]],
+},
     })
 
     return NextResponse.json(

@@ -114,7 +114,7 @@ export const ERP_MENU = [
   icon: FolderKanban,
   items: [
     { name: "Project List", href: "/admin/projects", icon: FolderKanban },
-    { name: "Schedule & Progress", href: "/admin/projects/progress", icon: Timer },
+    { name: "Schedule & Progress", href: "/admin/projects/schedule-progress",  icon: Timer },
     { name: "Site Report", href: "/admin/projects/site-report", icon: ClipboardList },
     { name: "Variation Order (VO)", href: "/admin/projects/vo", icon: FilePlus },
     { name: "Issue & NCR", href: "/admin/projects/issue-ncr", icon: AlertOctagon },

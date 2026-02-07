@@ -15,7 +15,7 @@ const auth = new google.auth.JWT(
 
 const sheets = google.sheets({ version: "v4", auth })
 
-const SHEET_ID = process.env.GOOGLE_SHEET_ID!
+const SHEET_ID = process.env.GSHEET_PROJECT_ID!
 const SHEET_NAME = "PROJECT MASTER"
 
 /* ==============================

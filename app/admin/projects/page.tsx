@@ -3,6 +3,8 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
+/* ================= TYPES ================= */
+
 type Project = {
   project_id: string
   project_name: string
@@ -13,11 +15,11 @@ type Project = {
   end_date: string
   status: string
   created_at: string
-
-  // OPTIONAL (AMAN)
   project_type?: "MEP" | "CIVIL" | "STEEL" | "INTERIOR"
   progress?: number
 }
+
+/* ================= PAGE ================= */
 
 export default function ProjectListPage() {
   const [projects, setProjects] = useState<Project[]>([])
@@ -25,36 +27,9 @@ export default function ProjectListPage() {
 
   const [search, setSearch] = useState("")
   const [filterStatus, setFilterStatus] = useState("")
-  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-  <KPI
-    title="MEP"
-    value={countType("MEP")}
-    onClick={() => setFilterType("MEP")}
-    active={filterType === "MEP"}
-  />
-  <KPI
-    title="Civil"
-    value={countType("CIVIL")}
-    onClick={() => setFilterType("CIVIL")}
-    active={filterType === "CIVIL"}
-  />
-  <KPI
-    title="Steel"
-    value={countType("STEEL")}
-    onClick={() => setFilterType("STEEL")}
-    active={filterType === "STEEL"}
-  />
-  <KPI
-    title="Interior"
-    value={countType("INTERIOR")}
-    onClick={() => setFilterType("INTERIOR")}
-    active={filterType === "INTERIOR"}
-  />
-</div>
+  const [filterType, setFilterType] = useState("")
 
-  /* ==============================
-     FETCH PROJECT LIST
-  ================================ */
+  /* ========== FETCH PROJECTS ========== */
   useEffect(() => {
     fetch("/api/projects", { cache: "no-store" })
       .then((res) => res.json())
@@ -62,9 +37,7 @@ export default function ProjectListPage() {
       .catch(console.error)
   }, [])
 
-  /* ==============================
-     FILTERED DATA
-  ================================ */
+  /* ========== FILTERED DATA ========== */
   const filteredProjects = projects.filter((p) => {
     const q = search.toLowerCase()
 
@@ -78,9 +51,11 @@ export default function ProjectListPage() {
     return matchSearch && matchStatus && matchType
   })
 
-  /* ==============================
-     SELECT HANDLER
-  ================================ */
+  /* ========== KPI COUNT ========== */
+  const countType = (type: string) =>
+    projects.filter((p) => p.project_type === type).length
+
+  /* ========== CHECKBOX HANDLER ========== */
   const toggleSelect = (id: string) => {
     setSelected((prev) =>
       prev.includes(id)
@@ -97,9 +72,7 @@ export default function ProjectListPage() {
     }
   }
 
-  /* ==============================
-     EXPORT CSV
-  ================================ */
+  /* ========== EXPORT CSV ========== */
   const exportCSV = () => {
     const rows = filteredProjects.filter((p) =>
       selected.includes(p.project_id)
@@ -112,7 +85,7 @@ export default function ProjectListPage() {
 
     const header = [
       "Project",
-      "Client",
+      "Customer",
       "Jenis",
       "Lokasi",
       "Nilai Kontrak",
@@ -134,8 +107,7 @@ export default function ProjectListPage() {
       p.status,
     ])
 
-    const csv =
-      [header, ...data].map((r) => r.join(",")).join("\n")
+    const csv = [header, ...data].map((r) => r.join(",")).join("\n")
 
     const blob = new Blob([csv], { type: "text/csv" })
     const url = URL.createObjectURL(blob)
@@ -146,20 +118,37 @@ export default function ProjectListPage() {
     a.click()
   }
 
-  /* ==============================
-     KPI COUNT
-  ================================ */
-  const countType = (type: string) =>
-    projects.filter((p) => p.project_type === type).length
+  /* ================= RENDER ================= */
 
   return (
     <div className="p-6 space-y-6">
-      {/* ================= KPI ================= */}
+
+      {/* ================= KPI CARDS ================= */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KPI title="MEP" value={countType("MEP")} />
-        <KPI title="Civil" value={countType("CIVIL")} />
-        <KPI title="Steel" value={countType("STEEL")} />
-        <KPI title="Interior" value={countType("INTERIOR")} />
+        <KPI
+          title="MEP"
+          value={countType("MEP")}
+          active={filterType === "MEP"}
+          onClick={() => setFilterType("MEP")}
+        />
+        <KPI
+          title="Civil"
+          value={countType("CIVIL")}
+          active={filterType === "CIVIL"}
+          onClick={() => setFilterType("CIVIL")}
+        />
+        <KPI
+          title="Steel"
+          value={countType("STEEL")}
+          active={filterType === "STEEL"}
+          onClick={() => setFilterType("STEEL")}
+        />
+        <KPI
+          title="Interior"
+          value={countType("INTERIOR")}
+          active={filterType === "INTERIOR"}
+          onClick={() => setFilterType("INTERIOR")}
+        />
       </div>
 
       {/* ================= HEADER ================= */}
@@ -305,7 +294,7 @@ export default function ProjectListPage() {
   )
 }
 
-/* ================= COMPONENT ================= */
+/* ================= COMPONENTS ================= */
 
 function KPI({
   title,
@@ -322,20 +311,10 @@ function KPI({
     <div
       onClick={onClick}
       className={`
-        cursor-pointer
-        bg-white border rounded p-4 text-center
-        transition
+        cursor-pointer bg-white border rounded p-4 text-center transition
         ${active ? "border-red-500 ring-2 ring-red-200" : "hover:border-gray-400"}
       `}
     >
-      <p className="text-xs text-gray-500">{title}</p>
-      <p className="text-2xl font-bold">{value}</p>
-    </div>
-  )
-}
-
-  return (
-    <div className="bg-white border rounded p-4 text-center">
       <p className="text-xs text-gray-500">{title}</p>
       <p className="text-2xl font-bold">{value}</p>
     </div>

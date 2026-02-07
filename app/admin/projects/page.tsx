@@ -9,22 +9,42 @@ type Project = {
   start_date: string
   end_date: string
   status: string
+  created_at: string
 }
 
+/* ==============================
+   FETCH PROJECT LIST (SERVER)
+================================ */
 async function getProjects(): Promise<Project[]> {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/projects`, {
-    cache: "no-store",
-  })
-  return res.json()
+  try {
+    const res = await fetch("/api/projects", {
+      cache: "no-store",
+    })
+
+    if (!res.ok) {
+      console.error("Failed fetch /api/projects", res.status)
+      return []
+    }
+
+    return (await res.json()) as Project[]
+  } catch (error) {
+    console.error("Error fetching projects:", error)
+    return []
+  }
 }
 
+/* ==============================
+   PAGE
+================================ */
 export default async function ProjectListPage() {
   const projects = await getProjects()
 
   return (
     <div className="p-6">
+      {/* HEADER */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Project List</h1>
+
         <Link
           href="/admin/projects/create"
           className="bg-red-600 text-white px-4 py-2 rounded"
@@ -33,6 +53,7 @@ export default async function ProjectListPage() {
         </Link>
       </div>
 
+      {/* TABLE */}
       <div className="bg-white rounded border overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-100 text-left">
@@ -46,10 +67,14 @@ export default async function ProjectListPage() {
               <th className="p-3">Status</th>
             </tr>
           </thead>
+
           <tbody>
             {projects.length === 0 && (
               <tr>
-                <td colSpan={7} className="p-4 text-center text-gray-500">
+                <td
+                  colSpan={7}
+                  className="p-4 text-center text-gray-500"
+                >
                   Belum ada project
                 </td>
               </tr>
@@ -59,15 +84,17 @@ export default async function ProjectListPage() {
               <tr key={p.project_id} className="border-t">
                 <td className="p-3 font-medium">{p.project_name}</td>
                 <td className="p-3">{p.client}</td>
-                <td className="p-3">{p.lokasi}</td>
+                <td className="p-3">{p.lokasi || "-"}</td>
                 <td className="p-3">
-                  Rp {p.nilai_kontrak.toLocaleString("id-ID")}
+                  {p.nilai_kontrak
+                    ? `Rp ${p.nilai_kontrak.toLocaleString("id-ID")}`
+                    : "-"}
                 </td>
-                <td className="p-3">{p.start_date}</td>
+                <td className="p-3">{p.start_date || "-"}</td>
                 <td className="p-3">{p.end_date || "-"}</td>
                 <td className="p-3">
                   <span
-                    className={`px-2 py-1 rounded text-xs ${
+                    className={`px-2 py-1 rounded text-xs capitalize ${
                       p.status === "running"
                         ? "bg-green-100 text-green-700"
                         : p.status === "planning"

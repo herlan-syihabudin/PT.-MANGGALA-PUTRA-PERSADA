@@ -88,35 +88,36 @@ export async function POST(req: NextRequest) {
 
     /* ===== ADD ===== */
     if (action === "add") {
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: SHEET_ID,
-        range: SHEET_NAME,
-        valueInputOption: "RAW",
-        requestBody: {
-          values: [[
-            body.employee_id,
-            body.nama_lengkap,
-            body.nik_ktp,
-            body.jenis_kelamin,
-            body.tgl_lahir,
-            body.tempat_lahir,
-            body.status_pernikahan,
-            body.alamat_domisili,
-            body.email,
-            body.no_hp,
-            body.divisi,
-            body.jabatan,
-            body.atasan_langsung,
-            body.lokasi_kerja,
-            body.status_karyawan ?? "",
-            body.tipe_karyawan ?? "",
-            body.tgl_masuk,
-            "TRUE", // ⬅ konsisten STRING
-            new Date().toISOString(),
-            new Date().toISOString(),
-          ]],
-        },
-      })
+      await sheets.spreadsheets.values.update({
+  spreadsheetId: SHEET_ID,
+  range: `${SHEET_NAME}!B${rowNumber}:T${rowNumber}`,
+  valueInputOption: "RAW",
+  requestBody: {
+    values: [[
+      body.nama_lengkap,
+      body.nik_ktp,
+      body.jenis_kelamin,
+      body.tgl_lahir,
+      body.tempat_lahir,
+      body.status_pernikahan,
+      body.alamat_domisili,
+      body.email,
+      body.no_hp,
+      body.divisi,
+      body.jabatan,
+      body.atasan_langsung,
+      body.lokasi_kerja,
+      body.status_karyawan ?? (rows[index].is_active ? "Aktif" : "Nonaktif"),
+      body.tipe_karyawan ?? "",
+      body.tgl_masuk ?? "",
+      body.is_active !== undefined
+        ? (body.is_active ? "TRUE" : "FALSE")
+        : (rows[index].is_active ? "TRUE" : "FALSE"),
+      rows[index].created_at,
+      new Date().toISOString(),
+    ]],
+  },
+})
 
       return NextResponse.json({ success: true })
     }

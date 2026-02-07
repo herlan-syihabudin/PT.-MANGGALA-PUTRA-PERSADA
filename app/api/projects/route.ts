@@ -15,35 +15,59 @@ const auth = new google.auth.JWT(
 
 const sheets = google.sheets({ version: "v4", auth })
 
-const SHEET_ID = process.env.GSHEET_PROJECT_ID!
-const SHEET_NAME = "PROJECT MASTER"
+const PROJECT_SHEET_ID = process.env.GSHEET_PROJECT_ID!
+const PROJECT_SHEET = "PROJECT MASTER"
+
+const CUSTOMER_SHEET_ID = process.env.GSHEET_CRM_ID!
+const CUSTOMER_SHEET = "CUSTOMER_MASTER"
 
 /* ==============================
-   GET : PROJECT LIST
+   GET : PROJECT LIST (JOIN CUSTOMER)
 ================================ */
 export async function GET() {
   try {
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:I`,
+    const [projectRes, customerRes] = await Promise.all([
+      sheets.spreadsheets.values.get({
+        spreadsheetId: PROJECT_SHEET_ID,
+        range: `${PROJECT_SHEET}!A:I`,
+      }),
+      sheets.spreadsheets.values.get({
+        spreadsheetId: CUSTOMER_SHEET_ID,
+        range: `${CUSTOMER_SHEET}!A:H`,
+      }),
+    ])
+
+    const projectRows = projectRes.data.values?.slice(1) || []
+    const customerRows = customerRes.data.values?.slice(1) || []
+
+    const customerMap = Object.fromEntries(
+      customerRows.map((r) => [
+        r[0],
+        {
+          customer_id: r[0],
+          company_name: r[1],
+          city: r[6],
+          province: r[7],
+        },
+      ])
+    )
+
+    const projects = projectRows.map((r) => {
+      const customer = customerMap[r[2]] || {}
+
+      return {
+        project_id: r[0],
+        project_name: r[1],
+        customer_id: r[2],
+        client: customer.company_name || "-",
+        lokasi: r[3],
+        nilai_kontrak: Number(r[4] || 0),
+        start_date: r[5],
+        end_date: r[6],
+        status: r[7],
+        created_at: r[8],
+      }
     })
-
-    const rows = res.data.values || []
-
-    // 🔥 skip header (row 1)
-    const dataRows = rows.slice(1)
-
-    const projects = dataRows.map((r) => ({
-      project_id: r[0] ?? "",
-      project_name: r[1] ?? "",
-      client: r[2] ?? "",
-      lokasi: r[3] ?? "",
-      nilai_kontrak: Number(r[4] ?? 0),
-      start_date: r[5] ?? "",
-      end_date: r[6] ?? "",
-      status: r[7] ?? "",
-      created_at: r[8] ?? "",
-    }))
 
     return NextResponse.json(projects)
   } catch (error) {
@@ -63,8 +87,9 @@ export async function POST(req: Request) {
     const body = await req.json()
 
     const {
+      project_code,
       project_name,
-      client,
+      customer_id,
       lokasi,
       nilai_kontrak,
       start_date,
@@ -72,26 +97,31 @@ export async function POST(req: Request) {
       status,
     } = body
 
-    // VALIDATION (ROOT LEVEL)
-    if (!project_name || !client || !nilai_kontrak || !start_date || !status) {
+    if (
+      !project_name ||
+      !customer_id ||
+      !nilai_kontrak ||
+      !start_date ||
+      !status
+    ) {
       return NextResponse.json(
         { message: "Field wajib belum lengkap" },
         { status: 400 }
       )
     }
 
-    const project_id = `PRJ-${Date.now()}`
+    const project_id = project_code || `PRJ-${Date.now()}`
     const created_at = new Date().toISOString()
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:I`,
+      spreadsheetId: PROJECT_SHEET_ID,
+      range: `${PROJECT_SHEET}!A:I`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
           project_id,
           project_name,
-          client,
+          customer_id,
           lokasi || "",
           nilai_kontrak,
           start_date,

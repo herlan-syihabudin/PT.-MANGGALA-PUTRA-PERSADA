@@ -15,10 +15,8 @@ const auth = new google.auth.JWT(
 
 const sheets = google.sheets({ version: "v4", auth })
 
-const PROJECT_SHEET_ID = process.env.GSHEET_PROJECT_ID!
+const SHEET_ID = process.env.GSHEET_PROJECT_ID! // 🔥 SATU ID
 const PROJECT_SHEET = "PROJECT MASTER"
-
-const CUSTOMER_SHEET_ID = process.env.GSHEET_CRM_ID!
 const CUSTOMER_SHEET = "CUSTOMER_MASTER"
 
 /* ==============================
@@ -28,12 +26,12 @@ export async function GET() {
   try {
     const [projectRes, customerRes] = await Promise.all([
       sheets.spreadsheets.values.get({
-        spreadsheetId: PROJECT_SHEET_ID,
+        spreadsheetId: SHEET_ID,
         range: `${PROJECT_SHEET}!A:I`,
       }),
       sheets.spreadsheets.values.get({
-        spreadsheetId: CUSTOMER_SHEET_ID,
-        range: `${CUSTOMER_SHEET}!A:H`,
+        spreadsheetId: SHEET_ID, // ✅ FIX
+        range: `${CUSTOMER_SHEET}!A:P`,
       }),
     ])
 
@@ -42,24 +40,24 @@ export async function GET() {
 
     const customerMap = Object.fromEntries(
       customerRows.map((r) => [
-        r[0],
+        r[0], // customer_id
         {
           customer_id: r[0],
           company_name: r[1],
-          city: r[6],
-          province: r[7],
+          city: r[9],
+          province: r[10],
         },
       ])
     )
 
     const projects = projectRows.map((r) => {
-      const customer = customerMap[r[2]] || {}
+      const customer = customerMap[r[2]]
 
       return {
         project_id: r[0],
         project_name: r[1],
         customer_id: r[2],
-        client: customer.company_name || "-",
+        client: customer?.company_name || "-",
         lokasi: r[3],
         nilai_kontrak: Number(r[4] || 0),
         start_date: r[5],
@@ -114,7 +112,7 @@ export async function POST(req: Request) {
     const created_at = new Date().toISOString()
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId: PROJECT_SHEET_ID,
+      spreadsheetId: SHEET_ID,
       range: `${PROJECT_SHEET}!A:I`,
       valueInputOption: "USER_ENTERED",
       requestBody: {

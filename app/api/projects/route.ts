@@ -31,7 +31,7 @@ export async function GET() {
         range: `${PROJECT_SHEET}!A:J`,
       }),
       sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID, // ✅ FIX
+        spreadsheetId: SHEET_ID,
         range: `${CUSTOMER_SHEET}!A:P`,
       }),
     ])
@@ -65,7 +65,7 @@ export async function GET() {
         end_date: r[6],
         status: r[7],
         created_at: r[8],
-         project_type: r[9] || null,
+        project_type: r[9] || null,
       }
     })
 
@@ -112,15 +112,11 @@ export async function POST(req: Request) {
       )
     }
 
-    // ==============================
-    // GENERATE ID & TIME (WAJIB DI ATAS)
-    // ==============================
+    // 1) generate ID & timestamp
     const project_id = project_code || `PRJ-${Date.now()}`
     const created_at = new Date().toISOString()
 
-    // ==============================
-    // INSERT PROJECT MASTER
-    // ==============================
+    // 2) simpan ke PROJECT MASTER
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: `${PROJECT_SHEET}!A:J`,
@@ -141,21 +137,19 @@ export async function POST(req: Request) {
       },
     })
 
-    // ==============================
-    // AUTO CREATE PROJECT PROGRESS
-    // ==============================
+    // 3) auto-create baris progress (0% semua)
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: `${PROGRESS_SHEET}!A:F`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          project_id, // A
-          0,          // B mep_progress
-          0,          // C civil_progress
-          0,          // D steel_progress
-          0,          // E interior_progress
-          created_at // F updated_at
+          project_id, // project_id
+          0,          // mep_progress
+          0,          // civil_progress
+          0,          // steel_progress
+          0,          // interior_progress
+          created_at, // updated_at
         ]],
       },
     })

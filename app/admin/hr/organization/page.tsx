@@ -94,6 +94,14 @@ export default function OrganizationPage() {
                   </td>
                 </tr>
               ))}
+
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="p-6 text-center text-sm text-gray-500">
+                    Belum ada data karyawan
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

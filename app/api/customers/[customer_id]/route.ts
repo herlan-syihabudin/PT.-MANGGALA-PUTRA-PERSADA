@@ -3,6 +3,9 @@ import { google } from "googleapis"
 
 export const dynamic = "force-dynamic"
 
+/* ==============================
+   GOOGLE AUTH
+================================ */
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL,
   undefined,
@@ -15,6 +18,9 @@ const sheets = google.sheets({ version: "v4", auth })
 const SHEET_ID = process.env.GSHEET_CRM_ID!
 const SHEET_NAME = "CUSTOMER_MASTER"
 
+/* ==============================
+   GET : CUSTOMER DETAIL
+================================ */
 export async function GET(
   _: Request,
   { params }: { params: { customer_id: string } }
@@ -22,14 +28,20 @@ export async function GET(
   try {
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2:H`,
+      range: `${SHEET_NAME}!A2:Z`,
     })
 
     const rows = res.data.values || []
 
-    const row = rows.find(r => r[0] === params.customer_id)
+    const row = rows.find(
+      (r) => r[0] && r[0] === params.customer_id
+    )
+
     if (!row) {
-      return NextResponse.json(null, { status: 404 })
+      return NextResponse.json(
+        { message: "Customer tidak ditemukan" },
+        { status: 404 }
+      )
     }
 
     return NextResponse.json({
@@ -42,7 +54,11 @@ export async function GET(
       npwp: row[6],
       created_at: row[7],
     })
-  } catch (e) {
-    return NextResponse.json({ message: "Error" }, { status: 500 })
+  } catch (error) {
+    console.error("GET CUSTOMER DETAIL ERROR:", error)
+    return NextResponse.json(
+      { message: "Gagal mengambil data customer" },
+      { status: 500 }
+    )
   }
 }

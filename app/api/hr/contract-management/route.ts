@@ -23,14 +23,87 @@ function genContractID(employee_id: string) {
 
 function idx(headers: string[], name: string) {
   const i = headers.indexOf(name)
-  if (i === -1) {
-    throw new Error(`Header '${name}' tidak ditemukan`)
-  }
+  if (i === -1) throw new Error(`Header '${name}' tidak ditemukan`)
   return i
 }
 
-/* ================= POST ================= */
+/* ======================================================
+   GET → CONTRACT MANAGEMENT (LIST + JOIN)
+====================================================== */
+export async function GET() {
+  try {
+    /* ===== EMPLOYEE MASTER ===== */
+    const empRes = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: "EMPLOYEE_MASTER!A1:Z",
+    })
 
+    const [empHeaders, ...empRows] = empRes.data.values || []
+    if (!empHeaders) return NextResponse.json({ data: [] })
+
+    const empIdIdx = idx(empHeaders, "employee_id")
+    const namaIdx = idx(empHeaders, "nama_lengkap")
+    const tipeIdx = idx(empHeaders, "tipe_karyawan")
+    const jabatanIdx = idx(empHeaders, "jabatan")
+
+    const employees = empRows.map((r) => ({
+      employee_id: r[empIdIdx],
+      nama: r[namaIdx],
+      type: r[tipeIdx] || "-",
+      jabatan: r[jabatanIdx] || "-",
+    }))
+
+    /* ===== CONTRACT ===== */
+    const ctrRes = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: "CONTRACT!A1:Z",
+    })
+
+    const [ctrHeaders, ...ctrRows] = ctrRes.data.values || []
+
+    const ctrEmpIdx = idx(ctrHeaders, "employee_id")
+    const statusIdx = idx(ctrHeaders, "status_kontrak")
+    const projectIdx = idx(ctrHeaders, "project_code")
+    const startIdx = idx(ctrHeaders, "start_date")
+    const endIdx = idx(ctrHeaders, "end_date")
+    const sistemIdx = idx(ctrHeaders, "sistem_bayar")
+    const rateIdx = idx(ctrHeaders, "rate")
+
+    /* ===== JOIN ===== */
+    const result = employees.map((e) => {
+      const activeContract = ctrRows.find(
+        (r) =>
+          r[ctrEmpIdx] === e.employee_id &&
+          String(r[statusIdx]).trim().toUpperCase() === "AKTIF"
+      )
+
+      return {
+        employee_id: e.employee_id,
+        nama: e.nama,
+        type: e.type,
+        jabatan: e.jabatan,
+        project: activeContract?.[projectIdx] || "-",
+        mulai: activeContract?.[startIdx] || "-",
+        akhir: activeContract?.[endIdx] || "-",
+        sistem: activeContract?.[sistemIdx] || "-",
+        rate: activeContract?.[rateIdx] || "-",
+        status: activeContract ? "AKTIF" : "BELUM ADA KONTRAK",
+      }
+    })
+
+    return NextResponse.json({ data: result })
+  } catch (err) {
+    console.error("GET CONTRACT MANAGEMENT ERROR:", err)
+    return NextResponse.json(
+      { error: "Gagal load contract management" },
+      { status: 500 }
+    )
+  }
+}
+
+/* ======================================================
+   POST → CREATE CONTRACT (SUDAH LO BUAT, AMAN)
+====================================================== */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -53,12 +126,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    /* ======================================================
-       1. CEK EMPLOYEE MASTER
-    ====================================================== */
+    /* ===== CEK EMPLOYEE MASTER ===== */
     const empRes = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `EMPLOYEE_MASTER!A1:Z`,
+      range: "EMPLOYEE_MASTER!A1:Z",
     })
 
     const [empHeaders, ...empRows] = empRes.data.values || []
@@ -72,32 +143,27 @@ export async function POST(req: NextRequest) {
       (r) => r[empIdIdx] === employee_id
     )
 
-    if (!employeeRow) {
+    if (!employeeRow)
       return NextResponse.json(
         { error: "Employee belum terdaftar" },
         { status: 404 }
       )
-    }
 
     if (
       String(employeeRow[activeIdx]).trim().toUpperCase() !== "TRUE"
-    ) {
+    )
       return NextResponse.json(
         { error: "Employee sudah nonaktif" },
         { status: 400 }
       )
-    }
 
-    /* ======================================================
-       2. CEK KONTRAK AKTIF
-    ====================================================== */
+    /* ===== CEK KONTRAK AKTIF ===== */
     const ctrRes = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `CONTRACT!A1:Z`,
+      range: "CONTRACT!A1:Z",
     })
 
     const [ctrHeaders, ...ctrRows] = ctrRes.data.values || []
-
     const ctrEmpIdx = idx(ctrHeaders, "employee_id")
     const statusIdx = idx(ctrHeaders, "status_kontrak")
 
@@ -107,27 +173,24 @@ export async function POST(req: NextRequest) {
         String(r[statusIdx]).trim().toUpperCase() === "AKTIF"
     )
 
-    if (hasActive) {
+    if (hasActive)
       return NextResponse.json(
         { error: "Masih ada kontrak aktif" },
         { status: 400 }
       )
-    }
 
-    /* ======================================================
-       3. INSERT CONTRACT (SNAPSHOT)
-    ====================================================== */
+    /* ===== INSERT CONTRACT ===== */
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `CONTRACT!A2`,
+      range: "CONTRACT!A2",
       valueInputOption: "RAW",
       requestBody: {
         values: [[
           genContractID(employee_id),
           employee_id,
-          employeeRow[namaIdx],        // snapshot nama
-          jenis_kontrak,               // Type_karyawan
-          employeeRow[jabatanIdx],     // snapshot jabatan
+          employeeRow[namaIdx],
+          jenis_kontrak,
+          employeeRow[jabatanIdx],
           project_code || "",
           lokasi_kerja || "",
           start_date,

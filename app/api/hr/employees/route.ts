@@ -21,8 +21,7 @@ const SHEET_NAME = "EMPLOYEE_MASTER"
 function normalizeEmployee(obj: any) {
   return {
     ...obj,
-    is_active:
-      String(obj.is_active).trim().toLowerCase() === "true",
+    is_active: String(obj.is_active).trim().toLowerCase() === "true",
     tipe_karyawan: String(obj.tipe_karyawan || "").trim(),
     status_karyawan: String(obj.status_karyawan || "").trim(),
   }
@@ -53,7 +52,6 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const employee_id = searchParams.get("employee_id")
-
     const rows = await getAllRows()
 
     if (employee_id) {
@@ -83,64 +81,70 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const action = body.action || "add"
-
     const rows = await getAllRows()
 
-    /* ===== ADD ===== */
-    if (action === "update") {
-  const index = rows.findIndex(
-    (r) => r.employee_id === body.employee_id
-  )
+    /* ================= ADD ================= */
+    if (action === "add") {
+      if (!body.employee_id || !body.nama_lengkap || !body.nik_ktp) {
+        return NextResponse.json(
+          { error: "Employee ID, Nama, dan NIK wajib diisi" },
+          { status: 400 }
+        )
+      }
 
-  if (index === -1) {
-    return NextResponse.json(
-      { error: "Employee not found" },
-      { status: 404 }
-    )
-  }
+      if (rows.some(r => r.employee_id === body.employee_id)) {
+        return NextResponse.json(
+          { error: "Employee ID sudah ada" },
+          { status: 400 }
+        )
+      }
 
-  // ✅ WAJIB ADA INI
-  const rowNumber = index + 2
+      if (rows.some(r => r.nik_ktp === body.nik_ktp)) {
+        return NextResponse.json(
+          { error: "NIK sudah terdaftar" },
+          { status: 400 }
+        )
+      }
 
-  await sheets.spreadsheets.values.update({
-    spreadsheetId: SHEET_ID,
-    range: `${SHEET_NAME}!B${rowNumber}:T${rowNumber}`,
-    valueInputOption: "RAW",
-    requestBody: {
-      values: [[
-        body.nama_lengkap,
-        body.nik_ktp,
-        body.jenis_kelamin,
-        body.tgl_lahir,
-        body.tempat_lahir,
-        body.status_pernikahan,
-        body.alamat_domisili,
-        body.email,
-        body.no_hp,
-        body.divisi,
-        body.jabatan,
-        body.atasan_langsung,
-        body.lokasi_kerja,
-        body.status_karyawan ?? "",
-        body.tipe_karyawan ?? "",
-        body.tgl_masuk ?? "",
-        body.is_active !== undefined
-          ? (body.is_active ? "TRUE" : "FALSE")
-          : (rows[index].is_active ? "TRUE" : "FALSE"),
-        rows[index].created_at,
-        new Date().toISOString(),
-      ]],
-    },
-  })
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: SHEET_ID,
+        range: `${SHEET_NAME}!A:T`,
+        valueInputOption: "RAW",
+        requestBody: {
+          values: [[
+            body.employee_id,
+            body.nama_lengkap,
+            body.nik_ktp,
+            body.jenis_kelamin,
+            body.tgl_lahir,
+            body.tempat_lahir,
+            body.status_pernikahan,
+            body.alamat_domisili,
+            body.email,
+            body.no_hp,
+            body.divisi,
+            body.jabatan,
+            body.atasan_langsung,
+            body.lokasi_kerja,
+            body.status_karyawan ?? "Aktif",
+            body.tipe_karyawan ?? "",
+            body.tgl_masuk ?? "",
+            "TRUE",
+            new Date().toISOString(),
+            new Date().toISOString(),
+          ]],
+        },
+      })
 
-  return NextResponse.json({ success: true })
-}
+      return NextResponse.json({ success: true })
+    }
 
-    /* ===== UPDATE ===== */
+    /* ================= UPDATE ================= */
     if (action === "update") {
       const index = rows.findIndex(
         (r) => r.employee_id === body.employee_id
       )
+
       if (index === -1) {
         return NextResponse.json(
           { error: "Employee not found" },
@@ -151,44 +155,48 @@ export async function POST(req: NextRequest) {
       const rowNumber = index + 2
 
       await sheets.spreadsheets.values.update({
-  spreadsheetId: SHEET_ID,
-  range: `${SHEET_NAME}!B${rowNumber}:T${rowNumber}`,
-  valueInputOption: "RAW",
-  requestBody: {
-    values: [[
-      body.nama_lengkap,
-      body.nik_ktp,
-      body.jenis_kelamin,
-      body.tgl_lahir,
-      body.tempat_lahir,
-      body.status_pernikahan,
-      body.alamat_domisili,
-      body.email,
-      body.no_hp,
-      body.divisi,
-      body.jabatan,
-      body.atasan_langsung,
-      body.lokasi_kerja,
-      body.status_karyawan ?? "",
-      body.tipe_karyawan ?? "",
-      body.tgl_masuk ?? "",
-      rows[index].is_active ? "TRUE" : "FALSE",
-      rows[index].created_at,
-      new Date().toISOString(), // ✅ updated_at
-    ]],
-  },
-})
+        spreadsheetId: SHEET_ID,
+        range: `${SHEET_NAME}!B${rowNumber}:T${rowNumber}`,
+        valueInputOption: "RAW",
+        requestBody: {
+          values: [[
+            body.nama_lengkap,
+            body.nik_ktp,
+            body.jenis_kelamin,
+            body.tgl_lahir,
+            body.tempat_lahir,
+            body.status_pernikahan,
+            body.alamat_domisili,
+            body.email,
+            body.no_hp,
+            body.divisi,
+            body.jabatan,
+            body.atasan_langsung,
+            body.lokasi_kerja,
+            body.status_karyawan ?? rows[index].status_karyawan,
+            body.tipe_karyawan ?? rows[index].tipe_karyawan,
+            body.tgl_masuk ?? rows[index].tgl_masuk,
+            rows[index].is_active ? "TRUE" : "FALSE",
+            rows[index].created_at,
+            new Date().toISOString(),
+          ]],
+        },
+      })
 
       return NextResponse.json({ success: true })
     }
 
-    /* ===== NONAKTIF ===== */
+    /* ================= NONAKTIF ================= */
     if (action === "nonaktif") {
       const index = rows.findIndex(
         (r) => r.employee_id === body.employee_id
       )
+
       if (index === -1) {
-        return NextResponse.json({ error: "Not found" }, { status: 404 })
+        return NextResponse.json(
+          { error: "Employee not found" },
+          { status: 404 }
+        )
       }
 
       const rowNumber = index + 2
@@ -200,8 +208,8 @@ export async function POST(req: NextRequest) {
         requestBody: {
           values: [[
             "FALSE",
-            "",
-            new Date().toISOString()
+            rows[index].created_at,
+            new Date().toISOString(),
           ]],
         },
       })
@@ -209,12 +217,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true })
     }
 
-    /* ===== BULK NONAKTIF ===== */
+    /* ================= BULK NONAKTIF ================= */
     if (action === "bulk_nonaktif") {
       let count = 0
 
       for (let i = 0; i < rows.length; i++) {
-        if (body.employee_ids.includes(rows[i].employee_id)) {
+        if (body.employee_ids?.includes(rows[i].employee_id)) {
           const rowNumber = i + 2
           await sheets.spreadsheets.values.update({
             spreadsheetId: SHEET_ID,
@@ -223,8 +231,8 @@ export async function POST(req: NextRequest) {
             requestBody: {
               values: [[
                 "FALSE",
-                "",
-                new Date().toISOString()
+                rows[i].created_at,
+                new Date().toISOString(),
               ]],
             },
           })
@@ -235,53 +243,56 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, total: count })
     }
 
-    /* ===== BULK DELETE ===== */
-if (action === "bulk_delete") {
-  const remaining = rows.filter(
-    (r) => !body.employee_ids.includes(r.employee_id)
-  )
+    /* ================= BULK DELETE (KEEP FEATURE) ================= */
+    if (action === "bulk_delete") {
+      const remaining = rows.filter(
+        (r) => !body.employee_ids?.includes(r.employee_id)
+      )
 
-  // rewrite sheet (AMAN kalau jumlah kecil)
-  await sheets.spreadsheets.values.clear({
-    spreadsheetId: SHEET_ID,
-    range: `${SHEET_NAME}!A2:T`,
-  })
+      await sheets.spreadsheets.values.clear({
+        spreadsheetId: SHEET_ID,
+        range: `${SHEET_NAME}!A2:T`,
+      })
 
-  if (remaining.length > 0) {
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2`,
-      valueInputOption: "RAW",
-      requestBody: {
-        values: remaining.map((r) => [
-          r.employee_id,
-          r.nama_lengkap,
-          r.nik_ktp,
-          r.jenis_kelamin,
-          r.tgl_lahir,
-          r.tempat_lahir,
-          r.status_pernikahan,
-          r.alamat_domisili,
-          r.email,
-          r.no_hp,
-          r.divisi,
-          r.jabatan,
-          r.atasan_langsung,
-          r.lokasi_kerja,
-          r.status_karyawan,
-          r.tipe_karyawan,
-          r.tgl_masuk,
-          r.is_active ? "TRUE" : "FALSE",
-          r.created_at,
-          r.updated_at,
-        ]),
-      },
-    })
-  }
+      if (remaining.length > 0) {
+        await sheets.spreadsheets.values.append({
+          spreadsheetId: SHEET_ID,
+          range: `${SHEET_NAME}!A2`,
+          valueInputOption: "RAW",
+          requestBody: {
+            values: remaining.map((r) => [
+              r.employee_id,
+              r.nama_lengkap,
+              r.nik_ktp,
+              r.jenis_kelamin,
+              r.tgl_lahir,
+              r.tempat_lahir,
+              r.status_pernikahan,
+              r.alamat_domisili,
+              r.email,
+              r.no_hp,
+              r.divisi,
+              r.jabatan,
+              r.atasan_langsung,
+              r.lokasi_kerja,
+              r.status_karyawan,
+              r.tipe_karyawan,
+              r.tgl_masuk,
+              r.is_active ? "TRUE" : "FALSE",
+              r.created_at,
+              r.updated_at,
+            ]),
+          },
+        })
+      }
 
-  return NextResponse.json({ success: true })
-}
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 })
+      return NextResponse.json({ success: true })
+    }
+
+    return NextResponse.json(
+      { error: "Invalid action" },
+      { status: 400 }
+    )
   } catch (err) {
     console.error("HR API ERROR:", err)
     return NextResponse.json(

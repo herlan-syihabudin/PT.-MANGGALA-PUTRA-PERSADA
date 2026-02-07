@@ -13,6 +13,8 @@ type Customer = {
   province?: string
 }
 
+type ProjectType = "MEP" | "CIVIL" | "STEEL" | "INTERIOR"
+
 function generateProjectCode() {
   const date = new Date()
   const y = date.getFullYear()
@@ -32,6 +34,7 @@ export default function CreateProjectPage() {
   const [form, setForm] = useState({
     project_name: "",
     customer_id: "",
+    project_type: "" as ProjectType | "",
     lokasi: "",
     nilai_kontrak: "",
     start_date: "",
@@ -70,7 +73,9 @@ export default function CreateProjectPage() {
       ...form,
       customer_id,
       lokasi: selected
-        ? `${selected.city ?? ""}${selected.city && selected.province ? ", " : ""}${selected.province ?? ""}`
+        ? `${selected.city ?? ""}${
+            selected.city && selected.province ? ", " : ""
+          }${selected.province ?? ""}`
         : "",
     })
   }
@@ -80,6 +85,12 @@ export default function CreateProjectPage() {
   ================================ */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!form.project_type) {
+      alert("Pilih jenis pekerjaan")
+      return
+    }
+
     setLoading(true)
 
     const res = await fetch("/api/projects", {
@@ -89,6 +100,7 @@ export default function CreateProjectPage() {
         project_code: projectCode,
         project_name: form.project_name,
         customer_id: form.customer_id,
+        project_type: form.project_type, // ✅ BARU
         lokasi: form.lokasi,
         nilai_kontrak: Number(form.nilai_kontrak),
         start_date: form.start_date,
@@ -155,6 +167,26 @@ export default function CreateProjectPage() {
                   {c.company_name}
                 </option>
               ))}
+            </select>
+          </div>
+
+          {/* JENIS PEKERJAAN */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Jenis Pekerjaan
+            </label>
+            <select
+              name="project_type"
+              value={form.project_type}
+              onChange={handleChange}
+              className="w-full border rounded px-4 py-2"
+              required
+            >
+              <option value="">Pilih Jenis</option>
+              <option value="MEP">MEP</option>
+              <option value="CIVIL">Civil</option>
+              <option value="STEEL">Steel Structure</option>
+              <option value="INTERIOR">Interior</option>
             </select>
           </div>
 

@@ -9,8 +9,16 @@ type Employee = {
   employee_id: string
   nama_lengkap: string
   nik_ktp?: string
+  jenis_kelamin?: string
+  tgl_lahir?: string
+  tempat_lahir?: string
+  status_pernikahan?: string
+  alamat_domisili?: string
+  email?: string
+  no_hp?: string
   divisi?: string
   jabatan?: string
+  atasan_langsung?: string
   lokasi_kerja?: string
   status_karyawan?: string
   tipe_karyawan?: string
@@ -37,17 +45,19 @@ export default function EmployeeMasterPage() {
   const [loading, setLoading] = useState(true)
 
   // DETAIL & EDIT
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
-  const [editEmployee, setEditEmployee] = useState<Employee | null>(null)
+  const [selectedEmployee, setSelectedEmployee] =
+    useState<Employee | null>(null)
+  const [editEmployee, setEditEmployee] =
+    useState<Employee | null>(null)
 
   // SEARCH & FILTER
   const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState("aktif")
+  const [statusFilter, setStatusFilter] = useState<"aktif" | "nonaktif" | "all">("aktif")
   const [divisiFilter, setDivisiFilter] = useState("")
   const [lokasiFilter, setLokasiFilter] = useState("")
   const [tipeFilter, setTipeFilter] = useState("")
 
-  // ✅ DASHBOARD STATS DARI API
+  // DASHBOARD
   const [stats, setStats] = useState<DashboardStats>({
     total: 0,
     aktif: 0,
@@ -57,7 +67,10 @@ export default function EmployeeMasterPage() {
     harian: 0,
   })
 
+  /* ================= LOAD DATA ================= */
+
   async function loadEmployees() {
+    setLoading(true)
     const res = await fetch("/api/hr/employees", { cache: "no-store" })
     const data = await res.json()
     setEmployees(data || [])
@@ -100,7 +113,13 @@ export default function EmployeeMasterPage() {
     const matchLokasi = !lokasiFilter || e.lokasi_kerja === lokasiFilter
     const matchTipe = !tipeFilter || e.tipe_karyawan === tipeFilter
 
-    return matchSearch && matchStatus && matchDivisi && matchLokasi && matchTipe
+    return (
+      matchSearch &&
+      matchStatus &&
+      matchDivisi &&
+      matchLokasi &&
+      matchTipe
+    )
   })
 
   /* ================= EXPORT CSV ================= */
@@ -108,7 +127,9 @@ export default function EmployeeMasterPage() {
   function exportCSV() {
     const dataToExport =
       selectedIds.length > 0
-        ? filteredEmployees.filter((e) => selectedIds.includes(e.employee_id))
+        ? filteredEmployees.filter((e) =>
+            selectedIds.includes(e.employee_id)
+          )
         : filteredEmployees
 
     if (dataToExport.length === 0) {
@@ -161,7 +182,9 @@ export default function EmployeeMasterPage() {
           <h1 className="text-3xl font-extrabold text-gray-900">
             Employee Master
           </h1>
-          <p className="text-gray-600 mt-1">Daftar & data inti karyawan</p>
+          <p className="text-gray-600 mt-1">
+            Daftar & data inti karyawan
+          </p>
         </div>
 
         <button
@@ -174,10 +197,11 @@ export default function EmployeeMasterPage() {
 
       {/* INFO */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
-        Input data inti karyawan (master HR)
+        Input data inti karyawan (master HR). Status aktif / mutasi /
+        resign diatur di menu <b>Employment Status</b>.
       </div>
 
-      {/* ✅ CARD JUMLAH PAKAI DATA API */}
+      {/* CARD SUMMARY */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <button
           onClick={() => setTipeFilter("")}
@@ -215,9 +239,9 @@ export default function EmployeeMasterPage() {
         </button>
       </div>
 
-      {/* FILTER BAR – FIX 1 ROW */}
+      {/* FILTER BAR */}
       <div className="bg-white border rounded-xl p-4 flex items-center gap-3">
-        {/* SEARCH (flexible) */}
+        {/* SEARCH */}
         <input
           className="border p-2 rounded flex-1 min-w-[240px]"
           placeholder="Cari nama / divisi / jabatan"
@@ -229,7 +253,9 @@ export default function EmployeeMasterPage() {
         <select
           className="border p-2 rounded w-28"
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) =>
+            setStatusFilter(e.target.value as "aktif" | "nonaktif" | "all")
+          }
         >
           <option value="aktif">Aktif</option>
           <option value="nonaktif">Nonaktif</option>
@@ -295,7 +321,9 @@ export default function EmployeeMasterPage() {
             }
             onChange={(e) => {
               if (e.target.checked) {
-                setSelectedIds(filteredEmployees.map((e) => e.employee_id))
+                setSelectedIds(
+                  filteredEmployees.map((e) => e.employee_id)
+                )
               } else {
                 setSelectedIds([])
               }
@@ -305,58 +333,63 @@ export default function EmployeeMasterPage() {
         </label>
 
         {selectedIds.length > 0 && (
-  <div className="flex gap-2">
-    {/* NONAKTIF */}
-    <button
-      className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700"
-      onClick={async () => {
-        if (!confirm(`Nonaktifkan ${selectedIds.length} karyawan?`)) return
+          <div className="flex gap-2">
+            {/* NONAKTIF */}
+            <button
+              className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700"
+              onClick={async () => {
+                if (
+                  !confirm(
+                    `Nonaktifkan ${selectedIds.length} karyawan?`
+                  )
+                )
+                  return
 
-        await fetch("/api/hr/employees", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "bulk_nonaktif",
-            employee_ids: selectedIds,
-          }),
-        })
+                await fetch("/api/hr/employees", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    action: "bulk_nonaktif",
+                    employee_ids: selectedIds,
+                  }),
+                })
 
-        setSelectedIds([])
-        loadEmployees()
-        loadDashboard()
-      }}
-    >
-      Nonaktifkan
-    </button>
+                setSelectedIds([])
+                loadEmployees()
+                loadDashboard()
+              }}
+            >
+              Nonaktifkan
+            </button>
 
-    {/* DELETE PERMANEN */}
-    <button
-      className="px-4 py-2 bg-black text-white rounded-lg text-sm hover:bg-gray-800"
-      onClick={async () => {
-        const confirmText = prompt(
-          "Ketik: DELETE untuk hapus permanen"
-        )
-        if (confirmText !== "DELETE") return
+            {/* DELETE PERMANEN */}
+            <button
+              className="px-4 py-2 bg-black text-white rounded-lg text-sm hover:bg-gray-800"
+              onClick={async () => {
+                const confirmText = prompt(
+                  "Ketik: DELETE untuk hapus permanen"
+                )
+                if (confirmText !== "DELETE") return
 
-        await fetch("/api/hr/employees", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "bulk_delete",
-            employee_ids: selectedIds,
-          }),
-        })
+                await fetch("/api/hr/employees", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    action: "bulk_delete",
+                    employee_ids: selectedIds,
+                  }),
+                })
 
-        setSelectedIds([])
-        loadEmployees()
-        loadDashboard()
-      }}
-    >
-      Hapus Permanen
-    </button>
-  </div>
-)}
-        </div>
+                setSelectedIds([])
+                loadEmployees()
+                loadDashboard()
+              }}
+            >
+              Hapus Permanen
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* LIST */}
       <div className="bg-white border rounded-xl divide-y text-sm">
@@ -365,9 +398,9 @@ export default function EmployeeMasterPage() {
         ) : filteredEmployees.length === 0 ? (
           <p className="p-6 text-gray-400">Data tidak ditemukan</p>
         ) : (
-          filteredEmployees.map((e, i) => (
+          filteredEmployees.map((e) => (
             <div
-              key={i}
+              key={e.employee_id}
               className="grid grid-cols-[32px_1fr_auto] items-center gap-4 p-4 hover:bg-gray-50"
             >
               {/* CHECKBOX */}
@@ -379,7 +412,9 @@ export default function EmployeeMasterPage() {
                     setSelectedIds([...selectedIds, e.employee_id])
                   } else {
                     setSelectedIds(
-                      selectedIds.filter((id) => id !== e.employee_id)
+                      selectedIds.filter(
+                        (id) => id !== e.employee_id
+                      )
                     )
                   }
                 }}
@@ -488,16 +523,35 @@ function EmployeeDetailModal({
           <Detail label="Jenis Kelamin" value={employee.jenis_kelamin} />
           <Detail label="Tanggal Lahir" value={employee.tgl_lahir} />
           <Detail label="Tempat Lahir" value={employee.tempat_lahir} />
-          <Detail label="Status Pernikahan" value={employee.status_pernikahan} />
-          <Detail label="Alamat Domisili" value={employee.alamat_domisili} />
+          <Detail
+            label="Status Pernikahan"
+            value={employee.status_pernikahan}
+          />
+          <Detail
+            label="Alamat Domisili"
+            value={employee.alamat_domisili}
+          />
           <Detail label="Email" value={employee.email} />
           <Detail label="No HP" value={employee.no_hp} />
           <Detail label="Divisi" value={employee.divisi} />
           <Detail label="Jabatan" value={employee.jabatan} />
-          <Detail label="Atasan Langsung" value={employee.atasan_langsung} />
+          <Detail
+            label="Atasan Langsung"
+            value={employee.atasan_langsung}
+          />
           <Detail label="Lokasi Kerja" value={employee.lokasi_kerja} />
-          <Detail label="Status Karyawan" value={employee.status_karyawan} />
-          <Detail label="Tipe Karyawan" value={employee.tipe_karyawan} />
+          <Detail
+            label="Status Karyawan"
+            value={
+              employee.is_active
+                ? "Aktif"
+                : employee.status_karyawan || "Nonaktif"
+            }
+          />
+          <Detail
+            label="Tipe Karyawan"
+            value={employee.tipe_karyawan}
+          />
           <Detail label="Tanggal Masuk" value={employee.tgl_masuk} />
         </div>
       </div>
@@ -528,42 +582,42 @@ function EditEmployeeModal({
   const [form, setForm] = useState<any>({ ...employee })
 
   async function submit() {
-  // 1️⃣ UPDATE EMPLOYEE MASTER
-  const res = await fetch("/api/hr/employees", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "update",
-      employee_id: employee.employee_id,
-      ...form,
-    }),
-  })
+    // 1) UPDATE EMPLOYEE MASTER
+    const res = await fetch("/api/hr/employees", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "update",
+        employee_id: employee.employee_id,
+        ...form,
+      }),
+    })
 
-  if (!res.ok) {
-    alert("Gagal update data")
-    return
+    if (!res.ok) {
+      alert("Gagal update data")
+      return
+    }
+
+    // 2) CATAT STATUS / HISTORI DI EMPLOYMENT_STATUS
+    await fetch("/api/hr/employment-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        employee_id: employee.employee_id,
+        status: form.status_karyawan || "Aktif",
+        jenis_status: form.tipe_karyawan || "Tetap",
+        lokasi_kerja: form.lokasi_kerja || "",
+        start_date:
+          form.tgl_masuk || new Date().toISOString().slice(0, 10),
+        updated_by: "admin",
+        keterangan: "Update data karyawan",
+      }),
+    })
+
+    alert("Data karyawan berhasil diperbarui")
+    onSaved()
+    onClose()
   }
-
-  // 2️⃣ CATAT STATUS TERBARU (AMAN, HISTORICAL)
-  await fetch("/api/hr/employment-status", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      employee_id: employee.employee_id,
-      status: form.status_karyawan || "AKTIF",
-      jenis_status: form.tipe_karyawan || "Tetap",
-      lokasi_kerja: form.lokasi_kerja || "",
-      start_date:
-        form.tgl_masuk || new Date().toISOString().slice(0, 10),
-      updated_by: "admin",
-      keterangan: "Update data karyawan",
-    }),
-  })
-
-  alert("Data karyawan berhasil diperbarui")
-  onSaved()
-  onClose()
-}
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -578,10 +632,16 @@ function EditEmployeeModal({
         />
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <button onClick={onClose} className="px-4 py-2 border rounded">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border rounded"
+          >
             Batal
           </button>
-          <button onClick={submit} className="px-4 py-2 bg-gray-900 text-white rounded">
+          <button
+            onClick={submit}
+            className="px-4 py-2 bg-gray-900 text-white rounded"
+          >
             Simpan Perubahan
           </button>
         </div>
@@ -621,68 +681,86 @@ function AddEmployeeModal({
     jabatan: "",
     atasan_langsung: "",
     lokasi_kerja: "",
-    status_karyawan: "",
     tipe_karyawan: "",
     tgl_masuk: "",
   })
 
-  const employeeID = form.divisi ? generateEmployeeID(form.divisi) : ""
+  const employeeID = form.divisi
+    ? generateEmployeeID(form.divisi)
+    : ""
 
   async function submit() {
-  if (form.nik_ktp.length !== 16 || !form.divisi || !form.nama_lengkap) {
-    alert("Lengkapi Nama, NIK (16 digit), dan Divisi")
-    return
+    if (
+      form.nik_ktp.length !== 16 ||
+      !form.divisi ||
+      !form.nama_lengkap
+    ) {
+      alert("Lengkapi Nama, NIK (16 digit), dan Divisi")
+      return
+    }
+
+    // 1) SIMPAN EMPLOYEE MASTER
+    const res = await fetch("/api/hr/employees", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...form,
+        employee_id: employeeID,
+        // default: saat baru dibuat dianggap Aktif
+        status_karyawan: "Aktif",
+      }),
+    })
+
+    const data = await res.json()
+    if (!res.ok) {
+      alert(data.error || "Gagal menyimpan")
+      return
+    }
+
+    // 2) BUAT STATUS AWAL DI EMPLOYMENT_STATUS
+    await fetch("/api/hr/employment-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        employee_id: employeeID,
+        status: "Aktif",
+        jenis_status: form.tipe_karyawan || "Tetap",
+        lokasi_kerja: form.lokasi_kerja || "",
+        start_date:
+          form.tgl_masuk || new Date().toISOString().slice(0, 10),
+        updated_by: "admin",
+        keterangan: "Karyawan baru",
+      }),
+    })
+
+    alert("Karyawan berhasil ditambahkan")
+    onSaved()
+    onClose()
   }
-
-  // 1️⃣ SIMPAN EMPLOYEE MASTER
-  const res = await fetch("/api/hr/employees", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      ...form,
-      employee_id: employeeID,
-    }),
-  })
-
-  const data = await res.json()
-  if (!res.ok) {
-    alert(data.error || "Gagal menyimpan")
-    return
-  }
-
-  // 2️⃣ SIMPAN STATUS AWAL (INI KUNCI 🔥)
-  await fetch("/api/hr/employment-status", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      employee_id: employeeID,
-      status: "AKTIF",
-      jenis_status: form.tipe_karyawan || "Tetap",
-      lokasi_kerja: form.lokasi_kerja || "",
-      start_date:
-        form.tgl_masuk || new Date().toISOString().slice(0, 10),
-      updated_by: "admin",
-      keterangan: "Karyawan baru",
-    }),
-  })
-
-  alert("Karyawan berhasil ditambahkan")
-  onSaved()
-  onClose()
-}
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white w-full max-w-4xl rounded-2xl p-6 space-y-6">
         <h2 className="text-xl font-bold">Tambah Karyawan</h2>
 
-        <EmployeeForm mode="add" form={form} setForm={setForm} employeeID={employeeID} />
+        <EmployeeForm
+          mode="add"
+          form={form}
+          setForm={setForm}
+          employeeID={employeeID}
+        />
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <button onClick={onClose} className="px-4 py-2 border rounded">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border rounded"
+          >
             Batal
           </button>
-          <button onClick={submit} className="px-4 py-2 bg-gray-900 text-white rounded">
+          <button
+            onClick={submit}
+            className="px-4 py-2 bg-gray-900 text-white rounded"
+          >
             Simpan
           </button>
         </div>

@@ -3,7 +3,6 @@ import { google } from "googleapis"
 
 export const dynamic = "force-dynamic"
 
-/* ================= GOOGLE AUTH ================= */
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL!,
   undefined,
@@ -19,114 +18,81 @@ const ORG_SHEET = "ORGANIZATION"
 
 /* ================= GET ================= */
 export async function GET() {
-  try {
-    /* ===== EMPLOYEE MASTER ===== */
-    const empRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `${EMPLOYEE_SHEET}!A1:T`,
-    })
+  const empRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${EMPLOYEE_SHEET}!A1:T`,
+  })
 
-    const [empHeaders, ...empRows] = empRes.data.values || []
-    const employees = empRows.map((r) => {
-      const o: any = {}
-      empHeaders.forEach((h, i) => (o[h] = r[i] ?? ""))
-      return o
-    })
+  const [empHeaders, ...empRows] = empRes.data.values || []
+  const employees = empRows.map(r =>
+    Object.fromEntries(empHeaders.map((h, i) => [h, r[i] || ""]))
+  )
 
-    /* ===== ORGANIZATION ===== */
-    const orgRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `${ORG_SHEET}!A1:K`,
-    })
+  const orgRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${ORG_SHEET}!A1:I`,
+  })
 
-    const [orgHeaders, ...orgRows] = orgRes.data.values || []
-    const orgs = orgRows.map((r) => {
-      const o: any = {}
-      orgHeaders.forEach((h, i) => (o[h] = r[i] ?? ""))
-      return o
-    })
+  const [orgHeaders, ...orgRows] = orgRes.data.values || []
+  const orgs = orgRows.map(r =>
+    Object.fromEntries(orgHeaders.map((h, i) => [h, r[i] || ""]))
+  )
 
-    /* ===== JOIN ===== */
-    const data = employees.map((e) => {
-      const currentOrg = orgs.find(
-        (o) =>
-          o.employee_id === e.employee_id &&
-          o.is_current === "TRUE"
-      )
+  const data = employees.map(emp => {
+    const org = orgs.find(o => o.employee_id === emp.employee_id)
 
-      return {
-        employee_id: e.employee_id,
-        nama_lengkap: e.nama_lengkap,
-        divisi: currentOrg?.divisi_code || "-",
-        jabatan: currentOrg?.position_code || "-",
-        atasan: currentOrg?.atasan_employee_id || "-",
-        lokasi_kerja: currentOrg?.lokasi_kerja || e.lokasi_kerja,
-        is_assigned: Boolean(currentOrg),
-      }
-    })
+    return {
+      employee_id: emp.employee_id,
+      nama_lengkap: emp.nama_lengkap,
+      divisi: org?.divisi || "-",
+      jabatan: org?.jabatan || "-",
+      atasan: org?.atasan_nama || "-",
+      status: org ? "AKTIF" : "BELUM DISET",
+    }
+  })
 
-    return NextResponse.json({ data })
-  } catch (err) {
-    console.error("ORG GET ERROR:", err)
-    return NextResponse.json(
-      { error: "Failed load organization" },
-      { status: 500 }
-    )
-  }
+  return NextResponse.json({ data })
 }
 
 /* ================= POST ================= */
 export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json()
+  const body = await req.json()
 
-    const res = await sheets.spreadsheets.values.get({
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${ORG_SHEET}!A1:A`,
+  })
+
+  const ids = (res.data.values || []).flat()
+  const rowIndex = ids.findIndex(id => id === body.employee_id)
+
+  const values = [[
+    body.employee_id,
+    body.nama_lengkap,
+    body.divisi,
+    body.jabatan,
+    body.atasan_id || "",
+    body.atasan_nama || "",
+    "TRUE",
+    new Date().toISOString(),
+    body.updated_by || "HR",
+  ]]
+
+  if (rowIndex > 0) {
+    await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${ORG_SHEET}!A1:K`,
+      range: `${ORG_SHEET}!A${rowIndex + 1}:I${rowIndex + 1}`,
+      valueInputOption: "RAW",
+      requestBody: { values },
     })
-
-    const [, ...rows] = res.data.values || []
-
-    /* ===== NONAKTIFKAN STRUKTUR LAMA ===== */
-    for (let i = 0; i < rows.length; i++) {
-      if (rows[i][0] === body.employee_id && rows[i][7] === "TRUE") {
-        await sheets.spreadsheets.values.update({
-          spreadsheetId: SHEET_ID,
-          range: `${ORG_SHEET}!H${i + 2}`,
-          valueInputOption: "RAW",
-          requestBody: { values: [["FALSE"]] },
-        })
-      }
-    }
-
-    /* ===== TAMBAH STRUKTUR BARU ===== */
+  } else {
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: ORG_SHEET,
       valueInputOption: "RAW",
-      requestBody: {
-        values: [[
-          body.employee_id,
-          body.divisi_code,
-          body.position_code,
-          body.atasan_employee_id || "",
-          body.lokasi_kerja || "",
-          body.start_date,
-          "",
-          "TRUE",
-          new Date().toISOString(),
-          body.updated_by || "SYSTEM",
-          body.keterangan || "",
-        ]],
-      },
+      requestBody: { values },
     })
-
-    return NextResponse.json({ success: true })
-  } catch (err) {
-    console.error("ORG POST ERROR:", err)
-    return NextResponse.json(
-      { error: "Failed save organization" },
-      { status: 500 }
-    )
   }
+
+  return NextResponse.json({ success: true })
 }

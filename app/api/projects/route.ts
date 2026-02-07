@@ -25,7 +25,7 @@ export async function GET() {
   try {
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2:I`,
+      range: `${SHEET_NAME}!A:I`,
     })
 
     const rows = res.data.values || []

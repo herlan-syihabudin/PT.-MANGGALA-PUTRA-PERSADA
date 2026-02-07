@@ -43,83 +43,138 @@ export default function CreateProjectPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-10">
-      <h1 className="text-2xl font-bold mb-6">Create Project</h1>
+  <div className="max-w-3xl mx-auto py-10">
+    {/* ================= HEADER INFO ================= */}
+    <div className="mb-8">
+      <h1 className="text-2xl font-bold">Create Project</h1>
+      <p className="text-sm text-gray-600 mt-1">
+        Form ini digunakan untuk membuat <b>Project Master</b> yang akan menjadi
+        dasar seluruh proses ERP (Estimator, Engineering, Finance, dan Project Management).
+      </p>
+    </div>
 
+    {/* ================= FORM CONTAINER ================= */}
+    <div className="bg-white border rounded-lg p-6">
       <form onSubmit={handleSubmit} className="space-y-5">
-        <input
-          name="project_name"
-          placeholder="Nama Project"
-          value={form.project_name}
-          onChange={handleChange}
-          className="w-full border rounded px-4 py-2"
-          required
-        />
 
-        <input
-          name="client"
-          placeholder="Client / Owner"
-          value={form.client}
-          onChange={handleChange}
-          className="w-full border rounded px-4 py-2"
-          required
-        />
-
-        <input
-          name="lokasi"
-          placeholder="Lokasi Project"
-          value={form.lokasi}
-          onChange={handleChange}
-          className="w-full border rounded px-4 py-2"
-        />
-
-        <input
-          type="number"
-          name="nilai_kontrak"
-          placeholder="Nilai Kontrak (Rp)"
-          value={form.nilai_kontrak}
-          onChange={handleChange}
-          className="w-full border rounded px-4 py-2"
-          required
-        />
-
-        <div className="grid grid-cols-2 gap-4">
+        {/* Nama Project */}
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Nama Project
+          </label>
           <input
-            type="date"
-            name="start_date"
-            value={form.start_date}
+            name="project_name"
+            placeholder="Contoh: Pembangunan Gudang Cikarang"
+            value={form.project_name}
             onChange={handleChange}
-            className="border rounded px-4 py-2"
+            className="w-full border rounded px-4 py-2"
             required
-          />
-          <input
-            type="date"
-            name="end_date"
-            value={form.end_date}
-            onChange={handleChange}
-            className="border rounded px-4 py-2"
           />
         </div>
 
-        <select
-          name="status"
-          value={form.status}
-          onChange={handleChange}
-          className="w-full border rounded px-4 py-2"
-        >
-          <option value="planning">Planning</option>
-          <option value="running">Running</option>
-          <option value="finish">Finish</option>
-        </select>
+        {/* Client */}
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Client / Owner
+          </label>
+          <input
+            name="client"
+            placeholder="Nama perusahaan atau pemilik project"
+            value={form.client}
+            onChange={handleChange}
+            className="w-full border rounded px-4 py-2"
+            required
+          />
+        </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-red-600 text-white px-6 py-2 rounded"
-        >
-          {loading ? "Menyimpan..." : "Simpan Project"}
-        </button>
+        {/* Lokasi */}
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Lokasi Project
+          </label>
+          <input
+            name="lokasi"
+            placeholder="Contoh: Cikarang, Bekasi"
+            value={form.lokasi}
+            onChange={handleChange}
+            className="w-full border rounded px-4 py-2"
+          />
+        </div>
+
+        {/* Nilai Kontrak */}
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Nilai Kontrak (Rp)
+          </label>
+          <input
+            type="number"
+            name="nilai_kontrak"
+            placeholder="Contoh: 2500000000"
+            value={form.nilai_kontrak}
+            onChange={handleChange}
+            className="w-full border rounded px-4 py-2"
+            required
+          />
+        </div>
+
+        {/* Tanggal */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Tanggal Mulai
+            </label>
+            <input
+              type="date"
+              name="start_date"
+              value={form.start_date}
+              onChange={handleChange}
+              className="w-full border rounded px-4 py-2"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Tanggal Selesai
+            </label>
+            <input
+              type="date"
+              name="end_date"
+              value={form.end_date}
+              onChange={handleChange}
+              className="w-full border rounded px-4 py-2"
+            />
+          </div>
+        </div>
+
+        {/* Status */}
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Status Project
+          </label>
+          <select
+            name="status"
+            value={form.status}
+            onChange={handleChange}
+            className="w-full border rounded px-4 py-2"
+          >
+            <option value="planning">Planning</option>
+            <option value="running">Running</option>
+            <option value="finish">Finish</option>
+          </select>
+        </div>
+
+        {/* ACTION */}
+        <div className="pt-4">
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-red-600 text-white px-6 py-2 rounded"
+          >
+            {loading ? "Menyimpan..." : "Simpan Project"}
+          </button>
+        </div>
       </form>
     </div>
-  )
-}
+  </div>
+)

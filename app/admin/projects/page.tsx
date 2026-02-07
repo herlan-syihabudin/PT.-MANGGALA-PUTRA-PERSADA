@@ -13,11 +13,19 @@ type Project = {
   end_date: string
   status: string
   created_at: string
+
+  // OPTIONAL (AMAN)
+  project_type?: "MEP" | "CIVIL" | "STEEL" | "INTERIOR"
+  progress?: number
 }
 
 export default function ProjectListPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [selected, setSelected] = useState<string[]>([])
+
+  const [search, setSearch] = useState("")
+  const [filterStatus, setFilterStatus] = useState("")
+  const [filterType, setFilterType] = useState("")
 
   /* ==============================
      FETCH PROJECT LIST
@@ -28,6 +36,22 @@ export default function ProjectListPage() {
       .then(setProjects)
       .catch(console.error)
   }, [])
+
+  /* ==============================
+     FILTERED DATA
+  ================================ */
+  const filteredProjects = projects.filter((p) => {
+    const q = search.toLowerCase()
+
+    const matchSearch =
+      p.project_name.toLowerCase().includes(q) ||
+      p.client.toLowerCase().includes(q)
+
+    const matchStatus = filterStatus ? p.status === filterStatus : true
+    const matchType = filterType ? p.project_type === filterType : true
+
+    return matchSearch && matchStatus && matchType
+  })
 
   /* ==============================
      SELECT HANDLER
@@ -41,10 +65,10 @@ export default function ProjectListPage() {
   }
 
   const selectAll = () => {
-    if (selected.length === projects.length) {
+    if (selected.length === filteredProjects.length) {
       setSelected([])
     } else {
-      setSelected(projects.map((p) => p.project_id))
+      setSelected(filteredProjects.map((p) => p.project_id))
     }
   }
 
@@ -52,7 +76,7 @@ export default function ProjectListPage() {
      EXPORT CSV
   ================================ */
   const exportCSV = () => {
-    const rows = projects.filter((p) =>
+    const rows = filteredProjects.filter((p) =>
       selected.includes(p.project_id)
     )
 
@@ -64,8 +88,10 @@ export default function ProjectListPage() {
     const header = [
       "Project",
       "Client",
+      "Jenis",
       "Lokasi",
       "Nilai Kontrak",
+      "Progress",
       "Mulai",
       "Selesai",
       "Status",
@@ -74,8 +100,10 @@ export default function ProjectListPage() {
     const data = rows.map((p) => [
       p.project_name,
       p.client,
+      p.project_type || "-",
       p.lokasi,
       p.nilai_kontrak,
+      `${p.progress ?? 0}%`,
       p.start_date,
       p.end_date,
       p.status,
@@ -93,10 +121,24 @@ export default function ProjectListPage() {
     a.click()
   }
 
+  /* ==============================
+     KPI COUNT
+  ================================ */
+  const countType = (type: string) =>
+    projects.filter((p) => p.project_type === type).length
+
   return (
-    <div className="p-6">
-      {/* HEADER */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-6 space-y-6">
+      {/* ================= KPI ================= */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <KPI title="MEP" value={countType("MEP")} />
+        <KPI title="Civil" value={countType("CIVIL")} />
+        <KPI title="Steel" value={countType("STEEL")} />
+        <KPI title="Interior" value={countType("INTERIOR")} />
+      </div>
+
+      {/* ================= HEADER ================= */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Project List</h1>
 
         <div className="flex gap-2">
@@ -123,25 +165,61 @@ export default function ProjectListPage() {
         </div>
       </div>
 
-      {/* TABLE */}
+      {/* ================= FILTER ================= */}
+      <div className="flex flex-wrap gap-3">
+        <input
+          className="border rounded px-4 py-2 w-full md:w-64"
+          placeholder="Cari project / customer..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        <select
+          className="border rounded px-3 py-2"
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+        >
+          <option value="">Semua Jenis</option>
+          <option value="MEP">MEP</option>
+          <option value="CIVIL">Civil</option>
+          <option value="STEEL">Steel</option>
+          <option value="INTERIOR">Interior</option>
+        </select>
+
+        <select
+          className="border rounded px-3 py-2"
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+        >
+          <option value="">Semua Status</option>
+          <option value="planning">Planning</option>
+          <option value="running">Running</option>
+          <option value="finish">Finish</option>
+        </select>
+      </div>
+
+      {/* ================= TABLE ================= */}
       <div className="bg-white rounded border overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-100 text-left">
+          <thead className="bg-gray-100">
             <tr>
               <th className="p-3">
                 <input
                   type="checkbox"
                   onChange={selectAll}
                   checked={
-                    projects.length > 0 &&
-                    selected.length === projects.length
+                    filteredProjects.length > 0 &&
+                    selected.length === filteredProjects.length
                   }
                 />
               </th>
+              <th className="p-3">No</th>
               <th className="p-3">Project</th>
-              <th className="p-3">Client</th>
+              <th className="p-3">Customer</th>
+              <th className="p-3">Jenis</th>
               <th className="p-3">Lokasi</th>
-              <th className="p-3">Nilai Kontrak</th>
+              <th className="p-3">Nilai</th>
+              <th className="p-3">Progress</th>
               <th className="p-3">Mulai</th>
               <th className="p-3">Selesai</th>
               <th className="p-3">Status</th>
@@ -149,18 +227,15 @@ export default function ProjectListPage() {
           </thead>
 
           <tbody>
-            {projects.length === 0 && (
+            {filteredProjects.length === 0 && (
               <tr>
-                <td
-                  colSpan={8}
-                  className="p-4 text-center text-gray-500"
-                >
+                <td colSpan={11} className="p-4 text-center text-gray-500">
                   Belum ada project
                 </td>
               </tr>
             )}
 
-            {projects.map((p) => (
+            {filteredProjects.map((p, i) => (
               <tr key={p.project_id} className="border-t">
                 <td className="p-3">
                   <input
@@ -170,6 +245,8 @@ export default function ProjectListPage() {
                   />
                 </td>
 
+                <td className="p-3">{i + 1}</td>
+
                 <td className="p-3 font-medium text-red-600 hover:underline">
                   <Link href={`/admin/projects/${p.project_id}`}>
                     {p.project_name}
@@ -177,16 +254,22 @@ export default function ProjectListPage() {
                 </td>
 
                 <td className="p-3">{p.client}</td>
+                <td className="p-3">{p.project_type || "-"}</td>
                 <td className="p-3">{p.lokasi || "-"}</td>
+
                 <td className="p-3">
                   Rp {p.nilai_kontrak.toLocaleString("id-ID")}
                 </td>
+
+                <td className="p-3">
+                  <ProgressBar value={p.progress ?? 0} />
+                </td>
+
                 <td className="p-3">{p.start_date}</td>
                 <td className="p-3">{p.end_date}</td>
+
                 <td className="p-3">
-                  <span className="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-700">
-                    {p.status}
-                  </span>
+                  <StatusBadge status={p.status} />
                 </td>
               </tr>
             ))}
@@ -194,5 +277,41 @@ export default function ProjectListPage() {
         </table>
       </div>
     </div>
+  )
+}
+
+/* ================= COMPONENT ================= */
+
+function KPI({ title, value }: { title: string; value: number }) {
+  return (
+    <div className="bg-white border rounded p-4 text-center">
+      <p className="text-xs text-gray-500">{title}</p>
+      <p className="text-2xl font-bold">{value}</p>
+    </div>
+  )
+}
+
+function ProgressBar({ value }: { value: number }) {
+  return (
+    <div className="w-full bg-gray-200 rounded h-2">
+      <div
+        className="bg-green-600 h-2 rounded"
+        style={{ width: `${value}%` }}
+      />
+    </div>
+  )
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: any = {
+    planning: "bg-yellow-100 text-yellow-700",
+    running: "bg-blue-100 text-blue-700",
+    finish: "bg-green-100 text-green-700",
+  }
+
+  return (
+    <span className={`px-2 py-1 rounded text-xs ${map[status] || ""}`}>
+      {status}
+    </span>
   )
 }

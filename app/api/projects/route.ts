@@ -17,7 +17,7 @@ const sheets = google.sheets({ version: "v4", auth })
 
 const SHEET_ID = process.env.GSHEET_PROJECT_ID! // 🔥 SATU ID
 const PROJECT_SHEET = "PROJECT MASTER"
-const CUSTOMER_SHEET = "CUSTOMER_MASTER"
+const CUSTOMER_SHEET = "CUSTOMERS"
 
 /* ==============================
    GET : PROJECT LIST (JOIN CUSTOMER)

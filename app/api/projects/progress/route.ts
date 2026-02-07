@@ -1,11 +1,9 @@
+// app/api/projects/progress/route.ts
 import { NextResponse } from "next/server"
 import { google } from "googleapis"
 
 export const dynamic = "force-dynamic"
 
-/* ==============================
-   GOOGLE AUTH
-================================ */
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL,
   undefined,
@@ -19,9 +17,6 @@ const SHEET_ID = process.env.GSHEET_PROJECT_ID!
 const PROJECT_SHEET = "PROJECT MASTER"
 const PROGRESS_SHEET = "PROJECT_SCOPE_PROGRESS"
 
-/* ==============================
-   GET : PROJECT + PROGRESS
-================================ */
 export async function GET() {
   try {
     const [projectRes, progressRes] = await Promise.all([
@@ -39,54 +34,50 @@ export async function GET() {
     const progressRows = progressRes.data.values?.slice(1) || []
 
     const progressMap = Object.fromEntries(
-      progressRows.map((r) => [
-        r[0], // project_id
-        {
-          mep: Number(r[1] || 0),
-          civil: Number(r[2] || 0),
-          steel: Number(r[3] || 0),
-          interior: Number(r[4] || 0),
-          updated_at: r[5],
-        },
-      ])
+      progressRows
+        .filter((r) => r[0]) // skip baris kosong
+        .map((r) => [
+          r[0],
+          {
+            mep: Number(r[1] || 0),
+            civil: Number(r[2] || 0),
+            steel: Number(r[3] || 0),
+            interior: Number(r[4] || 0),
+          },
+        ])
     )
 
-    const result = projectRows.map((p) => {
-      const progress = progressMap[p[0]] || {
+    const result = projectRows.map((r) => {
+      const project_id = r[0]
+      const prog = progressMap[project_id] || {
         mep: 0,
         civil: 0,
         steel: 0,
         interior: 0,
       }
 
-      const overall =
-        (progress.mep +
-          progress.civil +
-          progress.steel +
-          progress.interior) /
-        4
+      const overall = Math.round(
+        (prog.mep + prog.civil + prog.steel + prog.interior) / 4
+      )
 
       return {
-        project_id: p[0],
-        project_name: p[1],
-        start_date: p[5],
-        end_date: p[6],
-        status: p[7],
+        project_id,
+        project_name: r[1],
+        start_date: r[5],
+        end_date: r[6],
+        status: r[7],
         progress: {
-          mep: progress.mep,
-          civil: progress.civil,
-          steel: progress.steel,
-          interior: progress.interior,
-          overall: Math.round(overall),
+          ...prog,
+          overall,
         },
       }
     })
 
     return NextResponse.json(result)
   } catch (error) {
-    console.error("GET SCHEDULE ERROR:", error)
+    console.error("GET PROJECT PROGRESS LIST ERROR:", error)
     return NextResponse.json(
-      { message: "Gagal mengambil schedule & progress" },
+      { message: "Gagal mengambil data schedule & progress" },
       { status: 500 }
     )
   }

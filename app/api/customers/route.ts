@@ -30,24 +30,31 @@ export async function GET() {
 
     const rows = res.data.values || []
 
-    const customers = rows.map((r) => ({
-      customer_id: r[0],
-      company_name: r[1],
-      customer_type: r[2],
-      pic_name: r[3],
-      pic_position: r[4],
-      email: r[5],
-      phone: r[6],
-      npwp: r[7],
-      address: r[8],
-      city: r[9],
-      province: r[10],
-      postal_code: r[11],
-      status: r[12],
-      notes: r[13],
-      created_at: r[14],
-      created_by: r[15],
-    }))
+    const customers = rows
+      .filter((r) => r[0]) // ⛔ skip empty row
+      .map((r) => ({
+        customer_id: r[0],
+        company_name: r[1],
+        customer_type: r[2],
+        pic_name: r[3],
+        pic_position: r[4],
+        email: r[5],
+        phone: r[6],
+        npwp: r[7],
+        address: r[8],
+        city: r[9],
+        province: r[10],
+        postal_code: r[11],
+        status: r[12] || "Active",
+        notes: r[13],
+        created_at: r[14],
+        created_by: r[15],
+      }))
+      .sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() -
+          new Date(a.created_at).getTime()
+      )
 
     return NextResponse.json(customers)
   } catch (error) {
@@ -68,24 +75,24 @@ export async function POST(req: Request) {
 
     const {
       company_name,
-      customer_type,
+      customer_type = "Owner",
       pic_name,
-      pic_position,
-      email,
+      pic_position = "",
+      email = "",
       phone,
-      npwp,
-      address,
-      city,
-      province,
-      postal_code,
-      status,
-      notes,
+      npwp = "",
+      address = "",
+      city = "",
+      province = "",
+      postal_code = "",
+      status = "Active",
+      notes = "",
     } = body
 
     // VALIDATION
     if (!company_name || !pic_name || !phone) {
       return NextResponse.json(
-        { message: "Field wajib belum lengkap" },
+        { message: "Nama perusahaan, PIC, dan telepon wajib diisi" },
         { status: 400 }
       )
     }
@@ -101,19 +108,19 @@ export async function POST(req: Request) {
       requestBody: {
         values: [[
           customer_id,
-          company_name,
-          customer_type || "Owner",
-          pic_name,
-          pic_position || "",
-          email || "",
-          phone,
-          npwp || "",
-          address || "",
-          city || "",
-          province || "",
-          postal_code || "",
-          status || "Active",
-          notes || "",
+          company_name.trim(),
+          customer_type,
+          pic_name.trim(),
+          pic_position,
+          email.trim(),
+          phone.trim(),
+          npwp,
+          address,
+          city,
+          province,
+          postal_code,
+          status,
+          notes,
           created_at,
           created_by,
         ]],
@@ -121,7 +128,10 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json(
-      { customer_id, message: "Customer berhasil ditambahkan" },
+      {
+        customer_id,
+        message: "Customer berhasil ditambahkan",
+      },
       { status: 201 }
     )
   } catch (error) {

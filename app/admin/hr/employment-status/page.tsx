@@ -27,7 +27,7 @@ export default function EmployeeStatusPage() {
     async function load() {
       try {
         setLoading(true)
-        const res = await fetch("/api/hr/employment-status/join", {
+        const res = await fetch("/api/hr/employment-status", {
           cache: "no-store",
         })
         const json = await res.json()

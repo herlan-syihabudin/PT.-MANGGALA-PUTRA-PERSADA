@@ -87,40 +87,54 @@ export async function POST(req: NextRequest) {
     const rows = await getAllRows()
 
     /* ===== ADD ===== */
-    if (action === "add") {
-      await sheets.spreadsheets.values.update({
-  spreadsheetId: SHEET_ID,
-  range: `${SHEET_NAME}!B${rowNumber}:T${rowNumber}`,
-  valueInputOption: "RAW",
-  requestBody: {
-    values: [[
-      body.nama_lengkap,
-      body.nik_ktp,
-      body.jenis_kelamin,
-      body.tgl_lahir,
-      body.tempat_lahir,
-      body.status_pernikahan,
-      body.alamat_domisili,
-      body.email,
-      body.no_hp,
-      body.divisi,
-      body.jabatan,
-      body.atasan_langsung,
-      body.lokasi_kerja,
-      body.status_karyawan ?? (rows[index].is_active ? "Aktif" : "Nonaktif"),
-      body.tipe_karyawan ?? "",
-      body.tgl_masuk ?? "",
-      body.is_active !== undefined
-        ? (body.is_active ? "TRUE" : "FALSE")
-        : (rows[index].is_active ? "TRUE" : "FALSE"),
-      rows[index].created_at,
-      new Date().toISOString(),
-    ]],
-  },
-})
+    if (action === "update") {
+  const index = rows.findIndex(
+    (r) => r.employee_id === body.employee_id
+  )
 
-      return NextResponse.json({ success: true })
-    }
+  if (index === -1) {
+    return NextResponse.json(
+      { error: "Employee not found" },
+      { status: 404 }
+    )
+  }
+
+  // ✅ WAJIB ADA INI
+  const rowNumber = index + 2
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: `${SHEET_NAME}!B${rowNumber}:T${rowNumber}`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [[
+        body.nama_lengkap,
+        body.nik_ktp,
+        body.jenis_kelamin,
+        body.tgl_lahir,
+        body.tempat_lahir,
+        body.status_pernikahan,
+        body.alamat_domisili,
+        body.email,
+        body.no_hp,
+        body.divisi,
+        body.jabatan,
+        body.atasan_langsung,
+        body.lokasi_kerja,
+        body.status_karyawan ?? "",
+        body.tipe_karyawan ?? "",
+        body.tgl_masuk ?? "",
+        body.is_active !== undefined
+          ? (body.is_active ? "TRUE" : "FALSE")
+          : (rows[index].is_active ? "TRUE" : "FALSE"),
+        rows[index].created_at,
+        new Date().toISOString(),
+      ]],
+    },
+  })
+
+  return NextResponse.json({ success: true })
+}
 
     /* ===== UPDATE ===== */
     if (action === "update") {

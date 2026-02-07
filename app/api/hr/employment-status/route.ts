@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const employee_id = searchParams.get("employee_id")
 
-    /* ===== STATUS ===== */
+    /* ===== LOAD STATUS ===== */
     const statRes = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: `${STATUS_SHEET}!A1:J`,
@@ -36,16 +36,48 @@ export async function GET(req: NextRequest) {
       return o
     })
 
-    /* ===== DETAIL MODE ===== */
+    /* ===== DETAIL MODE (STATUS + MASTER) ===== */
     if (employee_id) {
+      // ambil master
+      const empRes = await sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: `${EMPLOYEE_SHEET}!A1:T`,
+      })
+
+      const [empHeaders, ...empRows] = empRes.data.values || []
+
+      const employees = empRows.map((r) => {
+        const o: any = {}
+        empHeaders.forEach((h, i) => (o[h] = r[i] ?? ""))
+        return o
+      })
+
+      const employee = employees.find(
+        (e) => e.employee_id === employee_id
+      )
+
+      if (!employee) {
+        return NextResponse.json(
+          { error: "Employee not found" },
+          { status: 404 }
+        )
+      }
+
       return NextResponse.json({
-        data: statuses.filter(
+        employee: {
+          employee_id: employee.employee_id,
+          nama_lengkap: employee.nama_lengkap,
+          divisi: employee.divisi,
+          jabatan: employee.jabatan,
+          lokasi_kerja: employee.lokasi_kerja,
+        },
+        statuses: statuses.filter(
           (s) => s.employee_id === employee_id
         ),
       })
     }
 
-    /* ===== JOIN MODE ===== */
+    /* ===== LIST / JOIN MODE ===== */
     const empRes = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: `${EMPLOYEE_SHEET}!A1:T`,

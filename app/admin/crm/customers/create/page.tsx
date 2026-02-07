@@ -25,7 +25,7 @@ export default function CreateCustomerPage() {
   })
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
@@ -45,11 +45,9 @@ export default function CreateCustomerPage() {
         body: JSON.stringify(form),
       })
 
-      if (!res.ok) {
-        throw new Error("Gagal menyimpan customer")
-      }
+      if (!res.ok) throw new Error("Gagal menyimpan customer")
 
-      router.push("/admin/crm/clients")
+      router.push("/admin/crm/customers")
       router.refresh()
     } catch (err) {
       alert("Terjadi kesalahan saat menyimpan customer")
@@ -72,37 +70,33 @@ export default function CreateCustomerPage() {
       {/* FORM */}
       <div className="bg-white border rounded p-6 space-y-4">
         <Input label="Nama Perusahaan" name="company_name" value={form.company_name} onChange={handleChange} />
-        <Input label="Jenis Customer" name="customer_type" value={form.customer_type} onChange={handleChange} />
+
+        <div>
+          <label className="text-sm font-medium">Jenis Customer</label>
+          <select
+            name="customer_type"
+            value={form.customer_type}
+            onChange={handleChange}
+            className="w-full border rounded px-3 py-2 mt-1"
+          >
+            <option value="Owner">Owner</option>
+            <option value="Developer">Developer</option>
+            <option value="Consultant">Consultant</option>
+            <option value="Vendor">Vendor</option>
+          </select>
+        </div>
+
         <Input label="PIC / Contact Person" name="pic_name" value={form.pic_name} onChange={handleChange} />
         <Input label="Jabatan PIC" name="pic_position" value={form.pic_position} onChange={handleChange} />
-        <Input label="Email" name="email" value={form.email} onChange={handleChange} />
-        <Input label="No. Telepon" name="phone" value={form.phone} onChange={handleChange} />
+        <Input label="Email" name="email" type="email" value={form.email} onChange={handleChange} />
+        <Input label="No. Telepon" name="phone" type="tel" value={form.phone} onChange={handleChange} />
         <Input label="NPWP" name="npwp" value={form.npwp} onChange={handleChange} />
         <Input label="Kota" name="city" value={form.city} onChange={handleChange} />
         <Input label="Provinsi" name="province" value={form.province} onChange={handleChange} />
         <Input label="Kode Pos" name="postal_code" value={form.postal_code} onChange={handleChange} />
 
-        <div>
-          <label className="text-sm font-medium">Alamat</label>
-          <textarea
-            name="address"
-            rows={3}
-            className="w-full border rounded px-3 py-2 mt-1"
-            value={form.address}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div>
-          <label className="text-sm font-medium">Catatan</label>
-          <textarea
-            name="notes"
-            rows={2}
-            className="w-full border rounded px-3 py-2 mt-1"
-            value={form.notes}
-            onChange={handleChange}
-          />
-        </div>
+        <Textarea label="Alamat" name="address" value={form.address} onChange={handleChange} />
+        <Textarea label="Catatan" name="notes" value={form.notes} onChange={handleChange} />
 
         <div className="pt-4">
           <button
@@ -119,9 +113,36 @@ export default function CreateCustomerPage() {
 }
 
 /* ==============================
-   REUSABLE INPUT
+   REUSABLE COMPONENTS
 ================================ */
 function Input({
+  label,
+  name,
+  value,
+  onChange,
+  type = "text",
+}: {
+  label: string
+  name: string
+  value: string
+  onChange: any
+  type?: string
+}) {
+  return (
+    <div>
+      <label className="text-sm font-medium">{label}</label>
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="w-full border rounded px-3 py-2 mt-1"
+      />
+    </div>
+  )
+}
+
+function Textarea({
   label,
   name,
   value,
@@ -135,8 +156,9 @@ function Input({
   return (
     <div>
       <label className="text-sm font-medium">{label}</label>
-      <input
+      <textarea
         name={name}
+        rows={3}
         value={value}
         onChange={onChange}
         className="w-full border rounded px-3 py-2 mt-1"

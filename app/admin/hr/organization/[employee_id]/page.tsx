@@ -17,6 +17,7 @@ export default function OrganizationDetailPage({
   const employeeId = params.employee_id
 
   const [employees, setEmployees] = useState<Employee[]>([])
+  const [employee, setEmployee] = useState<any>(null)
   const [form, setForm] = useState({
     divisi: "",
     jabatan: "",
@@ -24,12 +25,26 @@ export default function OrganizationDetailPage({
   })
   const [saving, setSaving] = useState(false)
 
-  /* ===== LOAD EMPLOYEE MASTER ===== */
+  /* ===== LOAD EMPLOYEE MASTER (UNTUK DROPDOWN ATASAN) ===== */
   useEffect(() => {
     fetch("/api/hr/employee-master", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) => setEmployees(d.data || []))
+      .then(r => r.json())
+      .then(d => setEmployees(d.data || []))
   }, [])
+
+  /* ===== LOAD DETAIL ORGANIZATION (AUTO FILL) ===== */
+  useEffect(() => {
+    fetch(`/api/hr/organization/${employeeId}`, { cache: "no-store" })
+      .then(r => r.json())
+      .then(d => {
+        setEmployee(d.employee)
+        setForm({
+          divisi: d.employee.divisi || "",
+          jabatan: d.employee.jabatan || "",
+          atasan_id: d.employee.atasan_id || "",
+        })
+      })
+  }, [employeeId])
 
   /* ===== SUBMIT ===== */
   async function handleSave() {
@@ -49,6 +64,7 @@ export default function OrganizationDetailPage({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         employee_id: employeeId,
+        nama_lengkap: employee?.nama_lengkap || "",
         divisi: form.divisi,
         jabatan: form.jabatan,
         atasan_id: atasan?.employee_id || "",
@@ -79,9 +95,17 @@ export default function OrganizationDetailPage({
 
       <div>
         <h1 className="text-2xl font-bold">Atur Organisasi</h1>
-        <p className="text-sm text-gray-500">
-          Employee ID: <span className="font-mono">{employeeId}</span>
-        </p>
+
+        {employee && (
+          <div className="mt-1">
+            <div className="font-semibold">
+              {employee.nama_lengkap}
+            </div>
+            <div className="text-xs text-gray-500 font-mono">
+              {employee.employee_id}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="bg-white border rounded-xl p-6 space-y-4">
@@ -95,7 +119,6 @@ export default function OrganizationDetailPage({
             onChange={(e) =>
               setForm({ ...form, divisi: e.target.value })
             }
-            placeholder="Contoh: HRGA / Engineering / Finance"
             className="w-full mt-1 rounded-lg border px-3 py-2 text-sm"
           />
         </div>
@@ -110,7 +133,6 @@ export default function OrganizationDetailPage({
             onChange={(e) =>
               setForm({ ...form, jabatan: e.target.value })
             }
-            placeholder="Contoh: Project Manager"
             className="w-full mt-1 rounded-lg border px-3 py-2 text-sm"
           />
         </div>
@@ -129,12 +151,9 @@ export default function OrganizationDetailPage({
           >
             <option value="">— Tidak ada / Top Level —</option>
             {employees
-              .filter((e) => e.employee_id !== employeeId)
-              .map((e) => (
-                <option
-                  key={e.employee_id}
-                  value={e.employee_id}
-                >
+              .filter(e => e.employee_id !== employeeId)
+              .map(e => (
+                <option key={e.employee_id} value={e.employee_id}>
                   {e.nama_lengkap}
                 </option>
               ))}

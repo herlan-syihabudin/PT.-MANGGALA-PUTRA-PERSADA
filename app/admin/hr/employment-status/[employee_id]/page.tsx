@@ -5,7 +5,14 @@ import { useRouter } from "next/navigation"
 
 export const dynamic = "force-dynamic"
 
-/* ================= TYPE ================= */
+/* ================= TYPES ================= */
+
+type EmployeeInfo = {
+  employee_id: string
+  nama_lengkap: string
+  jabatan: string
+  divisi: string
+}
 
 type StatusRow = {
   employee_id: string
@@ -18,13 +25,6 @@ type StatusRow = {
   created_at: string
   updated_by: string
   keterangan: string
-}
-
-type EmployeeInfo = {
-  employee_id: string
-  nama_lengkap: string
-  divisi?: string
-  jabatan?: string
 }
 
 type PageProps = {
@@ -57,6 +57,7 @@ function AddStatusModal({ employeeId, onClose, onSaved }: AddStatusModalProps) {
 
     try {
       setSaving(true)
+
       const res = await fetch("/api/hr/employment-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -67,14 +68,13 @@ function AddStatusModal({ employeeId, onClose, onSaved }: AddStatusModalProps) {
         }),
       })
 
-      if (!res.ok) {
-        const data = await res.json()
-        alert(data.error || "Gagal menyimpan status")
-        return
-      }
+      if (!res.ok) throw new Error()
 
+      alert("Status karyawan berhasil disimpan")
       onSaved()
       onClose()
+    } catch {
+      alert("Gagal menyimpan status")
     } finally {
       setSaving(false)
     }
@@ -82,69 +82,40 @@ function AddStatusModal({ employeeId, onClose, onSaved }: AddStatusModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-xl rounded-xl bg-white p-6 space-y-4">
+      <div className="w-full max-w-xl rounded-2xl bg-white p-6 space-y-5">
         <h2 className="text-lg font-semibold">Tambah Status Karyawan</h2>
 
         <p className="text-xs text-gray-500">
-          Employee ID: <span className="font-mono font-semibold">{employeeId}</span>
+          Employee ID: <b>{employeeId}</b>
         </p>
 
-        <select className="w-full border rounded px-3 py-2 text-sm"
-          value={form.status}
-          onChange={(e) => setForm({ ...form, status: e.target.value })}
-        >
-          <option value="">Pilih status</option>
-          <option value="AKTIF">AKTIF</option>
-          <option value="KONTRAK">KONTRAK</option>
-          <option value="MUTASI">MUTASI</option>
-          <option value="RESIGN">RESIGN</option>
-          <option value="CUTI">CUTI</option>
-        </select>
-
-        <select className="w-full border rounded px-3 py-2 text-sm"
-          value={form.jenis_status}
-          onChange={(e) => setForm({ ...form, jenis_status: e.target.value })}
-        >
-          <option value="">Pilih jenis status</option>
-          <option value="Tetap">Tetap</option>
-          <option value="Kontrak 1 Tahun">Kontrak 1 Tahun</option>
-          <option value="Kontrak 6 Bulan">Kontrak 6 Bulan</option>
-          <option value="Probation">Probation</option>
-          <option value="Project Based">Project Based</option>
-        </select>
-
-        <input
-          className="w-full border rounded px-3 py-2 text-sm"
-          placeholder="Lokasi kerja"
-          value={form.lokasi_kerja}
-          onChange={(e) => setForm({ ...form, lokasi_kerja: e.target.value })}
-        />
-
-        <input
-          type="date"
-          className="w-full border rounded px-3 py-2 text-sm"
-          value={form.start_date}
-          onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-        />
+        {["status", "jenis_status", "lokasi_kerja", "start_date"].map((f) => (
+          <input
+            key={f}
+            type={f === "start_date" ? "date" : "text"}
+            placeholder={f.replace("_", " ")}
+            className="w-full border rounded px-3 py-2 text-sm"
+            onChange={(e) =>
+              setForm((p) => ({ ...p, [f]: e.target.value }))
+            }
+          />
+        ))}
 
         <textarea
-          className="w-full border rounded px-3 py-2 text-sm"
-          rows={3}
           placeholder="Keterangan"
-          value={form.keterangan}
-          onChange={(e) => setForm({ ...form, keterangan: e.target.value })}
+          className="w-full border rounded px-3 py-2 text-sm"
+          onChange={(e) =>
+            setForm((p) => ({ ...p, keterangan: e.target.value }))
+          }
         />
 
-        <div className="flex justify-end gap-2 pt-3">
-          <button onClick={onClose} className="border px-4 py-2 rounded text-sm">
-            Batal
-          </button>
+        <div className="flex justify-end gap-2">
+          <button onClick={onClose}>Batal</button>
           <button
             onClick={handleSubmit}
-            disabled={saving}
-            className="bg-gray-900 text-white px-4 py-2 rounded text-sm"
+            className="bg-gray-900 text-white px-4 py-2 rounded"
           >
-            {saving ? "Menyimpan..." : "Simpan Status"}
+            Simpan
           </button>
         </div>
       </div>
@@ -163,30 +134,26 @@ export default function EmploymentStatusDetail({ params }: PageProps) {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
 
-  async function loadStatus() {
+  async function loadData() {
     setLoading(true)
-    const res = await fetch(`/api/hr/employment-status?employee_id=${employeeId}`, {
-      cache: "no-store",
-    })
-    const data = await res.json()
-
-    setEmployee(data.employee || null)
-
-    const list: StatusRow[] = data.data || []
-    list.sort(
-      (a, b) =>
-        new Date(b.start_date).getTime() -
-        new Date(a.start_date).getTime()
+    const res = await fetch(
+      `/api/hr/employment-status?employee_id=${employeeId}`,
+      { cache: "no-store" }
     )
-    setRows(list)
+    const json = await res.json()
+
+    setEmployee(json.employee || null)
+    setRows(json.data || [])
     setLoading(false)
   }
 
   useEffect(() => {
-    loadStatus()
+    loadData()
   }, [employeeId])
 
-  const current = rows.find((r) => r.is_current === "TRUE")
+  const current = rows.find(
+    (r) => String(r.is_current).toUpperCase() === "TRUE"
+  )
 
   return (
     <section className="p-6 space-y-6">
@@ -194,57 +161,38 @@ export default function EmploymentStatusDetail({ params }: PageProps) {
         ← Kembali
       </button>
 
-      {/* EMPLOYEE HEADER */}
       <div className="rounded-xl border bg-white p-5 space-y-1">
-        <div className="text-lg font-semibold">
-          {employee?.nama_lengkap || "Nama tidak ditemukan"}
-        </div>
-        <div className="text-sm text-gray-600">
-          {employee?.divisi} • {employee?.jabatan}
-        </div>
-        <div className="font-mono text-xs text-gray-500">{employeeId}</div>
+        <h2 className="text-lg font-bold">
+          {employee?.nama_lengkap || "—"}
+        </h2>
+        <p className="text-sm text-gray-600">
+          {employee?.jabatan} • {employee?.divisi}
+        </p>
+        <p className="text-xs text-gray-500 font-mono">
+          {employeeId}
+        </p>
 
         {current && (
-          <div className="mt-3 flex gap-2 text-xs">
-            <span className="bg-emerald-50 border px-2 py-1 rounded-full font-semibold text-emerald-700">
-              {current.status} • {current.jenis_status}
-            </span>
-            <span className="text-gray-600">Sejak {current.start_date}</span>
-          </div>
+          <span className="inline-block mt-2 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold">
+            {current.status} • {current.jenis_status}
+          </span>
         )}
 
-        <button
-          onClick={() => setShowModal(true)}
-          className="mt-3 bg-gray-900 text-white px-4 py-2 rounded text-xs"
-        >
-          + Tambah Status
-        </button>
-      </div>
-
-      {/* TIMELINE */}
-      {rows.length > 0 && (
-        <div className="rounded-xl border bg-white divide-y">
-          {rows.map((row, i) => (
-            <div key={i} className="px-5 py-4 text-sm">
-              <div className="font-semibold">{row.status}</div>
-              <div className="text-xs text-gray-600">
-                {row.jenis_status} • {row.start_date}
-              </div>
-              {row.keterangan && (
-                <div className="text-xs text-gray-500 mt-1">
-                  {row.keterangan}
-                </div>
-              )}
-            </div>
-          ))}
+        <div className="mt-3">
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-gray-900 text-white px-4 py-2 rounded text-xs"
+          >
+            + Tambah Status
+          </button>
         </div>
-      )}
+      </div>
 
       {showModal && (
         <AddStatusModal
           employeeId={employeeId}
           onClose={() => setShowModal(false)}
-          onSaved={loadStatus}
+          onSaved={loadData}
         />
       )}
     </section>

@@ -28,6 +28,7 @@ export default function ProjectListPage() {
   const [search, setSearch] = useState("")
   const [filterStatus, setFilterStatus] = useState("")
   const [filterType, setFilterType] = useState("")
+  const [bulkStatus, setBulkStatus] = useState("")
 
   /* ========== FETCH PROJECTS ========== */
   useEffect(() => {
@@ -54,6 +55,11 @@ export default function ProjectListPage() {
   /* ========== KPI COUNT ========== */
   const countType = (type: string) =>
     projects.filter((p) => p.project_type === type).length
+
+  const sumByType = (type: string) =>
+  projects
+    .filter((p) => p.project_type === type)
+    .reduce((acc, p) => acc + (p.nilai_kontrak || 0), 0)
 
   /* ========== CHECKBOX HANDLER ========== */
   const toggleSelect = (id: string) => {
@@ -118,6 +124,35 @@ export default function ProjectListPage() {
     a.click()
   }
 
+  const bulkUpdateStatus = async () => {
+  if (!bulkStatus || selected.length === 0) return
+
+  if (!confirm(`Update ${selected.length} project ke status "${bulkStatus}"?`)) {
+    return
+  }
+
+  try {
+    await fetch("/api/projects/bulk-status", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        project_ids: selected,
+        status: bulkStatus,
+      }),
+    })
+
+    // refresh data
+    fetch("/api/projects", { cache: "no-store" })
+      .then((res) => res.json())
+      .then(setProjects)
+
+    setSelected([])
+    setBulkStatus("")
+  } catch (err) {
+    alert("Gagal update status")
+  }
+}
+  
   /* ================= RENDER ================= */
 
   return (
@@ -125,31 +160,38 @@ export default function ProjectListPage() {
 
       {/* ================= KPI CARDS ================= */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KPI
-          title="MEP"
-          value={countType("MEP")}
-          active={filterType === "MEP"}
-          onClick={() => setFilterType("MEP")}
-        />
-        <KPI
-          title="Civil"
-          value={countType("CIVIL")}
-          active={filterType === "CIVIL"}
-          onClick={() => setFilterType("CIVIL")}
-        />
-        <KPI
-          title="Steel"
-          value={countType("STEEL")}
-          active={filterType === "STEEL"}
-          onClick={() => setFilterType("STEEL")}
-        />
-        <KPI
-          title="Interior"
-          value={countType("INTERIOR")}
-          active={filterType === "INTERIOR"}
-          onClick={() => setFilterType("INTERIOR")}
-        />
-      </div>
+  <KPI
+    title="MEP"
+    count={countType("MEP")}
+    total={sumByType("MEP")}
+    onClick={() => setFilterType("MEP")}
+    active={filterType === "MEP"}
+  />
+
+  <KPI
+    title="Civil"
+    count={countType("CIVIL")}
+    total={sumByType("CIVIL")}
+    onClick={() => setFilterType("CIVIL")}
+    active={filterType === "CIVIL"}
+  />
+
+  <KPI
+    title="Steel"
+    count={countType("STEEL")}
+    total={sumByType("STEEL")}
+    onClick={() => setFilterType("STEEL")}
+    active={filterType === "STEEL"}
+  />
+
+  <KPI
+    title="Interior"
+    count={countType("INTERIOR")}
+    total={sumByType("INTERIOR")}
+    onClick={() => setFilterType("INTERIOR")}
+    active={filterType === "INTERIOR"}
+  />
+</div>
 
       {/* ================= HEADER ================= */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -179,6 +221,43 @@ export default function ProjectListPage() {
         </div>
       </div>
 
+      {/* ================= BULK ACTION BAR ================= */}
+{selected.length > 0 && (
+  <div className="flex flex-wrap items-center justify-between bg-red-50 border border-red-200 rounded px-4 py-3 gap-3">
+    <p className="text-sm text-red-700">
+      {selected.length} project dipilih
+    </p>
+
+    <div className="flex gap-2 items-center">
+      <select
+        className="border rounded px-3 py-1 text-sm"
+        value={bulkStatus}
+        onChange={(e) => setBulkStatus(e.target.value)}
+      >
+        <option value="">Pilih Status</option>
+        <option value="planning">Planning</option>
+        <option value="running">Running</option>
+        <option value="finish">Finish</option>
+      </select>
+
+      <button
+        onClick={bulkUpdateStatus}
+        disabled={!bulkStatus}
+        className="bg-red-600 disabled:bg-gray-300 text-white px-3 py-1 rounded text-sm"
+      >
+        Update Status
+      </button>
+
+      <button
+        onClick={exportCSV}
+        className="border px-3 py-1 rounded text-sm bg-white"
+      >
+        Export CSV
+      </button>
+    </div>
+  </div>
+)}
+      
       {/* ================= FILTER ================= */}
       <div className="flex flex-wrap gap-3">
         <input
@@ -298,12 +377,14 @@ export default function ProjectListPage() {
 
 function KPI({
   title,
-  value,
+  count,
+  total,
   onClick,
   active,
 }: {
   title: string
-  value: number
+  count: number
+  total: number
   onClick?: () => void
   active?: boolean
 }) {
@@ -311,12 +392,15 @@ function KPI({
     <div
       onClick={onClick}
       className={`
-        cursor-pointer bg-white border rounded p-4 text-center transition
+        cursor-pointer bg-white border rounded p-4
         ${active ? "border-red-500 ring-2 ring-red-200" : "hover:border-gray-400"}
       `}
     >
       <p className="text-xs text-gray-500">{title}</p>
-      <p className="text-2xl font-bold">{value}</p>
+      <p className="text-2xl font-bold">{count} Project</p>
+      <p className="text-sm text-gray-600 mt-1">
+        Rp {total.toLocaleString("id-ID")}
+      </p>
     </div>
   )
 }

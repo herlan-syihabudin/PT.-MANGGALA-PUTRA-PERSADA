@@ -46,7 +46,7 @@ type ProjectLog = {
   note: string
 }
 
-/* ================= FETCH HELPERS ================= */
+/* ================= FETCH HELPER ================= */
 
 async function fetcher<T>(url: string, fallback: T): Promise<T> {
   try {
@@ -93,18 +93,21 @@ export default async function ProjectDetailPage({
     updated_at: null,
   }
 
-  const scopeValues = [
-    scopeSafe.mep,
-    scopeSafe.civil,
-    scopeSafe.steel,
-    scopeSafe.interior,
+  const scopes = [
+    { label: "MEP", value: scopeSafe.mep },
+    { label: "Civil", value: scopeSafe.civil },
+    { label: "Steel", value: scopeSafe.steel },
+    { label: "Interior", value: scopeSafe.interior },
   ]
 
-  const activeCount = scopeValues.filter((v) => v > 0).length || 4
+  const activeScopes = scopes.filter((s) => s.value > 0)
+  const divisor = activeScopes.length || scopes.length
 
   const overallProgress = Math.round(
-    scopeValues.reduce((a, b) => a + b, 0) / activeCount
+    scopes.reduce((sum, s) => sum + s.value, 0) / divisor
   )
+
+  /* ================= TIME ================= */
 
   const start = new Date(project.start_date)
   const end = new Date(project.end_date)
@@ -126,20 +129,6 @@ export default async function ProjectDetailPage({
   const timeProgress = Math.round((passedDays / totalDays) * 100)
 
   /* ================= STATUS ================= */
-
-  const autoStatus: "planning" | "running" | "finish" =
-    overallProgress === 0
-      ? "planning"
-      : overallProgress >= 100
-      ? "finish"
-      : "running"
-
-  const statusClass =
-    autoStatus === "running"
-      ? "bg-green-100 text-green-700"
-      : autoStatus === "planning"
-      ? "bg-yellow-100 text-yellow-700"
-      : "bg-gray-200 text-gray-700"
 
   let health: "ontrack" | "risk" | "delay" | "notstarted" = "ontrack"
 
@@ -164,47 +153,31 @@ export default async function ProjectDetailPage({
   return (
     <div className="p-6 space-y-6">
       {/* HEADER */}
-      <div className="flex justify-between items-start gap-4">
+      <div className="flex justify-between items-start">
         <div>
           <h1 className="text-xl font-semibold">{project.project_name}</h1>
           <p className="text-[11px] text-gray-500">{project.project_id}</p>
         </div>
 
-        <div className="flex flex-col items-end gap-2">
-          <span className={`px-3 py-1 rounded text-xs ${statusClass}`}>
-            {autoStatus}
-          </span>
-          <span
-            className={`px-2 py-1 rounded text-[11px] ${healthMap[health][1]}`}
-          >
-            {healthMap[health][0]} • Ideal {timeProgress}%
-          </span>
-        </div>
+        <span
+          className={`px-3 py-1 rounded text-xs ${healthMap[health][1]}`}
+        >
+          {healthMap[health][0]} • Ideal {timeProgress}%
+        </span>
       </div>
 
-      {/* OVERALL SUMMARY */}
+      {/* PROJECT HEALTH MONITOR */}
       <Card>
-        <Label>Overall Progress</Label>
-        <ProgressBar value={overallProgress} />
-        <p className="text-xs text-gray-500 mt-1">
-          Update terakhir: {scopeSafe.updated_at || "-"}
-        </p>
-      </Card>
+        <Label>Project Health Monitor</Label>
 
-      {/* TIMELINE */}
-      <Card>
-        <div className="flex justify-between text-xs text-gray-600">
-          <span>Timeline Proyek</span>
-          <span>
-            Hari {passedDays} / {totalDays}
-          </span>
-        </div>
-        <ProgressBar
-          value={timeProgress}
-          danger={timeProgress > overallProgress}
+        {/* MINI GANTT */}
+        <ProgressStack
+          time={timeProgress}
+          physical={overallProgress}
         />
-        <p className="text-[11px] text-gray-500">
-          Waktu {timeProgress}% • Progress {overallProgress}%
+
+        <p className="text-[11px] text-gray-500 mt-1">
+          Waktu {timeProgress}% • Fisik {overallProgress}%
         </p>
       </Card>
 
@@ -232,10 +205,10 @@ export default async function ProjectDetailPage({
 
       {/* KPI DIVISI */}
       <div className="grid md:grid-cols-4 gap-4">
-        {["MEP", "Civil", "Steel", "Interior"].map((label, i) => (
-          <Card key={label} center>
-            <Label>{label}</Label>
-            <p className="text-lg font-semibold">{scopeValues[i]}%</p>
+        {scopes.map((s) => (
+          <Card key={s.label} center>
+            <Label>{s.label}</Label>
+            <p className="text-lg font-semibold">{s.value}%</p>
           </Card>
         ))}
       </div>
@@ -293,7 +266,7 @@ export default async function ProjectDetailPage({
   )
 }
 
-/* ================= UI HELPERS ================= */
+/* ================= UI COMPONENTS ================= */
 
 function Card({
   children,
@@ -321,18 +294,27 @@ function Label({ children }: { children: React.ReactNode }) {
   )
 }
 
-function ProgressBar({
-  value,
-  danger,
+/* === MINI GANTT === */
+function ProgressStack({
+  time,
+  physical,
 }: {
-  value: number
-  danger?: boolean
+  time: number
+  physical: number
 }) {
+  const danger = physical < time
+
   return (
-    <div className="w-full h-2 bg-gray-200 rounded overflow-hidden mt-2">
+    <div className="relative w-full h-3 bg-gray-200 rounded mt-2">
       <div
-        className={`h-2 ${danger ? "bg-red-500" : "bg-green-600"}`}
-        style={{ width: `${value}%` }}
+        className="absolute h-3 bg-gray-400 rounded"
+        style={{ width: `${time}%` }}
+      />
+      <div
+        className={`absolute h-3 rounded ${
+          danger ? "bg-red-500" : "bg-green-600"
+        }`}
+        style={{ width: `${physical}%` }}
       />
     </div>
   )

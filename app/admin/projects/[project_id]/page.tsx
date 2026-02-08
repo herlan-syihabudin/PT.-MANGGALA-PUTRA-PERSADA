@@ -132,6 +132,90 @@ export default async function ProjectDetailPage({
     updated_at: null,
   }
 
+  /* ==============================
+     1) OVERALL PROGRESS
+     2) AUTO STATUS
+     3) HEALTH (ON TRACK / DELAY)
+  ================================= */
+  const scopeValues = [
+    scopeSafe.mep,
+    scopeSafe.civil,
+    scopeSafe.steel,
+    scopeSafe.interior,
+  ]
+
+  const activeCount = scopeValues.filter((v) => v > 0).length
+  const divisor = activeCount || 4 // kalau belum ada progress, bagi 4 biar 0%
+  const overallProgress = Math.round(
+    scopeValues.reduce((sum, v) => sum + v, 0) / divisor
+  )
+
+  // auto status berdasarkan overall progress
+  const autoStatus: "planning" | "running" | "finish" =
+    overallProgress === 0
+      ? "planning"
+      : overallProgress >= 100
+      ? "finish"
+      : "running"
+
+  // status badge class
+  const statusClass =
+    autoStatus === "running"
+      ? "bg-green-100 text-green-700"
+      : autoStatus === "planning"
+      ? "bg-yellow-100 text-yellow-700"
+      : "bg-gray-200 text-gray-700"
+
+  // expected progress dari timeline
+  let expectedProgress: number | null = null
+  let health: "ontrack" | "risk" | "delay" | "notstarted" | null = null
+
+  if (project.start_date && project.end_date) {
+    const today = new Date()
+    const start = new Date(project.start_date)
+    const end = new Date(project.end_date)
+
+    if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end > start) {
+      const totalDays =
+        (end.getTime() - start.getTime()) / 86400000 // ms to day
+      const passedDays =
+        (today.getTime() - start.getTime()) / 86400000
+
+      const rawExpected = (passedDays / totalDays) * 100
+      expectedProgress = Math.min(Math.max(Math.round(rawExpected), 0), 100)
+
+      if (expectedProgress <= 0 && overallProgress === 0) {
+        health = "notstarted"
+      } else {
+        const diff = overallProgress - expectedProgress // positif = lebih cepat
+        if (diff >= -5) {
+          health = "ontrack"
+        } else if (diff >= -15) {
+          health = "risk"
+        } else {
+          health = "delay"
+        }
+      }
+    }
+  }
+
+  let healthLabel = ""
+  let healthClass = ""
+
+  if (health === "ontrack") {
+    healthLabel = "On Track"
+    healthClass = "bg-emerald-100 text-emerald-700"
+  } else if (health === "risk") {
+    healthLabel = "Berisiko Telat"
+    healthClass = "bg-amber-100 text-amber-700"
+  } else if (health === "delay") {
+    healthLabel = "Terlambat"
+    healthClass = "bg-red-100 text-red-700"
+  } else if (health === "notstarted") {
+    healthLabel = "Belum Mulai"
+    healthClass = "bg-gray-100 text-gray-700"
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* HEADER */}
@@ -145,17 +229,68 @@ export default async function ProjectDetailPage({
           </p>
         </div>
 
-        <span
-          className={`px-3 py-1 rounded text-xs capitalize ${
-            project.status === "running"
-              ? "bg-green-100 text-green-700"
-              : project.status === "planning"
-              ? "bg-yellow-100 text-yellow-700"
-              : "bg-gray-200 text-gray-700"
-          }`}
-        >
-          {project.status}
-        </span>
+        <div className="flex flex-col items-end gap-2">
+          <span
+            className={`px-3 py-1 rounded text-xs capitalize ${statusClass}`}
+          >
+            {autoStatus}
+          </span>
+
+          {health && (
+            <span
+              className={`px-2 py-1 rounded text-[11px] font-medium ${healthClass}`}
+            >
+              {healthLabel}
+              {expectedProgress !== null && (
+                <span className="ml-1 text-[10px] text-gray-500">
+                  (Ideal {expectedProgress}%)
+                </span>
+              )}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* OVERALL SUMMARY */}
+      <div className="border rounded-lg bg-white px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-gray-500">
+            Overall Progress
+          </p>
+          <div className="mt-2 flex items-center gap-3">
+            <div className="w-40 h-2 rounded-full bg-gray-200 overflow-hidden">
+              <div
+                className="h-2 rounded-full bg-green-600"
+                style={{ width: `${overallProgress}%` }}
+              />
+            </div>
+            <span className="text-sm font-semibold text-gray-900">
+              {overallProgress}%
+            </span>
+          </div>
+          {scopeSafe.updated_at && (
+            <p className="mt-1 text-[10px] text-gray-500">
+              Update terakhir: {scopeSafe.updated_at}
+            </p>
+          )}
+        </div>
+
+        <div className="text-xs text-gray-600 space-y-1">
+          <p>
+            Status sistem:{" "}
+            <span className="font-semibold capitalize">
+              {autoStatus}
+            </span>
+          </p>
+          {expectedProgress !== null && (
+            <p>
+              Ideal s/d hari ini:{" "}
+              <span className="font-semibold">
+                {expectedProgress}%
+              </span>
+            </p>
+          )}
+        </div>
       </div>
 
       {/* KPI DIVISI */}
@@ -269,6 +404,11 @@ export default async function ProjectDetailPage({
       <div className="border rounded-lg p-4 bg-white space-y-3">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold">Activity Log</p>
+          {logs.length > 0 && (
+            <p className="text-[11px] text-gray-500">
+              {logs.length} aktivitas tercatat (auto log)
+            </p>
+          )}
         </div>
 
         {logs.length === 0 ? (

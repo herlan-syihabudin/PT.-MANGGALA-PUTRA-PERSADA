@@ -105,6 +105,22 @@ export default async function ProjectDetailPage({
 
   /* ================= CORE CALC ================= */
 
+  const contractValue = project.nilai_kontrak || 0
+
+const estimatedUsed =
+  contractValue > 0
+    ? Math.round((overallProgress / 100) * contractValue)
+    : 0
+
+const remainingBudget =
+  contractValue > 0
+    ? contractValue - estimatedUsed
+    : 0
+  
+  const totalPaid = termins
+  .filter((t) => t.status === "Paid")
+  .reduce((sum, t) => sum + t.value, 0)
+
   const scopeSafe: ScopeProgress = scope ?? {
     project_id,
     mep: 0,
@@ -174,18 +190,32 @@ export default async function ProjectDetailPage({
   return (
     <div className="p-6 space-y-6">
       {/* HEADER */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-xl font-semibold">{project.project_name}</h1>
-          <p className="text-[11px] text-gray-500">{project.project_id}</p>
-        </div>
+<div className="flex justify-between items-start gap-4">
+  <div>
+    <h1 className="text-xl font-semibold">
+      {project.project_name}
+    </h1>
 
-        <span
-          className={`px-3 py-1 rounded text-xs ${healthMap[health][1]}`}
-        >
-          {healthMap[health][0]} • Ideal {timeProgress}%
-        </span>
-      </div>
+    <p className="text-xs text-gray-500">
+      {project.project_id} • {project.lokasi}
+    </p>
+
+    <p className="text-xs text-gray-400">
+      Deadline:{" "}
+      {new Date(project.end_date).toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })}
+    </p>
+  </div>
+
+  <span
+    className={`px-3 py-1 rounded text-xs whitespace-nowrap ${healthMap[health][1]}`}
+  >
+    {healthMap[health][0]} • Ideal {timeProgress}%
+  </span>
+</div>
 
       {/* CUSTOMER DETAIL */}
 {project.customer && (
@@ -240,26 +270,12 @@ export default async function ProjectDetailPage({
       </Card>
 
       {/* FINANCIAL SNAPSHOT */}
-      <div className="grid md:grid-cols-3 gap-4">
-        <Info
-          label="Nilai Kontrak"
-          value={`Rp ${project.nilai_kontrak.toLocaleString("id-ID")}`}
-          highlight
-        />
-        <Info
-          label="Estimasi Terpakai"
-          value={`Rp ${Math.round(
-            (overallProgress / 100) * project.nilai_kontrak
-          ).toLocaleString("id-ID")}`}
-        />
-        <Info
-          label="Sisa Anggaran"
-          value={`Rp ${Math.round(
-            project.nilai_kontrak -
-              (overallProgress / 100) * project.nilai_kontrak
-          ).toLocaleString("id-ID")}`}
-        />
-      </div>
+      <div className="grid md:grid-cols-4 gap-4">
+  <Info label="Nilai Kontrak" value={formatIDR(contractValue)} highlight />
+  <Info label="Estimasi Terpakai" value={formatIDR(estimatedUsed)} />
+  <Info label="Total Terbayar" value={formatIDR(totalPaid)} />
+  <Info label="Sisa Anggaran" value={formatIDR(remainingBudget)} />
+</div>
 
       {/* KPI DIVISI */}
       <div className="grid md:grid-cols-4 gap-4">
@@ -286,13 +302,20 @@ export default async function ProjectDetailPage({
               "Dibayar",
             ]}
             rows={termins.map((t) => [
-              t.termin_no,
-              t.description,
-              `${t.percent}% • Rp ${t.value.toLocaleString("id-ID")}`,
-              t.status,
-              t.due_date || "-",
-              t.paid_date || "-",
-            ])}
+  t.termin_no,
+  t.description,
+  `${t.percent}% • ${formatIDR(t.value)}`,
+  <span
+    key={`status-${t.termin_no}`}
+    className={`px-2 py-0.5 rounded text-[11px] font-medium inline-block ${getTerminStatusBadge(
+      t.status
+    )}`}
+  >
+    {t.status}
+  </span>,
+  t.due_date || "-",
+  t.paid_date || "-",
+])}
           />
         )}
       </Section>
@@ -324,7 +347,26 @@ export default async function ProjectDetailPage({
   )
 }
 
+
 /* ================= UI COMPONENTS ================= */
+  
+function getTerminStatusBadge(status: string) {
+  switch (status.toLowerCase()) {
+    case "paid":
+      return "bg-green-100 text-green-700"
+    case "pending":
+      return "bg-amber-100 text-amber-700"
+    case "overdue":
+      return "bg-red-100 text-red-700"
+    default:
+      return "bg-gray-100 text-gray-600"
+  }
+}
+
+function formatIDR(value: number) {
+  if (!value || isNaN(value)) return "Rp 0"
+  return `Rp ${value.toLocaleString("id-ID")}`
+}
 
 function Card({
   children,

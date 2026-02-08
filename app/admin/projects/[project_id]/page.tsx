@@ -4,11 +4,32 @@ import Link from "next/link"
 export const dynamic = "force-dynamic"
 
 /* ================= TYPES ================= */
+type Customer = {
+  customer_id: string
+  company_name: string
+  customer_type: string
+  pic_name: string
+  pic_position: string
+  email: string
+  phone: string
+  address: string
+  city: string
+  province: string
+  postal_code: string
+  status: string
+}
 
 type Project = {
   project_id: string
   project_name: string
+
+  // legacy (biar UI lama gak jebol)
   client: string
+
+  // relational (INI YANG DIPAKAI)
+  customer_id: string
+  customer: Customer | null
+
   lokasi: string
   nilai_kontrak: number
   start_date: string
@@ -166,6 +187,43 @@ export default async function ProjectDetailPage({
         </span>
       </div>
 
+      {/* CUSTOMER DETAIL */}
+{project.customer && (
+  <Card>
+    <Label>Customer Detail</Label>
+
+    <div className="grid md:grid-cols-2 gap-4 mt-2 text-sm">
+      <div>
+        <p className="font-medium">{project.customer.company_name}</p>
+        <p className="text-xs text-gray-500">
+          {project.customer.customer_type}
+        </p>
+      </div>
+
+      <div>
+        <p className="text-xs text-gray-500">PIC</p>
+        <p className="font-medium">
+          {project.customer.pic_name} — {project.customer.pic_position}
+        </p>
+      </div>
+
+      <div>
+        <p className="text-xs text-gray-500">Kontak</p>
+        <p>{project.customer.phone}</p>
+        <p className="text-xs">{project.customer.email}</p>
+      </div>
+
+      <div>
+        <p className="text-xs text-gray-500">Alamat</p>
+        <p className="text-xs leading-relaxed">
+          {project.customer.address}<br />
+          {project.customer.city}, {project.customer.province}
+        </p>
+      </div>
+    </div>
+  </Card>
+)}
+      
       {/* PROJECT HEALTH MONITOR */}
       <Card>
         <Label>Project Health Monitor</Label>

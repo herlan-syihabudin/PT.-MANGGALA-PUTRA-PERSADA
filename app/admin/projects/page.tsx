@@ -30,6 +30,27 @@ export default function ProjectListPage() {
   const [filterType, setFilterType] = useState("")
   const [bulkStatus, setBulkStatus] = useState("")
 
+  const getProgressState = (p: Project) => {
+  const today = new Date()
+  const start = new Date(p.start_date)
+  const end = new Date(p.end_date)
+
+  if (!p.progress || p.progress === 0) {
+    if (today > start) return "stuck"
+  }
+
+  const totalDays = (end.getTime() - start.getTime()) / 86400000
+  const passedDays = (today.getTime() - start.getTime()) / 86400000
+  const expectedProgress = Math.min(
+    Math.round((passedDays / totalDays) * 100),
+    100
+  )
+
+  if ((p.progress ?? 0) + 5 < expectedProgress) return "delay"
+
+  return "ontrack"
+}
+
   /* ========== FETCH PROJECTS ========== */
   useEffect(() => {
     fetch("/api/projects", { cache: "no-store" })
@@ -37,6 +58,10 @@ export default function ProjectListPage() {
       .then(setProjects)
       .catch(console.error)
   }, [])
+
+  useEffect(() => {
+  setSelected([])
+}, [filterType, filterStatus, search])
 
   /* ========== FILTERED DATA ========== */
   const filteredProjects = projects.filter((p) => {
@@ -163,7 +188,8 @@ const sumByType = (type: string) =>
     <div className="p-6 space-y-6">
 
       {/* ================= KPI CARDS ================= */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
+        
         <KPICard
   title="All"
   count={filteredProjects.length}
@@ -342,13 +368,19 @@ const sumByType = (type: string) =>
 
             {filteredProjects.map((p, i) => (
               <tr key={p.project_id} className="border-t">
-                <td className="p-3">
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(p.project_id)}
-                    onChange={() => toggleSelect(p.project_id)}
-                  />
-                </td>
+               <th className="p-3">
+  <label className="flex items-center justify-center cursor-pointer">
+    <input
+      type="checkbox"
+      className="w-4 h-4"
+      onChange={selectAll}
+      checked={
+        filteredProjects.length > 0 &&
+        selected.length === filteredProjects.length
+      }
+    />
+  </label>
+</th>
 
                 <td className="p-3">{i + 1}</td>
 
@@ -367,8 +399,18 @@ const sumByType = (type: string) =>
                 </td>
 
                 <td className="p-3">
-                  <ProgressBar value={p.progress ?? 0} />
-                </td>
+  <div className="flex items-center gap-2">
+    <ProgressIndicator state={getProgressState(p)} />
+
+    <div className="flex-1">
+      <ProgressBar value={p.progress ?? 0} />
+    </div>
+
+    <span className="text-xs text-gray-600 w-10 text-right">
+      {p.progress ?? 0}%
+    </span>
+  </div>
+</td>
 
                 <td className="p-3">{p.start_date}</td>
                 <td className="p-3">{p.end_date}</td>
@@ -436,6 +478,20 @@ function ProgressBar({ value }: { value: number }) {
         style={{ width: `${value}%` }}
       />
     </div>
+  )
+}
+            function ProgressIndicator({ state }: { state: string }) {
+  const map: any = {
+    ontrack: "bg-green-500",
+    delay: "bg-yellow-500",
+    stuck: "bg-red-500",
+  }
+
+  return (
+    <span
+      className={`inline-block w-2.5 h-2.5 rounded-full ${map[state]}`}
+      title={state}
+    />
   )
 }
 

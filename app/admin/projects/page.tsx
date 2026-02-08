@@ -40,24 +40,24 @@ export default function ProjectListPage() {
 
   /* ========== FILTERED DATA ========== */
   const filteredProjects = projects.filter((p) => {
-    const q = search.toLowerCase()
+  const q = search.toLowerCase()
 
-    const matchSearch =
-      p.project_name.toLowerCase().includes(q) ||
-      p.client.toLowerCase().includes(q)
+  const matchSearch =
+    p.project_name.toLowerCase().includes(q) ||
+    p.client.toLowerCase().includes(q)
 
-    const matchStatus = filterStatus ? p.status === filterStatus : true
-    const matchType = filterType ? p.project_type === filterType : true
+  const matchStatus = filterStatus ? p.status === filterStatus : true
+  const matchType = filterType ? p.project_type === filterType : true
 
-    return matchSearch && matchStatus && matchType
-  })
+  return matchSearch && matchStatus && matchType
+})
 
   /* ========== KPI COUNT ========== */
   const countType = (type: string) =>
-    projects.filter((p) => p.project_type === type).length
+  filteredProjects.filter((p) => p.project_type === type).length
 
-  const sumByType = (type: string) =>
-  projects
+const sumByType = (type: string) =>
+  filteredProjects
     .filter((p) => p.project_type === type)
     .reduce((acc, p) => acc + (p.nilai_kontrak || 0), 0)
 
@@ -70,6 +70,10 @@ export default function ProjectListPage() {
     )
   }
 
+  const handleTypeToggle = (type: string) => {
+  setFilterType((prev) => (prev === type ? "" : type))
+}
+  
   const selectAll = () => {
     if (selected.length === filteredProjects.length) {
       setSelected([])
@@ -160,36 +164,44 @@ export default function ProjectListPage() {
 
       {/* ================= KPI CARDS ================= */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-  <KPI
+        <KPICard
+  title="All"
+  count={filteredProjects.length}
+  total={filteredProjects.reduce((a, p) => a + p.nilai_kontrak, 0)}
+  active={filterType === ""}
+  onClick={() => setFilterType("")}
+/>
+        
+  <KPICard
     title="MEP"
     count={countType("MEP")}
     total={sumByType("MEP")}
-    onClick={() => setFilterType("MEP")}
     active={filterType === "MEP"}
+    onClick={() => handleTypeToggle("MEP")}
   />
 
-  <KPI
+  <KPICard
     title="Civil"
     count={countType("CIVIL")}
     total={sumByType("CIVIL")}
-    onClick={() => setFilterType("CIVIL")}
     active={filterType === "CIVIL"}
+    onClick={() => handleTypeToggle("CIVIL")}
   />
 
-  <KPI
+  <KPICard
     title="Steel"
     count={countType("STEEL")}
     total={sumByType("STEEL")}
-    onClick={() => setFilterType("STEEL")}
     active={filterType === "STEEL"}
+    onClick={() => handleTypeToggle("STEEL")}
   />
 
-  <KPI
+  <KPICard
     title="Interior"
     count={countType("INTERIOR")}
     total={sumByType("INTERIOR")}
-    onClick={() => setFilterType("INTERIOR")}
     active={filterType === "INTERIOR"}
+    onClick={() => handleTypeToggle("INTERIOR")}
   />
 </div>
 
@@ -375,30 +387,41 @@ export default function ProjectListPage() {
 
 /* ================= COMPONENTS ================= */
 
-function KPI({
+function KPICard({
   title,
   count,
   total,
-  onClick,
   active,
+  onClick,
 }: {
   title: string
   count: number
   total: number
-  onClick?: () => void
   active?: boolean
+  onClick?: () => void
 }) {
+
+  
   return (
     <div
       onClick={onClick}
       className={`
-        cursor-pointer bg-white border rounded p-4
-        ${active ? "border-red-500 ring-2 ring-red-200" : "hover:border-gray-400"}
+        cursor-pointer rounded-lg border bg-white px-4 py-3
+        transition-all duration-150
+        ${active
+          ? "border-red-500 ring-1 ring-red-200"
+          : "hover:border-gray-400"}
       `}
     >
-      <p className="text-xs text-gray-500">{title}</p>
-      <p className="text-2xl font-bold">{count} Project</p>
-      <p className="text-sm text-gray-600 mt-1">
+      <p className="text-[11px] uppercase tracking-wide text-gray-500">
+        {title}
+      </p>
+
+      <p className="mt-1 text-lg font-semibold text-gray-900">
+        {count} Project
+      </p>
+
+      <p className="text-xs text-gray-600 mt-0.5">
         Rp {total.toLocaleString("id-ID")}
       </p>
     </div>

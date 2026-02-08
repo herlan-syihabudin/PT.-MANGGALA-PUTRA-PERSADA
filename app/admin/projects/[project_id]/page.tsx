@@ -105,22 +105,6 @@ export default async function ProjectDetailPage({
 
   /* ================= CORE CALC ================= */
 
-  const contractValue = project.nilai_kontrak || 0
-
-const estimatedUsed =
-  contractValue > 0
-    ? Math.round((overallProgress / 100) * contractValue)
-    : 0
-
-const remainingBudget =
-  contractValue > 0
-    ? contractValue - estimatedUsed
-    : 0
-  
-  const totalPaid = termins
-  .filter((t) => t.status === "Paid")
-  .reduce((sum, t) => sum + t.value, 0)
-
   const scopeSafe: ScopeProgress = scope ?? {
     project_id,
     mep: 0,
@@ -140,9 +124,24 @@ const remainingBudget =
   const activeScopes = scopes.filter((s) => s.value > 0)
   const divisor = activeScopes.length || scopes.length
 
-  const overallProgress = Math.round(
-    scopes.reduce((sum, s) => sum + s.value, 0) / divisor
-  )
+  const overallProgress =
+    divisor > 0
+      ? Math.round(scopes.reduce((sum, s) => sum + s.value, 0) / divisor)
+      : 0
+
+  const contractValue = project.nilai_kontrak || 0
+
+  const estimatedUsed =
+    contractValue > 0
+      ? Math.round((overallProgress / 100) * contractValue)
+      : 0
+
+  const remainingBudget =
+    contractValue > 0 ? contractValue - estimatedUsed : 0
+
+  const totalPaid = termins
+    .filter((t) => t.status.toLowerCase() === "paid")
+    .reduce((sum, t) => sum + (t.value || 0), 0)
 
   /* ================= TIME ================= */
 
@@ -190,79 +189,80 @@ const remainingBudget =
   return (
     <div className="p-6 space-y-6">
       {/* HEADER */}
-<div className="flex justify-between items-start gap-4">
-  <div>
-    <h1 className="text-xl font-semibold">
-      {project.project_name}
-    </h1>
+      <div className="flex justify-between items-start gap-4">
+        <div>
+          <h1 className="text-xl font-semibold">
+            {project.project_name}
+          </h1>
 
-    <p className="text-xs text-gray-500">
-      {project.project_id} • {project.lokasi}
-    </p>
+          <p className="text-xs text-gray-500">
+            {project.project_id} • {project.lokasi}
+          </p>
 
-    <p className="text-xs text-gray-400">
-      Deadline:{" "}
-      {new Date(project.end_date).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })}
-    </p>
-  </div>
+          <p className="text-xs text-gray-400">
+            Deadline:{" "}
+            {new Date(project.end_date).toLocaleDateString("id-ID", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })}
+          </p>
+        </div>
 
-  <span
-    className={`px-3 py-1 rounded text-xs whitespace-nowrap ${healthMap[health][1]}`}
-  >
-    {healthMap[health][0]} • Ideal {timeProgress}%
-  </span>
-</div>
+        <span
+          className={`px-3 py-1 rounded text-xs whitespace-nowrap ${healthMap[health][1]}`}
+        >
+          {healthMap[health][0]} • Ideal {timeProgress}%
+        </span>
+      </div>
 
       {/* CUSTOMER DETAIL */}
-{project.customer && (
-  <Card>
-    <Label>Customer Detail</Label>
+      {project.customer && (
+        <Card>
+          <Label>Customer Detail</Label>
 
-    <div className="grid md:grid-cols-2 gap-4 mt-2 text-sm">
-      <div>
-        <p className="font-medium">{project.customer.company_name}</p>
-        <p className="text-xs text-gray-500">
-          {project.customer.customer_type}
-        </p>
-      </div>
+          <div className="grid md:grid-cols-2 gap-4 mt-2 text-sm">
+            <div>
+              <p className="font-medium">
+                {project.customer.company_name}
+              </p>
+              <p className="text-xs text-gray-500">
+                {project.customer.customer_type}
+              </p>
+            </div>
 
-      <div>
-        <p className="text-xs text-gray-500">PIC</p>
-        <p className="font-medium">
-          {project.customer.pic_name} — {project.customer.pic_position}
-        </p>
-      </div>
+            <div>
+              <p className="text-xs text-gray-500">PIC</p>
+              <p className="font-medium">
+                {project.customer.pic_name} —{" "}
+                {project.customer.pic_position}
+              </p>
+            </div>
 
-      <div>
-        <p className="text-xs text-gray-500">Kontak</p>
-        <p>{project.customer.phone}</p>
-        <p className="text-xs">{project.customer.email}</p>
-      </div>
+            <div>
+              <p className="text-xs text-gray-500">Kontak</p>
+              <p>{project.customer.phone}</p>
+              <p className="text-xs">{project.customer.email}</p>
+            </div>
 
-      <div>
-        <p className="text-xs text-gray-500">Alamat</p>
-        <p className="text-xs leading-relaxed">
-          {project.customer.address}<br />
-          {project.customer.city}, {project.customer.province}
-        </p>
-      </div>
-    </div>
-  </Card>
-)}
-      
+            <div>
+              <p className="text-xs text-gray-500">Alamat</p>
+              <p className="text-xs leading-relaxed">
+                {project.customer.address}
+                <br />
+                {project.customer.city}, {project.customer.province}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* PROJECT HEALTH MONITOR */}
       <Card>
         <Label>Project Health Monitor</Label>
 
         {/* MINI GANTT */}
-        <ProgressStack
-          time={timeProgress}
-          physical={overallProgress}
-        />
+        <ProgressStack time={timeProgress} physical={overallProgress} />
 
         <p className="text-[11px] text-gray-500 mt-1">
           Waktu {timeProgress}% • Fisik {overallProgress}%
@@ -271,11 +271,24 @@ const remainingBudget =
 
       {/* FINANCIAL SNAPSHOT */}
       <div className="grid md:grid-cols-4 gap-4">
-  <Info label="Nilai Kontrak" value={formatIDR(contractValue)} highlight />
-  <Info label="Estimasi Terpakai" value={formatIDR(estimatedUsed)} />
-  <Info label="Total Terbayar" value={formatIDR(totalPaid)} />
-  <Info label="Sisa Anggaran" value={formatIDR(remainingBudget)} />
-</div>
+        <Info
+          label="Nilai Kontrak"
+          value={formatIDR(contractValue)}
+          highlight
+        />
+        <Info
+          label="Estimasi Terpakai"
+          value={formatIDR(estimatedUsed)}
+        />
+        <Info
+          label="Total Terbayar"
+          value={formatIDR(totalPaid)}
+        />
+        <Info
+          label="Sisa Anggaran"
+          value={formatIDR(remainingBudget)}
+        />
+      </div>
 
       {/* KPI DIVISI */}
       <div className="grid md:grid-cols-4 gap-4">
@@ -302,20 +315,20 @@ const remainingBudget =
               "Dibayar",
             ]}
             rows={termins.map((t) => [
-  t.termin_no,
-  t.description,
-  `${t.percent}% • ${formatIDR(t.value)}`,
-  <span
-    key={`status-${t.termin_no}`}
-    className={`px-2 py-0.5 rounded text-[11px] font-medium inline-block ${getTerminStatusBadge(
-      t.status
-    )}`}
-  >
-    {t.status}
-  </span>,
-  t.due_date || "-",
-  t.paid_date || "-",
-])}
+              t.termin_no,
+              t.description,
+              `${t.percent}% • ${formatIDR(t.value)}`,
+              <span
+                key={`status-${t.termin_no}`}
+                className={`px-2 py-0.5 rounded text-[11px] font-medium inline-block ${getTerminStatusBadge(
+                  t.status
+                )}`}
+              >
+                {t.status}
+              </span>,
+              t.due_date || "-",
+              t.paid_date || "-",
+            ])}
           />
         )}
       </Section>
@@ -347,9 +360,8 @@ const remainingBudget =
   )
 }
 
-
 /* ================= UI COMPONENTS ================= */
-  
+
 function getTerminStatusBadge(status: string) {
   switch (status.toLowerCase()) {
     case "paid":
@@ -464,7 +476,7 @@ function SimpleTable({
   rows,
 }: {
   headers: string[]
-  rows: (string | number)[][]
+  rows: React.ReactNode[][]
 }) {
   return (
     <table className="w-full text-xs">

@@ -1,5 +1,3 @@
-// app/admin/estimator/rab/page.tsx
-
 import Link from "next/link"
 import { formatIDR } from "@/lib/format"
 
@@ -34,13 +32,21 @@ export default async function RABPage() {
 
   return (
     <div className="p-6 space-y-6">
-
       {/* HEADER */}
-      <div>
-        <h1 className="text-xl font-semibold">RAB Project</h1>
-        <p className="text-sm text-gray-500">
-          Workspace Estimator – sumber RAB resmi untuk Project Management
-        </p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-xl font-semibold">RAB Project</h1>
+          <p className="text-sm text-gray-500">
+            Workspace Estimator – sumber RAB resmi untuk Project Management
+          </p>
+        </div>
+
+        <Link
+          href="/admin/estimator/rab/create"
+          className="px-4 py-2 bg-blue-600 text-white text-xs rounded"
+        >
+          + Buat RAB Project
+        </Link>
       </div>
 
       {/* TABLE */}
@@ -67,22 +73,37 @@ export default async function RABPage() {
               <tr>
                 <td
                   colSpan={5}
-                  className="p-6 text-center text-gray-500"
+                  className="p-8 text-center text-gray-500"
                 >
-                  Belum ada RAB project
+                  <p className="mb-2">
+                    Belum ada RAB project
+                  </p>
+                  <Link
+                    href="/admin/estimator/rab/create"
+                    className="text-blue-600 text-xs"
+                  >
+                    + Buat RAB pertama
+                  </Link>
                 </td>
               </tr>
             ) : (
-              projects.map((p, i) => (
-                <tr key={i} className="border-t">
+              projects.map((p) => (
+                <tr
+                  key={p.project_id}
+                  className="border-t hover:bg-gray-50"
+                >
                   <td className="p-3">
-                    <p className="font-medium">{p.project_name}</p>
+                    <p className="font-medium">
+                      {p.project_name}
+                    </p>
                     <p className="text-xs text-gray-500">
                       {p.project_id}
                     </p>
                   </td>
 
-                  <td className="p-3">{p.total_items}</td>
+                  <td className="p-3">
+                    {p.total_items}
+                  </td>
 
                   <td className="p-3 font-medium">
                     {formatIDR(p.total_value)}
@@ -108,7 +129,7 @@ export default async function RABPage() {
       </div>
 
       <p className="text-xs text-gray-400">
-        🔒 Data RAB dikontrol penuh oleh Estimator.
+        🔒 Data RAB dikontrol penuh oleh Estimator.  
         Project Management hanya membaca hasil final.
       </p>
     </div>
@@ -117,17 +138,19 @@ export default async function RABPage() {
 
 /* ================= UI ================= */
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status }: { status?: string }) {
+  const normalized = (status || "Draft").toLowerCase()
+
   const map: Record<string, string> = {
-    Draft: "bg-gray-100 text-gray-700",
-    Approved: "bg-green-100 text-green-700",
-    Locked: "bg-red-100 text-red-700",
+    draft: "bg-gray-100 text-gray-700",
+    approved: "bg-green-100 text-green-700",
+    locked: "bg-red-100 text-red-700",
   }
 
   return (
     <span
       className={`px-2 py-1 rounded text-xs font-medium ${
-        map[status] || "bg-gray-100 text-gray-600"
+        map[normalized] || "bg-gray-100 text-gray-600"
       }`}
     >
       {status || "Draft"}

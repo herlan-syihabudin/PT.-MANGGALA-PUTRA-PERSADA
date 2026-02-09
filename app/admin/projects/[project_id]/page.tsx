@@ -351,14 +351,23 @@ export default async function ProjectDetailPage({
       </Section>
 
       {/* ACTION */}
-      <div className="flex gap-3">
-        <Action href="contract" label="Kontrak" color="blue" />
-        <Action href="rab" label="RAB" color="gray" />
-        <Action href="progress" label="Progress" color="green" />
-      </div>
-    </div>
-  )
-}
+<div className="flex gap-3">
+  <Action
+    href={`/admin/projects/${params.project_id}/contract`}
+    label="Kontrak"
+    color="blue"
+  />
+  <Action
+    href={`/admin/projects/${params.project_id}/rab`}
+    label="RAB"
+    color="gray"
+  />
+  <Action
+    href={`/admin/projects/${params.project_id}/progress`}
+    label="Progress"
+    color="green"
+  />
+</div>
 
 /* ================= UI COMPONENTS ================= */
 

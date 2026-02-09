@@ -1,7 +1,11 @@
-import { formatIDR } from "@/lib/format"
+// app/admin/projects/[project_id]/rab/page.tsx
+
 import Link from "next/link"
+import { formatIDR } from "@/lib/format"
 
 export const dynamic = "force-dynamic"
+
+/* ================= TYPES ================= */
 
 type RabItem = {
   rab_id: string
@@ -15,14 +19,34 @@ type RabItem = {
   status: string
 }
 
-async function fetchRAB(project_id: string) {
+type RabResponse = {
+  summary: {
+    total_items: number
+    total_value: number
+  }
+  items: RabItem[]
+}
+
+/* ================= FETCH ================= */
+
+async function fetchRAB(project_id: string): Promise<RabResponse> {
   const base = process.env.NEXT_PUBLIC_BASE_URL
   const res = await fetch(
     `${base}/api/estimator/rab?project_id=${project_id}`,
     { cache: "no-store" }
   )
+
+  if (!res.ok) {
+    return {
+      summary: { total_items: 0, total_value: 0 },
+      items: [],
+    }
+  }
+
   return res.json()
 }
+
+/* ================= PAGE ================= */
 
 export default async function ProjectRABPage({
   params,
@@ -53,17 +77,17 @@ export default async function ProjectRABPage({
 
       {/* SUMMARY */}
       <div className="grid md:grid-cols-3 gap-4">
-        <Card label="Total Item">
+        <InfoCard label="Total Item">
           {data.summary.total_items}
-        </Card>
+        </InfoCard>
 
-        <Card label="Total Nilai RAB" highlight>
+        <InfoCard label="Total Nilai RAB" highlight>
           {formatIDR(data.summary.total_value)}
-        </Card>
+        </InfoCard>
 
-        <Card label="Status">
+        <InfoCard label="Status">
           Draft / Estimator
-        </Card>
+        </InfoCard>
       </div>
 
       {/* TABS */}
@@ -80,7 +104,7 @@ export default async function ProjectRABPage({
                 "Kategori",
                 "Volume",
                 "Unit",
-                "Harga",
+                "Harga Satuan",
                 "Total",
                 "Status",
               ].map((h) => (
@@ -92,29 +116,104 @@ export default async function ProjectRABPage({
           </thead>
 
           <tbody>
-            {data.items.map((i: RabItem, idx: number) => (
-              <tr key={idx} className="border-t">
-                <td className="p-2">{i.scope}</td>
-                <td className="p-2">{i.item_name}</td>
-                <td className="p-2">{i.category}</td>
-                <td className="p-2">{i.volume}</td>
-                <td className="p-2">{i.unit}</td>
-                <td className="p-2">{formatIDR(i.unit_price)}</td>
-                <td className="p-2 font-medium">
-                  {formatIDR(i.total_price)}
-                </td>
-                <td className="p-2">
-                  <StatusBadge status={i.status} />
+            {data.items.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="p-4 text-center text-gray-500"
+                >
+                  Belum ada data RAB
                 </td>
               </tr>
-            ))}
+            ) : (
+              data.items.map((i, idx) => (
+                <tr key={idx} className="border-t">
+                  <td className="p-2">{i.scope}</td>
+                  <td className="p-2">{i.item_name}</td>
+                  <td className="p-2">{i.category}</td>
+                  <td className="p-2">{i.volume}</td>
+                  <td className="p-2">{i.unit}</td>
+                  <td className="p-2">
+                    {formatIDR(i.unit_price)}
+                  </td>
+                  <td className="p-2 font-medium">
+                    {formatIDR(i.total_price)}
+                  </td>
+                  <td className="p-2">
+                    <StatusBadge status={i.status} />
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
       <p className="text-xs text-gray-400">
-        🔒 Data RAB hanya dapat diubah oleh Estimator
+        🔒 Data RAB bersifat read-only untuk Project Management.
+        Perubahan hanya dapat dilakukan oleh Estimator.
       </p>
     </div>
+  )
+}
+
+/* ================= UI COMPONENTS ================= */
+
+function InfoCard({
+  label,
+  children,
+  highlight,
+}: {
+  label: string
+  children: React.ReactNode
+  highlight?: boolean
+}) {
+  return (
+    <div className="border rounded-lg p-4 bg-white">
+      <p className="text-[11px] text-gray-500 uppercase tracking-wide">
+        {label}
+      </p>
+      <p
+        className={`mt-1 ${
+          highlight ? "text-red-600 font-semibold" : ""
+        }`}
+      >
+        {children}
+      </p>
+    </div>
+  )
+}
+
+function Tabs() {
+  return (
+    <div className="flex gap-6 border-b text-sm">
+      <button className="pb-2 border-b-2 border-blue-600 font-medium">
+        RAB Detail
+      </button>
+      <button
+        className="pb-2 text-gray-400 cursor-not-allowed"
+        title="Akan muncul setelah procurement aktif"
+      >
+        Status Pengadaan
+      </button>
+    </div>
+  )
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    Draft: "bg-gray-100 text-gray-700",
+    Approved: "bg-green-100 text-green-700",
+    Locked: "bg-red-100 text-red-700",
+  }
+
+  return (
+    <span
+      className={`px-2 py-0.5 rounded text-[11px] font-medium ${
+        map[status] || "bg-gray-100 text-gray-600"
+      }`}
+    >
+      {status}
+    </span>
   )
 }

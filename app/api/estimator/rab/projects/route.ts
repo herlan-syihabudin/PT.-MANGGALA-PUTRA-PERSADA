@@ -27,17 +27,18 @@ export async function GET() {
     const data = rows.map((r) => ({
       rab_id: r[0],
       project_id: r[1],
+      project_name: r[1], // ✅ sementara tampilkan ID dulu (AMAN)
       total_items: Number(r[2] || 0),
       total_value: Number(r[3] || 0),
       status: r[4] || "Draft",
-      created_by: r[5],
-      created_at: r[6],
-      project_name: r[1], // sementara (nanti join project)
     }))
 
     return NextResponse.json(data)
   } catch (e) {
     console.error(e)
-    return NextResponse.json({ message: "Gagal load RAB" }, { status: 500 })
+    return NextResponse.json(
+      { message: "Gagal load RAB" },
+      { status: 500 }
+    )
   }
 }

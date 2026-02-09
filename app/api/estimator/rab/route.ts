@@ -75,3 +75,72 @@ export async function GET(req: Request) {
     )
   }
 }
+
+/* ==============================
+   POST : CREATE RAB ITEM
+================================ */
+export async function POST(req: Request) {
+  try {
+    const body = await req.json()
+    const {
+      project_id,
+      scope,
+      item_name,
+      category,
+      volume,
+      unit,
+      unit_price,
+      created_by,
+    } = body
+
+    if (
+      !project_id ||
+      !scope ||
+      !item_name ||
+      !volume ||
+      !unit_price
+    ) {
+      return NextResponse.json(
+        { message: "Field wajib belum lengkap" },
+        { status: 400 }
+      )
+    }
+
+    const rab_id = `RAB-${Date.now()}`
+    const total_price = Number(volume) * Number(unit_price)
+    const created_at = new Date().toISOString()
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: `${RAB_SHEET}!A:L`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [[
+          rab_id,
+          project_id,
+          scope,
+          item_name,
+          category || "",
+          volume,
+          unit,
+          unit_price,
+          total_price,
+          "Draft",
+          created_by || "Estimator",
+          created_at,
+        ]],
+      },
+    })
+
+    return NextResponse.json(
+      { message: "Item RAB berhasil ditambahkan" },
+      { status: 201 }
+    )
+  } catch (error) {
+    console.error("CREATE RAB ERROR:", error)
+    return NextResponse.json(
+      { message: "Gagal menyimpan RAB" },
+      { status: 500 }
+    )
+  }
+}

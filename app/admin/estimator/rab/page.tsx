@@ -92,14 +92,9 @@ export default async function RABPage() {
                   key={p.project_id}
                   className="border-t hover:bg-gray-50"
                 >
-                  <td className="p-3">
-                    <p className="font-medium">
-                      {p.project_name}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {p.project_id}
-                    </p>
-                  </td>
+                  <td className="p-3 font-medium">
+  {p.project_id}
+</td>
 
                   <td className="p-3">
                     {p.total_items}

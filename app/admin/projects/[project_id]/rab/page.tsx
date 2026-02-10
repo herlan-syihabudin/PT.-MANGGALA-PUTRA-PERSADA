@@ -32,7 +32,7 @@ type RabResponse = {
 async function fetchRAB(project_id: string): Promise<RabResponse> {
   const base = process.env.NEXT_PUBLIC_BASE_URL
   const res = await fetch(
-    `${base}/api/estimator/rab?project_id=${project_id}`,
+    `${base}/api/project/rab?project_id=${project_id}`,
     { cache: "no-store" }
   )
 
@@ -67,21 +67,12 @@ export default async function ProjectRABPage({
           </p>
         </div>
 
-        <div className="flex gap-3">
-          <Link
-            href={`/admin/projects/${params.project_id}`}
-            className="text-xs text-gray-600"
-          >
-            ← Kembali ke Project
-          </Link>
-
-          <Link
-            href={`/admin/projects/${params.project_id}/rab/add-item`}
-            className="px-3 py-2 bg-blue-600 text-white text-xs rounded"
-          >
-            + Tambah Item RAB
-          </Link>
-        </div>
+        <Link
+          href={`/admin/projects/${params.project_id}`}
+          className="text-xs text-gray-600"
+        >
+          ← Kembali ke Project
+        </Link>
       </div>
 
       {/* SUMMARY */}
@@ -95,7 +86,7 @@ export default async function ProjectRABPage({
         </InfoCard>
 
         <InfoCard label="Status">
-          Draft / Estimator
+          {data.items[0]?.status || "Draft"}
         </InfoCard>
       </div>
 
@@ -103,86 +94,66 @@ export default async function ProjectRABPage({
       <Tabs />
 
       {/* TABLE */}
-      <div className="bg-white border rounded-lg overflow-auto">
-        <table className="w-full text-xs">
-          <thead className="bg-gray-50">
-            <tr>
-              {[
-                "Scope",
-                "Item",
-                "Kategori",
-                "Volume",
-                "Unit",
-                "Harga Satuan",
-                "Total",
-                "Status",
-                "Aksi",
-              ].map((h) => (
-                <th key={h} className="p-2 text-left">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
+<div className="bg-white border rounded-lg overflow-auto">
+  <table className="w-full text-xs">
+    <thead className="bg-gray-50">
+      <tr>
+        <th className="p-2 text-left">Scope</th>
+        <th className="p-2 text-left">Item</th>
+        <th className="p-2 text-left">Kategori</th>
+        <th className="p-2 text-right">Volume</th>
+        <th className="p-2 text-left">Unit</th>
+        <th className="p-2 text-right">Harga Satuan</th>
+        <th className="p-2 text-right">Total</th>
+        <th className="p-2 text-left">Status</th>
+      </tr>
+    </thead>
 
-          <tbody>
-            {data.items.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={9}
-                  className="p-4 text-center text-gray-500"
-                >
-                  Belum ada data RAB
-                </td>
-              </tr>
-            ) : (
-              data.items.map((i, idx) => (
-                <tr key={idx} className="border-t">
-                  <td className="p-2">{i.scope}</td>
-                  <td className="p-2">{i.item_name}</td>
-                  <td className="p-2">{i.category}</td>
-                  <td className="p-2">{i.volume}</td>
-                  <td className="p-2">{i.unit}</td>
-                  <td className="p-2">
-                    {formatIDR(i.unit_price)}
-                  </td>
-                  <td className="p-2 font-medium">
-                    {formatIDR(i.total_price)}
-                  </td>
-                  <td className="p-2">
-                    <StatusBadge status={i.status} />
-                  </td>
-                  <td className="p-2">
-                    <div className="flex gap-2">
-                      <Link
-                        href={`/admin/projects/${params.project_id}/rab/edit-item?index=${idx}`}
-                        className="text-blue-600 text-[11px]"
-                      >
-                        Edit
-                      </Link>
-                      <button
-                        disabled
-                        className="text-red-400 text-[11px] cursor-not-allowed"
-                        title="Hapus via API (next step)"
-                      >
-                        Hapus
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+    <tbody>
+      {data.items.length === 0 ? (
+        <tr>
+          <td
+            colSpan={8}
+            className="p-4 text-center text-gray-500"
+          >
+            Belum ada data RAB
+          </td>
+        </tr>
+      ) : (
+        data.items.map((i) => (
+          <tr key={i.rab_id} className="border-t">
+            <td className="p-2">{i.scope}</td>
+            <td className="p-2">{i.item_name}</td>
+            <td className="p-2">{i.category}</td>
 
-      <p className="text-xs text-gray-400">
-        🔒 Data RAB bersifat read-only untuk Project Management.
-        Perubahan hanya dapat dilakukan oleh Estimator.
-      </p>
-    </div>
-  )
-}
+            <td className="p-2 text-right tabular-nums">
+              {i.volume}
+            </td>
+
+            <td className="p-2">{i.unit}</td>
+
+            <td className="p-2 text-right tabular-nums">
+              {formatIDR(i.unit_price)}
+            </td>
+
+            <td className="p-2 text-right font-medium tabular-nums">
+              {formatIDR(i.total_price)}
+            </td>
+
+            <td className="p-2">
+              <StatusBadge status={i.status} />
+            </td>
+          </tr>
+        ))
+      )}
+    </tbody>
+  </table>
+</div>
+
+<p className="text-xs text-gray-400 mt-2">
+  🔒 Data RAB bersifat <b>read-only</b> untuk Project Management.
+  Perubahan hanya dapat dilakukan oleh Estimator.
+</p>
 
 /* ================= UI COMPONENTS ================= */
 
@@ -200,11 +171,7 @@ function InfoCard({
       <p className="text-[11px] text-gray-500 uppercase tracking-wide">
         {label}
       </p>
-      <p
-        className={`mt-1 ${
-          highlight ? "text-red-600 font-semibold" : ""
-        }`}
-      >
+      <p className={`mt-1 ${highlight ? "text-red-600 font-semibold" : ""}`}>
         {children}
       </p>
     </div>

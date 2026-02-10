@@ -30,7 +30,7 @@ type RabResponse = {
 /* ================= FETCH ================= */
 
 async function fetchRAB(project_id: string): Promise<RabResponse> {
-  const base = process.env.NEXT_PUBLIC_BASE_URL
+  const base = process.env.BASE_URL
   const res = await fetch(
     `${base}/api/project/rab?project_id=${project_id}`,
     { cache: "no-store" }
@@ -57,7 +57,6 @@ export default async function ProjectRABPage({
 
   return (
     <div className="p-6 space-y-6">
-
       {/* HEADER */}
       <div className="flex justify-between items-start">
         <div>
@@ -94,66 +93,61 @@ export default async function ProjectRABPage({
       <Tabs />
 
       {/* TABLE */}
-<div className="bg-white border rounded-lg overflow-auto">
-  <table className="w-full text-xs">
-    <thead className="bg-gray-50">
-      <tr>
-        <th className="p-2 text-left">Scope</th>
-        <th className="p-2 text-left">Item</th>
-        <th className="p-2 text-left">Kategori</th>
-        <th className="p-2 text-right">Volume</th>
-        <th className="p-2 text-left">Unit</th>
-        <th className="p-2 text-right">Harga Satuan</th>
-        <th className="p-2 text-right">Total</th>
-        <th className="p-2 text-left">Status</th>
-      </tr>
-    </thead>
+      <div className="bg-white border rounded-lg overflow-auto">
+        <table className="w-full text-xs">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="p-2 text-left">Scope</th>
+              <th className="p-2 text-left">Item</th>
+              <th className="p-2 text-left">Kategori</th>
+              <th className="p-2 text-right">Volume</th>
+              <th className="p-2 text-left">Unit</th>
+              <th className="p-2 text-right">Harga Satuan</th>
+              <th className="p-2 text-right">Total</th>
+              <th className="p-2 text-left">Status</th>
+            </tr>
+          </thead>
 
-    <tbody>
-      {data.items.length === 0 ? (
-        <tr>
-          <td
-            colSpan={8}
-            className="p-4 text-center text-gray-500"
-          >
-            Belum ada data RAB
-          </td>
-        </tr>
-      ) : (
-        data.items.map((i) => (
-          <tr key={i.rab_id} className="border-t">
-            <td className="p-2">{i.scope}</td>
-            <td className="p-2">{i.item_name}</td>
-            <td className="p-2">{i.category}</td>
+          <tbody>
+            {data.items.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="p-4 text-center text-gray-500">
+                  Belum ada data RAB
+                </td>
+              </tr>
+            ) : (
+              data.items.map((i) => (
+                <tr key={i.rab_id} className="border-t">
+                  <td className="p-2">{i.scope}</td>
+                  <td className="p-2">{i.item_name}</td>
+                  <td className="p-2">{i.category}</td>
+                  <td className="p-2 text-right tabular-nums">
+                    {i.volume}
+                  </td>
+                  <td className="p-2">{i.unit}</td>
+                  <td className="p-2 text-right tabular-nums">
+                    {formatIDR(i.unit_price)}
+                  </td>
+                  <td className="p-2 text-right font-medium tabular-nums">
+                    {formatIDR(i.total_price)}
+                  </td>
+                  <td className="p-2">
+                    <StatusBadge status={i.status} />
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
-            <td className="p-2 text-right tabular-nums">
-              {i.volume}
-            </td>
-
-            <td className="p-2">{i.unit}</td>
-
-            <td className="p-2 text-right tabular-nums">
-              {formatIDR(i.unit_price)}
-            </td>
-
-            <td className="p-2 text-right font-medium tabular-nums">
-              {formatIDR(i.total_price)}
-            </td>
-
-            <td className="p-2">
-              <StatusBadge status={i.status} />
-            </td>
-          </tr>
-        ))
-      )}
-    </tbody>
-  </table>
-</div>
-
-<p className="text-xs text-gray-400 mt-2">
-  🔒 Data RAB bersifat <b>read-only</b> untuk Project Management.
-  Perubahan hanya dapat dilakukan oleh Estimator.
-</p>
+      <p className="text-xs text-gray-400">
+        🔒 Data RAB bersifat <b>read-only</b> untuk Project Management.
+        Perubahan hanya dapat dilakukan oleh Estimator.
+      </p>
+    </div>
+  )
+}
 
 /* ================= UI COMPONENTS ================= */
 

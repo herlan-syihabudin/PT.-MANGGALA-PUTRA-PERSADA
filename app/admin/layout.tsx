@@ -2,7 +2,7 @@
 
 import AdminSidebar from "@/components/dashboard/AdminSidebar"
 import AdminHeader from "@/components/dashboard/AdminHeader"
-import Breadcrumb from "@/components/ui/Breadcrumb"
+import Breadcrumb from "@/components/dashboard/ui/Breadcrumb"
 
 export default function AdminLayout({
   children,

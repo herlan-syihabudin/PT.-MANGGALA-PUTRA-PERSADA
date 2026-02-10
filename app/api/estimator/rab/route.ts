@@ -3,6 +3,8 @@ import { google } from "googleapis"
 
 export const dynamic = "force-dynamic"
 
+/* ================= AUTH ================= */
+
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL,
   undefined,
@@ -14,8 +16,51 @@ const sheets = google.sheets({ version: "v4", auth })
 
 const SHEET_ID = process.env.GSHEET_ESTIMATOR_ID!
 const RAB_ITEM = "RAB_ITEM"
+const RAB_PROJECT = "RAB_PROJECT"
+
+/* ================= HELPER ================= */
+
+async function recalcRabProject(project_id: string) {
+  // ambil semua item
+  const itemRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${RAB_ITEM}!A2:N`,
+  })
+
+  const itemRows = itemRes.data.values || []
+  const items = itemRows.filter((r) => r[1] === project_id)
+
+  const total_item = items.length
+  const total_nilai_rab = items.reduce(
+    (sum, r) => sum + Number(r[10] || 0),
+    0
+  )
+
+  // cari row RAB_PROJECT
+  const rabRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${RAB_PROJECT}!A2:G`,
+  })
+
+  const rabRows = rabRes.data.values || []
+  const idx = rabRows.findIndex((r) => r[1] === project_id)
+
+  if (idx === -1) return
+
+  const row = idx + 2
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: `${RAB_PROJECT}!C${row}:D${row}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[total_item, total_nilai_rab]],
+    },
+  })
+}
 
 /* ================= GET : RAB DETAIL ================= */
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const project_id = searchParams.get("project_id")
@@ -33,7 +78,8 @@ export async function GET(req: Request) {
 
   const items = rows
     .filter((r) => r[1] === project_id)
-    .map((r) => ({
+    .map((r, i) => ({
+      row: i + 2, // 🔥 penting buat edit/delete
       rab_id: r[0],
       project_id: r[1],
       scope: r[2],
@@ -61,6 +107,7 @@ export async function GET(req: Request) {
 }
 
 /* ================= POST : ADD ITEM ================= */
+
 export async function POST(req: Request) {
   const body = await req.json()
 
@@ -104,5 +151,88 @@ export async function POST(req: Request) {
     },
   })
 
+  // 🔥 auto update header
+  await recalcRabProject(project_id)
+
   return NextResponse.json({ message: "Item RAB ditambahkan" })
+}
+
+/* ================= PUT : EDIT ITEM ================= */
+
+export async function PUT(req: Request) {
+  const body = await req.json()
+
+  const {
+    row,
+    project_id,
+    scope,
+    item_name,
+    category,
+    volume,
+    unit,
+    material_price,
+    labour_price,
+  } = body
+
+  const unit_price = material_price + labour_price
+  const total_price = volume * unit_price
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: `${RAB_ITEM}!C${row}:K${row}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[
+        scope,
+        item_name,
+        category,
+        volume,
+        unit,
+        material_price,
+        labour_price,
+        unit_price,
+        total_price,
+      ]],
+    },
+  })
+
+  await recalcRabProject(project_id)
+
+  return NextResponse.json({ message: "Item RAB diupdate" })
+}
+
+/* ================= DELETE : REMOVE ITEM ================= */
+
+export async function DELETE(req: Request) {
+  const { searchParams } = new URL(req.url)
+
+  const project_id = searchParams.get("project_id")
+  const row = Number(searchParams.get("row"))
+
+  if (!project_id || !row) {
+    return NextResponse.json({ message: "invalid param" }, { status: 400 })
+  }
+
+  // ⚠️ ganti sheetId sesuai ID sheet RAB_ITEM (cek di Google Sheet)
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    requestBody: {
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId: 1,
+              dimension: "ROWS",
+              startIndex: row - 1,
+              endIndex: row,
+            },
+          },
+        },
+      ],
+    },
+  })
+
+  await recalcRabProject(project_id)
+
+  return NextResponse.json({ message: "Item RAB dihapus" })
 }

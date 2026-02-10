@@ -59,30 +59,30 @@ export default async function ProjectRABPage({
     <div className="p-6 space-y-6">
 
       {/* HEADER */}
-<div className="flex justify-between items-start">
-  <div>
-    <h1 className="text-xl font-semibold">RAB Project</h1>
-    <p className="text-xs text-gray-500">
-      Project ID: {params.project_id}
-    </p>
-  </div>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-xl font-semibold">RAB Project</h1>
+          <p className="text-xs text-gray-500">
+            Project ID: {params.project_id}
+          </p>
+        </div>
 
-  <div className="flex gap-3">
-    <Link
-      href={`/admin/projects/${params.project_id}`}
-      className="text-xs text-gray-600"
-    >
-      ← Kembali ke Project
-    </Link>
+        <div className="flex gap-3">
+          <Link
+            href={`/admin/projects/${params.project_id}`}
+            className="text-xs text-gray-600"
+          >
+            ← Kembali ke Project
+          </Link>
 
-    <Link
-      href={`/admin/projects/${params.project_id}/rab/add-item`}
-      className="px-3 py-2 bg-blue-600 text-white text-xs rounded"
-    >
-      + Tambah Item RAB
-    </Link>
-  </div>
-</div>
+          <Link
+            href={`/admin/projects/${params.project_id}/rab/add-item`}
+            className="px-3 py-2 bg-blue-600 text-white text-xs rounded"
+          >
+            + Tambah Item RAB
+          </Link>
+        </div>
+      </div>
 
       {/* SUMMARY */}
       <div className="grid md:grid-cols-3 gap-4">
@@ -116,6 +116,7 @@ export default async function ProjectRABPage({
                 "Harga Satuan",
                 "Total",
                 "Status",
+                "Aksi",
               ].map((h) => (
                 <th key={h} className="p-2 text-left">
                   {h}
@@ -128,7 +129,7 @@ export default async function ProjectRABPage({
             {data.items.length === 0 ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   className="p-4 text-center text-gray-500"
                 >
                   Belum ada data RAB
@@ -150,6 +151,23 @@ export default async function ProjectRABPage({
                   </td>
                   <td className="p-2">
                     <StatusBadge status={i.status} />
+                  </td>
+                  <td className="p-2">
+                    <div className="flex gap-2">
+                      <Link
+                        href={`/admin/projects/${params.project_id}/rab/edit-item?index=${idx}`}
+                        className="text-blue-600 text-[11px]"
+                      >
+                        Edit
+                      </Link>
+                      <button
+                        disabled
+                        className="text-red-400 text-[11px] cursor-not-allowed"
+                        title="Hapus via API (next step)"
+                      >
+                        Hapus
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

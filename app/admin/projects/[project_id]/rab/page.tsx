@@ -30,9 +30,9 @@ type RabResponse = {
 /* ================= FETCH ================= */
 
 async function fetchRAB(project_id: string): Promise<RabResponse> {
-  const base = process.env.BASE_URL
+  const base = process.env.NEXT_PUBLIC_BASE_URL
   const res = await fetch(
-    `${base}/api/project/rab?project_id=${project_id}`,
+    ${base}/api/project/rab?project_id=${project_id},
     { cache: "no-store" }
   )
 

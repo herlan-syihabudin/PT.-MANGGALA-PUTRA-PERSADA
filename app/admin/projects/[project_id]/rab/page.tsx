@@ -59,21 +59,30 @@ export default async function ProjectRABPage({
     <div className="p-6 space-y-6">
 
       {/* HEADER */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-xl font-semibold">RAB Project</h1>
-          <p className="text-xs text-gray-500">
-            Project ID: {params.project_id}
-          </p>
-        </div>
+<div className="flex justify-between items-start">
+  <div>
+    <h1 className="text-xl font-semibold">RAB Project</h1>
+    <p className="text-xs text-gray-500">
+      Project ID: {params.project_id}
+    </p>
+  </div>
 
-        <Link
-          href={`/admin/projects/${params.project_id}`}
-          className="text-xs text-blue-600"
-        >
-          ← Kembali ke Project
-        </Link>
-      </div>
+  <div className="flex gap-3">
+    <Link
+      href={`/admin/projects/${params.project_id}`}
+      className="text-xs text-gray-600"
+    >
+      ← Kembali ke Project
+    </Link>
+
+    <Link
+      href={`/admin/projects/${params.project_id}/rab/add-item`}
+      className="px-3 py-2 bg-blue-600 text-white text-xs rounded"
+    >
+      + Tambah Item RAB
+    </Link>
+  </div>
+</div>
 
       {/* SUMMARY */}
       <div className="grid md:grid-cols-3 gap-4">

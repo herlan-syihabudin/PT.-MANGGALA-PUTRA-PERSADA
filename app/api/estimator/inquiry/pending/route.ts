@@ -22,16 +22,28 @@ export async function GET() {
 
     const rows = res.data.values || []
 
-    // hanya ambil yang status = new
+    /**
+     * Struktur kolom CRM_INQUIRY (pastikan sesuai sheet lo)
+     * 0  inquiry_id
+     * 1  tanggal_masuk
+     * 2  customer_id
+     * 3  customer_name
+     * 4  nama_pekerjaan
+     * 5  layanan
+     * 6  estimasi_nilai
+     * 7  assigned_to
+     * 8  status
+     */
+
     const pending = rows
-      .filter(row => row[8] === "new")
+      .filter(row => row[8]?.toLowerCase() === "estimating")
       .map(row => ({
-        inquiry_id: row[0],
-        tanggal_masuk: row[1],
-        customer_name: row[3],
-        nama_pekerjaan: row[4],
-        layanan: row[5],
-        estimasi_nilai: row[6],
+        inquiry_id: row[0] || "",
+        tanggal_masuk: row[1] || "",
+        customer_name: row[3] || "",
+        nama_pekerjaan: row[4] || "",
+        layanan: row[5] || "",
+        estimasi_nilai: Number(row[6] || 0),
       }))
 
     return NextResponse.json(pending)

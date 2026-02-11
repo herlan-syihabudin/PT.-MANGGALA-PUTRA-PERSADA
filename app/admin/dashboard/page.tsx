@@ -1,6 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
+import StatusItem from "@/components/dashboard/StatusItem"
 import { 
   Users, Briefcase, Box, AlertTriangle, 
   FileText, ArrowRight, RefreshCcw 
@@ -35,7 +36,7 @@ export default function AdminDashboardPage({ data, isLoading }: any) {
   const attendanceRate = hr.totalEmployee > 0 ? (hr.hadirHariIni / hr.totalEmployee) * 100 : 0
 
   return (
-    <section className="p-8 space-y-12 bg-[#f8fafc] min-h-screen">
+    <section className="p-8 space-y-16 bg-gradient-to-b from-[#f8fafc] to-white min-h-screen">
       
       {/* HEADER WITH BRANDING ACCENT */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -103,6 +104,32 @@ export default function AdminDashboardPage({ data, isLoading }: any) {
           percent={40}
         />
       </div>
+
+      {/* PIPELINE SECTION */}
+<motion.div 
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.6 }}
+  className="space-y-6"
+>
+  <div className="flex items-center justify-between">
+    <h2 className="text-lg font-black text-gray-900 tracking-tight">
+      Estimator Pipeline
+    </h2>
+    <span className="text-xs font-semibold text-gray-400">
+      Overview Progress
+    </span>
+  </div>
+
+  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <StatusItem label="New" value={5} total={20} variant="new" />
+    <StatusItem label="Follow Up" value={8} total={20} variant="followup" />
+    <StatusItem label="Survey" value={4} total={20} variant="survey" />
+    <StatusItem label="Offer" value={6} total={20} variant="offer" />
+    <StatusItem label="Deal" value={3} total={20} variant="deal" />
+    <StatusItem label="Lost" value={2} total={20} variant="lost" />
+  </div>
+</motion.div>
 
       {/* SECOND ROW: DATA VISUALIZATION AREA */}
       <div className="grid lg:grid-cols-3 gap-8">

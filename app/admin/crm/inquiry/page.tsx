@@ -9,11 +9,10 @@ type Inquiry = {
   tanggal_masuk: string
   customer_name: string
   nama_pekerjaan: string
+  layanan?: string
   estimasi_nilai?: number
-  sumber: string
   assigned_to?: string
   status: string
-  prioritas?: string
 }
 
 /* ================= FETCH ================= */
@@ -34,6 +33,12 @@ async function fetchInquiry(): Promise<Inquiry[]> {
 export default async function InquiryPage() {
   const data = await fetchInquiry()
 
+  const total = data.length
+  const newCount = data.filter(i => i.status === "new").length
+  const estimating = data.filter(i => i.status === "estimating").length
+  const won = data.filter(i => i.status === "won").length
+  const lost = data.filter(i => i.status === "lost").length
+
   return (
     <div className="space-y-6">
 
@@ -42,7 +47,7 @@ export default async function InquiryPage() {
         <div>
           <h1 className="text-2xl font-bold">Inquiry / Lead Masuk</h1>
           <p className="text-sm text-gray-500">
-            Semua permintaan customer sebelum menjadi RAB atau Project
+            Gerbang awal semua peluang project perusahaan
           </p>
         </div>
 
@@ -54,6 +59,15 @@ export default async function InquiryPage() {
         </Link>
       </div>
 
+      {/* KPI SUMMARY */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <KPI label="Total" value={total} />
+        <KPI label="New" value={newCount} />
+        <KPI label="Estimating" value={estimating} />
+        <KPI label="Won" value={won} highlight="green" />
+        <KPI label="Lost" value={lost} highlight="red" />
+      </div>
+
       {/* TABLE */}
       <div className="bg-white border rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
@@ -62,8 +76,9 @@ export default async function InquiryPage() {
               <th className="p-3 text-left">Tanggal</th>
               <th className="p-3 text-left">Customer</th>
               <th className="p-3 text-left">Pekerjaan</th>
-              <th className="p-3 text-right">Estimasi</th>
-              <th className="p-3 text-left">Sumber</th>
+              <th className="p-3 text-left">Layanan</th>
+              <th className="p-3 text-right">Budget</th>
+              <th className="p-3 text-left">Assigned</th>
               <th className="p-3 text-left">Status</th>
               <th className="p-3 text-center">Aksi</th>
             </tr>
@@ -72,8 +87,8 @@ export default async function InquiryPage() {
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-gray-400">
-                  Belum ada inquiry masuk
+                <td colSpan={8} className="p-8 text-center text-gray-400">
+                  Belum ada inquiry
                 </td>
               </tr>
             ) : (
@@ -91,6 +106,10 @@ export default async function InquiryPage() {
                     {i.nama_pekerjaan}
                   </td>
 
+                  <td className="p-3">
+                    {i.layanan || "-"}
+                  </td>
+
                   <td className="p-3 text-right">
                     {i.estimasi_nilai
                       ? `Rp ${i.estimasi_nilai.toLocaleString()}`
@@ -98,7 +117,7 @@ export default async function InquiryPage() {
                   </td>
 
                   <td className="p-3">
-                    {i.sumber}
+                    {i.assigned_to || "-"}
                   </td>
 
                   <td className="p-3">
@@ -114,10 +133,17 @@ export default async function InquiryPage() {
                     </Link>
 
                     <Link
+                      href={`/admin/crm/inquiry/${i.inquiry_id}/assign`}
+                      className="text-xs text-amber-600"
+                    >
+                      Assign
+                    </Link>
+
+                    <Link
                       href={`/admin/crm/inquiry/${i.inquiry_id}/convert`}
                       className="text-xs text-green-600"
                     >
-                      Buat RAB
+                      Convert
                     </Link>
                   </td>
                 </tr>
@@ -130,7 +156,24 @@ export default async function InquiryPage() {
   )
 }
 
-/* ================= STATUS BADGE ================= */
+/* ================= COMPONENTS ================= */
+
+function KPI({ label, value, highlight }: any) {
+  return (
+    <div className="bg-white border rounded-lg p-4">
+      <p className="text-xs text-gray-500 uppercase">{label}</p>
+      <p className={`text-xl font-bold ${
+        highlight === "green"
+          ? "text-green-600"
+          : highlight === "red"
+          ? "text-red-600"
+          : ""
+      }`}>
+        {value}
+      </p>
+    </div>
+  )
+}
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {

@@ -14,6 +14,17 @@ type Employee = {
   nama_lengkap: string
 }
 
+const SERVICE_OPTIONS = [
+  "Civil & Structure",
+  "Steel Structure",
+  "Mechanical",
+  "Electrical",
+  "Plumbing",
+  "Interior",
+  "Maintenance",
+  "Design Only",
+]
+
 export default function CreateInquiryPage() {
   const router = useRouter()
 
@@ -22,6 +33,7 @@ export default function CreateInquiryPage() {
   const [loading, setLoading] = useState(false)
 
   const [estimasiDisplay, setEstimasiDisplay] = useState("")
+  const [selectedServices, setSelectedServices] = useState<string[]>([])
 
   const [form, setForm] = useState({
     customer_id: "",
@@ -37,50 +49,51 @@ export default function CreateInquiryPage() {
     estimasi_deal_date: "",
   })
 
-  /* ===== LOAD DATA ===== */
- useEffect(() => {
-  const loadData = async () => {
-    try {
+  /* LOAD DATA */
+  useEffect(() => {
+    const loadData = async () => {
       const [custRes, empRes] = await Promise.all([
         fetch("/api/crm/customers", { cache: "no-store" }),
         fetch("/api/hr/employee", { cache: "no-store" }),
       ])
 
-      const custData = custRes.ok ? await custRes.json() : []
-      const empData = empRes.ok ? await empRes.json() : []
-
-      setCustomers(Array.isArray(custData) ? custData : [])
-      setEmployees(Array.isArray(empData) ? empData : [])
-    } catch (err) {
-      console.error("Load data error:", err)
-      setCustomers([])
-      setEmployees([])
+      setCustomers(custRes.ok ? await custRes.json() : [])
+      setEmployees(empRes.ok ? await empRes.json() : [])
     }
-  }
 
-  loadData()
-}, [])
+    loadData()
+  }, [])
 
-  /* ===== FORMAT RUPIAH ===== */
-  function formatRupiah(value: string) {
-    const number = value.replace(/\D/g, "")
-    const formatted = new Intl.NumberFormat("id-ID").format(Number(number))
-    return formatted
-  }
-
+  /* FORMAT RUPIAH */
   function handleEstimasiChange(value: string) {
-  const raw = value.replace(/\D/g, "")
-  setEstimasiDisplay(new Intl.NumberFormat("id-ID").format(Number(raw)))
-  setForm(prev => ({
-    ...prev,
-    estimasi_nilai: Number(raw),
-  }))
-}
+    const raw = value.replace(/\D/g, "")
+    setEstimasiDisplay(
+      new Intl.NumberFormat("id-ID").format(Number(raw))
+    )
+    setForm(prev => ({
+      ...prev,
+      estimasi_nilai: Number(raw),
+    }))
+  }
 
-  /* ===== SUBMIT ===== */
+  /* HANDLE CHECKBOX */
+  function toggleService(service: string) {
+    setSelectedServices(prev =>
+      prev.includes(service)
+        ? prev.filter(s => s !== service)
+        : [...prev, service]
+    )
+  }
+
+  /* SUBMIT */
   async function handleSubmit() {
     if (!form.customer_id || !form.nama_pekerjaan) {
       toast.error("Customer & Nama Pekerjaan wajib diisi")
+      return
+    }
+
+    if (selectedServices.length === 0) {
+      toast.error("Pilih minimal 1 jenis pekerjaan")
       return
     }
 
@@ -91,6 +104,7 @@ export default function CreateInquiryPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
+        layanan: selectedServices.join("|"),
         status: "new",
       }),
     })
@@ -112,12 +126,7 @@ export default function CreateInquiryPage() {
   return (
     <div className="max-w-4xl space-y-6">
 
-      <div>
-        <h1 className="text-2xl font-bold">Tambah Inquiry</h1>
-        <p className="text-sm text-gray-500">
-          Entry lead baru untuk proses estimasi & proposal
-        </p>
-      </div>
+      <h1 className="text-2xl font-bold">Tambah Inquiry</h1>
 
       <div className="bg-white border rounded-xl p-6 space-y-5">
 
@@ -159,46 +168,47 @@ export default function CreateInquiryPage() {
           />
         </div>
 
+        {/* JENIS PEKERJAAN */}
+        <div>
+          <label className="text-xs text-gray-500">
+            Jenis Pekerjaan *
+          </label>
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            {SERVICE_OPTIONS.map(service => (
+              <label
+                key={service}
+                className="flex items-center gap-2 text-sm"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedServices.includes(service)}
+                  onChange={() => toggleService(service)}
+                />
+                {service}
+              </label>
+            ))}
+          </div>
+        </div>
+
         {/* ESTIMASI NILAI */}
         <div>
-          <label className="text-xs text-gray-500">Estimasi Nilai (Rp)</label>
+          <label className="text-xs text-gray-500">
+            Estimasi Nilai (Rp)
+          </label>
           <input
             className="w-full border rounded px-3 py-2 text-sm"
             value={estimasiDisplay}
-            onChange={(e) => handleEstimasiChange(e.target.value)}
-            placeholder="100.000.000"
-          />
-        </div>
-
-        {/* TANGGAL MASUK */}
-        <div>
-          <label className="text-xs text-gray-500">Tanggal Masuk</label>
-          <input
-            type="date"
-            className="w-full border rounded px-3 py-2 text-sm"
-            value={form.tanggal_masuk}
             onChange={(e) =>
-              setForm({ ...form, tanggal_masuk: e.target.value })
-            }
-          />
-        </div>
-
-        {/* ESTIMASI DEAL */}
-        <div>
-          <label className="text-xs text-gray-500">Estimasi Deal Date</label>
-          <input
-            type="date"
-            className="w-full border rounded px-3 py-2 text-sm"
-            value={form.estimasi_deal_date}
-            onChange={(e) =>
-              setForm({ ...form, estimasi_deal_date: e.target.value })
+              handleEstimasiChange(e.target.value)
             }
           />
         </div>
 
         {/* ASSIGNED */}
         <div>
-          <label className="text-xs text-gray-500">Assigned To</label>
+          <label className="text-xs text-gray-500">
+            Assigned To
+          </label>
           <select
             className="w-full border rounded px-3 py-2 text-sm"
             value={form.assigned_to}
@@ -228,23 +238,13 @@ export default function CreateInquiryPage() {
           />
         </div>
 
-        {/* ACTION */}
-        <div className="flex gap-3 pt-3">
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg"
-          >
-            {loading ? "Menyimpan..." : "Simpan Inquiry"}
-          </button>
-
-          <button
-            onClick={() => router.back()}
-            className="px-5 py-2 border text-sm rounded-lg"
-          >
-            Batal
-          </button>
-        </div>
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg"
+        >
+          {loading ? "Menyimpan..." : "Simpan Inquiry"}
+        </button>
 
       </div>
     </div>

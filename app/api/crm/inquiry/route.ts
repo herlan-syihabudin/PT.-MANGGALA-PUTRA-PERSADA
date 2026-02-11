@@ -20,33 +20,65 @@ const SHEET_NAME = "CRM_INQUIRY"
 
 export async function GET() {
   try {
-    const res = await sheets.spreadsheets.values.get({
+    /* ===== 1. Ambil Inquiry ===== */
+    const inquiryRes = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2:P`,
+      range: `CRM_INQUIRY!A2:P`,
     })
 
-    const rows = res.data.values || []
+    const inquiryRows = inquiryRes.data.values || []
 
-    const data = rows.map((row) => ({
-      inquiry_id: row[0],
-      tanggal_masuk: row[1],
-      customer_id: row[2],
-      customer_name: row[3],
-      nama_pekerjaan: row[4],
-      estimasi_nilai: row[5],
-      sumber: row[6],
-      assigned_to: row[7],
-      status: row[8],
-      prioritas: row[9],
-      lokasi: row[10],
-      catatan: row[11],
-      converted_rab_id: row[12],
-      converted_project_id: row[13],
-      created_at: row[14],
-      created_by: row[15],
-    }))
+    /* ===== 2. Ambil Customers ===== */
+    const customerRes = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `CUSTOMERS!A2:P`,
+    })
+
+    const customerRows = customerRes.data.values || []
+
+    /* ===== 3. Buat Map Customer ===== */
+    const customerMap: Record<string, any> = {}
+
+    customerRows.forEach((row) => {
+      const customer_id = row[0]
+      customerMap[customer_id] = {
+        company_name: row[1],
+        city: row[9],
+        phone: row[6],
+        pic_name: row[3],
+      }
+    })
+
+    /* ===== 4. Join Data ===== */
+    const data = inquiryRows.map((row) => {
+      const customer_id = row[2]
+      const customer = customerMap[customer_id] || {}
+
+      return {
+        inquiry_id: row[0],
+        tanggal_masuk: row[1],
+        customer_id,
+        customer_name: customer.company_name || "-",
+        customer_city: customer.city || "-",
+        customer_phone: customer.phone || "-",
+        pic_name: customer.pic_name || "-",
+        nama_pekerjaan: row[4],
+        estimasi_nilai: row[5],
+        sumber: row[6],
+        assigned_to: row[7],
+        status: row[8],
+        prioritas: row[9],
+        lokasi: row[10],
+        catatan: row[11],
+        converted_rab_id: row[12],
+        converted_project_id: row[13],
+        created_at: row[14],
+        created_by: row[15],
+      }
+    })
 
     return NextResponse.json(data)
+
   } catch (error) {
     console.error("GET Inquiry Error:", error)
     return NextResponse.json([], { status: 500 })

@@ -31,7 +31,7 @@ function useRealtimeCounts(): RealtimeCounts {
   })
 
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null
+    let interval: ReturnType<typeof setInterval> | null = null
     let es: EventSource | null = null
 
     function updateFromPayload(payload: any) {
@@ -162,25 +162,22 @@ export default function AdminSidebar() {
     pathname === href || pathname.startsWith(href + "/")
 
   async function handleLogout() {
-    try {
-      const res = await fetch("/api/auth/logout", { method: "POST" })
-      // apapun hasilnya, paksa ke halaman login
-      if (res.ok) {
-        router.push("/login")
-      } else {
-        router.push("/login")
-      }
-    } catch {
-      router.push("/login")
-    }
+  try {
+    await fetch("/api/auth/logout", { method: "POST" })
+  } catch (err) {
+    console.error("Logout error:", err)
   }
+
+  // Hard reload supaya semua state & SSE benar-benar mati
+  window.location.href = "/login"
+}
 
   // total global notif (bisa dipakai di icon bell)
   const totalNotif =
     estimator_inquiry + finance_approval + purchasing_request
 
   return (
-    <aside className="w-72 bg-[#0f172a] text-gray-400 hidden md:flex flex-col h-screen sticky top-0 border-r border-gray-800">
+    <aside className="w-72 overflow-visible bg-[#0f172a] text-gray-400 hidden md:flex flex-col h-screen sticky top-0 border-r border-gray-800">
       {/* ===== TOP AREA (LOGO + GLOBAL NOTIF) ===== */}
       <div className="px-6 pt-6 pb-4 flex items-center justify-between">
         {/* LOGO */}

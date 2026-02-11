@@ -23,7 +23,7 @@ export async function GET() {
     /* ===== 1. Ambil Inquiry ===== */
     const inquiryRes = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `CRM_INQUIRY!A2:P`,
+      range: `CRM_INQUIRY!A2:Q`,
     })
 
     const inquiryRows = (inquiryRes.data.values || []).filter(
@@ -52,7 +52,10 @@ export async function GET() {
     })
 
     /* ===== 4. Join Data ===== */
-    const data = inquiryRows.map((row) => {
+   const data = inquiryRows.map((row, index) => {
+  // skip header kalau lo pakai A:Q
+  if (index === 0 && row[0] === "inquiry_id") return null
+
   const customer_id = row[2] || ""
   const customer = customerMap[customer_id] || {}
 
@@ -61,31 +64,30 @@ export async function GET() {
     tanggal_masuk: row[1] || "",
     customer_id,
 
-    // kalau sheet punya customer_name pakai itu dulu
     customer_name: row[3] || customer.company_name || "-",
     customer_city: customer.city || "-",
     customer_phone: customer.phone || "-",
     pic_name: customer.pic_name || "-",
 
     nama_pekerjaan: row[4] || "-",
+    layanan: row[5] || "-",              // ✅ TAMBAH INI
 
-    // pastikan number
-    estimasi_nilai: row[5] ? Number(row[5]) : 0,
+    estimasi_nilai: row[6] ? Number(row[6]) : 0,  // ✅ FIX INDEX
 
-    sumber: row[6] || "",
-    assigned_to: row[7] || "",
-    status: row[8] || "new",
-    prioritas: row[9] || "normal",
-    lokasi: row[10] || "",
-    catatan: row[11] || "",
+    sumber: row[7] || "",
+    assigned_to: row[8] || "",
+    status: row[9] || "new",
+    prioritas: row[10] || "normal",
+    lokasi: row[11] || "",
+    catatan: row[12] || "",
 
-    converted_rab_id: row[12] || "",
-    converted_project_id: row[13] || "",
+    converted_rab_id: row[13] || "",
+    converted_project_id: row[14] || "",
 
-    created_at: row[14] || "",
-    created_by: row[15] || "",
+    created_at: row[15] || "",
+    created_by: row[16] || "",
   }
-})
+}).filter(Boolean)
 
     return NextResponse.json(data)
 
@@ -106,7 +108,7 @@ export async function POST(req: Request) {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:P`,
+      range: `${SHEET_NAME}!A:Q`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
@@ -115,6 +117,7 @@ export async function POST(req: Request) {
           body.customer_id || "",
           body.customer_name || "",
           body.nama_pekerjaan || "",
+           body.layanan || "",
           body.estimasi_nilai || "",
           body.sumber || "",
           body.assigned_to || "",

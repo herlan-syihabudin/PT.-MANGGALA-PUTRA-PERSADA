@@ -22,29 +22,23 @@ export async function GET() {
 
     const rows = res.data.values || []
 
-    /**
-     * Struktur kolom CRM_INQUIRY (pastikan sesuai sheet lo)
-     * 0  inquiry_id
-     * 1  tanggal_masuk
-     * 2  customer_id
-     * 3  customer_name
-     * 4  nama_pekerjaan
-     * 5  layanan
-     * 6  estimasi_nilai
-     * 7  assigned_to
-     * 8  status
-     */
-
     const pending = rows
-      .filter(row => row[8]?.toLowerCase() === "estimating")
+      .filter(row => row[0]) // pastikan inquiry_id ada
+      .filter(row => (row[8] || "").trim().toLowerCase() === "new")
       .map(row => ({
-        inquiry_id: row[0] || "",
-        tanggal_masuk: row[1] || "",
-        customer_name: row[3] || "",
-        nama_pekerjaan: row[4] || "",
-        layanan: row[5] || "",
-        estimasi_nilai: Number(row[6] || 0),
+        inquiry_id: row[0],
+        tanggal_masuk: row[1],
+        customer_name: row[3],
+        nama_pekerjaan: row[4],
+        layanan: row[5],
+        estimasi_nilai: Number(
+          String(row[6] || 0).replace(/[^\d]/g, "")
+        ),
       }))
+      .sort((a, b) =>
+        new Date(b.tanggal_masuk).getTime() -
+        new Date(a.tanggal_masuk).getTime()
+      )
 
     return NextResponse.json(pending)
 

@@ -30,7 +30,7 @@ export default function CustomerListPage() {
 
   const fetchCustomers = async () => {
     try {
-      const res = await fetch("/api/customers", { cache: "no-store" })
+      const res = await fetch("/api/crm/customers", { cache: "no-store" })
       const data = await res.json()
       setCustomers(data || [])
     } catch (e) {

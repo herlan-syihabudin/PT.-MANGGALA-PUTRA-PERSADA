@@ -38,10 +38,28 @@ export default function CreateInquiryPage() {
   })
 
   /* ===== LOAD DATA ===== */
-  useEffect(() => {
-    fetch("/api/customer").then(r => r.json()).then(setCustomers)
-    fetch("/api/hr/employee").then(r => r.json()).then(setEmployees)
-  }, [])
+ useEffect(() => {
+  const loadData = async () => {
+    try {
+      const [custRes, empRes] = await Promise.all([
+        fetch("/api/crm/customers", { cache: "no-store" }),
+        fetch("/api/hr/employee", { cache: "no-store" }),
+      ])
+
+      const custData = custRes.ok ? await custRes.json() : []
+      const empData = empRes.ok ? await empRes.json() : []
+
+      setCustomers(Array.isArray(custData) ? custData : [])
+      setEmployees(Array.isArray(empData) ? empData : [])
+    } catch (err) {
+      console.error("Load data error:", err)
+      setCustomers([])
+      setEmployees([])
+    }
+  }
+
+  loadData()
+}, [])
 
   /* ===== FORMAT RUPIAH ===== */
   function formatRupiah(value: string) {
@@ -51,10 +69,13 @@ export default function CreateInquiryPage() {
   }
 
   function handleEstimasiChange(value: string) {
-    const raw = value.replace(/\D/g, "")
-    setEstimasiDisplay(formatRupiah(value))
-    setForm({ ...form, estimasi_nilai: Number(raw) })
-  }
+  const raw = value.replace(/\D/g, "")
+  setEstimasiDisplay(new Intl.NumberFormat("id-ID").format(Number(raw)))
+  setForm(prev => ({
+    ...prev,
+    estimasi_nilai: Number(raw),
+  }))
+}
 
   /* ===== SUBMIT ===== */
   async function handleSubmit() {

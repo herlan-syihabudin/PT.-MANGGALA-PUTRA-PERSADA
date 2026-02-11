@@ -2,9 +2,10 @@ import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react"
 
 type KPICardProps = {
   title: string
-  value: string
+  value: string | number
   note?: string
   trend?: "up" | "down" | "neutral"
+  trendLabel?: string
 }
 
 export default function KPICard({
@@ -12,15 +13,25 @@ export default function KPICard({
   value,
   note,
   trend = "neutral",
+  trendLabel,
 }: KPICardProps) {
-  const trendIcon =
-    trend === "up" ? (
-      <ArrowUpRight className="text-green-600 w-4 h-4" />
-    ) : trend === "down" ? (
-      <ArrowDownRight className="text-red-600 w-4 h-4" />
-    ) : (
-      <Minus className="text-gray-400 w-4 h-4" />
-    )
+
+  const trendConfig = {
+    up: {
+      icon: <ArrowUpRight className="w-4 h-4" />,
+      color: "text-green-600",
+    },
+    down: {
+      icon: <ArrowDownRight className="w-4 h-4" />,
+      color: "text-red-600",
+    },
+    neutral: {
+      icon: <Minus className="w-4 h-4" />,
+      color: "text-gray-400",
+    },
+  }
+
+  const { icon, color } = trendConfig[trend]
 
   return (
     <div className="relative bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition">
@@ -33,12 +44,16 @@ export default function KPICard({
         {title}
       </p>
 
-      {/* VALUE */}
+      {/* VALUE + TREND */}
       <div className="flex items-center justify-between">
-        <p className="text-3xl font-extrabold text-gray-900">
+        <p className={`text-3xl font-extrabold ${color}`}>
           {value}
         </p>
-        {trendIcon}
+
+        <div className={`flex items-center gap-1 text-xs font-semibold ${color}`}>
+          {icon}
+          {trendLabel && <span>{trendLabel}</span>}
+        </div>
       </div>
 
       {/* NOTE */}

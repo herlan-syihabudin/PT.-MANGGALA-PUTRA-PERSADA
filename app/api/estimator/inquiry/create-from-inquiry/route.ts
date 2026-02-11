@@ -25,31 +25,38 @@ export async function POST(req: Request) {
     const rabId = `RAB-${Date.now()}`
     const now = new Date().toISOString()
 
-    /* ===== 1. Insert ke RAB_PROJECT ===== */
+    /* ============================
+       1️⃣ INSERT KE RAB_PROJECT
+    ============================ */
+
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `RAB_PROJECT!A:F`,
+      range: `RAB_PROJECT!A:H`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          rabId,
-          inquiry_id,
-          "Draft",
-          now,
-          "",
-          "",
+          rabId,           // rab_id
+          inquiry_id,      // project_id (sementara pakai inquiry_id)
+          0,               // total_item
+          0,               // total_nilai_rab
+          "Draft",         // status
+          "",              // aksi
+          "Estimator",     // created_by
+          now,             // created_at
         ]],
       },
     })
 
-    /* ===== 2. Update Status Inquiry ===== */
+    /* ============================
+       2️⃣ UPDATE STATUS INQUIRY
+    ============================ */
+
     const inquiryRes = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `CRM_INQUIRY!A2:A`,
+      range: `CRM_INQUIRY!A2:I`,
     })
 
     const rows = inquiryRes.data.values || []
-
     const rowIndex = rows.findIndex(r => r[0] === inquiry_id)
 
     if (rowIndex !== -1) {

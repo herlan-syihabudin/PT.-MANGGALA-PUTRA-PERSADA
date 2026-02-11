@@ -73,14 +73,24 @@ export default async function RABPage() {
         <div className="flex items-center gap-3">
 
           {/* 🔔 NOTIFICATION */}
-          {pending.length > 0 && (
-            <Link
-              href="/admin/estimator/to-estimate"
-              className="relative px-4 py-2 bg-amber-50 text-amber-700 text-xs font-semibold rounded-lg border border-amber-200 hover:bg-amber-100 transition shadow-sm"
-            >
-              🔔 {pending.length} Inquiry Baru
-            </Link>
-          )}
+<Link
+  href="/admin/estimator/to-estimate"
+  className={`relative px-4 py-2 text-xs font-semibold rounded-lg transition shadow-sm border
+    ${
+      pending.length > 0
+        ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+        : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+    }
+  `}
+>
+  🔔 To Estimate
+
+  {pending.length > 0 && (
+    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full">
+      {pending.length}
+    </span>
+  )}
+</Link>
 
           {/* CREATE BUTTON */}
           <Link

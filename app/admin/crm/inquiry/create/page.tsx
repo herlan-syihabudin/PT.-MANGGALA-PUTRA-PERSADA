@@ -184,16 +184,16 @@ export default function CreateInquiryPage() {
           Jenis Pekerjaan *
         </label>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="flex flex-wrap gap-2">
           {SERVICE_OPTIONS.map(service => (
             <label
-              key={service}
-              className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm cursor-pointer transition
-              ${selectedServices.includes(service)
-                ? "bg-blue-50 border-blue-500 text-blue-700"
-                : "hover:bg-gray-50"
-              }`}
-            >
+  key={service}
+  className={`flex items-center gap-2 px-3 py-1.5 border rounded-full text-xs cursor-pointer transition whitespace-nowrap
+  ${selectedServices.includes(service)
+    ? "bg-blue-600 text-white border-blue-600"
+    : "bg-gray-50 hover:bg-gray-100"
+  }`}
+>
               <input
                 type="checkbox"
                 checked={selectedServices.includes(service)}
@@ -275,6 +275,7 @@ export default function CreateInquiryPage() {
         </button>
       </div>
 
-    </div>
+        </div>
   </div>
 )
+}

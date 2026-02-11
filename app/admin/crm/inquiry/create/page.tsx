@@ -86,7 +86,7 @@ export default function CreateInquiryPage() {
 
     setLoading(true)
 
-    const res = await fetch("/api/marketing/inquiry", {
+    const res = await fetch("/api/crm/inquiry", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

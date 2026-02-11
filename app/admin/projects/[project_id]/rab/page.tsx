@@ -56,7 +56,7 @@ export default async function ProjectRABPage({
   const data = await fetchRAB(params.project_id)
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
 
       {/* HEADER */}
       <div className="flex justify-between items-start">
@@ -76,7 +76,7 @@ export default async function ProjectRABPage({
       </div>
 
       {/* SUMMARY */}
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <InfoCard label="Total Item">
           {data.summary.total_items}
         </InfoCard>

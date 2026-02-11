@@ -36,7 +36,7 @@ const formatCurrency = (value?: number) => {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
-  }).format(value)
+  }).format(Number(value))
 }
 
 /* ================= PAGE ================= */
@@ -45,17 +45,23 @@ export default async function InquiryPage() {
   const rawData = await fetchInquiry()
   const data = rawData ?? []
 
-  const normalized = data.map(i => ({
-    ...i,
-    status: i.status?.toLowerCase() || "new"
-  }))
+  /* ===== NORMALIZE + SORT TERBARU ===== */
+  const normalized = data
+    .map(i => ({
+      ...i,
+      status: i.status?.toLowerCase() || "new"
+    }))
+    .sort((a, b) => {
+      const dateA = a.tanggal_masuk ? new Date(a.tanggal_masuk).getTime() : 0
+      const dateB = b.tanggal_masuk ? new Date(b.tanggal_masuk).getTime() : 0
+      return dateB - dateA // terbaru di atas
+    })
 
   const total = normalized.length
   const newCount = normalized.filter(i => i.status === "new").length
   const won = normalized.filter(i => i.status === "won").length
   const lost = normalized.filter(i => i.status === "lost").length
 
-  // Ongoing = selain new / won / lost
   const ongoing = normalized.filter(i =>
     !["new", "won", "lost"].includes(i.status)
   ).length
@@ -80,7 +86,7 @@ export default async function InquiryPage() {
         </Link>
       </div>
 
-      {/* KPI SUMMARY */}
+      {/* KPI */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <KPI label="Total" value={total} />
         <KPI label="New" value={newCount} />
@@ -108,8 +114,19 @@ export default async function InquiryPage() {
           <tbody>
             {normalized.length === 0 ? (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-gray-400">
-                  Belum ada inquiry
+                <td colSpan={8} className="p-12 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="text-5xl">📭</div>
+                    <p className="text-gray-500 text-sm">
+                      Belum ada inquiry masuk
+                    </p>
+                    <Link
+                      href="/admin/crm/inquiry/create"
+                      className="text-blue-600 text-xs underline"
+                    >
+                      Buat inquiry pertama
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ) : (

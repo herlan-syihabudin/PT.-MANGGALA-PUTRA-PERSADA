@@ -184,26 +184,31 @@ export default function CreateInquiryPage() {
           Jenis Pekerjaan *
         </label>
 
-        <div className="flex flex-wrap gap-2">
-          {SERVICE_OPTIONS.map(service => (
-            <label
-  key={service}
-  className={`flex items-center gap-2 px-3 py-1.5 border rounded-full text-xs cursor-pointer transition whitespace-nowrap
-  ${selectedServices.includes(service)
-    ? "bg-blue-600 text-white border-blue-600"
-    : "bg-gray-50 hover:bg-gray-100"
-  }`}
->
-              <input
-                type="checkbox"
-                checked={selectedServices.includes(service)}
-                onChange={() => toggleService(service)}
-                className="accent-blue-600"
-              />
-              {service}
-            </label>
-          ))}
-        </div>
+        <div className="flex flex-wrap gap-3">
+  {SERVICE_OPTIONS.map(service => {
+    const active = selectedServices.includes(service)
+
+    return (
+      <label
+        key={service}
+        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition border
+        ${
+          active
+            ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+            : "bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:text-blue-600"
+        }`}
+      >
+        <input
+          type="checkbox"
+          checked={active}
+          onChange={() => toggleService(service)}
+          className="hidden"
+        />
+        {service}
+      </label>
+    )
+  })}
+</div>
       </div>
 
       {/* ESTIMASI NILAI */}

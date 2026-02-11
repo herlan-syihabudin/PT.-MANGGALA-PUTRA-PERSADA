@@ -28,16 +28,37 @@ async function fetchInquiry(): Promise<Inquiry[]> {
   return res.json()
 }
 
+/* ================= HELPER ================= */
+
+const formatCurrency = (value?: number) => {
+  if (!value) return "-"
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(value)
+}
+
 /* ================= PAGE ================= */
 
 export default async function InquiryPage() {
-  const data = await fetchInquiry()
+  const rawData = await fetchInquiry()
+  const data = rawData ?? []
 
-  const total = data.length
-  const newCount = data.filter(i => i.status === "new").length
-  const estimating = data.filter(i => i.status === "estimating").length
-  const won = data.filter(i => i.status === "won").length
-  const lost = data.filter(i => i.status === "lost").length
+  const normalized = data.map(i => ({
+    ...i,
+    status: i.status?.toLowerCase() || "new"
+  }))
+
+  const total = normalized.length
+  const newCount = normalized.filter(i => i.status === "new").length
+  const won = normalized.filter(i => i.status === "won").length
+  const lost = normalized.filter(i => i.status === "lost").length
+
+  // Ongoing = selain new / won / lost
+  const ongoing = normalized.filter(i =>
+    !["new", "won", "lost"].includes(i.status)
+  ).length
 
   return (
     <div className="space-y-6">
@@ -63,7 +84,7 @@ export default async function InquiryPage() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <KPI label="Total" value={total} />
         <KPI label="New" value={newCount} />
-        <KPI label="Estimating" value={estimating} />
+        <KPI label="Ongoing" value={ongoing} highlight="blue" />
         <KPI label="Won" value={won} highlight="green" />
         <KPI label="Lost" value={lost} highlight="red" />
       </div>
@@ -85,25 +106,27 @@ export default async function InquiryPage() {
           </thead>
 
           <tbody>
-            {data.length === 0 ? (
+            {normalized.length === 0 ? (
               <tr>
                 <td colSpan={8} className="p-8 text-center text-gray-400">
                   Belum ada inquiry
                 </td>
               </tr>
             ) : (
-              data.map((i) => (
+              normalized.map((i) => (
                 <tr key={i.inquiry_id} className="border-t hover:bg-gray-50">
                   <td className="p-3">
-                    {new Date(i.tanggal_masuk).toLocaleDateString()}
+                    {i.tanggal_masuk
+                      ? new Date(i.tanggal_masuk).toLocaleDateString("id-ID")
+                      : "-"}
                   </td>
 
                   <td className="p-3 font-medium">
-                    {i.customer_name}
+                    {i.customer_name || "-"}
                   </td>
 
                   <td className="p-3">
-                    {i.nama_pekerjaan}
+                    {i.nama_pekerjaan || "-"}
                   </td>
 
                   <td className="p-3">
@@ -111,9 +134,7 @@ export default async function InquiryPage() {
                   </td>
 
                   <td className="p-3 text-right">
-                    {i.estimasi_nilai
-                      ? `Rp ${i.estimasi_nilai.toLocaleString()}`
-                      : "-"}
+                    {formatCurrency(i.estimasi_nilai)}
                   </td>
 
                   <td className="p-3">
@@ -159,16 +180,19 @@ export default async function InquiryPage() {
 /* ================= COMPONENTS ================= */
 
 function KPI({ label, value, highlight }: any) {
+  const color =
+    highlight === "green"
+      ? "text-green-600"
+      : highlight === "red"
+      ? "text-red-600"
+      : highlight === "blue"
+      ? "text-blue-600"
+      : ""
+
   return (
     <div className="bg-white border rounded-lg p-4">
       <p className="text-xs text-gray-500 uppercase">{label}</p>
-      <p className={`text-xl font-bold ${
-        highlight === "green"
-          ? "text-green-600"
-          : highlight === "red"
-          ? "text-red-600"
-          : ""
-      }`}>
+      <p className={`text-xl font-bold ${color}`}>
         {value}
       </p>
     </div>
@@ -185,12 +209,10 @@ function StatusBadge({ status }: { status: string }) {
     lost: "bg-red-100 text-red-700",
   }
 
-  const normalized = status?.toLowerCase()
-
   return (
     <span
       className={`px-2 py-1 rounded text-xs font-medium ${
-        map[normalized] || "bg-gray-100 text-gray-600"
+        map[status] || "bg-gray-100 text-gray-600"
       }`}
     >
       {status}

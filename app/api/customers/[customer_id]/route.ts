@@ -18,7 +18,7 @@ const sheets = google.sheets({ version: "v4", auth })
 /* ==============================
    CONFIG
 ================================ */
-const SHEET_ID = process.env.GSHEET_PROJECT_ID!
+const SHEET_ID = process.env.GSHEET_CRM_ID!
 const SHEET_NAME = "CUSTOMERS"
 
 /* ==============================

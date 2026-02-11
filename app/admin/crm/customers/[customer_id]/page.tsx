@@ -69,14 +69,8 @@ async function getCustomer(id: string): Promise<Customer | null> {
 async function getSummary(customerId: string): Promise<ExtendedSummary> {
   try {
     const [inqRes, projRes] = await Promise.all([
-      fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/crm/inquiry?customer_id=${customerId}`,
-        { cache: "no-store" }
-      ),
-      fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/projects?customer_id=${customerId}`,
-        { cache: "no-store" }
-      ),
+      fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/crm/inquiry?customer_id=${customerId}`, { cache: "no-store" }),
+      fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/projects?customer_id=${customerId}`, { cache: "no-store" }),
     ])
 
     const inquiries: Inquiry[] = inqRes.ok ? await inqRes.json() : []
@@ -100,7 +94,7 @@ async function getSummary(customerId: string): Promise<ExtendedSummary> {
         ? Math.round((projects.length / inquiries.length) * 100)
         : 0
 
-    /* ===== HEALTH STATUS ===== */
+    /* ===== HEALTH ===== */
     const healthStatus =
       inquiries.length === 0
         ? "New Lead"
@@ -110,7 +104,7 @@ async function getSummary(customerId: string): Promise<ExtendedSummary> {
         ? "Active"
         : "Low Conversion"
 
-    /* ===== RISK INDICATOR ===== */
+    /* ===== RISK ===== */
     const riskLevel =
       conversionRate > 50
         ? "Low Risk"
@@ -124,17 +118,25 @@ async function getSummary(customerId: string): Promise<ExtendedSummary> {
         ? Math.round(totalRevenue / completed.length)
         : 0
 
-    /* ===== DAYS TO CLOSE (Simple Estimation) ===== */
+    /* ===== REAL DAYS TO CLOSE ===== */
     const avgDaysToClose =
       completed.length > 0
-        ? 30 // sementara asumsi default
+        ? Math.round(
+            completed.reduce((acc, p) => {
+              if (!p.created_at) return acc
+              const diff =
+                (Date.now() - new Date(p.created_at).getTime()) /
+                (1000 * 60 * 60 * 24)
+              return acc + diff
+            }, 0) / completed.length
+          )
         : 0
 
-    /* ===== PAYMENT SCORE (Dummy Logic) ===== */
+    /* ===== PAYMENT SCORE ===== */
     const paymentScore =
-      conversionRate > 50
+      riskLevel === "Low Risk"
         ? 90
-        : conversionRate > 20
+        : riskLevel === "Medium Risk"
         ? 70
         : 40
 
@@ -204,21 +206,17 @@ export default async function CustomerDetailPage({
   }
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-6 space-y-10">
 
       {/* HEADER */}
-      <div className="flex justify-between items-start">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">{customer.company_name}</h1>
-            <span
-              className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${badgeMap[summary.healthStatus]}`}
-            >
-              {summary.healthStatus}
-            </span>
-          </div>
-          <p className="text-sm text-gray-500">{customer.customer_id}</p>
+      <div>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">{customer.company_name}</h1>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${badgeMap[summary.healthStatus]}`}>
+            {summary.healthStatus}
+          </span>
         </div>
+        <p className="text-sm text-gray-500">{customer.customer_id}</p>
       </div>
 
       {/* KPI */}
@@ -239,6 +237,30 @@ export default async function CustomerDetailPage({
         <StatCard label="Days to Close" value={`${summary.avgDaysToClose} days`} />
         <StatCard label="Payment Score" value={`${summary.paymentScore}/100`} />
       </div>
+
+      {/* LAST ACTIVITY */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <ActivityCard
+          title="Project Terakhir"
+          name={summary.lastProject?.project_name}
+          date={summary.lastProject?.created_at}
+        />
+        <ActivityCard
+          title="Inquiry Terakhir"
+          name={summary.lastInquiry?.nama_pekerjaan}
+          date={summary.lastInquiry?.created_at}
+        />
+      </div>
+
+      {/* CUSTOMER DETAIL */}
+      <div className="grid md:grid-cols-3 gap-4">
+        <Info label="PIC" value={customer.pic_name} />
+        <Info label="Telepon" value={customer.phone} />
+        <Info label="Email" value={customer.email || "-"} />
+        <Info label="Kota" value={customer.city || "-"} />
+        <Info label="Provinsi" value={customer.province || "-"} />
+      </div>
+
     </div>
   )
 }
@@ -266,6 +288,35 @@ function MoneyCard({ label, value }: { label: string; value: number }) {
       <p className="text-xs text-gray-500">{label}</p>
       <p className="text-lg font-semibold text-green-700 mt-2">
         {formatted}
+      </p>
+    </div>
+  )
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border rounded p-4 bg-white shadow-sm">
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className="text-sm font-medium mt-2">{value}</p>
+    </div>
+  )
+}
+
+function ActivityCard({
+  title,
+  name,
+  date,
+}: {
+  title: string
+  name?: string
+  date?: string
+}) {
+  return (
+    <div className="border rounded p-4 bg-white shadow-sm">
+      <p className="text-xs text-gray-500">{title}</p>
+      <p className="font-medium mt-2">{name || "-"}</p>
+      <p className="text-xs text-gray-400 mt-1">
+        {date ? new Date(date).toLocaleDateString("id-ID") : "-"}
       </p>
     </div>
   )

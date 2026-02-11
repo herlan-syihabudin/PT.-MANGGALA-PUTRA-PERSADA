@@ -85,7 +85,13 @@ function KpiCard({
 /* ===== MAIN PAGE ===== */
 
 export default function AdminDashboardPage({ data }: any) {
-  const { hr, ga, inventory, project, finance } = data
+  const {
+  hr = { totalEmployee: 0, hadirHariIni: 0 },
+  ga = { totalAsset: 0, assetMaintenance: 0 },
+  inventory = { materialNeedUpdate: 0 },
+  project = { projectAktif: 0 },
+  finance = { cashflowWarning: 0 },
+} = data || {}
 
   return (
     <section className="p-8 space-y-12 bg-[#f8fafc] min-h-screen">

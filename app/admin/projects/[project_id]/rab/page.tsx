@@ -56,10 +56,10 @@ export default async function ProjectRABPage({
   const data = await fetchRAB(params.project_id)
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
 
       {/* HEADER */}
-      <div className="flex justify-between items-start">
+      <div className="flex justify-between items-center">
         <div>
           <h1 className="text-xl font-semibold">RAB Project</h1>
           <p className="text-xs text-gray-500">
@@ -76,7 +76,7 @@ export default async function ProjectRABPage({
       </div>
 
       {/* SUMMARY */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch">
         <InfoCard label="Total Item">
           {data.summary.total_items}
         </InfoCard>
@@ -94,8 +94,8 @@ export default async function ProjectRABPage({
       <Tabs />
 
       {/* TABLE */}
-      <div className="bg-white border rounded-lg overflow-auto">
-        <table className="w-full text-xs">
+      <div className="bg-white border rounded-lg overflow-x-auto">
+        <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
               {[
@@ -169,7 +169,7 @@ function InfoCard({
   highlight?: boolean
 }) {
   return (
-    <div className="border rounded-lg p-4 bg-white">
+    <div className="border rounded-lg p-4 bg-white min-h-[96px] flex flex-col justify-center">
       <p className="text-[11px] text-gray-500 uppercase tracking-wide">
         {label}
       </p>

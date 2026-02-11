@@ -124,129 +124,157 @@ export default function CreateInquiryPage() {
   }
 
   return (
-    <div className="max-w-4xl space-y-6">
+  <div className="max-w-4xl mx-auto space-y-6">
 
+    {/* HEADER */}
+    <div>
       <h1 className="text-2xl font-bold">Tambah Inquiry</h1>
+      <p className="text-sm text-gray-500">
+        Entry lead baru untuk proses estimasi & proposal
+      </p>
+    </div>
 
-      <div className="bg-white border rounded-xl p-6 space-y-5">
+    <div className="bg-white border rounded-xl p-8 space-y-6 shadow-sm">
 
-        {/* CUSTOMER */}
-        <div>
-          <label className="text-xs text-gray-500">Customer *</label>
-          <select
-            className="w-full border rounded px-3 py-2 text-sm"
-            value={form.customer_id}
-            onChange={(e) => {
-              const selected = customers.find(
-                (c) => c.customer_id === e.target.value
-              )
-              setForm({
-                ...form,
-                customer_id: e.target.value,
-                customer_name: selected?.company_name || "",
-              })
-            }}
-          >
-            <option value="">-- Pilih Customer --</option>
-            {customers.map((c) => (
-              <option key={c.customer_id} value={c.customer_id}>
-                {c.company_name}
-              </option>
-            ))}
-          </select>
+      {/* CUSTOMER */}
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-gray-500">
+          Customer *
+        </label>
+        <select
+          className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+          value={form.customer_id}
+          onChange={(e) => {
+            const selected = customers.find(
+              (c) => c.customer_id === e.target.value
+            )
+            setForm({
+              ...form,
+              customer_id: e.target.value,
+              customer_name: selected?.company_name || "",
+            })
+          }}
+        >
+          <option value="">-- Pilih Customer --</option>
+          {customers.map((c) => (
+            <option key={c.customer_id} value={c.customer_id}>
+              {c.company_name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* NAMA PEKERJAAN */}
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-gray-500">
+          Nama Pekerjaan *
+        </label>
+        <input
+          className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+          value={form.nama_pekerjaan}
+          onChange={(e) =>
+            setForm({ ...form, nama_pekerjaan: e.target.value })
+          }
+        />
+      </div>
+
+      {/* JENIS PEKERJAAN */}
+      <div className="space-y-2">
+        <label className="text-xs font-medium text-gray-500">
+          Jenis Pekerjaan *
+        </label>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {SERVICE_OPTIONS.map(service => (
+            <label
+              key={service}
+              className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm cursor-pointer transition
+              ${selectedServices.includes(service)
+                ? "bg-blue-50 border-blue-500 text-blue-700"
+                : "hover:bg-gray-50"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={selectedServices.includes(service)}
+                onChange={() => toggleService(service)}
+                className="accent-blue-600"
+              />
+              {service}
+            </label>
+          ))}
         </div>
+      </div>
 
-        {/* NAMA PEKERJAAN */}
-        <div>
-          <label className="text-xs text-gray-500">Nama Pekerjaan *</label>
-          <input
-            className="w-full border rounded px-3 py-2 text-sm"
-            value={form.nama_pekerjaan}
-            onChange={(e) =>
-              setForm({ ...form, nama_pekerjaan: e.target.value })
-            }
-          />
-        </div>
+      {/* ESTIMASI NILAI */}
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-gray-500">
+          Estimasi Nilai (Rp)
+        </label>
+        <input
+          className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+          value={estimasiDisplay}
+          onChange={(e) =>
+            handleEstimasiChange(e.target.value)
+          }
+          placeholder="100.000.000"
+        />
+      </div>
 
-        {/* JENIS PEKERJAAN */}
-        <div>
-          <label className="text-xs text-gray-500">
-            Jenis Pekerjaan *
-          </label>
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            {SERVICE_OPTIONS.map(service => (
-              <label
-                key={service}
-                className="flex items-center gap-2 text-sm"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedServices.includes(service)}
-                  onChange={() => toggleService(service)}
-                />
-                {service}
-              </label>
-            ))}
-          </div>
-        </div>
+      {/* ASSIGNED */}
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-gray-500">
+          Assigned To
+        </label>
+        <select
+          className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+          value={form.assigned_to}
+          onChange={(e) =>
+            setForm({ ...form, assigned_to: e.target.value })
+          }
+        >
+          <option value="">-- Pilih Sales / Estimator --</option>
+          {employees.map((emp) => (
+            <option key={emp.employee_id} value={emp.nama_lengkap}>
+              {emp.nama_lengkap}
+            </option>
+          ))}
+        </select>
+      </div>
 
-        {/* ESTIMASI NILAI */}
-        <div>
-          <label className="text-xs text-gray-500">
-            Estimasi Nilai (Rp)
-          </label>
-          <input
-            className="w-full border rounded px-3 py-2 text-sm"
-            value={estimasiDisplay}
-            onChange={(e) =>
-              handleEstimasiChange(e.target.value)
-            }
-          />
-        </div>
+      {/* CATATAN */}
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-gray-500">
+          Catatan
+        </label>
+        <textarea
+          className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+          rows={3}
+          value={form.catatan}
+          onChange={(e) =>
+            setForm({ ...form, catatan: e.target.value })
+          }
+        />
+      </div>
 
-        {/* ASSIGNED */}
-        <div>
-          <label className="text-xs text-gray-500">
-            Assigned To
-          </label>
-          <select
-            className="w-full border rounded px-3 py-2 text-sm"
-            value={form.assigned_to}
-            onChange={(e) =>
-              setForm({ ...form, assigned_to: e.target.value })
-            }
-          >
-            <option value="">-- Pilih Sales / Estimator --</option>
-            {employees.map((emp) => (
-              <option key={emp.employee_id} value={emp.nama_lengkap}>
-                {emp.nama_lengkap}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* CATATAN */}
-        <div>
-          <label className="text-xs text-gray-500">Catatan</label>
-          <textarea
-            className="w-full border rounded px-3 py-2 text-sm"
-            rows={3}
-            value={form.catatan}
-            onChange={(e) =>
-              setForm({ ...form, catatan: e.target.value })
-            }
-          />
-        </div>
+      {/* ACTION */}
+      <div className="flex justify-end gap-3 pt-4">
+        <button
+          onClick={() => router.back()}
+          className="px-5 py-2 border rounded-lg text-sm"
+        >
+          Batal
+        </button>
 
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg"
+          className="px-6 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
         >
           {loading ? "Menyimpan..." : "Simpan Inquiry"}
         </button>
-
       </div>
+
     </div>
-  )
-}
+  </div>
+)

@@ -22,15 +22,15 @@ function DashboardSkeleton() {
 
 export default function AdminDashboardPage({ data, isLoading }: any) {
   if (isLoading) return <DashboardSkeleton />
-  if (!data) return <div className="p-20 text-center">Data tidak ditemukan.</div>
+  const safeData = data ?? {}
 
   const {
-    hr = { totalEmployee: 0, hadirHariIni: 0 },
-    ga = { totalAsset: 0, assetMaintenance: 0 },
-    inventory = { materialNeedUpdate: 0, totalMaterial: 100 },
-    project = { projectAktif: 0, projectTerlambat: 0 },
-    finance = { cashflowWarning: 0 },
-  } = data
+  hr = { totalEmployee: 0, hadirHariIni: 0 },
+  ga = { totalAsset: 0, assetMaintenance: 0 },
+  inventory = { materialNeedUpdate: 0, totalMaterial: 100 },
+  project = { projectAktif: 0, projectTerlambat: 0 },
+  finance = { cashflowWarning: 0 },
+} = safeData
 
   // Hitung persentase dinamis untuk progress bar
   const attendanceRate = hr.totalEmployee > 0 ? (hr.hadirHariIni / hr.totalEmployee) * 100 : 0

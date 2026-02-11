@@ -50,7 +50,7 @@ export default function CreateRABProjectPage() {
     const data = await res.json()
 
     // setelah RAB header jadi → masuk ke detail RAB
-    router.push(`/admin/projects/${data.project_id}/rab`)
+    router.push(`/admin/estimator/rab/${data.project_id}`)
   }
 
   return (

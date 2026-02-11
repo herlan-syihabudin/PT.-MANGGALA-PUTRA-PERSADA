@@ -20,7 +20,7 @@ type Inquiry = {
 async function fetchInquiry(): Promise<Inquiry[]> {
   const base = process.env.NEXT_PUBLIC_BASE_URL
 
-  const res = await fetch(`${base}/api/marketing/inquiry`, {
+  const res = await fetch(`${base}/api/crm/inquiry`, {
     cache: "no-store",
   })
 

@@ -1,3 +1,5 @@
+import { motion } from "framer-motion"
+
 type StatusItemProps = {
   label: string
   value: number
@@ -17,7 +19,9 @@ export default function StatusItem({
   total = 10,
   variant = "new",
 }: StatusItemProps) {
-  const percent = Math.min((value / total) * 100, 100)
+  const percent = total > 0 
+  ? Math.min((value / total) * 100, 100) 
+  : 0
 
   const variantStyle: Record<string, string> = {
     new: "bg-blue-50 text-blue-700",
@@ -55,17 +59,19 @@ export default function StatusItem({
         </span>
       </div>
 
-      {/* PROGRESS BAR */}
-      <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-        <div
-          className={`h-full ${barColor[variant]} transition-all`}
-          style={{ width: `${percent}%` }}
-        />
-      </div>
+     {/* PROGRESS BAR */}
+<div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+  <motion.div
+    initial={{ width: 0 }}
+    animate={{ width: `${percent}%` }}
+    transition={{ duration: 0.8, ease: "easeOut" }}
+    className={`h-full ${barColor[variant]}`}
+  />
+</div>
 
       {/* FOOTNOTE */}
       <p className="text-[11px] text-gray-400 mt-2">
-        {percent.toFixed(0)}% of pipeline
+        {value} dari {total} data
       </p>
     </div>
   )

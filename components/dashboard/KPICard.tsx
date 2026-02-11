@@ -1,11 +1,16 @@
 import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react"
+import { ReactNode } from "react"
+
+type TrendType = "up" | "down" | "neutral"
 
 type KPICardProps = {
   title: string
   value: string | number
   note?: string
-  trend?: "up" | "down" | "neutral"
+  trend?: TrendType
   trendLabel?: string
+  highlight?: boolean
+  danger?: boolean
 }
 
 export default function KPICard({
@@ -14,9 +19,14 @@ export default function KPICard({
   note,
   trend = "neutral",
   trendLabel,
+  highlight = false,
+  danger = false,
 }: KPICardProps) {
-
-  const trendConfig = {
+  
+  const trendConfig: Record<
+    TrendType,
+    { icon: ReactNode; color: string }
+  > = {
     up: {
       icon: <ArrowUpRight className="w-4 h-4" />,
       color: "text-green-600",
@@ -31,10 +41,15 @@ export default function KPICard({
     },
   }
 
-  const { icon, color } = trendConfig[trend]
+  const { icon, color: trendColor } = trendConfig[trend]
+
+  // VALUE COLOR (pisahin dari trend)
+  let valueColor = "text-gray-900"
+  if (highlight) valueColor = "text-yellow-600"
+  if (danger) valueColor = "text-red-600"
 
   return (
-    <div className="relative bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition">
+    <div className="relative bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition duration-300">
 
       {/* GOLD ACCENT */}
       <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-400 rounded-t-2xl" />
@@ -46,11 +61,11 @@ export default function KPICard({
 
       {/* VALUE + TREND */}
       <div className="flex items-center justify-between">
-        <p className={`text-3xl font-extrabold ${color}`}>
+        <p className={`text-3xl font-extrabold ${valueColor}`}>
           {value}
         </p>
 
-        <div className={`flex items-center gap-1 text-xs font-semibold ${color}`}>
+        <div className={`flex items-center gap-1 text-xs font-semibold ${trendColor}`}>
           {icon}
           {trendLabel && <span>{trendLabel}</span>}
         </div>

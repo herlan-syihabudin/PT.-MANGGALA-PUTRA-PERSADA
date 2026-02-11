@@ -110,7 +110,7 @@ export default async function RABPage() {
 
                   <td className="p-3">
                     <Link
-                      href={`/admin/projects/${p.project_id}/rab`}
+                      href={`/admin/estimator/rab/${p.project_id}`}
                       className="text-blue-600 text-xs"
                     >
                       Buka RAB →

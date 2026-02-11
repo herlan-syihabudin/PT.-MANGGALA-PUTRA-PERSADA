@@ -56,7 +56,7 @@ export default async function ProjectRABPage({
   const data = await fetchRAB(params.project_id)
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="space-y-6">
 
       {/* HEADER */}
       <div className="flex justify-between items-center">

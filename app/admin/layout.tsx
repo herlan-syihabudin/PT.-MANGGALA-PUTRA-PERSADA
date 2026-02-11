@@ -3,6 +3,7 @@
 import AdminSidebar from "@/components/dashboard/AdminSidebar"
 import AdminHeader from "@/components/dashboard/AdminHeader"
 import Breadcrumb from "@/components/dashboard/ui/Breadcrumb"
+import { Toaster } from "sonner"
 
 export default function AdminLayout({
   children,
@@ -31,6 +32,9 @@ export default function AdminLayout({
           </div>
         </main>
       </div>
+
+      {/* 🔥 GLOBAL TOASTER FOR ERP */}
+      <Toaster position="top-right" richColors closeButton />
     </div>
   )
 }

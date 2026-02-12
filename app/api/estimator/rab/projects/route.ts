@@ -24,16 +24,20 @@ export async function GET() {
 
     const rows = res.data.values || []
 
-    const data = rows.map((r) => ({
-      rab_id: r[0],
-      project_id: r[1],
-      project_name: r[1], // ✅ sementara tampilkan ID dulu (AMAN)
-      total_items: Number(r[2] || 0),
-      total_value: Number(r[3] || 0),
-      status: r[4] || "Draft",
-    }))
+    const data = rows
+      .filter(r => r[0] && r[1])
+      .map((r) => ({
+        rab_id: r[0],
+        project_id: r[1],
+        project_name: r[1],
+        total_items: Number(r[2] || 0),
+        total_value: Number(r[3] || 0),
+        status: r[4] || "Draft",
+      }))
+      .sort((a, b) => b.rab_id.localeCompare(a.rab_id))
 
     return NextResponse.json(data)
+
   } catch (e) {
     console.error(e)
     return NextResponse.json(

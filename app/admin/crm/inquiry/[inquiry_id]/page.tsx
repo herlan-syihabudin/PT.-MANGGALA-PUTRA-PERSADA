@@ -3,14 +3,18 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft, Check } from "lucide-react"
+import { toast } from "sonner"
 
 const STEPS = ["new", "survey", "estimating", "won"]
 
 export default function InquiryDetailPage() {
   const { inquiry_id } = useParams()
   const router = useRouter()
-  const [data, setData] = useState<any>(null)
 
+  const [data, setData] = useState<any>(null)
+  const [isUpdating, setIsUpdating] = useState(false)
+
+  /* ================= LOAD DATA ================= */
   useEffect(() => {
     const load = async () => {
       const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
@@ -21,6 +25,32 @@ export default function InquiryDetailPage() {
 
     if (inquiry_id) load()
   }, [inquiry_id])
+
+  /* ================= UPDATE FUNCTION ================= */
+  const updateInquiry = async (updates: any) => {
+    try {
+      setIsUpdating(true)
+
+      const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      })
+
+      if (!res.ok) throw new Error()
+
+      toast.success("Status berhasil diperbarui")
+
+      setData((prev: any) => ({
+        ...prev,
+        ...updates,
+      }))
+    } catch {
+      toast.error("Gagal memperbarui data")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
 
   if (!data)
     return (
@@ -36,6 +66,11 @@ export default function InquiryDetailPage() {
   const services = data.layanan
     ? data.layanan.split("|")
     : []
+
+  /* ================= BUTTON HELPER ================= */
+  const getButtonText = (text: string) => {
+    return isUpdating ? "Processing..." : text
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 pb-24 animate-in fade-in duration-500">
@@ -66,7 +101,6 @@ export default function InquiryDetailPage() {
       {/* STEPPER */}
       <div className="bg-white border rounded-[2rem] p-10 shadow-soft relative">
         <div className="absolute top-1/2 left-0 w-full h-[2px] bg-gray-100 -translate-y-1/2 z-0" />
-
         <div
           className="absolute top-1/2 left-0 h-[2px] bg-blue-600 -translate-y-1/2 z-0 transition-all duration-700"
           style={{
@@ -131,7 +165,7 @@ export default function InquiryDetailPage() {
         {/* LEFT SIDE */}
         <div className="lg:col-span-2 bg-white border rounded-[2rem] p-10 shadow-soft space-y-10">
 
-          {/* BASIC INFO */}
+          {/* INFO GRID */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <Info label="Customer" value={data.customer_name} />
             <Info
@@ -151,17 +185,12 @@ export default function InquiryDetailPage() {
                 </span>
               }
             />
-            <Info
-              label="Nama Pekerjaan"
-              value={data.nama_pekerjaan}
-            />
+            <Info label="Nama Pekerjaan" value={data.nama_pekerjaan} />
             <Info
               label="Tanggal Masuk"
               value={
                 data.tanggal_masuk
-                  ? new Date(
-                      data.tanggal_masuk
-                    ).toLocaleDateString("id-ID", {
+                  ? new Date(data.tanggal_masuk).toLocaleDateString("id-ID", {
                       dateStyle: "long",
                     })
                   : "-"
@@ -174,7 +203,6 @@ export default function InquiryDetailPage() {
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">
               Jenis Layanan
             </p>
-
             <div className="flex flex-wrap gap-2">
               {services.map((service: string, i: number) => (
                 <span
@@ -187,50 +215,84 @@ export default function InquiryDetailPage() {
             </div>
           </div>
 
-          {/* NOTES */}
-          <div className="pt-6 border-t border-gray-100">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
-              Catatan
-            </p>
+          {/* QUICK STATUS ACTION */}
+          {data.status !== "won" && data.status !== "lost" && (
+            <div className="pt-8 border-t border-gray-100 flex flex-wrap gap-4">
+              <div className="w-full mb-2">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  Update Progress Proyek
+                </p>
+              </div>
 
-            <div className="bg-gray-50 p-6 rounded-[1.5rem] text-sm text-gray-700 leading-relaxed border border-dashed border-gray-200">
-              {data.catatan ||
-                "Tidak ada catatan tambahan untuk tim."}
+              {data.status === "new" && (
+                <button
+                  disabled={isUpdating}
+                  onClick={() => updateInquiry({ status: "survey" })}
+                  className="px-6 py-3 bg-blue-50 text-blue-600 rounded-2xl text-xs font-bold hover:bg-blue-100 transition-all disabled:opacity-50"
+                >
+                  {getButtonText("Mulai Survey Lapangan")}
+                </button>
+              )}
+
+              {data.status === "survey" && (
+                <button
+                  disabled={isUpdating}
+                  onClick={() => updateInquiry({ status: "estimating" })}
+                  className="px-6 py-3 bg-blue-50 text-blue-600 rounded-2xl text-xs font-bold hover:bg-blue-100 transition-all disabled:opacity-50"
+                >
+                  {getButtonText("Kirim ke Estimator")}
+                </button>
+              )}
+
+              <button
+                disabled={isUpdating}
+                onClick={() => updateInquiry({ status: "won" })}
+                className="px-6 py-3 bg-green-600 text-white rounded-2xl text-xs font-bold hover:bg-green-700 transition-all disabled:opacity-50"
+              >
+                {getButtonText("Project WON / Deal")}
+              </button>
+
+              <button
+                disabled={isUpdating}
+                onClick={() => updateInquiry({ status: "lost" })}
+                className="px-6 py-3 bg-white text-red-400 border border-red-100 rounded-2xl text-xs font-bold hover:bg-red-50 transition-all disabled:opacity-50"
+              >
+                {getButtonText("Gagal / Lost")}
+              </button>
             </div>
-          </div>
+          )}
+
+          {data.status === "won" && (
+            <div className="pt-8 border-t border-gray-100">
+              <div className="bg-green-50 border border-green-100 p-6 rounded-[1.5rem] flex items-center gap-4">
+                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg">
+                  <Check size={24} strokeWidth={3} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-green-900">
+                    Project Secured!
+                  </h4>
+                  <p className="text-sm text-green-700">
+                    Inquiry ini berhasil dimenangkan dan siap lanjut ke tahap RAB.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* RIGHT SIDE */}
         <div className="space-y-6">
-
-          {/* BUDGET CARD */}
           <div className="bg-[#0f172a] text-white rounded-[2rem] p-10 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 blur-2xl" />
-
             <p className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em]">
               Estimasi Nilai (IDR)
             </p>
-
             <h2 className="text-3xl font-extrabold mt-3">
               <span className="text-blue-400 text-lg mr-1">
                 Rp
               </span>
-              {Number(
-                data.estimasi_nilai
-              ).toLocaleString("id-ID")}
+              {Number(data.estimasi_nilai).toLocaleString("id-ID")}
             </h2>
-          </div>
-
-          {/* ACTION CARD */}
-          <div className="bg-white border rounded-[2rem] p-8 shadow-soft space-y-4">
-
-            <button className="btn-primary w-full">
-              Assign Estimator
-            </button>
-
-            <button className="btn-outline w-full">
-              Convert ke RAB
-            </button>
           </div>
         </div>
       </div>

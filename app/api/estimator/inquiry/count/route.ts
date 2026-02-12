@@ -17,20 +17,19 @@ export async function GET() {
   try {
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `CRM_INQUIRY!A2:I`,
+      range: "CRM_INQUIRY!A2:I",
     })
 
     const rows = res.data.values || []
 
-    const count = rows.filter(row => {
-      const count = rows.filter(row => {
-  const status = (row[8] || "")
-    .toString()
-    .trim()
-    .toLowerCase()
+    const count = rows.filter((row) => {
+      const status = (row[8] || "")
+        .toString()
+        .trim()
+        .toLowerCase()
 
-  return status === "new"
-}).length
+      return status === "new"
+    }).length
 
     return NextResponse.json({ count })
 

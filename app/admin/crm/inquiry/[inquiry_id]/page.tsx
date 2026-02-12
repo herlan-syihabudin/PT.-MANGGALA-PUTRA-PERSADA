@@ -8,7 +8,10 @@ import { toast } from "sonner"
 const STEPS = ["new", "survey", "estimating", "won"]
 
 export default function InquiryDetailPage() {
-  const { inquiry_id } = useParams()
+  const params = useParams()
+  const inquiry_id =
+    typeof params.inquiry_id === "string" ? params.inquiry_id : params.inquiry_id?.[0]
+
   const router = useRouter()
 
   const [data, setData] = useState<any>(null)
@@ -17,18 +20,17 @@ export default function InquiryDetailPage() {
   /* ================= LOAD DATA ================= */
   useEffect(() => {
     const load = async () => {
-      const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
-        cache: "no-store",
-      })
+      if (!inquiry_id) return
+      const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, { cache: "no-store" })
       if (res.ok) setData(await res.json())
     }
-
-    if (inquiry_id) load()
+    load()
   }, [inquiry_id])
 
   /* ================= UPDATE FUNCTION ================= */
   const updateInquiry = async (updates: any) => {
     try {
+      if (!inquiry_id) return
       setIsUpdating(true)
 
       const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
@@ -52,6 +54,30 @@ export default function InquiryDetailPage() {
     }
   }
 
+  /* ================= CONVERT TO RAB ================= */
+  const convertToRAB = async () => {
+    try {
+      if (!inquiry_id) return
+      setIsUpdating(true)
+
+      const res = await fetch("/api/estimator/rab/from-inquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inquiry_id }),
+      })
+
+      const result = await res.json()
+      if (!res.ok) throw new Error()
+
+      toast.success("Berhasil convert ke RAB")
+      router.push(`/admin/estimator/rab/${result.rab_id}`)
+    } catch {
+      toast.error("Gagal convert ke RAB")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   if (!data)
     return (
       <div className="flex items-center justify-center h-96 text-gray-400 font-medium animate-pulse">
@@ -59,22 +85,14 @@ export default function InquiryDetailPage() {
       </div>
     )
 
-  const currentStepIndex = STEPS.indexOf(
-    data.status?.toLowerCase()
-  )
-
-  const services = data.layanan
-    ? data.layanan.split("|")
-    : []
+  const currentStepIndex = STEPS.indexOf(data.status?.toLowerCase())
+  const services = data.layanan ? data.layanan.split("|") : []
 
   /* ================= BUTTON HELPER ================= */
-  const getButtonText = (text: string) => {
-    return isUpdating ? "Processing..." : text
-  }
+  const getButtonText = (text: string) => (isUpdating ? "Processing..." : text)
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 pb-24 animate-in fade-in duration-500">
-
       {/* HEADER */}
       <div className="flex justify-between items-end">
         <div>
@@ -85,12 +103,8 @@ export default function InquiryDetailPage() {
             <ArrowLeft size={14} /> KEMBALI KE LIST
           </button>
 
-          <h1 className="text-4xl font-extrabold tracking-tight">
-            Detail Inquiry
-          </h1>
-          <p className="text-gray-500 text-sm">
-            Monitoring peluang proyek secara real-time
-          </p>
+          <h1 className="text-4xl font-extrabold tracking-tight">Detail Inquiry</h1>
+          <p className="text-gray-500 text-sm">Monitoring peluang proyek secara real-time</p>
         </div>
 
         <span className="text-[10px] font-bold bg-gray-100 px-3 py-1 rounded-full text-gray-500">
@@ -117,40 +131,15 @@ export default function InquiryDetailPage() {
               <div key={step} className="flex flex-col items-center w-full">
                 <div
                   className={`w-10 h-10 flex items-center justify-center rounded-full border-4 transition-all duration-500
-                  ${
-                    isCompleted
-                      ? "bg-blue-600 border-white text-white"
-                      : ""
-                  }
-                  ${
-                    isCurrent
-                      ? "bg-white border-blue-600 text-blue-600 scale-110 shadow-md"
-                      : ""
-                  }
-                  ${
-                    index > currentStepIndex
-                      ? "bg-white border-gray-200 text-gray-400"
-                      : ""
-                  }
+                    ${isCompleted ? "bg-blue-600 border-white text-white" : ""}
+                    ${isCurrent ? "bg-white border-blue-600 text-blue-600 scale-110 shadow-md" : ""}
+                    ${index > currentStepIndex ? "bg-white border-gray-200 text-gray-400" : ""}
                   `}
                 >
-                  {isCompleted ? (
-                    <Check size={16} strokeWidth={3} />
-                  ) : (
-                    <span className="text-xs font-bold">
-                      {index + 1}
-                    </span>
-                  )}
+                  {isCompleted ? <Check size={16} strokeWidth={3} /> : <span className="text-xs font-bold">{index + 1}</span>}
                 </div>
 
-                <p
-                  className={`mt-4 text-[10px] font-bold uppercase tracking-widest
-                  ${
-                    isCurrent
-                      ? "text-blue-600"
-                      : "text-gray-400"
-                  }`}
-                >
+                <p className={`mt-4 text-[10px] font-bold uppercase tracking-widest ${isCurrent ? "text-blue-600" : "text-gray-400"}`}>
                   {step}
                 </p>
               </div>
@@ -161,10 +150,8 @@ export default function InquiryDetailPage() {
 
       {/* CONTENT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
         {/* LEFT SIDE */}
         <div className="lg:col-span-2 bg-white border rounded-[2rem] p-10 shadow-soft space-y-10">
-
           {/* INFO GRID */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <Info label="Customer" value={data.customer_name} />
@@ -173,13 +160,8 @@ export default function InquiryDetailPage() {
               value={
                 <span
                   className={`inline-block px-4 py-1 rounded-full text-xs font-bold uppercase
-                  ${
-                    data.status === "won"
-                      ? "bg-green-100 text-green-700"
-                      : data.status === "lost"
-                      ? "bg-red-100 text-red-700"
-                      : "bg-blue-100 text-blue-700"
-                  }`}
+                    ${data.status === "won" ? "bg-green-100 text-green-700" : data.status === "lost" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"}
+                  `}
                 >
                   {data.status}
                 </span>
@@ -190,9 +172,7 @@ export default function InquiryDetailPage() {
               label="Tanggal Masuk"
               value={
                 data.tanggal_masuk
-                  ? new Date(data.tanggal_masuk).toLocaleDateString("id-ID", {
-                      dateStyle: "long",
-                    })
+                  ? new Date(data.tanggal_masuk).toLocaleDateString("id-ID", { dateStyle: "long" })
                   : "-"
               }
             />
@@ -200,15 +180,10 @@ export default function InquiryDetailPage() {
 
           {/* SERVICES */}
           <div className="pt-6 border-t border-gray-100">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">
-              Jenis Layanan
-            </p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Jenis Layanan</p>
             <div className="flex flex-wrap gap-2">
               {services.map((service: string, i: number) => (
-                <span
-                  key={i}
-                  className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold border border-slate-100"
-                >
+                <span key={i} className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold border border-slate-100">
                   {service}
                 </span>
               ))}
@@ -219,9 +194,7 @@ export default function InquiryDetailPage() {
           {data.status !== "won" && data.status !== "lost" && (
             <div className="pt-8 border-t border-gray-100 flex flex-wrap gap-4">
               <div className="w-full mb-2">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                  Update Progress Proyek
-                </p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Update Progress Proyek</p>
               </div>
 
               {data.status === "new" && (
@@ -269,12 +242,8 @@ export default function InquiryDetailPage() {
                   <Check size={24} strokeWidth={3} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-green-900">
-                    Project Secured!
-                  </h4>
-                  <p className="text-sm text-green-700">
-                    Inquiry ini berhasil dimenangkan dan siap lanjut ke tahap RAB.
-                  </p>
+                  <h4 className="font-bold text-green-900">Project Secured!</h4>
+                  <p className="text-sm text-green-700">Inquiry ini berhasil dimenangkan dan siap lanjut ke tahap RAB.</p>
                 </div>
               </div>
             </div>
@@ -283,16 +252,24 @@ export default function InquiryDetailPage() {
 
         {/* RIGHT SIDE */}
         <div className="space-y-6">
+          {/* ESTIMASI CARD */}
           <div className="bg-[#0f172a] text-white rounded-[2rem] p-10 shadow-2xl relative overflow-hidden">
-            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em]">
-              Estimasi Nilai (IDR)
-            </p>
+            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em]">Estimasi Nilai (IDR)</p>
             <h2 className="text-3xl font-extrabold mt-3">
-              <span className="text-blue-400 text-lg mr-1">
-                Rp
-              </span>
+              <span className="text-blue-400 text-lg mr-1">Rp</span>
               {Number(data.estimasi_nilai).toLocaleString("id-ID")}
             </h2>
+          </div>
+
+          {/* ACTION CARD */}
+          <div className="bg-white border rounded-[2rem] p-8 shadow-soft space-y-4">
+            <button
+              onClick={convertToRAB}
+              disabled={data.status !== "won" || isUpdating}
+              className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-30 disabled:grayscale"
+            >
+              {isUpdating ? "Processing..." : "Convert ke RAB"}
+            </button>
           </div>
         </div>
       </div>
@@ -303,12 +280,8 @@ export default function InquiryDetailPage() {
 function Info({ label, value }: any) {
   return (
     <div>
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-        {label}
-      </p>
-      <div className="text-sm font-semibold text-gray-900">
-        {value}
-      </div>
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{label}</p>
+      <div className="text-sm font-semibold text-gray-900">{value}</div>
     </div>
   )
 }

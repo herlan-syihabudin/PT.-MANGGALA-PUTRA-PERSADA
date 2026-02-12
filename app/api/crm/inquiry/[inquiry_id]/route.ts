@@ -119,33 +119,33 @@ export async function PATCH(
       )
     }
 
-    // +2 karena sheet mulai dari row ke-2 (A2)
+    // karena data mulai dari A2
     const actualRowNumber = rowIndex + 2
 
-    /* ================= UPDATE STATUS ================= */
+    /* ================= COLUMN MAP ================= */
 
-    if (body.status) {
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: SHEET_ID,
-        range: `${SHEET_NAME}!I${actualRowNumber}`, // kolom STATUS (I)
-        valueInputOption: "USER_ENTERED",
-        requestBody: {
-          values: [[body.status]],
-        },
-      })
+    const COLUMN_MAP: Record<string, string> = {
+      status: "I",
+      assigned_to: "J",
+      prioritas: "K",
+      lokasi: "L",
+      catatan: "M",
+      estimasi_deal_date: "N",
     }
 
-    /* ================= UPDATE ASSIGNED ================= */
+    /* ================= DYNAMIC UPDATE ================= */
 
-    if (body.assigned_to) {
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: SHEET_ID,
-        range: `${SHEET_NAME}!J${actualRowNumber}`, // kolom ASSIGNED (J)
-        valueInputOption: "USER_ENTERED",
-        requestBody: {
-          values: [[body.assigned_to]],
-        },
-      })
+    for (const key of Object.keys(body)) {
+      if (COLUMN_MAP[key]) {
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: SHEET_ID,
+          range: `${SHEET_NAME}!${COLUMN_MAP[key]}${actualRowNumber}`,
+          valueInputOption: "USER_ENTERED",
+          requestBody: {
+            values: [[body[key]]],
+          },
+        })
+      }
     }
 
     return NextResponse.json({

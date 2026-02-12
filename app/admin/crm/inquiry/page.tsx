@@ -1,4 +1,5 @@
 import Link from "next/link"
+import ConvertButton from "@/components/dashboard/ConvertButton"
 
 export const dynamic = "force-dynamic"
 
@@ -177,12 +178,7 @@ export default async function InquiryPage() {
                       Assign
                     </Link>
 
-                    <Link
-                      href={`/admin/crm/inquiry/${i.inquiry_id}/convert`}
-                      className="text-xs text-green-600"
-                    >
-                      Convert
-                    </Link>
+                    <ConvertButton inquiry_id={i.inquiry_id} />
                   </td>
                 </tr>
               ))

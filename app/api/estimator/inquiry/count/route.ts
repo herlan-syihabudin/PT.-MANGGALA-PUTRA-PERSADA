@@ -23,9 +23,14 @@ export async function GET() {
     const rows = res.data.values || []
 
     const count = rows.filter(row => {
-      const status = (row[8] || "").toLowerCase()
-      return status === "new"   // ubah jadi "estimating" kalau mau
-    }).length
+      const count = rows.filter(row => {
+  const status = (row[8] || "")
+    .toString()
+    .trim()
+    .toLowerCase()
+
+  return status === "new"
+}).length
 
     return NextResponse.json({ count })
 

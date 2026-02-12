@@ -21,7 +21,9 @@ const EST_SHEET_ID = process.env.GSHEET_ESTIMATOR_ID!
 const CRM_SHEET = "CRM_INQUIRY"
 const RAB_SHEET = "RAB_PROJECT"
 
-/* ================= CONVERT ================= */
+/* ===================================================== */
+/* ================== CONVERT TO RAB =================== */
+/* ===================================================== */
 
 export async function POST(req: Request) {
   try {
@@ -52,9 +54,27 @@ export async function POST(req: Request) {
     }
 
     const row = rows[rowIndex]
+    const sheetRowNumber = rowIndex + 2
 
     const projectName = row[4]
     const customerName = row[3]
+    const currentStatus = row[8]
+
+    /* ================= SAFETY CHECK ================= */
+
+    if (currentStatus === "estimating") {
+      return NextResponse.json(
+        { message: "Inquiry sudah pernah di-convert ke RAB" },
+        { status: 400 }
+      )
+    }
+
+    if (currentStatus !== "won") {
+      return NextResponse.json(
+        { message: "Inquiry harus status WON sebelum convert ke RAB" },
+        { status: 400 }
+      )
+    }
 
     /* ================= GENERATE RAB ================= */
 
@@ -67,21 +87,19 @@ export async function POST(req: Request) {
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          rabId,
-          inquiry_id,
-          projectName,
-          customerName,
-          0,
-          0,
-          "draft",
-          createdAt
+          rabId,          // A - RAB ID
+          inquiry_id,     // B - Linked Inquiry
+          projectName,    // C - Project Name
+          customerName,   // D - Customer
+          0,              // E - Total Material
+          0,              // F - Total Jasa
+          "draft",        // G - Status RAB
+          createdAt       // H - Created At
         ]]
       }
     })
 
-    /* ================= UPDATE STATUS CRM ================= */
-
-    const sheetRowNumber = rowIndex + 2
+    /* ================= UPDATE CRM STATUS ================= */
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: CRM_SHEET_ID,
@@ -99,6 +117,7 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error("Convert Error:", error)
+
     return NextResponse.json(
       { message: "Gagal convert inquiry" },
       { status: 500 }

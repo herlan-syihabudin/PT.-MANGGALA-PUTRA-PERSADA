@@ -21,29 +21,34 @@ const RAB_PROJECT = "RAB_PROJECT"
 /* ================= HELPER ================= */
 
 async function recalcRabProject(project_id: string) {
-  // ambil semua item
   const itemRes = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${RAB_ITEM}!A2:N`,
   })
 
   const itemRows = itemRes.data.values || []
-  const items = itemRows.filter((r) => r[1] === project_id)
+
+  const items = itemRows.filter(
+    (r) => r[0] && r[1] === project_id
+  )
 
   const total_item = items.length
+
   const total_nilai_rab = items.reduce(
     (sum, r) => sum + Number(r[10] || 0),
     0
   )
 
-  // cari row RAB_PROJECT
   const rabRes = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${RAB_PROJECT}!A2:G`,
   })
 
   const rabRows = rabRes.data.values || []
-  const idx = rabRows.findIndex((r) => r[1] === project_id)
+
+  const idx = rabRows.findIndex(
+    (r) => r[1] === project_id
+  )
 
   if (idx === -1) return
 
@@ -66,7 +71,10 @@ export async function GET(req: Request) {
   const project_id = searchParams.get("project_id")
 
   if (!project_id) {
-    return NextResponse.json({ message: "project_id wajib" }, { status: 400 })
+    return NextResponse.json(
+      { message: "project_id wajib" },
+      { status: 400 }
+    )
   }
 
   const res = await sheets.spreadsheets.values.get({
@@ -77,20 +85,20 @@ export async function GET(req: Request) {
   const rows = res.data.values || []
 
   const items = rows
-    .filter((r) => r[1] === project_id)
+    .filter((r) => r[0] && r[1] === project_id)
     .map((r, i) => ({
-      row: i + 2, // 🔥 penting buat edit/delete
+      row: i + 2,
       rab_id: r[0],
       project_id: r[1],
       scope: r[2],
       item_name: r[3],
       category: r[4],
-      volume: Number(r[5]),
+      volume: Number(r[5] || 0),
       unit: r[6],
-      material_price: Number(r[7]),
-      labour_price: Number(r[8]),
-      unit_price: Number(r[9]),
-      total_price: Number(r[10]),
+      material_price: Number(r[7] || 0),
+      labour_price: Number(r[8] || 0),
+      unit_price: Number(r[9] || 0),
+      total_price: Number(r[10] || 0),
       status: r[11],
       created_by: r[12],
       created_at: r[13],
@@ -100,7 +108,10 @@ export async function GET(req: Request) {
     project_id,
     summary: {
       total_items: items.length,
-      total_value: items.reduce((s, i) => s + i.total_price, 0),
+      total_value: items.reduce(
+        (s, i) => s + i.total_price,
+        0
+      ),
     },
     items,
   })
@@ -124,8 +135,18 @@ export async function POST(req: Request) {
     created_by,
   } = body
 
-  const unit_price = Number(material_price) + Number(labour_price)
-  const total_price = Number(volume) * unit_price
+  if (!rab_id || !project_id) {
+    return NextResponse.json(
+      { message: "rab_id & project_id wajib" },
+      { status: 400 }
+    )
+  }
+
+  const unit_price =
+    Number(material_price) + Number(labour_price)
+
+  const total_price =
+    Number(volume) * unit_price
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
@@ -138,10 +159,10 @@ export async function POST(req: Request) {
         scope,
         item_name,
         category,
-        volume,
+        Number(volume),
         unit,
-        material_price,
-        labour_price,
+        Number(material_price),
+        Number(labour_price),
         unit_price,
         total_price,
         "Draft",
@@ -151,10 +172,11 @@ export async function POST(req: Request) {
     },
   })
 
-  // 🔥 auto update header
   await recalcRabProject(project_id)
 
-  return NextResponse.json({ message: "Item RAB ditambahkan" })
+  return NextResponse.json({
+    message: "Item RAB ditambahkan",
+  })
 }
 
 /* ================= PUT : EDIT ITEM ================= */
@@ -174,8 +196,18 @@ export async function PUT(req: Request) {
     labour_price,
   } = body
 
-  const unit_price = material_price + labour_price
-  const total_price = volume * unit_price
+  if (!row || !project_id) {
+    return NextResponse.json(
+      { message: "row & project_id wajib" },
+      { status: 400 }
+    )
+  }
+
+  const unit_price =
+    Number(material_price) + Number(labour_price)
+
+  const total_price =
+    Number(volume) * unit_price
 
   await sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
@@ -186,10 +218,10 @@ export async function PUT(req: Request) {
         scope,
         item_name,
         category,
-        volume,
+        Number(volume),
         unit,
-        material_price,
-        labour_price,
+        Number(material_price),
+        Number(labour_price),
         unit_price,
         total_price,
       ]],
@@ -198,7 +230,9 @@ export async function PUT(req: Request) {
 
   await recalcRabProject(project_id)
 
-  return NextResponse.json({ message: "Item RAB diupdate" })
+  return NextResponse.json({
+    message: "Item RAB diupdate",
+  })
 }
 
 /* ================= DELETE : REMOVE ITEM ================= */
@@ -210,10 +244,12 @@ export async function DELETE(req: Request) {
   const row = Number(searchParams.get("row"))
 
   if (!project_id || !row) {
-    return NextResponse.json({ message: "invalid param" }, { status: 400 })
+    return NextResponse.json(
+      { message: "invalid param" },
+      { status: 400 }
+    )
   }
 
-  // ⚠️ ganti sheetId sesuai ID sheet RAB_ITEM (cek di Google Sheet)
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId: SHEET_ID,
     requestBody: {
@@ -221,7 +257,8 @@ export async function DELETE(req: Request) {
         {
           deleteDimension: {
             range: {
-              sheetId: 1,
+              sheetId: 123456789, 
+              // 🔥 GANTI sesuai gid RAB_ITEM lo
               dimension: "ROWS",
               startIndex: row - 1,
               endIndex: row,
@@ -234,5 +271,7 @@ export async function DELETE(req: Request) {
 
   await recalcRabProject(project_id)
 
-  return NextResponse.json({ message: "Item RAB dihapus" })
+  return NextResponse.json({
+    message: "Item RAB dihapus",
+  })
 }

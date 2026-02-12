@@ -17,7 +17,9 @@ const sheets = google.sheets({ version: "v4", auth })
 const SHEET_ID = process.env.GSHEET_CRM_ID!
 const SHEET_NAME = "CRM_INQUIRY"
 
-/* ================= GET DETAIL ================= */
+/* ===================================================== */
+/* ====================== GET DETAIL =================== */
+/* ===================================================== */
 
 export async function GET(
   _: Request,
@@ -40,14 +42,16 @@ export async function GET(
 
     const rows = res.data.values || []
 
-    const row = rows.find((r) => r[0] === inquiryId)
+    const rowIndex = rows.findIndex((r) => r[0] === inquiryId)
 
-    if (!row) {
+    if (rowIndex === -1) {
       return NextResponse.json(
         { message: "Inquiry tidak ditemukan" },
         { status: 404 }
       )
     }
+
+    const row = rows[rowIndex]
 
     const data = {
       inquiry_id: row[0],
@@ -75,6 +79,82 @@ export async function GET(
     console.error("Detail Inquiry Error:", error)
     return NextResponse.json(
       { message: "Gagal load detail inquiry" },
+      { status: 500 }
+    )
+  }
+}
+
+/* ===================================================== */
+/* ====================== PATCH UPDATE ================= */
+/* ===================================================== */
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: { inquiry_id: string } }
+) {
+  try {
+    const inquiryId = params.inquiry_id
+    const body = await req.json()
+
+    if (!inquiryId) {
+      return NextResponse.json(
+        { message: "inquiry_id wajib" },
+        { status: 400 }
+      )
+    }
+
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!A2:Q`,
+    })
+
+    const rows = res.data.values || []
+
+    const rowIndex = rows.findIndex((r) => r[0] === inquiryId)
+
+    if (rowIndex === -1) {
+      return NextResponse.json(
+        { message: "Inquiry tidak ditemukan" },
+        { status: 404 }
+      )
+    }
+
+    // +2 karena sheet mulai dari row ke-2 (A2)
+    const actualRowNumber = rowIndex + 2
+
+    /* ================= UPDATE STATUS ================= */
+
+    if (body.status) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `${SHEET_NAME}!I${actualRowNumber}`, // kolom STATUS (I)
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [[body.status]],
+        },
+      })
+    }
+
+    /* ================= UPDATE ASSIGNED ================= */
+
+    if (body.assigned_to) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `${SHEET_NAME}!J${actualRowNumber}`, // kolom ASSIGNED (J)
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [[body.assigned_to]],
+        },
+      })
+    }
+
+    return NextResponse.json({
+      message: "Inquiry berhasil diperbarui",
+    })
+  } catch (error) {
+    console.error("Update Inquiry Error:", error)
+    return NextResponse.json(
+      { message: "Gagal update inquiry" },
       { status: 500 }
     )
   }

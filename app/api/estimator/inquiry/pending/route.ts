@@ -24,7 +24,13 @@ export async function GET() {
 
     const pending = rows
       .filter(row => row[0]) // pastikan inquiry_id ada
-      .filter(row => (row[8] || "").trim().toLowerCase() === "new")
+      .filter(row =>
+  (row[8] || "")
+    .toString()
+    .trim()
+    .toLowerCase()
+    .includes("new")
+)
       .map(row => ({
         inquiry_id: row[0],
         tanggal_masuk: row[1],
@@ -35,10 +41,11 @@ export async function GET() {
           String(row[6] || 0).replace(/[^\d]/g, "")
         ),
       }))
-      .sort((a, b) =>
-        new Date(b.tanggal_masuk).getTime() -
-        new Date(a.tanggal_masuk).getTime()
-      )
+      .sort((a, b) => {
+  const tA = a.tanggal_masuk ? new Date(a.tanggal_masuk).getTime() : 0
+  const tB = b.tanggal_masuk ? new Date(b.tanggal_masuk).getTime() : 0
+  return tB - tA
+})
 
     return NextResponse.json(pending)
 

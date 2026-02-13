@@ -28,8 +28,12 @@ async function recalcRabProject(project_id: string) {
 
   const itemRows = itemRes.data.values || []
 
+  // 🔥 HANYA HITUNG YANG TIDAK DELETED
   const items = itemRows.filter(
-    (r) => r[0] && r[1] === project_id
+    (r) =>
+      r[0] &&
+      r[1] === project_id &&
+      r[11] !== "Deleted"
   )
 
   const total_item = items.length
@@ -64,15 +68,15 @@ async function recalcRabProject(project_id: string) {
   })
 }
 
-/* ================= GET : RAB DETAIL ================= */
+/* ================= GET ================= */
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
-  const project_id = searchParams.get("project_id")
+  const rab_id = searchParams.get("rab_id")
 
-  if (!project_id) {
+  if (!rab_id) {
     return NextResponse.json(
-      { message: "project_id wajib" },
+      { message: "rab_id wajib" },
       { status: 400 }
     )
   }
@@ -84,8 +88,14 @@ export async function GET(req: Request) {
 
   const rows = res.data.values || []
 
+  // 🔥 FILTER YANG TIDAK DELETED
   const items = rows
-    .filter((r) => r[0] && r[1] === project_id)
+    .filter(
+      (r) =>
+        r[0] &&
+        r[1] === rab_id &&
+        r[11] !== "Deleted"
+    )
     .map((r, i) => ({
       row: i + 2,
       rab_id: r[0],
@@ -105,7 +115,7 @@ export async function GET(req: Request) {
     }))
 
   return NextResponse.json({
-    project_id,
+    rab_id,
     summary: {
       total_items: items.length,
       total_value: items.reduce(
@@ -117,7 +127,7 @@ export async function GET(req: Request) {
   })
 }
 
-/* ================= POST : ADD ITEM ================= */
+/* ================= POST ================= */
 
 export async function POST(req: Request) {
   const body = await req.json()
@@ -179,7 +189,7 @@ export async function POST(req: Request) {
   })
 }
 
-/* ================= PUT : EDIT ITEM ================= */
+/* ================= PUT ================= */
 
 export async function PUT(req: Request) {
   const body = await req.json()
@@ -235,43 +245,34 @@ export async function PUT(req: Request) {
   })
 }
 
-/* ================= DELETE : REMOVE ITEM ================= */
+/* ================= DELETE (SOFT DELETE) ================= */
 
 export async function DELETE(req: Request) {
   const { searchParams } = new URL(req.url)
 
-  const project_id = searchParams.get("project_id")
   const row = Number(searchParams.get("row"))
+  const project_id = searchParams.get("project_id")
 
-  if (!project_id || !row) {
+  if (!row || !project_id) {
     return NextResponse.json(
-      { message: "invalid param" },
+      { message: "row & project_id wajib" },
       { status: 400 }
     )
   }
 
-  await sheets.spreadsheets.batchUpdate({
+  // 🔥 UPDATE STATUS JADI DELETED
+  await sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
+    range: `${RAB_ITEM}!L${row}`,
+    valueInputOption: "USER_ENTERED",
     requestBody: {
-      requests: [
-        {
-          deleteDimension: {
-            range: {
-              sheetId: 123456789, 
-              // 🔥 GANTI sesuai gid RAB_ITEM lo
-              dimension: "ROWS",
-              startIndex: row - 1,
-              endIndex: row,
-            },
-          },
-        },
-      ],
+      values: [["Deleted"]],
     },
   })
 
   await recalcRabProject(project_id)
 
   return NextResponse.json({
-    message: "Item RAB dihapus",
+    message: "Item RAB dihapus (soft delete)",
   })
 }

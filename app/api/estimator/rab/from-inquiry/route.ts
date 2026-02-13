@@ -21,9 +21,7 @@ const EST_SHEET_ID = process.env.GSHEET_ESTIMATOR_ID!
 const CRM_SHEET = "CRM_INQUIRY"
 const RAB_SHEET = "RAB_PROJECT"
 
-/* ===================================================== */
-/* ================== CONVERT TO RAB =================== */
-/* ===================================================== */
+/* ================= CONVERT ================= */
 
 export async function POST(req: Request) {
   try {
@@ -76,30 +74,34 @@ export async function POST(req: Request) {
       )
     }
 
-    /* ================= GENERATE RAB ================= */
+    /* ================= GENERATE ID ================= */
 
     const rabId = "RAB-" + nanoid(6).toUpperCase()
+    const projectId = "PRJ-" + nanoid(8).toUpperCase()
     const createdAt = new Date().toISOString()
+
+    /* ================= INSERT RAB PROJECT ================= */
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: EST_SHEET_ID,
-      range: `${RAB_SHEET}!A:H`,
+      range: `${RAB_SHEET}!A:I`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          rabId,          // A - RAB ID
-          inquiry_id,     // B - Linked Inquiry
-          projectName,    // C - Project Name
-          customerName,   // D - Customer
-          0,              // E - Total Material
-          0,              // F - Total Jasa
-          "draft",        // G - Status RAB
-          createdAt       // H - Created At
+          rabId,            // A
+          projectId,        // B
+          projectName,      // C
+          customerName,     // D
+          0,                // E total_item
+          0,                // F total_value
+          "Draft",          // G status
+          inquiry_id,       // H linked_inquiry_id
+          createdAt         // I created_at
         ]]
       }
     })
 
-    /* ================= UPDATE CRM STATUS ================= */
+    /* ================= UPDATE CRM ================= */
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: CRM_SHEET_ID,
@@ -112,7 +114,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       message: "Berhasil convert ke RAB",
-      rab_id: rabId
+      rab_id: rabId,
+      project_id: projectId
     })
 
   } catch (error) {

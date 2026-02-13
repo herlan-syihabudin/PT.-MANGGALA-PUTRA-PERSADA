@@ -178,7 +178,11 @@ export default async function InquiryPage() {
                       Assign
                     </Link>
 
-                    <ConvertButton inquiry_id={i.inquiry_id} />
+                    {i.status === "won" ? (
+  <ConvertButton inquiry_id={i.inquiry_id} />
+) : (
+  <span className="text-xs text-gray-300">Convert</span>
+)}
                   </td>
                 </tr>
               ))

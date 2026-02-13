@@ -68,6 +68,23 @@ async function recalcRabProject(project_id: string) {
   })
 }
 
+async function isRabLocked(project_id: string) {
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${RAB_PROJECT}!A2:G`,
+  })
+
+  const rows = res.data.values || []
+
+  const row = rows.find(r => r[1] === project_id)
+
+  if (!row) return false
+
+  const status = (row[6] || "").toLowerCase()
+
+  return status === "locked"
+}
+
 /* ================= GET ================= */
 
 export async function GET(req: Request) {
@@ -152,6 +169,13 @@ export async function POST(req: Request) {
     )
   }
 
+  if (await isRabLocked(project_id)) {
+  return NextResponse.json(
+    { message: "RAB sudah di-lock dan tidak bisa diubah" },
+    { status: 400 }
+  )
+}
+  
   const unit_price =
     Number(material_price) + Number(labour_price)
 
@@ -213,6 +237,13 @@ export async function PUT(req: Request) {
     )
   }
 
+  if (await isRabLocked(project_id)) {
+  return NextResponse.json(
+    { message: "RAB sudah di-lock dan tidak bisa diubah" },
+    { status: 400 }
+  )
+}
+  
   const unit_price =
     Number(material_price) + Number(labour_price)
 
@@ -259,6 +290,13 @@ export async function DELETE(req: Request) {
       { status: 400 }
     )
   }
+
+  if (await isRabLocked(project_id)) {
+  return NextResponse.json(
+    { message: "RAB sudah di-lock dan tidak bisa diubah" },
+    { status: 400 }
+  )
+}
 
   // 🔥 UPDATE STATUS JADI DELETED
   await sheets.spreadsheets.values.update({

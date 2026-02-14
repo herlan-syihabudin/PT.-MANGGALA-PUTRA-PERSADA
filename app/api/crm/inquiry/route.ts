@@ -104,7 +104,11 @@ export async function POST(req: Request) {
     const body = await req.json()
 
     const inquiryId = `INQ-${Date.now()}`
+    const rabId = `RAB-${Date.now()}`
+    const projectId = `PRJ-${Date.now()}`
     const now = new Date().toISOString()
+
+    /* ================= INSERT CRM INQUIRY ================= */
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
@@ -117,7 +121,7 @@ export async function POST(req: Request) {
           body.customer_id || "",
           body.customer_name || "",
           body.nama_pekerjaan || "",
-           body.layanan || "",
+          body.layanan || "",
           body.estimasi_nilai || "",
           body.sumber || "",
           body.assigned_to || "",
@@ -125,10 +129,34 @@ export async function POST(req: Request) {
           body.prioritas || "normal",
           body.lokasi || "",
           body.catatan || "",
-          "", // converted_rab_id
-          "", // converted_project_id
+          rabId,          // 🔥 AUTO LINK RAB
+          projectId,      // 🔥 AUTO LINK PROJECT
           now,
           body.created_by || "Marketing",
+        ]],
+      },
+    })
+
+    /* ================= AUTO INSERT KE RAB_PROJECT ================= */
+
+    const ESTIMATOR_SHEET_ID = process.env.GSHEET_ESTIMATOR_ID!
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: ESTIMATOR_SHEET_ID,
+      range: `RAB_PROJECT!A:J`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [[
+          rabId,
+          inquiryId,
+          projectId,
+          body.nama_pekerjaan || "Tanpa Nama Project",
+          body.customer_name || "",
+          0,               // total_items
+          0,               // total_value
+          "Draft",         // status
+          "System",        // created_by
+          now,
         ]],
       },
     })
@@ -136,8 +164,10 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       inquiry_id: inquiryId,
-      created_at: now,
+      rab_id: rabId,
+      project_id: projectId,
     })
+
   } catch (error) {
     console.error("POST Inquiry Error:", error)
     return NextResponse.json(

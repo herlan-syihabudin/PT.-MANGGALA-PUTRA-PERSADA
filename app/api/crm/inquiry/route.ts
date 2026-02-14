@@ -18,8 +18,11 @@ const SHEET_NAME = "CRM_INQUIRY"
 
 /* ================= GET ================= */
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url)
+    const filterCustomerId = searchParams.get("customer_id")
+
     /* ===== 1. Ambil Inquiry ===== */
     const inquiryRes = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
@@ -27,8 +30,8 @@ export async function GET() {
     })
 
     const inquiryRows = (inquiryRes.data.values || []).filter(
-  (row) => row[0] // skip empty row
-)
+      (row) => row[0]
+    )
 
     /* ===== 2. Ambil Customers ===== */
     const customerRes = await sheets.spreadsheets.values.get({
@@ -51,43 +54,45 @@ export async function GET() {
       }
     })
 
-    /* ===== 4. Join Data ===== */
-   const data = inquiryRows.map((row, index) => {
-  // skip header kalau lo pakai A:Q
-  if (index === 0 && row[0] === "inquiry_id") return null
+    /* ===== 4. Filter + Join Data ===== */
+    const data = inquiryRows
+      .filter((row) => {
+        if (!filterCustomerId) return true
+        return row[2] === filterCustomerId   // ✅ FILTER DISINI
+      })
+      .map((row) => {
+        const customer_id = row[2] || ""
+        const customer = customerMap[customer_id] || {}
 
-  const customer_id = row[2] || ""
-  const customer = customerMap[customer_id] || {}
+        return {
+          inquiry_id: row[0] || "",
+          tanggal_masuk: row[1] || "",
+          customer_id,
 
-  return {
-    inquiry_id: row[0] || "",
-    tanggal_masuk: row[1] || "",
-    customer_id,
+          customer_name: row[3] || customer.company_name || "-",
+          customer_city: customer.city || "-",
+          customer_phone: customer.phone || "-",
+          pic_name: customer.pic_name || "-",
 
-    customer_name: row[3] || customer.company_name || "-",
-    customer_city: customer.city || "-",
-    customer_phone: customer.phone || "-",
-    pic_name: customer.pic_name || "-",
+          nama_pekerjaan: row[4] || "-",
+          layanan: row[5] || "-",
 
-    nama_pekerjaan: row[4] || "-",
-    layanan: row[5] || "-",              // ✅ TAMBAH INI
+          estimasi_nilai: row[6] ? Number(row[6]) : 0,
 
-    estimasi_nilai: row[6] ? Number(row[6]) : 0,  // ✅ FIX INDEX
+          sumber: row[7] || "",
+          assigned_to: row[8] || "",
+          status: row[9] || "new",
+          prioritas: row[10] || "normal",
+          lokasi: row[11] || "",
+          catatan: row[12] || "",
 
-    sumber: row[7] || "",
-    assigned_to: row[8] || "",
-    status: row[9] || "new",
-    prioritas: row[10] || "normal",
-    lokasi: row[11] || "",
-    catatan: row[12] || "",
+          converted_rab_id: row[13] || "",
+          converted_project_id: row[14] || "",
 
-    converted_rab_id: row[13] || "",
-    converted_project_id: row[14] || "",
-
-    created_at: row[15] || "",
-    created_by: row[16] || "",
-  }
-}).filter(Boolean)
+          created_at: row[15] || "",
+          created_by: row[16] || "",
+        }
+      })
 
     return NextResponse.json(data)
 

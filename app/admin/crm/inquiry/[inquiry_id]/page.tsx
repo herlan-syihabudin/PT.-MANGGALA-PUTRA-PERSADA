@@ -87,6 +87,10 @@ export default function InquiryDetailPage() {
 
   const currentStepIndex = STEPS.indexOf(data.status?.toLowerCase())
   const services = data.layanan ? data.layanan.split("|") : []
+  const estimasi =
+  typeof data?.estimasi_nilai === "number"
+    ? data.estimasi_nilai
+    : Number(data?.estimasi_nilai ?? 0)
 
   /* ================= BUTTON HELPER ================= */
   const getButtonText = (text: string) => (isUpdating ? "Processing..." : text)
@@ -257,7 +261,7 @@ export default function InquiryDetailPage() {
             <p className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em]">Estimasi Nilai (IDR)</p>
             <h2 className="text-3xl font-extrabold mt-3">
               <span className="text-blue-400 text-lg mr-1">Rp</span>
-              {Number(data.estimasi_nilai || 0).toLocaleString("id-ID")}
+              {estimasi.toLocaleString("id-ID")}
 </h2>
           </div>
 

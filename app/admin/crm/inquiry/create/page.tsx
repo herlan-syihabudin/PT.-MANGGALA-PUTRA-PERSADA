@@ -1,287 +1,332 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Check } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
-const STEPS = ["new", "survey", "estimating", "won"]
+type Customer = {
+  customer_id: string
+  company_name: string
+}
 
-export default function InquiryDetailPage() {
-  const params = useParams()
-  const inquiry_id =
-    typeof params.inquiry_id === "string" ? params.inquiry_id : params.inquiry_id?.[0]
+type Employee = {
+  employee_id: string
+  nama_lengkap: string
+}
 
+const SERVICE_OPTIONS = [
+  "Civil & Structure",
+  "Steel Structure",
+  "Mechanical",
+  "Electrical",
+  "Plumbing",
+  "Interior",
+  "Maintenance",
+  "Design Only",
+]
+
+export default function CreateInquiryPage() {
   const router = useRouter()
 
-  const [data, setData] = useState<any>(null)
-  const [isUpdating, setIsUpdating] = useState(false)
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [loading, setLoading] = useState(false)
 
-  /* ================= LOAD DATA ================= */
+  const [estimasiDisplay, setEstimasiDisplay] = useState("")
+  const [selectedServices, setSelectedServices] = useState<string[]>([])
+
+  const [form, setForm] = useState({
+    customer_id: "",
+    customer_name: "",
+    nama_pekerjaan: "",
+    estimasi_nilai: 0,
+    sumber: "",
+    assigned_to: "",
+    prioritas: "normal",
+    lokasi: "",
+    catatan: "",
+    tanggal_masuk: new Date().toISOString().slice(0, 10),
+    estimasi_deal_date: "",
+  })
+
+  /* LOAD DATA */
   useEffect(() => {
-    const load = async () => {
-      if (!inquiry_id) return
-      const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, { cache: "no-store" })
-      if (res.ok) setData(await res.json())
+    const loadData = async () => {
+      const [custRes, empRes] = await Promise.all([
+        fetch("/api/crm/customers", { cache: "no-store" }),
+        fetch("/api/hr/employee", { cache: "no-store" }),
+      ])
+
+      setCustomers(custRes.ok ? await custRes.json() : [])
+      setEmployees(empRes.ok ? await empRes.json() : [])
     }
-    load()
-  }, [inquiry_id])
 
-  /* ================= UPDATE FUNCTION ================= */
-  const updateInquiry = async (updates: any) => {
-    try {
-      if (!inquiry_id) return
-      setIsUpdating(true)
+    loadData()
+  }, [])
 
-      const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
-      })
-
-      if (!res.ok) throw new Error()
-
-      toast.success("Status berhasil diperbarui")
-
-      setData((prev: any) => ({
-        ...prev,
-        ...updates,
-      }))
-    } catch {
-      toast.error("Gagal memperbarui data")
-    } finally {
-      setIsUpdating(false)
-    }
+  /* FORMAT RUPIAH */
+  function handleEstimasiChange(value: string) {
+    const raw = value.replace(/\D/g, "")
+    setEstimasiDisplay(
+      new Intl.NumberFormat("id-ID").format(Number(raw))
+    )
+    setForm(prev => ({
+      ...prev,
+      estimasi_nilai: Number(raw),
+    }))
   }
 
-  /* ================= CONVERT TO RAB ================= */
-  const convertToRAB = async () => {
-    try {
-      if (!inquiry_id) return
-      setIsUpdating(true)
+  /* TOGGLE SERVICE */
+  function toggleService(service: string) {
+    setSelectedServices(prev =>
+      prev.includes(service)
+        ? prev.filter(s => s !== service)
+        : [...prev, service]
+    )
+  }
 
-      const res = await fetch("/api/estimator/rab/from-inquiry", {
+  /* SUBMIT */
+  async function handleSubmit() {
+    if (loading) return
+
+    if (!form.customer_id || !form.nama_pekerjaan) {
+      toast.error("Customer & Nama Pekerjaan wajib diisi")
+      return
+    }
+
+    if (selectedServices.length === 0) {
+      toast.error("Pilih minimal 1 jenis pekerjaan")
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      const res = await fetch("/api/crm/inquiry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inquiry_id }),
+        body: JSON.stringify({
+          ...form,
+          estimasi_nilai: Number(form.estimasi_nilai || 0),
+          layanan: selectedServices.join("|"),
+          status: "new",
+        }),
       })
 
-      const result = await res.json()
       if (!res.ok) throw new Error()
 
-      toast.success("Berhasil convert ke RAB")
-      router.push(`/admin/estimator/rab/${result.rab_id}`)
+      toast.success("Inquiry berhasil dibuat")
+      router.push("/admin/crm/inquiry")
+
     } catch {
-      toast.error("Gagal convert ke RAB")
+      toast.error("Gagal menyimpan inquiry")
     } finally {
-      setIsUpdating(false)
+      setLoading(false)
     }
   }
 
-  if (!data)
-    return (
-      <div className="flex items-center justify-center h-96 text-gray-400 font-medium animate-pulse">
-        Loading inquiry data...
-      </div>
-    )
-
-  const currentStepIndex = STEPS.indexOf(data.status?.toLowerCase())
-  const services = data.layanan ? data.layanan.split("|") : []
-
-  /* ================= BUTTON HELPER ================= */
-  const getButtonText = (text: string) => (isUpdating ? "Processing..." : text)
-
   return (
-    <div className="max-w-6xl mx-auto space-y-10 pb-24 animate-in fade-in duration-500">
+    <div className="max-w-6xl mx-auto space-y-8 pb-20 animate-in fade-in duration-500">
+
       {/* HEADER */}
-      <div className="flex justify-between items-end">
+      <div className="flex items-center justify-between">
         <div>
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-xs font-bold text-blue-600 mb-2 hover:gap-3 transition-all"
-          >
-            <ArrowLeft size={14} /> KEMBALI KE LIST
-          </button>
-
-          <h1 className="text-4xl font-extrabold tracking-tight">Detail Inquiry</h1>
-          <p className="text-gray-500 text-sm">Monitoring peluang proyek secara real-time</p>
+          <h1 className="text-3xl font-black tracking-tight">
+            Tambah Inquiry Baru
+          </h1>
+          <p className="text-gray-500">
+            Input prospek proyek untuk tim estimasi.
+          </p>
         </div>
 
-        <span className="text-[10px] font-bold bg-gray-100 px-3 py-1 rounded-full text-gray-500">
-          ID: {inquiry_id}
-        </span>
+        <button
+          onClick={() => router.back()}
+          className="text-sm font-bold text-gray-400 hover:text-gray-600"
+        >
+          Kembali
+        </button>
       </div>
 
-      {/* STEPPER */}
-      <div className="bg-white border rounded-[2rem] p-10 shadow-soft relative">
-        <div className="absolute top-1/2 left-0 w-full h-[2px] bg-gray-100 -translate-y-1/2 z-0" />
-        <div
-          className="absolute top-1/2 left-0 h-[2px] bg-blue-600 -translate-y-1/2 z-0 transition-all duration-700"
-          style={{
-            width: `${(currentStepIndex / (STEPS.length - 1)) * 100}%`,
-          }}
-        />
-
-        <div className="relative z-10 flex justify-between">
-          {STEPS.map((step, index) => {
-            const isCompleted = index < currentStepIndex
-            const isCurrent = index === currentStepIndex
-
-            return (
-              <div key={step} className="flex flex-col items-center w-full">
-                <div
-                  className={`w-10 h-10 flex items-center justify-center rounded-full border-4 transition-all duration-500
-                    ${isCompleted ? "bg-blue-600 border-white text-white" : ""}
-                    ${isCurrent ? "bg-white border-blue-600 text-blue-600 scale-110 shadow-md" : ""}
-                    ${index > currentStepIndex ? "bg-white border-gray-200 text-gray-400" : ""}
-                  `}
-                >
-                  {isCompleted ? <Check size={16} strokeWidth={3} /> : <span className="text-xs font-bold">{index + 1}</span>}
-                </div>
-
-                <p className={`mt-4 text-[10px] font-bold uppercase tracking-widest ${isCurrent ? "text-blue-600" : "text-gray-400"}`}>
-                  {step}
-                </p>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* CONTENT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
         {/* LEFT SIDE */}
-        <div className="lg:col-span-2 bg-white border rounded-[2rem] p-10 shadow-soft space-y-10">
-          {/* INFO GRID */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            <Info label="Customer" value={data.customer_name} />
-            <Info
-              label="Status"
-              value={
-                <span
-                  className={`inline-block px-4 py-1 rounded-full text-xs font-bold uppercase
-                    ${data.status === "won" ? "bg-green-100 text-green-700" : data.status === "lost" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"}
-                  `}
+        <div className="lg:col-span-2 space-y-6">
+
+          {/* INFORMASI PROYEK */}
+          <div className="bg-white border rounded-3xl p-8 shadow-sm space-y-6">
+
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-6 bg-blue-600 rounded-full" />
+              <h2 className="text-xs font-black uppercase tracking-widest">
+                Informasi Proyek
+              </h2>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+
+              {/* CUSTOMER */}
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase">
+                  Customer *
+                </label>
+                <select
+                  className="w-full mt-2 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={form.customer_id}
+                  onChange={(e) => {
+                    const selected = customers.find(
+                      c => c.customer_id === e.target.value
+                    )
+                    setForm({
+                      ...form,
+                      customer_id: e.target.value,
+                      customer_name: selected?.company_name || ""
+                    })
+                  }}
                 >
-                  {data.status}
-                </span>
-              }
-            />
-            <Info label="Nama Pekerjaan" value={data.nama_pekerjaan} />
-            <Info
-              label="Tanggal Masuk"
-              value={
-                data.tanggal_masuk
-                  ? new Date(data.tanggal_masuk).toLocaleDateString("id-ID", { dateStyle: "long" })
-                  : "-"
+                  <option value="">-- Pilih Customer --</option>
+                  {customers.map((c) => (
+                    <option key={c.customer_id} value={c.customer_id}>
+                      {c.company_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* NAMA PEKERJAAN */}
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase">
+                  Nama Pekerjaan *
+                </label>
+                <input
+                  className="w-full mt-2 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="Contoh: Renovasi Kantor Pusat"
+                  value={form.nama_pekerjaan}
+                  onChange={(e) =>
+                    setForm({ ...form, nama_pekerjaan: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+
+            {/* SERVICES */}
+            <div className="pt-4 border-t">
+              <label className="text-xs font-bold text-gray-400 uppercase">
+                Jenis Layanan *
+              </label>
+
+              <div className="flex flex-wrap gap-3 mt-3">
+                {SERVICE_OPTIONS.map(service => {
+                  const active = selectedServices.includes(service)
+                  return (
+                    <label
+                      key={service}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition border ${
+                        active
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-blue-400"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={active}
+                        onChange={() => toggleService(service)}
+                        className="hidden"
+                      />
+                      {service}
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* CATATAN */}
+          <div className="bg-white border rounded-3xl p-8 shadow-sm">
+            <label className="text-xs font-bold text-gray-400 uppercase">
+              Catatan
+            </label>
+            <textarea
+              className="w-full mt-3 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-amber-500 outline-none"
+              rows={4}
+              placeholder="Tambahkan detail lokasi atau instruksi..."
+              value={form.catatan}
+              onChange={(e) =>
+                setForm({ ...form, catatan: e.target.value })
               }
             />
           </div>
 
-          {/* SERVICES */}
-          <div className="pt-6 border-t border-gray-100">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Jenis Layanan</p>
-            <div className="flex flex-wrap gap-2">
-              {services.map((service: string, i: number) => (
-                <span key={i} className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold border border-slate-100">
-                  {service}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* QUICK STATUS ACTION */}
-          {data.status !== "won" && data.status !== "lost" && (
-            <div className="pt-8 border-t border-gray-100 flex flex-wrap gap-4">
-              <div className="w-full mb-2">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Update Progress Proyek</p>
-              </div>
-
-              {data.status === "new" && (
-                <button
-                  disabled={isUpdating}
-                  onClick={() => updateInquiry({ status: "survey" })}
-                  className="px-6 py-3 bg-blue-50 text-blue-600 rounded-2xl text-xs font-bold hover:bg-blue-100 transition-all disabled:opacity-50"
-                >
-                  {getButtonText("Mulai Survey Lapangan")}
-                </button>
-              )}
-
-              {data.status === "survey" && (
-                <button
-                  disabled={isUpdating}
-                  onClick={() => updateInquiry({ status: "estimating" })}
-                  className="px-6 py-3 bg-blue-50 text-blue-600 rounded-2xl text-xs font-bold hover:bg-blue-100 transition-all disabled:opacity-50"
-                >
-                  {getButtonText("Kirim ke Estimator")}
-                </button>
-              )}
-
-              <button
-                disabled={isUpdating}
-                onClick={() => updateInquiry({ status: "won" })}
-                className="px-6 py-3 bg-green-600 text-white rounded-2xl text-xs font-bold hover:bg-green-700 transition-all disabled:opacity-50"
-              >
-                {getButtonText("Project WON / Deal")}
-              </button>
-
-              <button
-                disabled={isUpdating}
-                onClick={() => updateInquiry({ status: "lost" })}
-                className="px-6 py-3 bg-white text-red-400 border border-red-100 rounded-2xl text-xs font-bold hover:bg-red-50 transition-all disabled:opacity-50"
-              >
-                {getButtonText("Gagal / Lost")}
-              </button>
-            </div>
-          )}
-
-          {data.status === "won" && (
-            <div className="pt-8 border-t border-gray-100">
-              <div className="bg-green-50 border border-green-100 p-6 rounded-[1.5rem] flex items-center gap-4">
-                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg">
-                  <Check size={24} strokeWidth={3} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-green-900">Project Secured!</h4>
-                  <p className="text-sm text-green-700">Inquiry ini berhasil dimenangkan dan siap lanjut ke tahap RAB.</p>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* RIGHT SIDE */}
         <div className="space-y-6">
+
           {/* ESTIMASI CARD */}
-          <div className="bg-[#0f172a] text-white rounded-[2rem] p-10 shadow-2xl relative overflow-hidden">
-            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em]">Estimasi Nilai (IDR)</p>
-            <h2 className="text-3xl font-extrabold mt-3">
-              <span className="text-blue-400 text-lg mr-1">Rp</span>
-              {Number(data.estimasi_nilai || 0).toLocaleString("id-ID")}
-</h2>
+          <div className="bg-[#0f172a] rounded-3xl p-8 text-white shadow-xl space-y-6">
+            <div>
+              <label className="text-xs text-blue-400 uppercase tracking-widest font-bold">
+                Estimasi Nilai (IDR)
+              </label>
+              <input
+                className="w-full mt-3 bg-white/10 rounded-xl px-4 py-4 text-xl font-black focus:ring-2 focus:ring-blue-500 outline-none"
+                value={estimasiDisplay}
+                onChange={(e) =>
+                  handleEstimasiChange(e.target.value)
+                }
+                placeholder="0"
+              />
+            </div>
+
+            <div className="pt-4 border-t border-white/10">
+              <label className="text-xs text-blue-400 uppercase tracking-widest font-bold">
+                Assigned Estimator
+              </label>
+              <select
+                className="w-full mt-3 bg-white/10 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                value={form.assigned_to}
+                onChange={(e) =>
+                  setForm({ ...form, assigned_to: e.target.value })
+                }
+              >
+                <option value="" className="text-black">
+                  -- Pilih Staff --
+                </option>
+                {employees.map((emp) => (
+                  <option
+                    key={emp.employee_id}
+                    value={emp.employee_id}
+                    className="text-black"
+                  >
+                    {emp.nama_lengkap}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {/* ACTION CARD */}
-          <div className="bg-white border rounded-[2rem] p-8 shadow-soft space-y-4">
+          {/* ACTION */}
+          <div className="bg-blue-50 border rounded-3xl p-8 space-y-4">
+            <p className="text-xs font-bold uppercase tracking-widest text-blue-700">
+              Status Inquiry
+            </p>
+
+            <div className="flex items-center gap-3 text-blue-900">
+              <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
+              <span className="font-black">NEW PROSPECT</span>
+            </div>
+
             <button
-              onClick={convertToRAB}
-              disabled={data.status !== "won" || isUpdating}
-              className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-30 disabled:grayscale"
+              onClick={handleSubmit}
+              disabled={loading}
+              className="w-full mt-4 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-sm transition disabled:opacity-50"
             >
-              {isUpdating ? "Processing..." : "Convert ke RAB"}
+              {loading ? "PROCESSING..." : "SIMPAN INQUIRY"}
             </button>
           </div>
-        </div>
-      </div>
-    </div>
-  )
-}
 
-function Info({ label, value }: any) {
-  return (
-    <div>
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{label}</p>
-      <div className="text-sm font-semibold text-gray-900">{value}</div>
+        </div>
+
+      </div>
     </div>
   )
 }

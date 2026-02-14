@@ -67,12 +67,12 @@ export async function POST(req: Request) {
       )
     }
 
-    if (currentStatus !== "won") {
-      return NextResponse.json(
-        { message: "Inquiry harus status WON sebelum convert ke RAB" },
-        { status: 400 }
-      )
-    }
+    if (!["estimating"].includes(currentStatus)) {
+  return NextResponse.json(
+    { message: "Inquiry harus status ESTIMATING sebelum convert ke RAB" },
+    { status: 400 }
+  )
+}
 
     /* ================= GENERATE ID ================= */
 

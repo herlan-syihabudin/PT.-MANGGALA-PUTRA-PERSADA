@@ -77,7 +77,7 @@ console.log("ESTIMASI RAW:", row[6])
   sumber: row[7],
 
   assigned_to: row[8],      // ✅
-  status: row[9],           // ✅
+  status: String(row[9] || "new").toLowerCase(),           // ✅
   prioritas: row[10],
   lokasi: row[11],
   catatan: row[12],
@@ -125,7 +125,12 @@ export async function PATCH(
 
     const rows = res.data.values || []
 
-    const rowIndex = rows.findIndex((r) => r[0] === inquiryId)
+   const normalize = (val: string) =>
+  String(val).replace(/[\s-]/g, "").trim()
+
+const rowIndex = rows.findIndex((r) =>
+  normalize(r[0]) === normalize(inquiryId)
+)
 
     if (rowIndex === -1) {
       return NextResponse.json(

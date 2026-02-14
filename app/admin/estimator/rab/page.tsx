@@ -6,8 +6,10 @@ export const dynamic = "force-dynamic"
 /* ================= TYPES ================= */
 
 type RabProject = {
+  rab_id: string
   project_id: string
   project_name: string | null
+  customer_name?: string | null
   total_items: number | null
   total_value: number | null
   status: string | null
@@ -49,17 +51,19 @@ export default async function RABPage() {
     fetchPendingInquiry(),
   ])
 
-  // Sorting: Draft dulu di atas
   const projects = (rawProjects ?? []).sort((a, b) => {
-    if ((a.status || "").toLowerCase() === "draft") return -1
-    if ((b.status || "").toLowerCase() === "draft") return 1
+    const statusA = (a.status || "").toLowerCase()
+    const statusB = (b.status || "").toLowerCase()
+
+    if (statusA === "draft" && statusB !== "draft") return -1
+    if (statusB === "draft" && statusA !== "draft") return 1
     return 0
   })
 
   return (
     <div className="p-6 space-y-6">
 
-      {/* HEADER */}
+      {/* ================= HEADER ================= */}
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-gray-900">
@@ -72,25 +76,25 @@ export default async function RABPage() {
 
         <div className="flex items-center gap-3">
 
-          {/* 🔔 NOTIFICATION */}
-<Link
-  href="/admin/estimator/to-estimate"
-  className={`relative px-4 py-2 text-xs font-semibold rounded-lg transition shadow-sm border
-    ${
-      pending.length > 0
-        ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-        : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-    }
-  `}
->
-  🔔 To Estimate
+          {/* 🔔 TO ESTIMATE */}
+          <Link
+            href="/admin/estimator/to-estimate"
+            className={`relative px-4 py-2 text-xs font-semibold rounded-lg transition shadow-sm border
+              ${
+                pending.length > 0
+                  ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                  : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+              }
+            `}
+          >
+            🔔 To Estimate
 
-  {pending.length > 0 && (
-    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full">
-      {pending.length}
-    </span>
-  )}
-</Link>
+            {pending.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full">
+                {pending.length}
+              </span>
+            )}
+          </Link>
 
           {/* CREATE BUTTON */}
           <Link
@@ -102,7 +106,7 @@ export default async function RABPage() {
         </div>
       </div>
 
-      {/* TABLE */}
+      {/* ================= TABLE ================= */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-50 border-b border-gray-200 text-xs uppercase text-gray-500 font-bold">
@@ -125,7 +129,7 @@ export default async function RABPage() {
             ) : (
               projects.map((p) => (
                 <tr
-                  key={p.project_id}
+                  key={p.rab_id}
                   className="hover:bg-gray-50 transition-colors group"
                 >
                   {/* PROJECT INFO */}
@@ -133,6 +137,13 @@ export default async function RABPage() {
                     <div className="font-semibold text-gray-900">
                       {p.project_name || "Tanpa Nama Project"}
                     </div>
+
+                    {p.customer_name && (
+                      <div className="text-xs text-gray-500">
+                        {p.customer_name}
+                      </div>
+                    )}
+
                     <div className="text-[10px] text-gray-400 font-mono uppercase">
                       {p.project_id}
                     </div>
@@ -141,14 +152,14 @@ export default async function RABPage() {
                   {/* ITEMS */}
                   <td className="p-4 text-gray-600">
                     <span className="font-medium">
-                      {p.total_items || 0}
+                      {p.total_items ?? 0}
                     </span>{" "}
                     <span className="text-xs">Baris</span>
                   </td>
 
                   {/* VALUE */}
                   <td className="p-4 font-bold text-blue-700">
-                    {formatIDR(p.total_value || 0)}
+                    {formatIDR(p.total_value ?? 0)}
                   </td>
 
                   {/* STATUS */}
@@ -159,7 +170,7 @@ export default async function RABPage() {
                   {/* ACTION */}
                   <td className="p-4 text-center">
                     <Link
-                      href={`/admin/estimator/rab/${p.project_id}`}
+                      href={`/admin/estimator/rab/${p.rab_id}`}
                       className="inline-flex items-center px-3 py-1 bg-white border border-gray-300 rounded-md text-[11px] font-bold text-gray-700 hover:bg-gray-50 group-hover:border-blue-400 group-hover:text-blue-600 transition-all"
                     >
                       Buka RAB
@@ -172,7 +183,7 @@ export default async function RABPage() {
         </table>
       </div>
 
-      {/* SECURITY NOTE */}
+      {/* ================= SECURITY NOTE ================= */}
       <div className="flex items-center gap-2 p-4 bg-gray-50 rounded-lg border border-dashed">
         <span className="text-lg">🔒</span>
         <p className="text-[11px] text-gray-500 leading-relaxed">
@@ -184,7 +195,7 @@ export default async function RABPage() {
   )
 }
 
-/* ================= STATUS UI ================= */
+/* ================= STATUS BADGE ================= */
 
 function StatusBadge({ status }: { status: string }) {
   const normalized = status.toLowerCase()

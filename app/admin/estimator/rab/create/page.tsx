@@ -3,109 +3,86 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
-type Project = {
-  project_id: string
-  project_name: string
+type Inquiry = {
+  inquiry_id: string
+  customer_name: string
+  nama_pekerjaan: string
 }
 
 export default function CreateRABProjectPage() {
   const router = useRouter()
-  const [projects, setProjects] = useState<Project[]>([])
-  const [projectId, setProjectId] = useState("")
+  const [inquiries, setInquiries] = useState<Inquiry[]>([])
+  const [inquiryId, setInquiryId] = useState("")
   const [loading, setLoading] = useState(false)
 
-  /* ================= LOAD ACTIVE PROJECT ================= */
-
+  /* ===== LOAD INQUIRY STATUS ESTIMATING ===== */
   useEffect(() => {
-    fetch("/api/projects")
+    fetch("/api/crm/inquiry?status=estimating")
       .then((r) => r.json())
-      .then((data) => {
-        // Filter active project di frontend (lebih aman)
-        const active = data.filter(
-          (p: any) => p.status?.toLowerCase() === "active"
-        )
-        setProjects(active)
-      })
-      .catch(() => setProjects([]))
+      .then(setInquiries)
+      .catch(() => setInquiries([]))
   }, [])
 
-  /* ================= SUBMIT ================= */
-
+  /* ===== SUBMIT ===== */
   async function handleSubmit() {
-    if (!projectId) {
-      alert("Pilih project dulu")
+    if (!inquiryId) {
+      alert("Pilih inquiry dulu")
       return
     }
 
-    try {
-      setLoading(true)
+    setLoading(true)
 
-      const res = await fetch("/api/estimator/rab/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          project_id: projectId,
-          created_by: "Estimator",
-        }),
-      })
+    const res = await fetch("/api/estimator/rab/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        inquiry_id: inquiryId,
+        created_by: "Estimator",
+      }),
+    })
 
-      const data = await res.json()
+    setLoading(false)
 
-      if (!res.ok) {
-        alert(data.message || "Gagal membuat RAB")
-        setLoading(false)
-        return
-      }
-
-      // ✅ Redirect pakai rab_id (ini yang benar)
-      router.push(`/admin/estimator/rab/${data.rab_id}`)
-
-    } catch (err) {
-      alert("Terjadi kesalahan sistem")
-    } finally {
-      setLoading(false)
+    if (!res.ok) {
+      alert("Gagal membuat RAB")
+      return
     }
-  }
 
-  /* ================= UI ================= */
+    const data = await res.json()
+
+    router.push(`/admin/estimator/rab/${data.rab_id}`)
+  }
 
   return (
     <div className="p-6 max-w-xl space-y-6">
-
-      {/* HEADER */}
       <div>
         <h1 className="text-xl font-semibold">
-          Buat RAB Project
+          Buat RAB dari Inquiry
         </h1>
         <p className="text-sm text-gray-500">
-          Membuat RAB resmi oleh Estimator
+          Inquiry yang sudah masuk tahap Estimating
         </p>
       </div>
 
-      {/* FORM */}
       <div className="bg-white border rounded-lg p-4 space-y-4">
-
         <div>
           <label className="text-xs text-gray-500">
-            Project
+            Inquiry
           </label>
-
           <select
             className="w-full border rounded px-3 py-2 text-sm"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
+            value={inquiryId}
+            onChange={(e) => setInquiryId(e.target.value)}
           >
-            <option value="">-- Pilih Project Active --</option>
-
-            {projects.map((p) => (
-              <option key={p.project_id} value={p.project_id}>
-                {p.project_name}
+            <option value="">-- Pilih Inquiry Estimating --</option>
+            {inquiries.map((i) => (
+              <option key={i.inquiry_id} value={i.inquiry_id}>
+                {i.nama_pekerjaan} – {i.customer_name}
               </option>
             ))}
           </select>
         </div>
 
-        {/* ACTION */}
         <div className="flex gap-3">
           <button
             onClick={handleSubmit}
@@ -122,9 +99,7 @@ export default function CreateRABProjectPage() {
             Batal
           </button>
         </div>
-
       </div>
-
     </div>
   )
 }

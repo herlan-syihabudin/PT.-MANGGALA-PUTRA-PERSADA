@@ -70,9 +70,14 @@ console.log("ESTIMASI RAW:", row[6])
   nama_pekerjaan: row[4],
   layanan: row[5],
 
-  estimasi_nilai: Number(
-    String(row[6] || 0).replace(/[^\d]/g, "")
-  ),
+  const estimasiRaw = row[6]
+
+const estimasiNumber =
+  typeof estimasiRaw === "number"
+    ? estimasiRaw
+    : Number(String(estimasiRaw || 0).replace(/[^\d]/g, ""))
+
+estimasi_nilai: estimasiNumber,
 
   sumber: row[7],
 

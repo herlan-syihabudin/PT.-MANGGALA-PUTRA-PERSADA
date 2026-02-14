@@ -94,23 +94,25 @@ export async function POST(req: Request) {
     /* ================= INSERT RAB PROJECT ================= */
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId: EST_SHEET_ID,
-      range: `${RAB_SHEET}!A:I`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [[
-          rabId,            // A
-          projectId,        // B
-          projectName,      // C
-          customerName,     // D
-          0,                // E total_item
-          0,                // F total_value
-          "Draft",          // G status
-          inquiry_id,       // H linked_inquiry_id
-          createdAt         // I created_at
-        ]]
-      }
-    })
+  spreadsheetId: EST_SHEET_ID,
+  range: `${RAB_SHEET}!A:K`,
+  valueInputOption: "USER_ENTERED",
+  requestBody: {
+    values: [[
+      rabId,            // A rab_id
+      inquiry_id,       // B inquiry_id
+      projectId,        // C project_id
+      projectName,      // D project_name
+      customerName,     // E customer_name
+      0,                // F total_item
+      0,                // G total_nilai_rab
+      "Draft",          // H status
+      "Estimator",      // I aksi
+      "System",         // J created_by
+      createdAt         // K created_at
+    ]]
+  }
+})
 
     /* ================= UPDATE CRM ================= */
 

@@ -97,7 +97,7 @@ export async function POST(req: Request) {
           0,               // E total_item
           0,               // F total_value
           "Draft",         // G status
-          "",              // H linked_inquiry_id (optional)
+          "",              // H linked_inquiry_id
           created_at       // I created_at
         ]]
       }

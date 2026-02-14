@@ -188,15 +188,15 @@ async function getSummary(customerId: string): Promise<ExtendedSummary> {
 
 /* ================= PAGE ================= */
 
-export default async function CustomerDetailPage({
-  params,
-}: {
-  params: { customer_id: string }
-}) {
-  const customer = await getCustomer(params.customer_id)
+export default async function CustomerDetailPage(
+  { params }: { params: Promise<{ customer_id: string }> }
+) {
+  const { customer_id } = await params
+
+  const customer = await getCustomer(customer_id)
   if (!customer) return <div className="p-6">Customer tidak ditemukan</div>
 
-  const summary = await getSummary(customer.customer_id)
+  const summary = await getSummary(customer_id)
 
   const badgeMap: any = {
     "New Lead": "bg-gray-100 text-gray-700",

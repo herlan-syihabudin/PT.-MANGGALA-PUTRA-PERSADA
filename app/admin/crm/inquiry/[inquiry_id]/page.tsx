@@ -10,7 +10,9 @@ const STEPS = ["new", "survey", "estimating", "won"]
 export default function InquiryDetailPage() {
   const params = useParams()
   const inquiry_id =
-    typeof params.inquiry_id === "string" ? params.inquiry_id : params.inquiry_id?.[0]
+    typeof params.inquiry_id === "string"
+      ? params.inquiry_id
+      : params.inquiry_id?.[0]
 
   const router = useRouter()
 
@@ -21,9 +23,21 @@ export default function InquiryDetailPage() {
   useEffect(() => {
     const load = async () => {
       if (!inquiry_id) return
-      const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, { cache: "no-store" })
-      if (res.ok) setData(await res.json())
+
+      try {
+        const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
+          cache: "no-store",
+        })
+
+        if (!res.ok) throw new Error()
+
+        const json = await res.json()
+        setData(json)
+      } catch {
+        toast.error("Gagal load data inquiry")
+      }
     }
+
     load()
   }, [inquiry_id])
 
@@ -85,15 +99,21 @@ export default function InquiryDetailPage() {
       </div>
     )
 
-  const currentStepIndex = STEPS.indexOf(data.status?.toLowerCase())
+  /* ================= SAFE STEP ================= */
+  const safeStatus = data.status?.toLowerCase() || "new"
+  const currentStepIndex = Math.max(0, STEPS.indexOf(safeStatus))
+
+  /* ================= SAFE SERVICES ================= */
   const services = data.layanan ? data.layanan.split("|") : []
-  const estimasi =
-  typeof data?.estimasi_nilai === "number"
-    ? data.estimasi_nilai
-    : Number(data?.estimasi_nilai ?? 0)
+
+  /* ================= SUPER SAFE ESTIMASI ================= */
+  const estimasi = Number(
+    String(data?.estimasi_nilai ?? "0").replace(/[^0-9]/g, "")
+  )
 
   /* ================= BUTTON HELPER ================= */
-  const getButtonText = (text: string) => (isUpdating ? "Processing..." : text)
+  const getButtonText = (text: string) =>
+    isUpdating ? "Processing..." : text
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 pb-24 animate-in fade-in duration-500">
@@ -107,8 +127,12 @@ export default function InquiryDetailPage() {
             <ArrowLeft size={14} /> KEMBALI KE LIST
           </button>
 
-          <h1 className="text-4xl font-extrabold tracking-tight">Detail Inquiry</h1>
-          <p className="text-gray-500 text-sm">Monitoring peluang proyek secara real-time</p>
+          <h1 className="text-4xl font-extrabold tracking-tight">
+            Detail Inquiry
+          </h1>
+          <p className="text-gray-500 text-sm">
+            Monitoring peluang proyek secara real-time
+          </p>
         </div>
 
         <span className="text-[10px] font-bold bg-gray-100 px-3 py-1 rounded-full text-gray-500">
@@ -135,15 +159,25 @@ export default function InquiryDetailPage() {
               <div key={step} className="flex flex-col items-center w-full">
                 <div
                   className={`w-10 h-10 flex items-center justify-center rounded-full border-4 transition-all duration-500
-                    ${isCompleted ? "bg-blue-600 border-white text-white" : ""}
-                    ${isCurrent ? "bg-white border-blue-600 text-blue-600 scale-110 shadow-md" : ""}
-                    ${index > currentStepIndex ? "bg-white border-gray-200 text-gray-400" : ""}
-                  `}
+                  ${isCompleted ? "bg-blue-600 border-white text-white" : ""}
+                  ${isCurrent ? "bg-white border-blue-600 text-blue-600 scale-110 shadow-md" : ""}
+                  ${index > currentStepIndex ? "bg-white border-gray-200 text-gray-400" : ""}
+                `}
                 >
-                  {isCompleted ? <Check size={16} strokeWidth={3} /> : <span className="text-xs font-bold">{index + 1}</span>}
+                  {isCompleted ? (
+                    <Check size={16} strokeWidth={3} />
+                  ) : (
+                    <span className="text-xs font-bold">
+                      {index + 1}
+                    </span>
+                  )}
                 </div>
 
-                <p className={`mt-4 text-[10px] font-bold uppercase tracking-widest ${isCurrent ? "text-blue-600" : "text-gray-400"}`}>
+                <p
+                  className={`mt-4 text-[10px] font-bold uppercase tracking-widest ${
+                    isCurrent ? "text-blue-600" : "text-gray-400"
+                  }`}
+                >
                   {step}
                 </p>
               </div>
@@ -154,125 +188,66 @@ export default function InquiryDetailPage() {
 
       {/* CONTENT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* LEFT SIDE */}
+        {/* LEFT */}
         <div className="lg:col-span-2 bg-white border rounded-[2rem] p-10 shadow-soft space-y-10">
-          {/* INFO GRID */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            <Info label="Customer" value={data.customer_name} />
+            <Info label="Customer" value={data.customer_name || "-"} />
+
             <Info
               label="Status"
               value={
                 <span
                   className={`inline-block px-4 py-1 rounded-full text-xs font-bold uppercase
-                    ${data.status === "won" ? "bg-green-100 text-green-700" : data.status === "lost" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"}
-                  `}
+                  ${
+                    safeStatus === "won"
+                      ? "bg-green-100 text-green-700"
+                      : safeStatus === "lost"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-blue-100 text-blue-700"
+                  }
+                `}
                 >
-                  {data.status}
+                  {safeStatus}
                 </span>
               }
             />
-            <Info label="Nama Pekerjaan" value={data.nama_pekerjaan} />
+
+            <Info label="Nama Pekerjaan" value={data.nama_pekerjaan || "-"} />
+
             <Info
               label="Tanggal Masuk"
               value={
                 data.tanggal_masuk
-                  ? new Date(data.tanggal_masuk).toLocaleDateString("id-ID", { dateStyle: "long" })
+                  ? new Date(data.tanggal_masuk).toLocaleDateString(
+                      "id-ID",
+                      { dateStyle: "long" }
+                    )
                   : "-"
               }
             />
           </div>
-
-          {/* SERVICES */}
-          <div className="pt-6 border-t border-gray-100">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Jenis Layanan</p>
-            <div className="flex flex-wrap gap-2">
-              {services.map((service: string, i: number) => (
-                <span key={i} className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold border border-slate-100">
-                  {service}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* QUICK STATUS ACTION */}
-          {data.status !== "won" && data.status !== "lost" && (
-            <div className="pt-8 border-t border-gray-100 flex flex-wrap gap-4">
-              <div className="w-full mb-2">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Update Progress Proyek</p>
-              </div>
-
-              {data.status === "new" && (
-                <button
-                  disabled={isUpdating}
-                  onClick={() => updateInquiry({ status: "survey" })}
-                  className="px-6 py-3 bg-blue-50 text-blue-600 rounded-2xl text-xs font-bold hover:bg-blue-100 transition-all disabled:opacity-50"
-                >
-                  {getButtonText("Mulai Survey Lapangan")}
-                </button>
-              )}
-
-              {data.status === "survey" && (
-                <button
-                  disabled={isUpdating}
-                  onClick={() => updateInquiry({ status: "estimating" })}
-                  className="px-6 py-3 bg-blue-50 text-blue-600 rounded-2xl text-xs font-bold hover:bg-blue-100 transition-all disabled:opacity-50"
-                >
-                  {getButtonText("Kirim ke Estimator")}
-                </button>
-              )}
-
-              <button
-                disabled={isUpdating}
-                onClick={() => updateInquiry({ status: "won" })}
-                className="px-6 py-3 bg-green-600 text-white rounded-2xl text-xs font-bold hover:bg-green-700 transition-all disabled:opacity-50"
-              >
-                {getButtonText("Project WON / Deal")}
-              </button>
-
-              <button
-                disabled={isUpdating}
-                onClick={() => updateInquiry({ status: "lost" })}
-                className="px-6 py-3 bg-white text-red-400 border border-red-100 rounded-2xl text-xs font-bold hover:bg-red-50 transition-all disabled:opacity-50"
-              >
-                {getButtonText("Gagal / Lost")}
-              </button>
-            </div>
-          )}
-
-          {data.status === "won" && (
-            <div className="pt-8 border-t border-gray-100">
-              <div className="bg-green-50 border border-green-100 p-6 rounded-[1.5rem] flex items-center gap-4">
-                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg">
-                  <Check size={24} strokeWidth={3} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-green-900">Project Secured!</h4>
-                  <p className="text-sm text-green-700">Inquiry ini berhasil dimenangkan dan siap lanjut ke tahap RAB.</p>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* RIGHT SIDE */}
+        {/* RIGHT */}
         <div className="space-y-6">
-          {/* ESTIMASI CARD */}
-          <div className="bg-[#0f172a] text-white rounded-[2rem] p-10 shadow-2xl relative overflow-hidden">
-            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em]">Estimasi Nilai (IDR)</p>
+          <div className="bg-[#0f172a] text-white rounded-[2rem] p-10 shadow-2xl">
+            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em]">
+              Estimasi Nilai (IDR)
+            </p>
+
             <h2 className="text-3xl font-extrabold mt-3">
               <span className="text-blue-400 text-lg mr-1">Rp</span>
               {estimasi.toLocaleString("id-ID")}
-</h2>
+            </h2>
           </div>
 
-          {/* ACTION CARD */}
-          <div className="bg-white border rounded-[2rem] p-8 shadow-soft space-y-4">
+          <div className="bg-white border rounded-[2rem] p-8 shadow-soft">
             <button
               onClick={convertToRAB}
-              disabled={data.status !== "won" || isUpdating}
+              disabled={safeStatus !== "won" || isUpdating}
               className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-30 disabled:grayscale"
             >
-              {isUpdating ? "Processing..." : "Convert ke RAB"}
+              {getButtonText("Convert ke RAB")}
             </button>
           </div>
         </div>
@@ -284,8 +259,12 @@ export default function InquiryDetailPage() {
 function Info({ label, value }: any) {
   return (
     <div>
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{label}</p>
-      <div className="text-sm font-semibold text-gray-900">{value}</div>
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+        {label}
+      </p>
+      <div className="text-sm font-semibold text-gray-900">
+        {value}
+      </div>
     </div>
   )
 }

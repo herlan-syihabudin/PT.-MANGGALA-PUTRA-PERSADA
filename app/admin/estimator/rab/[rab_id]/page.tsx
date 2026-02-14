@@ -1,4 +1,3 @@
-// app/admin/estimator/rab/[project_id]/page.tsx
 
 import Link from "next/link"
 import { formatIDR } from "@/lib/format"
@@ -29,10 +28,9 @@ type RabResponse = {
 
 /* ================= FETCH ================= */
 
-async function fetchRAB(project_id: string): Promise<RabResponse> {
-  const base = process.env.NEXT_PUBLIC_BASE_URL
+async function fetchRAB(rab_id: string): Promise<RabResponse> {
   const res = await fetch(
-    `${base}/api/estimator/rab?project_id=${project_id}`,
+    `${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/estimator/rab?rab_id=${rab_id}`,
     { cache: "no-store" }
   )
 
@@ -46,14 +44,15 @@ async function fetchRAB(project_id: string): Promise<RabResponse> {
   return res.json()
 }
 
+
 /* ================= PAGE ================= */
 
 export default async function EstimatorRABDetail({
   params,
 }: {
-  params: { project_id: string }
+  params: { rab_id: string }
 }) {
-  const data = await fetchRAB(params.project_id)
+  const data = await fetchRAB(params.rab_id)
 
   return (
     <div className="p-6 space-y-6">
@@ -65,8 +64,8 @@ export default async function EstimatorRABDetail({
             RAB Project – Estimator
           </h1>
           <p className="text-xs text-gray-500">
-            Project ID: {params.project_id}
-          </p>
+  RAB ID: {params.rab_id}
+</p>
         </div>
 
         <Link

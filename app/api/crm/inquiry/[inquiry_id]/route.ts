@@ -60,15 +60,22 @@ export async function GET(
   customer_name: row[3],
   nama_pekerjaan: row[4],
   layanan: row[5],
-  estimasi_nilai: Number(row[6] || 0),
+
+  estimasi_nilai: Number(
+    String(row[6] || 0).replace(/[^\d]/g, "")
+  ),
+
   sumber: row[7],
-  assigned_to: row[8],     // FIX
-  status: row[9],          // FIX
+
+  assigned_to: row[8],      // ✅
+  status: row[9],           // ✅
   prioritas: row[10],
   lokasi: row[11],
   catatan: row[12],
-  converted_rab_id: row[13],
-  converted_project_id: row[14],
+
+  converted_rab_id: row[13],      // ✅
+  converted_project_id: row[14],  // ✅
+
   created_at: row[15],
   created_by: row[16],
 }
@@ -124,13 +131,12 @@ export async function PATCH(
     /* ================= COLUMN MAP ================= */
 
     const COLUMN_MAP: Record<string, string> = {
-      status: "I",
-      assigned_to: "J",
-      prioritas: "K",
-      lokasi: "L",
-      catatan: "M",
-      estimasi_deal_date: "N",
-    }
+  assigned_to: "I",
+  status: "J",
+  prioritas: "K",
+  lokasi: "L",
+  catatan: "M",
+}
 
     /* ================= DYNAMIC UPDATE ================= */
 

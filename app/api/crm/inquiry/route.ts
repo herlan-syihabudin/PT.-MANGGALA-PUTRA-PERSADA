@@ -32,11 +32,14 @@ export async function GET(req: Request) {
       (row) => row[0]
     )
 
-    const data = inquiryRows
-      .filter((row) => {
-        if (!filterCustomerId) return true
-        return row[2] === filterCustomerId
-      })
+    const normalize = (val: any) =>
+  String(val || "").replace(/\s+/g, "").trim()
+
+const data = inquiryRows
+  .filter((row) => {
+    if (!filterCustomerId) return true
+    return normalize(row[2]) === normalize(filterCustomerId)
+  })
       .map((row) => ({
         inquiry_id: row[0] || "",
         tanggal_masuk: row[1] || "",
@@ -44,7 +47,9 @@ export async function GET(req: Request) {
         customer_name: row[3] || "",
         nama_pekerjaan: row[4] || "",
         layanan: row[5] || "",
-        estimasi_nilai: row[6] ? Number(row[6]) : 0,
+        estimasi_nilai: row[6]
+  ? Number(String(row[6]).replace(/[^\d]/g, ""))
+  : 0,
         sumber: row[7] || "",
         assigned_to: row[8] || "",
         status: row[9] || "new",
@@ -87,24 +92,24 @@ export async function POST(req: Request) {
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          inquiryId,
-          body.tanggal_masuk || new Date().toISOString().split("T")[0],
-          body.customer_id,
-          body.customer_name || "",   // optional
-          body.nama_pekerjaan,
-          body.layanan || "",
-          body.estimasi_nilai || "",
-          body.sumber || "",
-          body.assigned_to || "",
-          "new",                      // default status
-          body.prioritas || "normal",
-          body.lokasi || "",
-          body.catatan || "",
-          "",                         // converted_rab_id kosong
-          "",                         // converted_project_id kosong
-          now,
-          body.created_by || "Marketing",
-        ]],
+  inquiryId,
+  body.tanggal_masuk || new Date().toISOString().split("T")[0],
+  String(body.customer_id).trim(),
+  String(body.customer_name || "").trim(),
+  String(body.nama_pekerjaan).trim(),
+  body.layanan || "",
+  body.estimasi_nilai || "",
+  body.sumber || "",
+  body.assigned_to || "",
+  "new",
+  body.prioritas || "normal",
+  body.lokasi || "",
+  body.catatan || "",
+  "",
+  "",
+  now,
+  body.created_by || "Marketing",
+]],
       },
     })
 

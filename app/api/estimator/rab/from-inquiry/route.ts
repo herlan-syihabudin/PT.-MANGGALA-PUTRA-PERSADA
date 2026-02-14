@@ -56,7 +56,7 @@ export async function POST(req: Request) {
 
     const projectName = row[4]
     const customerName = row[3]
-    const currentStatus = row[8]
+    const currentStatus = row[9]
 
     /* ================= SAFETY CHECK ================= */
 
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: CRM_SHEET_ID,
-      range: `${CRM_SHEET}!I${sheetRowNumber}`,
+      range: `${CRM_SHEET}!J${sheetRowNumber}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [["estimating"]]

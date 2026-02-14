@@ -257,7 +257,7 @@ export default function InquiryDetailPage() {
             <p className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em]">Estimasi Nilai (IDR)</p>
             <h2 className="text-3xl font-extrabold mt-3">
               <span className="text-blue-400 text-lg mr-1">Rp</span>
-              {Number(data.estimasi_nilai).toLocaleString("id-ID")}
+              {(data.estimasi_nilai ?? 0).toLocaleString("id-ID")}
             </h2>
           </div>
 

@@ -31,13 +31,22 @@ async function fetchInquiry(): Promise<Inquiry[]> {
 
 /* ================= HELPER ================= */
 
-const formatCurrency = (value?: number) => {
-  if (!value) return "-"
+const formatCurrency = (value?: number | string) => {
+  if (value === undefined || value === null || value === "")
+    return "-"
+
+  const numeric = typeof value === "number"
+    ? value
+    : parseInt(String(value).replace(/[^0-9]/g, ""), 10)
+
+  if (!numeric || isNaN(numeric))
+    return "-"
+
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
-  }).format(Number(value))
+  }).format(numeric)
 }
 
 /* ================= PAGE ================= */

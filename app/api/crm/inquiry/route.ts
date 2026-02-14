@@ -23,7 +23,6 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const filterCustomerId = searchParams.get("customer_id")
 
-    /* ===== 1. Ambil Inquiry ===== */
     const inquiryRes = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: `CRM_INQUIRY!A2:Q`,
@@ -33,66 +32,30 @@ export async function GET(req: Request) {
       (row) => row[0]
     )
 
-    /* ===== 2. Ambil Customers ===== */
-    const customerRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `CUSTOMERS!A2:P`,
-    })
-
-    const customerRows = customerRes.data.values || []
-
-    /* ===== 3. Buat Map Customer ===== */
-    const customerMap: Record<string, any> = {}
-
-    customerRows.forEach((row) => {
-      const customer_id = row[0]
-      customerMap[customer_id] = {
-        company_name: row[1],
-        city: row[9],
-        phone: row[6],
-        pic_name: row[3],
-      }
-    })
-
-    /* ===== 4. Filter + Join Data ===== */
     const data = inquiryRows
       .filter((row) => {
         if (!filterCustomerId) return true
-        return row[2] === filterCustomerId   // ✅ FILTER DISINI
+        return row[2] === filterCustomerId
       })
-      .map((row) => {
-        const customer_id = row[2] || ""
-        const customer = customerMap[customer_id] || {}
-
-        return {
-          inquiry_id: row[0] || "",
-          tanggal_masuk: row[1] || "",
-          customer_id,
-
-          customer_name: row[3] || customer.company_name || "-",
-          customer_city: customer.city || "-",
-          customer_phone: customer.phone || "-",
-          pic_name: customer.pic_name || "-",
-
-          nama_pekerjaan: row[4] || "-",
-          layanan: row[5] || "-",
-
-          estimasi_nilai: row[6] ? Number(row[6]) : 0,
-
-          sumber: row[7] || "",
-          assigned_to: row[8] || "",
-          status: row[9] || "new",
-          prioritas: row[10] || "normal",
-          lokasi: row[11] || "",
-          catatan: row[12] || "",
-
-          converted_rab_id: row[13] || "",
-          converted_project_id: row[14] || "",
-
-          created_at: row[15] || "",
-          created_by: row[16] || "",
-        }
-      })
+      .map((row) => ({
+        inquiry_id: row[0] || "",
+        tanggal_masuk: row[1] || "",
+        customer_id: row[2] || "",
+        customer_name: row[3] || "",
+        nama_pekerjaan: row[4] || "",
+        layanan: row[5] || "",
+        estimasi_nilai: row[6] ? Number(row[6]) : 0,
+        sumber: row[7] || "",
+        assigned_to: row[8] || "",
+        status: row[9] || "new",
+        prioritas: row[10] || "normal",
+        lokasi: row[11] || "",
+        catatan: row[12] || "",
+        converted_rab_id: row[13] || "",
+        converted_project_id: row[14] || "",
+        created_at: row[15] || "",
+        created_by: row[16] || "",
+      }))
 
     return NextResponse.json(data)
 
@@ -108,12 +71,15 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
 
-    const inquiryId = `INQ-${Date.now()}`
-    const rabId = `RAB-${Date.now()}`
-    const projectId = `PRJ-${Date.now()}`
-    const now = new Date().toISOString()
+    if (!body.customer_id || !body.nama_pekerjaan) {
+      return NextResponse.json(
+        { message: "Customer & Nama Pekerjaan wajib diisi" },
+        { status: 400 }
+      )
+    }
 
-    /* ================= INSERT CRM INQUIRY ================= */
+    const inquiryId = `INQ-${Date.now()}`
+    const now = new Date().toISOString()
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
@@ -123,45 +89,21 @@ export async function POST(req: Request) {
         values: [[
           inquiryId,
           body.tanggal_masuk || new Date().toISOString().split("T")[0],
-          body.customer_id || "",
-          body.customer_name || "",
-          body.nama_pekerjaan || "",
+          body.customer_id,
+          body.customer_name || "",   // optional
+          body.nama_pekerjaan,
           body.layanan || "",
           body.estimasi_nilai || "",
           body.sumber || "",
           body.assigned_to || "",
-          body.status || "new",
+          "new",                      // default status
           body.prioritas || "normal",
           body.lokasi || "",
           body.catatan || "",
-          rabId,          // 🔥 AUTO LINK RAB
-          projectId,      // 🔥 AUTO LINK PROJECT
+          "",                         // converted_rab_id kosong
+          "",                         // converted_project_id kosong
           now,
           body.created_by || "Marketing",
-        ]],
-      },
-    })
-
-    /* ================= AUTO INSERT KE RAB_PROJECT ================= */
-
-    const ESTIMATOR_SHEET_ID = process.env.GSHEET_ESTIMATOR_ID!
-
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: ESTIMATOR_SHEET_ID,
-      range: `RAB_PROJECT!A:J`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [[
-          rabId,
-          inquiryId,
-          projectId,
-          body.nama_pekerjaan || "Tanpa Nama Project",
-          body.customer_name || "",
-          0,               // total_items
-          0,               // total_value
-          "Draft",         // status
-          "System",        // created_by
-          now,
         ]],
       },
     })
@@ -169,8 +111,6 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       inquiry_id: inquiryId,
-      rab_id: rabId,
-      project_id: projectId,
     })
 
   } catch (error) {

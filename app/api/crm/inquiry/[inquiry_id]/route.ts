@@ -53,6 +53,10 @@ export async function GET(
 
     const row = rows[rowIndex]
 
+    console.log("ROW:", row)
+console.log("ESTIMASI RAW:", row[6])
+
+
     const data = {
   inquiry_id: row[0],
   tanggal_masuk: row[1],

@@ -14,47 +14,64 @@ export default function CreateRABProjectPage() {
   const [projectId, setProjectId] = useState("")
   const [loading, setLoading] = useState(false)
 
-  /* ===== LOAD PROJECT ACTIVE ===== */
+  /* ================= LOAD ACTIVE PROJECT ================= */
+
   useEffect(() => {
-    fetch("/api/projects?status=active")
+    fetch("/api/projects")
       .then((r) => r.json())
-      .then(setProjects)
+      .then((data) => {
+        // Filter active project di frontend (lebih aman)
+        const active = data.filter(
+          (p: any) => p.status?.toLowerCase() === "active"
+        )
+        setProjects(active)
+      })
       .catch(() => setProjects([]))
   }, [])
 
-  /* ===== SUBMIT ===== */
+  /* ================= SUBMIT ================= */
+
   async function handleSubmit() {
     if (!projectId) {
       alert("Pilih project dulu")
       return
     }
 
-    setLoading(true)
+    try {
+      setLoading(true)
 
-    const res = await fetch("/api/estimator/rab/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        project_id: projectId,
-        created_by: "Estimator",
-      }),
-    })
+      const res = await fetch("/api/estimator/rab/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_id: projectId,
+          created_by: "Estimator",
+        }),
+      })
 
-    setLoading(false)
+      const data = await res.json()
 
-    if (!res.ok) {
-      alert("Gagal membuat RAB")
-      return
+      if (!res.ok) {
+        alert(data.message || "Gagal membuat RAB")
+        setLoading(false)
+        return
+      }
+
+      // ✅ Redirect pakai rab_id (ini yang benar)
+      router.push(`/admin/estimator/rab/${data.rab_id}`)
+
+    } catch (err) {
+      alert("Terjadi kesalahan sistem")
+    } finally {
+      setLoading(false)
     }
-
-    const data = await res.json()
-
-    // setelah RAB header jadi → masuk ke detail RAB
-    router.push(`/admin/estimator/rab/${data.project_id}`)
   }
+
+  /* ================= UI ================= */
 
   return (
     <div className="p-6 max-w-xl space-y-6">
+
       {/* HEADER */}
       <div>
         <h1 className="text-xl font-semibold">
@@ -67,16 +84,19 @@ export default function CreateRABProjectPage() {
 
       {/* FORM */}
       <div className="bg-white border rounded-lg p-4 space-y-4">
+
         <div>
           <label className="text-xs text-gray-500">
             Project
           </label>
+
           <select
             className="w-full border rounded px-3 py-2 text-sm"
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
           >
-            <option value="">-- Pilih Project --</option>
+            <option value="">-- Pilih Project Active --</option>
+
             {projects.map((p) => (
               <option key={p.project_id} value={p.project_id}>
                 {p.project_name}
@@ -102,7 +122,9 @@ export default function CreateRABProjectPage() {
             Batal
           </button>
         </div>
+
       </div>
+
     </div>
   )
 }

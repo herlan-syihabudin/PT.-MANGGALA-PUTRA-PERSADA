@@ -21,6 +21,11 @@ const EST_SHEET_ID = process.env.GSHEET_ESTIMATOR_ID!
 const CRM_SHEET = "CRM_INQUIRY"
 const RAB_SHEET = "RAB_PROJECT"
 
+/* ================= HELPER ================= */
+
+const normalize = (val: any) =>
+  String(val || "").trim().toLowerCase()
+
 /* ================= CONVERT ================= */
 
 export async function POST(req: Request) {
@@ -42,7 +47,10 @@ export async function POST(req: Request) {
     })
 
     const rows = crmRes.data.values || []
-    const rowIndex = rows.findIndex(r => r[0] === inquiry_id)
+
+    const rowIndex = rows.findIndex(
+      r => String(r[0]).trim() === String(inquiry_id).trim()
+    )
 
     if (rowIndex === -1) {
       return NextResponse.json(
@@ -54,25 +62,28 @@ export async function POST(req: Request) {
     const row = rows[rowIndex]
     const sheetRowNumber = rowIndex + 2
 
-    const projectName = row[4]
-    const customerName = row[3]
-    const currentStatus = row[9]
+    const projectName = row[4] || "Tanpa Nama Project"
+    const customerName = row[3] || "-"
+    const currentStatus = normalize(row[9])
+    const convertedRabId = row[13] || ""
 
     /* ================= SAFETY CHECK ================= */
 
-    if (currentStatus === "estimating") {
+    // 1️⃣ Harus status ESTIMATING
+    if (currentStatus !== "estimating") {
+      return NextResponse.json(
+        { message: "Inquiry harus status ESTIMATING sebelum convert ke RAB" },
+        { status: 400 }
+      )
+    }
+
+    // 2️⃣ Tidak boleh sudah pernah convert
+    if (convertedRabId) {
       return NextResponse.json(
         { message: "Inquiry sudah pernah di-convert ke RAB" },
         { status: 400 }
       )
     }
-
-    if (!["estimating"].includes(currentStatus)) {
-  return NextResponse.json(
-    { message: "Inquiry harus status ESTIMATING sebelum convert ke RAB" },
-    { status: 400 }
-  )
-}
 
     /* ================= GENERATE ID ================= */
 
@@ -105,14 +116,18 @@ export async function POST(req: Request) {
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: CRM_SHEET_ID,
-      range: `${CRM_SHEET}!J${sheetRowNumber}`,
+      range: `${CRM_SHEET}!N${sheetRowNumber}:O${sheetRowNumber}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
-        values: [["estimating"]]
+        values: [[
+          rabId,        // converted_rab_id (col N)
+          projectId     // converted_project_id (col O)
+        ]]
       }
     })
 
     return NextResponse.json({
+      success: true,
       message: "Berhasil convert ke RAB",
       rab_id: rabId,
       project_id: projectId

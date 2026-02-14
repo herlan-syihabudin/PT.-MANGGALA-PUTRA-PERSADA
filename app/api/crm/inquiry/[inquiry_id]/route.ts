@@ -42,7 +42,12 @@ export async function GET(
 
     const rows = res.data.values || []
 
-    const rowIndex = rows.findIndex((r) => r[0] === inquiryId)
+    const normalize = (val: string) =>
+  String(val).replace(/[\s-]/g, "").trim()
+
+const rowIndex = rows.findIndex((r) =>
+  normalize(r[0]) === normalize(inquiryId)
+)
 
     if (rowIndex === -1) {
       return NextResponse.json(

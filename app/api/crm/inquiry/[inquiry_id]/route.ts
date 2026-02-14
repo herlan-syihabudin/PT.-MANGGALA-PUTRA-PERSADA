@@ -70,33 +70,21 @@ console.log("ESTIMASI RAW:", row[6])
   nama_pekerjaan: row[4],
   layanan: row[5],
 
-  const estimasiRaw = row[6]
-
-const estimasiRaw = row[6]
-
-const estimasiNumber =
-  typeof estimasiRaw === "number"
-    ? estimasiRaw
-    : Number(String(estimasiRaw || 0).replace(/[^\d]/g, ""))
-
-const data = {
-  inquiry_id: row[0],
-  tanggal_masuk: row[1],
-  customer_id: row[2],
-  customer_name: row[3],
-  nama_pekerjaan: row[4],
-  layanan: row[5],
-
-  estimasi_nilai: estimasiNumber,
+  estimasi_nilai: Number(
+    String(row[6] || 0).replace(/[^\d]/g, "")
+  ),
 
   sumber: row[7],
-  assigned_to: row[8],
-  status: row[9],
+
+  assigned_to: row[8],      // ✅
+  status: row[9],           // ✅
   prioritas: row[10],
   lokasi: row[11],
   catatan: row[12],
-  converted_rab_id: row[13],
-  converted_project_id: row[14],
+
+  converted_rab_id: row[13],      // ✅
+  converted_project_id: row[14],  // ✅
+
   created_at: row[15],
   created_by: row[16],
 }

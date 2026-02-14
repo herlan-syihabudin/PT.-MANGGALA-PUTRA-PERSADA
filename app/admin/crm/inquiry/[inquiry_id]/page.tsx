@@ -265,7 +265,7 @@ export default function InquiryDetailPage() {
           <div className="bg-white border rounded-[2rem] p-8 shadow-soft space-y-4">
             <button
               onClick={convertToRAB}
-              disabled={data.status !== "won" || isUpdating}
+              disabled={!["estimating", "won"].includes(data.status) || isUpdating}
               className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-30 disabled:grayscale"
             >
               {isUpdating ? "Processing..." : "Convert ke RAB"}

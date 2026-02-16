@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useMemo } from "react"
 import AddItemForm from "./AddItemForm"
 
 type RabItem = {
@@ -28,13 +28,31 @@ export default function RABDetailClient({
   project_id: string
 }) {
   const [items, setItems] = useState<RabItem[]>(initialItems)
+  const [openScope, setOpenScope] = useState<string | null>(null)
 
   /* ================= AUTO SUM ================= */
 
-  const totalValue = items.reduce(
-    (sum, i) => sum + Number(i.total_price || 0),
-    0
-  )
+  const totalValue = useMemo(() => {
+    return items.reduce(
+      (sum, i) => sum + Number(i.total_price || 0),
+      0
+    )
+  }, [items])
+
+  /* ================= GROUP BY SCOPE ================= */
+
+  const grouped = useMemo(() => {
+    const map: Record<string, RabItem[]> = {}
+
+    items.forEach((item) => {
+      if (!map[item.scope]) {
+        map[item.scope] = []
+      }
+      map[item.scope].push(item)
+    })
+
+    return map
+  }, [items])
 
   /* ================= REFRESH ================= */
 
@@ -44,20 +62,26 @@ export default function RABDetailClient({
     setItems(data.items)
   }
 
-  /* ================= EDIT INLINE ================= */
+  /* ================= INLINE UPDATE ================= */
 
-  async function updateField(
+  let debounceTimer: any
+
+  function updateField(
     item_id: string,
     field: string,
     value: any
   ) {
-    await fetch("/api/estimator/rab/item/update", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ item_id, field, value }),
-    })
+    clearTimeout(debounceTimer)
 
-    refreshItems()
+    debounceTimer = setTimeout(async () => {
+      await fetch("/api/estimator/rab/item/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item_id, field, value }),
+      })
+
+      refreshItems()
+    }, 500)
   }
 
   /* ================= COPY ITEM ================= */
@@ -87,112 +111,151 @@ export default function RABDetailClient({
     <div className="space-y-6">
 
       {/* SUMMARY PANEL */}
-      <div className="bg-white border rounded-lg p-4">
+      <div className="bg-white border rounded-lg p-4 flex justify-between items-center">
         <div className="text-sm">
           Total Item: <b>{items.length}</b>
         </div>
         <div className="text-sm">
           Total Nilai RAB:{" "}
-          <b className="text-green-600">
+          <b className="text-green-600 text-lg">
             Rp {new Intl.NumberFormat("id-ID").format(totalValue)}
           </b>
         </div>
       </div>
 
-      {/* TABLE */}
-      <div className="bg-white border rounded-lg overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="p-2">Scope</th>
-              <th className="p-2">Item</th>
-              <th className="p-2">Qty</th>
-              <th className="p-2">Unit</th>
-              <th className="p-2">Harga</th>
-              <th className="p-2">Total</th>
-              <th className="p-2">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.item_id} className="border-t">
+      {/* SCOPE ACCORDION */}
+      {Object.keys(grouped).map((scope, sIndex) => {
 
-                {/* SCOPE */}
-                <td className="p-2">
-                  <input
-                    className="border px-2 py-1 w-full"
-                    value={item.scope}
-                    onChange={(e) =>
-                      updateField(item.item_id, "scope", e.target.value)
-                    }
-                  />
-                </td>
+        const scopeTotal = grouped[scope].reduce(
+          (sum, i) => sum + Number(i.total_price || 0),
+          0
+        )
 
-                {/* ITEM */}
-                <td className="p-2">
-                  <input
-                    className="border px-2 py-1 w-full"
-                    value={item.item_name}
-                    onChange={(e) =>
-                      updateField(item.item_id, "item_name", e.target.value)
-                    }
-                  />
-                </td>
+        return (
+          <div key={scope} className="border rounded-lg bg-white">
 
-                {/* QTY */}
-                <td className="p-2">
-                  <input
-                    type="number"
-                    className="border px-2 py-1 w-20"
-                    value={item.qty}
-                    onChange={(e) =>
-                      updateField(item.item_id, "qty", e.target.value)
-                    }
-                  />
-                </td>
+            {/* ACCORDION HEADER */}
+            <div
+              onClick={() =>
+                setOpenScope(openScope === scope ? null : scope)
+              }
+              className="p-3 bg-gray-50 cursor-pointer flex justify-between"
+            >
+              <span className="font-semibold">
+                {scope}
+              </span>
+              <span className="text-sm text-green-600">
+                Rp {new Intl.NumberFormat("id-ID").format(scopeTotal)}
+              </span>
+            </div>
 
-                {/* UNIT */}
-                <td className="p-2">
-                  <input
-                    className="border px-2 py-1 w-20"
-                    value={item.unit}
-                    onChange={(e) =>
-                      updateField(item.item_id, "unit", e.target.value)
-                    }
-                  />
-                </td>
+            {/* ITEMS */}
+            {openScope === scope && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="p-2">No</th>
+                      <th className="p-2">Item</th>
+                      <th className="p-2">Qty</th>
+                      <th className="p-2">Unit</th>
+                      <th className="p-2">Harga</th>
+                      <th className="p-2">Total</th>
+                      <th className="p-2">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {grouped[scope].map((item, index) => (
+                      <tr key={item.item_id} className="border-t">
 
-                {/* HARGA */}
-                <td className="p-2">
-                  Rp{" "}
-                  {new Intl.NumberFormat("id-ID").format(
-                    item.unit_price
-                  )}
-                </td>
+                        {/* AUTO NUMBER */}
+                        <td className="p-2 text-center">
+                          {(index + 1)
+                            .toString()
+                            .padStart(3, "0")}
+                        </td>
 
-                {/* TOTAL */}
-                <td className="p-2 font-semibold text-green-600">
-                  Rp{" "}
-                  {new Intl.NumberFormat("id-ID").format(
-                    item.total_price
-                  )}
-                </td>
+                        {/* ITEM NAME */}
+                        <td className="p-2">
+                          <input
+                            className="border px-2 py-1 w-full"
+                            defaultValue={item.item_name}
+                            onChange={(e) =>
+                              updateField(
+                                item.item_id,
+                                "item_name",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </td>
 
-                {/* COPY */}
-                <td className="p-2">
-                  <button
-                    onClick={() => copyItem(item)}
-                    className="text-blue-600 text-xs"
-                  >
-                    Copy
-                  </button>
-                </td>
+                        {/* QTY */}
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            className="border px-2 py-1 w-20"
+                            defaultValue={item.qty}
+                            onChange={(e) =>
+                              updateField(
+                                item.item_id,
+                                "qty",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </td>
 
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                        {/* UNIT */}
+                        <td className="p-2">
+                          <input
+                            className="border px-2 py-1 w-20"
+                            defaultValue={item.unit}
+                            onChange={(e) =>
+                              updateField(
+                                item.item_id,
+                                "unit",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </td>
+
+                        {/* HARGA */}
+                        <td className="p-2">
+                          Rp{" "}
+                          {new Intl.NumberFormat("id-ID").format(
+                            item.unit_price
+                          )}
+                        </td>
+
+                        {/* TOTAL */}
+                        <td className="p-2 font-semibold text-green-600">
+                          Rp{" "}
+                          {new Intl.NumberFormat("id-ID").format(
+                            item.total_price
+                          )}
+                        </td>
+
+                        {/* COPY */}
+                        <td className="p-2">
+                          <button
+                            onClick={() => copyItem(item)}
+                            className="text-blue-600 text-xs"
+                          >
+                            Copy
+                          </button>
+                        </td>
+
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )
+      })}
 
       {/* ADD FORM */}
       <AddItemForm

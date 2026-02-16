@@ -14,112 +14,128 @@ const auth = new google.auth.JWT(
 const sheets = google.sheets({ version: "v4", auth })
 const SHEET_ID = process.env.GSHEET_ESTIMATOR_ID!
 
-const RAB_ITEM_SHEET = "RAB_ITEM"
-const RAB_PROJECT_SHEET = "RAB_PROJECT"
+const RAB_PROJECT = "RAB_PROJECT"
+const RAB_ITEM = "RAB_ITEM"
+
+function n(x: any) {
+  const v = Number(x)
+  return Number.isFinite(v) ? v : 0
+}
+
+async function recalcHeader(rab_id: string) {
+  // read all items then sum (anti selisih)
+  const itemRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `'${RAB_ITEM}'!A2:P`,
+  })
+  const rows = itemRes.data.values || []
+  const items = rows.filter((r) => r[1] === rab_id)
+
+  const total_items = items.length
+  const total_value = items.reduce((s, r) => s + n(r[11]), 0) // L = total_price (index 11)
+
+  // find header row
+  const headerRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `'${RAB_PROJECT}'!A2:K`,
+  })
+  const headerRows = headerRes.data.values || []
+  const idx = headerRows.findIndex((r) => r[0] === rab_id)
+  if (idx === -1) return { total_items, total_value }
+
+  const row = idx + 2
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: `'${RAB_PROJECT}'!F${row}:G${row}`, // F total_item, G total_nilai_rab
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[total_items, total_value]] },
+  })
+
+  return { total_items, total_value }
+}
 
 export async function POST(req: Request) {
   try {
-    const {
-      rab_id,
-      project_id,
-      scope,
-      item_name,
-      category,
-      qty,
-      unit,
-      material_price,
-      labour_price,
-      created_by,
-    } = await req.json()
+    const body = await req.json()
 
-    if (!rab_id || !project_id || !item_name) {
-      return NextResponse.json(
-        { message: "Data wajib belum lengkap" },
-        { status: 400 }
-      )
+    const rab_id = String(body.rab_id || "")
+    const project_id = String(body.project_id || "")
+    const scope = String(body.scope || "")
+    const item_name = String(body.item_name || "")
+    const category = String(body.category || "")
+    const qty = n(body.qty)
+    const unit = String(body.unit || "")
+    const material_price = n(body.material_price)
+    const labour_price = n(body.labour_price)
+    const created_by = String(body.created_by || "System")
+
+    if (!rab_id) return NextResponse.json({ message: "rab_id wajib" }, { status: 400 })
+    if (!project_id) return NextResponse.json({ message: "project_id wajib" }, { status: 400 })
+    if (!item_name.trim()) return NextResponse.json({ message: "item_name wajib" }, { status: 400 })
+    if (qty < 0 || material_price < 0 || labour_price < 0) {
+      return NextResponse.json({ message: "angka tidak boleh negatif" }, { status: 400 })
     }
 
+    const item_id = "ITEM-" + nanoid(8).toUpperCase()
     const created_at = new Date().toISOString()
     const updated_at = created_at
 
-    const item_id = "ITEM-" + nanoid(8).toUpperCase()
+    const unit_price = material_price + labour_price
+    const total_price = qty * unit_price
 
-    const qtyNum = Number(qty) || 0
-    const materialNum = Number(material_price) || 0
-    const labourNum = Number(labour_price) || 0
-
-    const unit_price = materialNum + labourNum
-    const total_price = qtyNum * unit_price
-
-    /* ================= INSERT RAB ITEM ================= */
-
+    // ✅ 16 kolom => A:P
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${RAB_ITEM_SHEET}!A:O`,
+      range: `'${RAB_ITEM}'!A:P`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          item_id,
-          rab_id,
-          project_id,
-          scope || "",
-          item_name,
-          category || "",
-          qtyNum,
-          unit || "",
-          materialNum,
-          labourNum,
-          unit_price,
-          total_price,
-          "Draft",
-          created_by || "Estimator",
-          created_at,
-          updated_at
-        ]]
-      }
+          item_id,        // A
+          rab_id,         // B
+          project_id,     // C
+          scope,          // D
+          item_name,      // E
+          category,       // F
+          qty,            // G
+          unit,           // H
+          material_price, // I
+          labour_price,   // J
+          unit_price,     // K
+          total_price,    // L
+          "Draft",        // M
+          created_by,     // N
+          created_at,     // O
+          updated_at,     // P
+        ]],
+      },
     })
 
-    /* ================= UPDATE RAB HEADER ================= */
-
-    const rabRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `${RAB_PROJECT_SHEET}!A2:K1000`,
-    })
-
-    const rabRows = rabRes.data.values || []
-    const rabIndex = rabRows.findIndex(r => r[0] === rab_id)
-
-    if (rabIndex !== -1) {
-      const row = rabIndex + 2
-
-      const currentTotalItem = Number(rabRows[rabIndex][5]) || 0
-      const currentTotalNilai = Number(rabRows[rabIndex][6]) || 0
-
-      const newTotalItem = currentTotalItem + 1
-      const newTotalNilai = currentTotalNilai + total_price
-
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: SHEET_ID,
-        range: `${RAB_PROJECT_SHEET}!F${row}:G${row}`,
-        valueInputOption: "USER_ENTERED",
-        requestBody: {
-          values: [[newTotalItem, newTotalNilai]]
-        }
-      })
-    }
+    const summary = await recalcHeader(rab_id)
 
     return NextResponse.json({
-      message: "Item RAB berhasil ditambahkan",
-      item_id,
-      unit_price,
-      total_price
+      message: "Item berhasil dibuat",
+      item: {
+        item_id,
+        rab_id,
+        project_id,
+        scope,
+        item_name,
+        category,
+        qty,
+        unit,
+        material_price,
+        labour_price,
+        unit_price,
+        total_price,
+        status: "Draft",
+        created_by,
+        created_at,
+        updated_at,
+      },
+      summary,
     })
-
-  } catch (error) {
-    console.error("CREATE RAB ITEM ERROR:", error)
-    return NextResponse.json(
-      { message: "Gagal menambahkan item RAB" },
-      { status: 500 }
-    )
+  } catch (e) {
+    console.error("CREATE RAB ITEM ERROR:", e)
+    return NextResponse.json({ message: "Gagal tambah item" }, { status: 500 })
   }
 }

@@ -162,85 +162,67 @@ export default function AddItemForm({
           }}
         />
 
-        {/* Row 1 */}
-        <div className="grid grid-cols-3 gap-2">
-          <input
-            className="border rounded px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            placeholder="Kategori"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.ctrlKey) {
-                e.preventDefault()
-                focusNext(e.currentTarget)
-              }
-            }}
-          />
+       {/* Row 1 */}
+<div className="grid grid-cols-3 gap-2">
+  <div>
+    <label className="text-[10px] text-gray-500">Kategori</label>
+    <input
+      className="w-full border rounded px-2 py-1 text-sm"
+      value={category}
+      onChange={(e) => setCategory(e.target.value)}
+      placeholder="Kategori"
+    />
+  </div>
 
-          <input
-            className="border rounded px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
-            value={unit}
-            onChange={(e) => setUnit(e.target.value)}
-            placeholder="Unit"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.ctrlKey) {
-                e.preventDefault()
-                focusNext(e.currentTarget)
-              }
-            }}
-          />
+  <div>
+    <label className="text-[10px] text-gray-500">Unit</label>
+    <input
+      className="w-full border rounded px-2 py-1 text-sm"
+      value={unit}
+      onChange={(e) => setUnit(e.target.value)}
+      placeholder="Unit"
+    />
+  </div>
 
-          <input
-            type="number"
-            min="0"
-            step="any"
-            className="border rounded px-2 py-1 text-sm text-right focus:ring-1 focus:ring-blue-500 outline-none"
-            value={qty}
-            onChange={(e) => handleNumberChange(e.target.value, setQty)}
-            placeholder="Qty"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.ctrlKey) {
-                e.preventDefault()
-                focusNext(e.currentTarget)
-              }
-            }}
-          />
-        </div>
+  <div>
+    <label className="text-[10px] text-gray-500">Qty</label>
+    <input
+      type="number"
+      min="0"
+      step="any"
+      className="w-full border rounded px-2 py-1 text-sm text-right"
+      value={qty}
+      onChange={(e) => handleNumberChange(e.target.value, setQty)}
+    />
+  </div>
+</div>
 
-        {/* Row 2 */}
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            type="number"
-            min="0"
-            step="any"
-            className="border rounded px-2 py-1 text-sm text-right focus:ring-1 focus:ring-blue-500 outline-none"
-            value={material}
-            onChange={(e) => handleNumberChange(e.target.value, setMaterial)}
-            placeholder="Material Price"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.ctrlKey) {
-                e.preventDefault()
-                focusNext(e.currentTarget)
-              }
-            }}
-          />
+{/* Row 2 */}
+<div className="grid grid-cols-2 gap-2">
+  <div>
+    <label className="text-[10px] text-gray-500">Material Price</label>
+    <input
+      type="number"
+      min="0"
+      step="any"
+      className="w-full border rounded px-2 py-1 text-sm text-right"
+      value={material}
+      onChange={(e) => handleNumberChange(e.target.value, setMaterial)}
+    />
+  </div>
 
-          <input
-            type="number"
-            min="0"
-            step="any"
-            className="border rounded px-2 py-1 text-sm text-right focus:ring-1 focus:ring-blue-500 outline-none"
-            value={labour}
-            onChange={(e) => handleNumberChange(e.target.value, setLabour)}
-            placeholder="Labour Price"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault()
-                handleSubmit()
-              }
-            }}
-          />
-        </div>
+  <div>
+    <label className="text-[10px] text-gray-500">Labour Price</label>
+    <input
+      type="number"
+      min="0"
+      step="any"
+      className="w-full border rounded px-2 py-1 text-sm text-right"
+      value={labour}
+      onChange={(e) => handleNumberChange(e.target.value, setLabour)}
+    />
+  </div>
+</div>
 
         {/* Summary */}
         <div

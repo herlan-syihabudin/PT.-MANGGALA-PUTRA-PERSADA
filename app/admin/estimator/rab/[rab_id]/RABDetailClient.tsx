@@ -402,5 +402,6 @@ export default function RABDetailClient({ rab_id, project_id, initialData }: Pro
       🔐 Modul ini adalah sumber RAB resmi. Project Management membaca dari sini.
     </p>
 
-  </div>
+    </div>
 )
+}

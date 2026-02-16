@@ -325,136 +325,169 @@ export default function RABDetailClient({ rab_id, project_id, initialData }: Pro
     RAB Detail (BOQ View)
   </div>
 
-  <div className="flex-1 overflow-y-auto">
+  <div className="flex-1 overflow-auto">
 
     {grouped.length === 0 ? (
       <div className="p-6 text-center text-sm text-gray-500">
         Belum ada item RAB
       </div>
     ) : (
-      grouped.map((g) => {
+      <>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm table-fixed border-collapse">
 
-        const scopeMaterial = g.items.reduce(
-          (sum, i) => sum + n(i.material_price) * n(i.qty),
-          0
-        )
+            <thead className="bg-gray-100 text-xs uppercase sticky top-0 z-10">
+              <tr>
+                <th className="border px-2 py-2 w-[60px]">No</th>
+                <th className="border px-2 py-2 text-left">Keterangan</th>
+                <th className="border px-2 py-2 w-[80px]">Qty</th>
+                <th className="border px-2 py-2 w-[80px]">Unit</th>
+                <th className="border px-2 py-2 w-[130px]">Material</th>
+                <th className="border px-2 py-2 w-[150px]">Total Material</th>
+                <th className="border px-2 py-2 w-[130px]">Jasa</th>
+                <th className="border px-2 py-2 w-[150px]">Total Jasa</th>
+                <th className="border px-2 py-2 w-[160px]">Total</th>
+                <th className="border px-2 py-2 w-[120px]">Action</th>
+              </tr>
+            </thead>
 
-        const scopeLabour = g.items.reduce(
-          (sum, i) => sum + n(i.labour_price) * n(i.qty),
-          0
-        )
+            <tbody>
+              {(() => {
+                let globalIndex = 0
 
-        const scopeTotal = g.items.reduce(
-          (sum, i) => sum + n(i.total_price),
-          0
-        )
+                return grouped.map((g) => {
 
-        return (
-          <div key={g.scope} className="border-b">
+                  const scopeMaterial = g.items.reduce(
+                    (sum, i) => sum + n(i.material_price) * n(i.qty),
+                    0
+                  )
 
-            {/* SCOPE HEADER */}
-            <div className="px-4 py-2 bg-gray-100 font-semibold text-sm">
-              {g.scope}
-            </div>
+                  const scopeLabour = g.items.reduce(
+                    (sum, i) => sum + n(i.labour_price) * n(i.qty),
+                    0
+                  )
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse">
-                <thead className="bg-gray-50 text-xs uppercase">
-                  <tr>
-                    <th className="border px-2 py-2 w-[50px]">No</th>
-                    <th className="border px-2 py-2 text-left">Keterangan</th>
-                    <th className="border px-2 py-2 w-[80px]">Qty</th>
-                    <th className="border px-2 py-2 w-[80px]">Unit</th>
-                    <th className="border px-2 py-2 w-[130px]">Material</th>
-                    <th className="border px-2 py-2 w-[150px]">Total Material</th>
-                    <th className="border px-2 py-2 w-[130px]">Jasa</th>
-                    <th className="border px-2 py-2 w-[150px]">Total Jasa</th>
-                    <th className="border px-2 py-2 w-[160px]">Total</th>
-                  </tr>
-                </thead>
+                  const scopeTotal = g.items.reduce(
+                    (sum, i) => sum + n(i.total_price),
+                    0
+                  )
 
-                <tbody>
-                  {g.items.map((it, idx) => (
-                    <tr key={it.item_id} className="hover:bg-gray-50">
-                      <td className="border px-2 py-2 text-center">
-                        {pad3(idx + 1)}
-                      </td>
+                  return (
+                    <>
+                      {/* Scope Header */}
+                      <tr key={g.scope} className="bg-gray-200 font-semibold">
+                        <td colSpan={10} className="border px-3 py-2">
+                          {g.scope}
+                        </td>
+                      </tr>
 
-                      <td className="border px-2 py-2">
-                        <div className="font-medium">
-                          {it.item_name}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {it.category}
-                        </div>
-                      </td>
+                      {g.items.map((it) => {
+                        globalIndex++
 
-                      <td className="border px-2 py-2 text-right">
-                        {it.qty}
-                      </td>
+                        return (
+                          <tr key={it.item_id} className="hover:bg-gray-50">
+                            <td className="border px-2 py-2 text-center">
+                              {pad3(globalIndex)}
+                            </td>
 
-                      <td className="border px-2 py-2 text-center">
-                        {it.unit}
-                      </td>
+                            <td className="border px-2 py-2">
+                              <div className="font-medium">
+                                {it.item_name}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {it.category}
+                              </div>
+                            </td>
 
-                      <td className="border px-2 py-2 text-right">
-                        {formatIDR(n(it.material_price))}
-                      </td>
+                            <td className="border px-2 py-2 text-right">
+                              {it.qty}
+                            </td>
 
-                      <td className="border px-2 py-2 text-right">
-                        {formatIDR(n(it.material_price) * n(it.qty))}
-                      </td>
+                            <td className="border px-2 py-2 text-center">
+                              {it.unit}
+                            </td>
 
-                      <td className="border px-2 py-2 text-right">
-                        {formatIDR(n(it.labour_price))}
-                      </td>
+                            <td className="border px-2 py-2 text-right">
+                              {formatIDR(n(it.material_price))}
+                            </td>
 
-                      <td className="border px-2 py-2 text-right">
-                        {formatIDR(n(it.labour_price) * n(it.qty))}
-                      </td>
+                            <td className="border px-2 py-2 text-right">
+                              {formatIDR(n(it.material_price) * n(it.qty))}
+                            </td>
 
-                      <td className="border px-2 py-2 text-right font-semibold text-green-700">
-                        {formatIDR(n(it.total_price))}
-                      </td>
-                    </tr>
-                  ))}
+                            <td className="border px-2 py-2 text-right">
+                              {formatIDR(n(it.labour_price))}
+                            </td>
 
-                  {/* SUBTOTAL PER SCOPE */}
-                  <tr className="bg-gray-100 font-semibold">
-                    <td colSpan={5} className="border px-2 py-2 text-right">
-                      Subtotal {g.scope}
-                    </td>
+                            <td className="border px-2 py-2 text-right">
+                              {formatIDR(n(it.labour_price) * n(it.qty))}
+                            </td>
 
-                    <td className="border px-2 py-2 text-right">
-                      {formatIDR(scopeMaterial)}
-                    </td>
+                            <td className="border px-2 py-2 text-right font-semibold text-green-700">
+                              {formatIDR(n(it.total_price))}
+                            </td>
 
-                    <td className="border px-2 py-2"></td>
+                            <td className="border px-2 py-2 text-center">
+                              <div className="flex justify-center gap-2">
+                                <button
+                                  className="text-xs px-2 py-1 border rounded hover:bg-gray-50"
+                                  onClick={() => copyItem(it)}
+                                  disabled={loading}
+                                >
+                                  Copy
+                                </button>
+                                <button
+                                  className="text-xs px-2 py-1 border rounded text-red-600 hover:bg-red-50"
+                                  onClick={() => deleteItem(it)}
+                                  disabled={loading}
+                                >
+                                  Del
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
 
-                    <td className="border px-2 py-2 text-right">
-                      {formatIDR(scopeLabour)}
-                    </td>
+                      {/* Subtotal */}
+                      <tr className="bg-gray-100 font-semibold">
+                        <td colSpan={5} className="border px-2 py-2 text-right">
+                          Subtotal {g.scope}
+                        </td>
 
-                    <td className="border px-2 py-2 text-right text-green-700">
-                      {formatIDR(scopeTotal)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )
-      })
+                        <td className="border px-2 py-2 text-right">
+                          {formatIDR(scopeMaterial)}
+                        </td>
+
+                        <td className="border px-2 py-2"></td>
+
+                        <td className="border px-2 py-2 text-right">
+                          {formatIDR(scopeLabour)}
+                        </td>
+
+                        <td className="border px-2 py-2 text-right text-green-700">
+                          {formatIDR(scopeTotal)}
+                        </td>
+
+                        <td className="border"></td>
+                      </tr>
+                    </>
+                  )
+                })
+              })()}
+            </tbody>
+          </table>
+        </div>
+
+        {/* GRAND TOTAL STICKY */}
+        <div className="sticky bottom-0 bg-gray-300 px-4 py-3 text-right font-bold text-lg border-t">
+          GRAND TOTAL :{" "}
+          <span className="text-green-800">
+            {formatIDR(totalValue)}
+          </span>
+        </div>
+      </>
     )}
-
-    {/* GRAND TOTAL */}
-    <div className="bg-gray-200 px-4 py-3 text-right font-bold text-lg">
-      GRAND TOTAL :{" "}
-      <span className="text-green-800">
-        {formatIDR(totalValue)}
-      </span>
-    </div>
-
   </div>
 </div>
 

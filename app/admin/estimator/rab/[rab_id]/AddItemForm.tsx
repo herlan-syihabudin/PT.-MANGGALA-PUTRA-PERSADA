@@ -13,6 +13,24 @@ function formatRupiah(value: number) {
   return new Intl.NumberFormat("id-ID").format(value)
 }
 
+/* ================= KEYBOARD NAVIGATION ================= */
+
+function focusNext(current: HTMLElement) {
+  const form = current.closest("form")
+  if (!form) return
+
+  const focusable = Array.from(
+    form.querySelectorAll<HTMLElement>(
+      "input, button"
+    )
+  ).filter((el) => !el.hasAttribute("disabled"))
+
+  const index = focusable.indexOf(current)
+  if (index > -1 && index < focusable.length - 1) {
+    focusable[index + 1].focus()
+  }
+}
+
 export default function AddItemForm({ rab_id, project_id, onSuccess, onCreated }: Props) {
   const itemInputRef = useRef<HTMLInputElement>(null)
 
@@ -37,14 +55,6 @@ export default function AddItemForm({ rab_id, project_id, onSuccess, onCreated }
   async function handleSubmit() {
     if (!itemName.trim()) {
       alert("Nama item wajib diisi")
-      return
-    }
-    if (!rab_id) {
-      alert("rab_id kosong")
-      return
-    }
-    if (!project_id) {
-      alert("project_id kosong (cek header RAB dulu)")
       return
     }
 
@@ -89,16 +99,28 @@ export default function AddItemForm({ rab_id, project_id, onSuccess, onCreated }
     itemInputRef.current?.focus()
 
     setSuccessMsg(true)
-    setTimeout(() => setSuccessMsg(false), 1200)
+    setTimeout(() => setSuccessMsg(false), 1000)
 
     onSuccess()
   }
 
+  /* ================= UI ================= */
+
   return (
-    <div className="space-y-3">
+    <form
+      className="space-y-3"
+      onKeyDown={(e) => {
+        if (e.ctrlKey && e.key === "Enter") {
+          e.preventDefault()
+          handleSubmit()
+        }
+      }}
+    >
       <div>
         <h2 className="text-lg font-semibold">Tambah Item RAB</h2>
-        <p className="text-xs text-gray-500">Isi detail pekerjaan yang akan dimasukkan ke dalam RAB</p>
+        <p className="text-xs text-gray-500">
+          Enter = pindah field | Ctrl + Enter = tambah item
+        </p>
       </div>
 
       {successMsg && (
@@ -109,86 +131,108 @@ export default function AddItemForm({ rab_id, project_id, onSuccess, onCreated }
 
       <div className="bg-white border rounded-lg p-4 space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2 flex flex-col gap-1">
-            <label className="text-[10px] uppercase text-gray-400 font-bold">Scope Pekerjaan</label>
-            <input
-              className="border px-3 py-2 text-sm rounded focus:ring-2 focus:ring-blue-500 outline-none"
-              value={scope}
-              onChange={(e) => setScope(e.target.value)}
-              placeholder="Contoh: Pekerjaan Elektrikal"
-            />
-          </div>
 
-          <div className="col-span-2 flex flex-col gap-1">
-            <label className="text-[10px] uppercase text-gray-400 font-bold">Nama Item</label>
-            <input
-              ref={itemInputRef}
-              className="border px-3 py-2 text-sm rounded focus:ring-2 focus:ring-blue-500 outline-none"
-              value={itemName}
-              onChange={(e) => setItemName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-              placeholder="Contoh: Pengadaan Trafo 400kVA"
-            />
-          </div>
+          {/* Scope */}
+          <input
+            className="col-span-2 border px-3 py-2 text-sm rounded"
+            value={scope}
+            onChange={(e) => setScope(e.target.value)}
+            placeholder="Scope Pekerjaan"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.ctrlKey) {
+                e.preventDefault()
+                focusNext(e.currentTarget)
+              }
+            }}
+          />
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase text-gray-400 font-bold">Kategori</label>
-            <input
-              className="border px-3 py-2 text-sm rounded"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="Material / Jasa / dll"
-            />
-          </div>
+          {/* Item Name */}
+          <input
+            ref={itemInputRef}
+            className="col-span-2 border px-3 py-2 text-sm rounded"
+            value={itemName}
+            onChange={(e) => setItemName(e.target.value)}
+            placeholder="Nama Item"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.ctrlKey) {
+                e.preventDefault()
+                focusNext(e.currentTarget)
+              }
+            }}
+          />
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase text-gray-400 font-bold">Unit</label>
-            <input
-              className="border px-3 py-2 text-sm rounded"
-              value={unit}
-              onChange={(e) => setUnit(e.target.value)}
-              placeholder="m2, m3, ls, unit"
-            />
-          </div>
+          {/* Category */}
+          <input
+            className="border px-3 py-2 text-sm rounded"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            placeholder="Kategori"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.ctrlKey) {
+                e.preventDefault()
+                focusNext(e.currentTarget)
+              }
+            }}
+          />
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase text-gray-400 font-bold">Qty</label>
-            <input
-              type="number"
-              min="0"
-              step="any"
-              className="border px-3 py-2 text-sm rounded"
-              value={qty === 0 ? "" : qty}
-              onChange={(e) => handleNumberChange(e.target.value, setQty)}
-            />
-          </div>
+          {/* Unit */}
+          <input
+            className="border px-3 py-2 text-sm rounded"
+            value={unit}
+            onChange={(e) => setUnit(e.target.value)}
+            placeholder="Unit"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.ctrlKey) {
+                e.preventDefault()
+                focusNext(e.currentTarget)
+              }
+            }}
+          />
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase text-gray-400 font-bold">Material Price</label>
-            <input
-              type="number"
-              min="0"
-              step="any"
-              className="border px-3 py-2 text-sm rounded"
-              value={material === 0 ? "" : material}
-              onChange={(e) => handleNumberChange(e.target.value, setMaterial)}
-            />
-          </div>
+          {/* Qty */}
+          <input
+            type="number"
+            className="border px-3 py-2 text-sm rounded"
+            value={qty === 0 ? "" : qty}
+            onChange={(e) => handleNumberChange(e.target.value, setQty)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.ctrlKey) {
+                e.preventDefault()
+                focusNext(e.currentTarget)
+              }
+            }}
+          />
 
-          <div className="flex flex-col gap-1 col-span-2">
-            <label className="text-[10px] uppercase text-gray-400 font-bold">Labour Price</label>
-            <input
-              type="number"
-              min="0"
-              step="any"
-              className="border px-3 py-2 text-sm rounded"
-              value={labour === 0 ? "" : labour}
-              onChange={(e) => handleNumberChange(e.target.value, setLabour)}
-              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-            />
-          </div>
+          {/* Material */}
+          <input
+            type="number"
+            className="border px-3 py-2 text-sm rounded"
+            value={material === 0 ? "" : material}
+            onChange={(e) => handleNumberChange(e.target.value, setMaterial)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.ctrlKey) {
+                e.preventDefault()
+                focusNext(e.currentTarget)
+              }
+            }}
+          />
+
+          {/* Labour */}
+          <input
+            type="number"
+            className="col-span-2 border px-3 py-2 text-sm rounded"
+            value={labour === 0 ? "" : labour}
+            onChange={(e) => handleNumberChange(e.target.value, setLabour)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.ctrlKey) {
+                e.preventDefault()
+                focusNext(e.currentTarget)
+              }
+            }}
+          />
         </div>
 
+        {/* Summary */}
         <div className="bg-gray-50 p-3 rounded text-sm space-y-1">
           <div>
             Harga Satuan: <b className="ml-1 text-blue-600">Rp {formatRupiah(unitPrice)}</b>
@@ -199,13 +243,14 @@ export default function AddItemForm({ rab_id, project_id, onSuccess, onCreated }
         </div>
 
         <button
+          type="button"
           onClick={handleSubmit}
           disabled={loading}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded"
         >
           {loading ? "Menyimpan..." : "Tambah Item"}
         </button>
       </div>
-    </div>
+    </form>
   )
 }

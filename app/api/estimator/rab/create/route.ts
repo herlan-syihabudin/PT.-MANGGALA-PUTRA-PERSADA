@@ -4,19 +4,32 @@ import { nanoid } from "nanoid"
 
 export const dynamic = "force-dynamic"
 
+/* ================= AUTH ================= */
+
 const auth = new google.auth.JWT(
-  process.env.GOOGLE_CLIENT_EMAIL,
+  process.env.GOOGLE_CLIENT_EMAIL!,
   undefined,
-  process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+  process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n"),
   ["https://www.googleapis.com/auth/spreadsheets"]
 )
 
 const sheets = google.sheets({ version: "v4", auth })
-const SHEET_ID = process.env.GSHEET_ESTIMATOR_ID!
+
+/* ================= SHEET IDS ================= */
+
+const CRM_SHEET_ID = process.env.GSHEET_CRM_ID!
+const PROJECT_SHEET_ID = process.env.GSHEET_PROJECT_ID!
+const ESTIMATOR_SHEET_ID = process.env.GSHEET_ESTIMATOR_ID!
+
+/* ================= SHEET NAMES ================= */
 
 const INQUIRY_SHEET = "CRM_INQUIRY"
 const PROJECT_SHEET = "PROJECT MASTER"
 const RAB_PROJECT = "RAB_PROJECT"
+
+/* ===================================================== */
+/* ================= CREATE RAB FROM INQUIRY =========== */
+/* ===================================================== */
 
 export async function POST(req: Request) {
   try {
@@ -29,14 +42,15 @@ export async function POST(req: Request) {
       )
     }
 
-    /* ================= GET INQUIRY ================= */
+    /* ================= GET INQUIRY (CRM FILE) ================= */
 
     const inquiryRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `${INQUIRY_SHEET}!A2:Q1000`, // WAJIB ADA ANGKA AKHIR
+      spreadsheetId: CRM_SHEET_ID,
+      range: `${INQUIRY_SHEET}!A2:Q1000`,
     })
 
     const inquiryRows = inquiryRes.data.values || []
+
     const inquiryIndex = inquiryRows.findIndex(
       (r) => r[0] === inquiry_id
     )
@@ -57,12 +71,12 @@ export async function POST(req: Request) {
 
     const created_at = new Date().toISOString()
 
-    /* ================= CREATE PROJECT ================= */
+    /* ================= CREATE PROJECT (PROJECT FILE) ================= */
 
     const project_id = "PRJ-" + nanoid(8).toUpperCase()
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: PROJECT_SHEET_ID,
       range: `${PROJECT_SHEET}!A:J`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
@@ -71,22 +85,22 @@ export async function POST(req: Request) {
           nama_pekerjaan,
           customer_id,
           lokasi,
-          0,
-          "",
-          "",
-          "planning",
+          0,            // nilai_kontrak
+          "",           // start_date
+          "",           // end_date
+          "planning",   // status
           created_at,
           "MEP"
         ]]
       }
     })
 
-    /* ================= CREATE RAB HEADER ================= */
+    /* ================= CREATE RAB HEADER (ESTIMATOR FILE) ================= */
 
     const rab_id = "RAB-" + nanoid(6).toUpperCase()
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: ESTIMATOR_SHEET_ID,
       range: `${RAB_PROJECT}!A:K`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
@@ -96,8 +110,8 @@ export async function POST(req: Request) {
           project_id,
           nama_pekerjaan,
           customer_name,
-          0,
-          0,
+          0,                // total_item
+          0,                // total_nilai_rab
           "Draft",
           "Estimator",
           created_by || "System",
@@ -106,13 +120,12 @@ export async function POST(req: Request) {
       }
     })
 
-    /* ================= UPDATE INQUIRY ================= */
+    /* ================= UPDATE CRM INQUIRY ================= */
 
     const row = inquiryIndex + 2
 
-    // Update status + rab_id + project_id SEKALIGUS
     await sheets.spreadsheets.values.update({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: CRM_SHEET_ID,
       range: `${INQUIRY_SHEET}!J${row}:O${row}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {

@@ -265,278 +265,142 @@ export default function RABDetailClient({ rab_id, project_id, initialData }: Pro
   /* ================= UI ================= */
 
   return (
-    <div className="p-6 space-y-6">
-      {/* HEADER */}
-      <div className="flex justify-between items-start gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">RAB Project – Estimator</h1>
-          <p className="text-xs text-gray-500">RAB ID: {rab_id}</p>
-          <p className="text-xs text-gray-500">Project ID: {project_id || "-"}</p>
-        </div>
+  <div className="p-4 h-[calc(100vh-140px)] flex flex-col gap-4">
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={reload}
-            className="text-xs px-3 py-2 border rounded hover:bg-gray-50"
-            disabled={loading}
-          >
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
-
-          <Link href="/admin/estimator/rab" className="text-xs text-gray-600">
-            ← Kembali
-          </Link>
-        </div>
+    {/* HEADER */}
+    <div className="flex justify-between items-start">
+      <div>
+        <h1 className="text-lg font-semibold">RAB Project – Estimator</h1>
+        <p className="text-xs text-gray-500">RAB ID: {rab_id}</p>
+        <p className="text-xs text-gray-500">Project ID: {project_id || "-"}</p>
       </div>
 
-      {/* ADD ITEM */}
-      <AddItemForm
-        rab_id={rab_id}
-        project_id={project_id}
-        onCreated={(newItem) => {
-          // optimistic append
-          setData((prev) => ({ ...prev, items: [...prev.items, newItem] }))
-        }}
-        onSuccess={reload}
-      />
-
-      {/* BULK UPLOAD */}
-      <div className="space-y-2">
-        <div className="text-sm font-semibold flex items-center gap-2">
-          <Upload size={16} /> Bulk Upload Excel
-        </div>
-
-        <div
-          {...getRootProps()}
-          className={`border rounded-lg p-4 text-sm cursor-pointer bg-white ${
-            isDragActive ? "border-blue-500" : "border-gray-200"
-          }`}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={reload}
+          className="text-xs px-3 py-2 border rounded hover:bg-gray-50"
+          disabled={loading}
         >
-          <input {...getInputProps()} />
-          {isDragActive ? (
-            <div>Drop file Excel di sini…</div>
-          ) : (
-            <div className="text-gray-600">
-              Drag & drop file <b>.xlsx</b> atau klik untuk pilih file. <br />
-              Header Excel yang disarankan: <code>scope, item_name, category, qty, unit, material_price, labour_price</code>
-            </div>
-          )}
-        </div>
+          {loading ? "Refreshing..." : "Refresh"}
+        </button>
+
+        <Link href="/admin/estimator/rab" className="text-xs text-gray-600">
+          ← Kembali
+        </Link>
       </div>
-
-      {/* SUMMARY + PROFIT PANEL */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="bg-white border rounded-lg p-4 space-y-2">
-          <div className="text-xs text-gray-500 uppercase tracking-wide">RAB Summary</div>
-          <div className="text-sm">
-            Total Item: <b>{data.items.length}</b>
-          </div>
-          <div className="text-sm">
-            Total Nilai RAB: <b className="text-green-700">{formatIDR(totalValue)}</b>
-          </div>
-          <div className="text-xs text-gray-500">
-            (Realtime dari item. Backend juga recalculation biar aman.)
-          </div>
-        </div>
-
-        <div className="bg-white border rounded-lg p-4 space-y-2">
-          <div className="text-xs text-gray-500 uppercase tracking-wide">Cost Breakdown</div>
-          <div className="text-sm">
-            Total Material: <b>{formatIDR(totalMaterial)}</b>
-          </div>
-          <div className="text-sm">
-            Total Labour: <b>{formatIDR(totalLabour)}</b>
-          </div>
-          <div className="text-xs text-gray-500">
-            (Material/Labour dihitung: price × qty)
-          </div>
-        </div>
-
-        <div className="bg-white border rounded-lg p-4 space-y-3">
-          <div className="text-xs text-gray-500 uppercase tracking-wide">Profit Panel</div>
-
-          <div className="space-y-1">
-            <div className="text-xs text-gray-600">Overhead / Margin (%)</div>
-            <input
-              type="range"
-              min={0}
-              max={50}
-              value={overheadPct}
-              onChange={(e) => setOverheadPct(Number(e.target.value))}
-              className="w-full"
-            />
-            <div className="text-xs text-gray-700">{overheadPct}%</div>
-          </div>
-
-          <div className="space-y-1">
-            <div className="text-xs text-gray-600">Profit (%)</div>
-            <input
-              type="range"
-              min={0}
-              max={50}
-              value={profitPct}
-              onChange={(e) => setProfitPct(Number(e.target.value))}
-              className="w-full"
-            />
-            <div className="text-xs text-gray-700">{profitPct}%</div>
-          </div>
-
-          <div className="text-sm">
-            Estimasi Harga Jual:{" "}
-            <b className="text-blue-700">{formatIDR(sellTotal)}</b>
-          </div>
-        </div>
-      </div>
-
-      {/* ACCORDION BY SCOPE */}
-      <div className="space-y-3">
-        <div className="text-sm font-semibold">Item RAB (Grouped by Scope)</div>
-
-        {grouped.length === 0 ? (
-          <div className="bg-white border rounded-lg p-6 text-center text-sm text-gray-500">
-            Belum ada item RAB
-          </div>
-        ) : (
-          grouped.map((g) => (
-            <details key={g.scope} className="bg-white border rounded-lg overflow-hidden" open>
-              <summary className="flex items-center justify-between gap-3 p-4 cursor-pointer select-none bg-gray-50">
-                <div className="font-semibold text-sm">{g.scope}</div>
-                <div className="flex items-center gap-3 text-xs text-gray-600">
-                  <span>{g.items.length} item</span>
-                  <ChevronDown size={16} />
-                </div>
-              </summary>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-white">
-                    <tr className="border-b">
-                      <th className="p-3 text-left w-[70px]">No</th>
-                      <th className="p-3 text-left min-w-[320px]">Item</th>
-                      <th className="p-3 text-left w-[120px]">Kategori</th>
-                      <th className="p-3 text-left w-[90px]">Qty</th>
-                      <th className="p-3 text-left w-[90px]">Unit</th>
-                      <th className="p-3 text-left w-[140px]">Material</th>
-                      <th className="p-3 text-left w-[140px]">Labour</th>
-                      <th className="p-3 text-left w-[140px]">Unit Price</th>
-                      <th className="p-3 text-left w-[160px]">Total</th>
-                      <th className="p-3 text-left w-[120px]">Aksi</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {g.items.map((it, idx) => (
-                      <tr key={it.item_id} className="border-b hover:bg-gray-50">
-                        <td className="p-3 text-gray-500">{pad3(idx + 1)}</td>
-
-                        {/* item_name */}
-                        <td className="p-3">
-                          <input
-                            className="w-full border rounded px-2 py-1"
-                            defaultValue={it.item_name}
-                            onBlur={(e) => updateField(it.item_id, { item_name: e.target.value })}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                ;(e.target as HTMLInputElement).blur()
-                              }
-                            }}
-                          />
-                          <div className="text-[11px] text-gray-500 mt-1">ID: {it.item_id}</div>
-                        </td>
-
-                        {/* category */}
-                        <td className="p-3">
-                          <input
-                            className="w-full border rounded px-2 py-1"
-                            defaultValue={it.category}
-                            onBlur={(e) => updateField(it.item_id, { category: e.target.value })}
-                            onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-                          />
-                        </td>
-
-                        {/* qty */}
-                        <td className="p-3">
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            className="w-full border rounded px-2 py-1"
-                            defaultValue={it.qty}
-                            onChange={(e) => debouncedUpdate(it.item_id, { qty: n(e.target.value) })}
-                            onBlur={(e) => updateField(it.item_id, { qty: n(e.target.value) })}
-                          />
-                        </td>
-
-                        {/* unit */}
-                        <td className="p-3">
-                          <input
-                            className="w-full border rounded px-2 py-1"
-                            defaultValue={it.unit}
-                            onBlur={(e) => updateField(it.item_id, { unit: e.target.value })}
-                            onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-                          />
-                        </td>
-
-                        {/* material_price */}
-                        <td className="p-3">
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            className="w-full border rounded px-2 py-1"
-                            defaultValue={it.material_price}
-                            onChange={(e) => debouncedUpdate(it.item_id, { material_price: n(e.target.value) })}
-                            onBlur={(e) => updateField(it.item_id, { material_price: n(e.target.value) })}
-                          />
-                        </td>
-
-                        {/* labour_price */}
-                        <td className="p-3">
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            className="w-full border rounded px-2 py-1"
-                            defaultValue={it.labour_price}
-                            onChange={(e) => debouncedUpdate(it.item_id, { labour_price: n(e.target.value) })}
-                            onBlur={(e) => updateField(it.item_id, { labour_price: n(e.target.value) })}
-                          />
-                        </td>
-
-                        <td className="p-3">{formatIDR(n(it.unit_price))}</td>
-                        <td className="p-3 font-semibold text-green-700">{formatIDR(n(it.total_price))}</td>
-
-                        <td className="p-3">
-                          <div className="flex items-center gap-2">
-                            <button
-                              className="text-xs px-2 py-1 border rounded hover:bg-gray-50 flex items-center gap-1"
-                              onClick={() => copyItem(it)}
-                              disabled={loading}
-                            >
-                              <Copy size={14} /> Copy
-                            </button>
-                            <button
-                              className="text-xs px-2 py-1 border rounded hover:bg-red-50 text-red-600 flex items-center gap-1"
-                              onClick={() => deleteItem(it)}
-                              disabled={loading}
-                            >
-                              <Trash2 size={14} /> Del
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </details>
-          ))
-        )}
-      </div>
-
-      <p className="text-xs text-gray-400">
-        🔐 Modul ini adalah sumber RAB resmi. Project Management membaca dari sini.
-      </p>
     </div>
-  )
-}
+
+    {/* SPLIT SCREEN */}
+    <div className="flex flex-1 gap-4 overflow-hidden">
+
+      {/* LEFT PANEL */}
+      <div className="w-[420px] flex flex-col gap-4 overflow-y-auto pr-2">
+
+        <AddItemForm
+          rab_id={rab_id}
+          project_id={project_id}
+          onCreated={(newItem) => {
+            setData((prev) => ({ ...prev, items: [...prev.items, newItem] }))
+          }}
+          onSuccess={reload}
+        />
+
+        {/* SUMMARY */}
+        <div className="bg-white border rounded-lg p-4 text-sm space-y-2">
+          <div>Total Item: <b>{data.items.length}</b></div>
+          <div>Total RAB: <b className="text-green-700">{formatIDR(totalValue)}</b></div>
+          <div>Material: {formatIDR(totalMaterial)}</div>
+          <div>Labour: {formatIDR(totalLabour)}</div>
+          <div className="pt-2 border-t">
+            Estimasi Jual: <b className="text-blue-700">{formatIDR(sellTotal)}</b>
+          </div>
+        </div>
+
+      </div>
+
+      {/* RIGHT PANEL */}
+      <div className="flex-1 bg-white border rounded-lg flex flex-col overflow-hidden">
+
+        <div className="px-4 py-3 border-b text-sm font-semibold bg-gray-50">
+          Item RAB (Live View)
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+
+          {grouped.length === 0 ? (
+            <div className="p-6 text-center text-sm text-gray-500">
+              Belum ada item RAB
+            </div>
+          ) : (
+            grouped.map((g) => (
+              <details key={g.scope} className="border-b" open>
+                <summary className="px-4 py-2 text-sm font-semibold bg-gray-100 cursor-pointer">
+                  {g.scope} ({g.items.length})
+                </summary>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <tbody>
+                      {g.items.map((it, idx) => (
+                        <tr key={it.item_id} className="border-b hover:bg-gray-50">
+                          <td className="px-3 py-2 text-gray-500 w-[60px]">
+                            {pad3(idx + 1)}
+                          </td>
+
+                          <td className="px-3 py-2">
+                            <div className="font-medium">{it.item_name}</div>
+                            <div className="text-xs text-gray-500">
+                              {it.qty} {it.unit}
+                            </div>
+                          </td>
+
+                          <td className="px-3 py-2 w-[120px] text-gray-600">
+                            {it.category}
+                          </td>
+
+                          <td className="px-3 py-2 w-[140px] text-gray-700">
+                            {formatIDR(n(it.unit_price))}
+                          </td>
+
+                          <td className="px-3 py-2 w-[160px] font-semibold text-green-700">
+                            {formatIDR(n(it.total_price))}
+                          </td>
+
+                          <td className="px-3 py-2 w-[120px]">
+                            <div className="flex gap-2">
+                              <button
+                                className="text-xs px-2 py-1 border rounded hover:bg-gray-50"
+                                onClick={() => copyItem(it)}
+                                disabled={loading}
+                              >
+                                Copy
+                              </button>
+                              <button
+                                className="text-xs px-2 py-1 border rounded text-red-600 hover:bg-red-50"
+                                onClick={() => deleteItem(it)}
+                                disabled={loading}
+                              >
+                                Del
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            ))
+          )}
+
+        </div>
+      </div>
+
+    </div>
+
+    <p className="text-xs text-gray-400">
+      🔐 Modul ini adalah sumber RAB resmi. Project Management membaca dari sini.
+    </p>
+
+  </div>
+)

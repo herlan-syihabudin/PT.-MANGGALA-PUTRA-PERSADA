@@ -3,15 +3,28 @@ import { google } from "googleapis"
 
 export const dynamic = "force-dynamic"
 
-const auth = new google.auth.JWT(
-  process.env.GOOGLE_CLIENT_EMAIL!,
-  undefined,
-  process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n"),
-  ["https://www.googleapis.com/auth/spreadsheets"]
-)
+/* ================= SAFE AUTH FACTORY ================= */
+function getSheetsClient() {
+  if (
+    !process.env.GOOGLE_CLIENT_EMAIL ||
+    !process.env.GOOGLE_PRIVATE_KEY ||
+    !process.env.GOOGLE_SHEET_ID
+  ) {
+    throw new Error("Missing Google ENV variables")
+  }
 
-const sheets = google.sheets({ version: "v4", auth })
-const SHEET_ID = process.env.GOOGLE_SHEET_ID!
+  const auth = new google.auth.JWT(
+    process.env.GOOGLE_CLIENT_EMAIL,
+    undefined,
+    process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+    ["https://www.googleapis.com/auth/spreadsheets"]
+  )
+
+  return {
+    sheets: google.sheets({ version: "v4", auth }),
+    sheetId: process.env.GOOGLE_SHEET_ID,
+  }
+}
 
 const EMPLOYEE_SHEET = "EMPLOYEE_MASTER"
 const STATUS_SHEET = "EMPLOYMENT_STATUS"
@@ -19,24 +32,32 @@ const STATUS_SHEET = "EMPLOYMENT_STATUS"
 /* ================= GET ================= */
 export async function GET(req: NextRequest) {
   try {
+    const { sheets, sheetId } = getSheetsClient()
     const { searchParams } = new URL(req.url)
     const employee_id = searchParams.get("employee_id")
 
-    /* ===== STATUS ===== */
+    /* ===== GET STATUS ===== */
     const statRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: sheetId,
       range: `${STATUS_SHEET}!A1:J`,
     })
 
-    const [statHeaders, ...statRows] = statRes.data.values || []
+    const values = statRes.data.values || []
+    if (values.length === 0) {
+      return NextResponse.json({ data: [] })
+    }
 
-    const statuses = statRows.map((r) => {
-      const o: any = {}
-      statHeaders.forEach((h, i) => (o[h] = r[i] ?? ""))
-      return o
+    const headers = values[0]
+    const rows = values.slice(1)
+
+    const statuses = rows.map((r) => {
+      const obj: any = {}
+      headers.forEach((h, i) => {
+        obj[h] = r[i] ?? ""
+      })
+      return obj
     })
 
-    /* ===== DETAIL MODE ===== */
     if (employee_id) {
       return NextResponse.json({
         data: statuses.filter(
@@ -45,18 +66,26 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    /* ===== JOIN MODE ===== */
+    /* ===== GET EMPLOYEE MASTER ===== */
     const empRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: sheetId,
       range: `${EMPLOYEE_SHEET}!A1:T`,
     })
 
-    const [empHeaders, ...empRows] = empRes.data.values || []
+    const empValues = empRes.data.values || []
+    if (empValues.length === 0) {
+      return NextResponse.json({ data: [] })
+    }
+
+    const empHeaders = empValues[0]
+    const empRows = empValues.slice(1)
 
     const employees = empRows.map((r) => {
-      const o: any = {}
-      empHeaders.forEach((h, i) => (o[h] = r[i] ?? ""))
-      return o
+      const obj: any = {}
+      empHeaders.forEach((h, i) => {
+        obj[h] = r[i] ?? ""
+      })
+      return obj
     })
 
     const data = employees.map((e) => {
@@ -88,30 +117,55 @@ export async function GET(req: NextRequest) {
 /* ================= POST ================= */
 export async function POST(req: NextRequest) {
   try {
+    const { sheets, sheetId } = getSheetsClient()
     const body = await req.json()
 
+    if (!body.employee_id) {
+      return NextResponse.json(
+        { error: "employee_id wajib" },
+        { status: 400 }
+      )
+    }
+
     const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: sheetId,
       range: `${STATUS_SHEET}!A1:J`,
     })
 
-    const [, ...rows] = res.data.values || []
+    const values = res.data.values || []
+    if (values.length === 0) {
+      return NextResponse.json(
+        { error: "Sheet kosong / header tidak ditemukan" },
+        { status: 500 }
+      )
+    }
 
-    // nonaktif status lama
+    const headers = values[0]
+    const rows = values.slice(1)
+
+    const idxEmployee = headers.indexOf("employee_id")
+    const idxIsCurrent = headers.indexOf("is_current")
+
+    // nonaktifkan status lama
     for (let i = 0; i < rows.length; i++) {
-      if (rows[i][0] === body.employee_id && rows[i][6] === "TRUE") {
+      if (
+        rows[i][idxEmployee] === body.employee_id &&
+        rows[i][idxIsCurrent] === "TRUE"
+      ) {
         await sheets.spreadsheets.values.update({
-          spreadsheetId: SHEET_ID,
-          range: `${STATUS_SHEET}!G${i + 2}`,
+          spreadsheetId: sheetId,
+          range: `${STATUS_SHEET}!${String.fromCharCode(
+            65 + idxIsCurrent
+          )}${i + 2}`,
           valueInputOption: "RAW",
           requestBody: { values: [["FALSE"]] },
         })
       }
     }
 
-    // add status baru
+    // append status baru
     await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: sheetId,
       range: STATUS_SHEET,
       valueInputOption: "RAW",
       requestBody: {

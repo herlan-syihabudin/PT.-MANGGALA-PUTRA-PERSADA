@@ -4,29 +4,6 @@ import { nanoid } from "nanoid"
 
 export const dynamic = "force-dynamic"
 
-/* ================= AUTH ================= */
-
-const auth = new google.auth.JWT(
-  process.env.GOOGLE_CLIENT_EMAIL!,
-  undefined,
-  process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n"),
-  ["https://www.googleapis.com/auth/spreadsheets"]
-)
-
-const sheets = google.sheets({ version: "v4", auth })
-
-/* ================= SHEET IDS ================= */
-
-const CRM_SHEET_ID = process.env.GSHEET_CRM_ID!
-const PROJECT_SHEET_ID = process.env.GSHEET_PROJECT_ID!
-const ESTIMATOR_SHEET_ID = process.env.GSHEET_ESTIMATOR_ID!
-
-/* ================= SHEET NAMES ================= */
-
-const INQUIRY_SHEET = "CRM_INQUIRY"
-const PROJECT_SHEET = "PROJECT MASTER"
-const RAB_PROJECT = "RAB_PROJECT"
-
 /* ===================================================== */
 /* ================= CREATE RAB FROM INQUIRY =========== */
 /* ===================================================== */
@@ -42,7 +19,43 @@ export async function POST(req: Request) {
       )
     }
 
-    /* ================= GET INQUIRY (CRM FILE) ================= */
+    /* ================= SAFE ENV CHECK ================= */
+
+    if (
+      !process.env.GOOGLE_CLIENT_EMAIL ||
+      !process.env.GOOGLE_PRIVATE_KEY ||
+      !process.env.GSHEET_CRM_ID ||
+      !process.env.GSHEET_PROJECT_ID ||
+      !process.env.GSHEET_ESTIMATOR_ID
+    ) {
+      return NextResponse.json(
+        { message: "Environment variables belum diset" },
+        { status: 500 }
+      )
+    }
+
+    /* ================= AUTH (MOVED INSIDE) ================= */
+
+    const auth = new google.auth.JWT(
+      process.env.GOOGLE_CLIENT_EMAIL,
+      undefined,
+      process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      ["https://www.googleapis.com/auth/spreadsheets"]
+    )
+
+    const sheets = google.sheets({ version: "v4", auth })
+
+    /* ================= SHEET CONFIG ================= */
+
+    const CRM_SHEET_ID = process.env.GSHEET_CRM_ID
+    const PROJECT_SHEET_ID = process.env.GSHEET_PROJECT_ID
+    const ESTIMATOR_SHEET_ID = process.env.GSHEET_ESTIMATOR_ID
+
+    const INQUIRY_SHEET = "CRM_INQUIRY"
+    const PROJECT_SHEET = "PROJECT MASTER"
+    const RAB_PROJECT = "RAB_PROJECT"
+
+    /* ================= GET INQUIRY ================= */
 
     const inquiryRes = await sheets.spreadsheets.values.get({
       spreadsheetId: CRM_SHEET_ID,
@@ -71,7 +84,7 @@ export async function POST(req: Request) {
 
     const created_at = new Date().toISOString()
 
-    /* ================= CREATE PROJECT (PROJECT FILE) ================= */
+    /* ================= CREATE PROJECT ================= */
 
     const project_id = "PRJ-" + nanoid(8).toUpperCase()
 
@@ -85,17 +98,17 @@ export async function POST(req: Request) {
           nama_pekerjaan,
           customer_id,
           lokasi,
-          0,            // nilai_kontrak
-          "",           // start_date
-          "",           // end_date
-          "planning",   // status
+          0,
+          "",
+          "",
+          "planning",
           created_at,
           "MEP"
         ]]
       }
     })
 
-    /* ================= CREATE RAB HEADER (ESTIMATOR FILE) ================= */
+    /* ================= CREATE RAB HEADER ================= */
 
     const rab_id = "RAB-" + nanoid(6).toUpperCase()
 
@@ -110,8 +123,8 @@ export async function POST(req: Request) {
           project_id,
           nama_pekerjaan,
           customer_name,
-          0,                // total_item
-          0,                // total_nilai_rab
+          0,
+          0,
           "Draft",
           "Estimator",
           created_by || "System",
@@ -120,7 +133,7 @@ export async function POST(req: Request) {
       }
     })
 
-    /* ================= UPDATE CRM INQUIRY ================= */
+    /* ================= UPDATE CRM ================= */
 
     const row = inquiryIndex + 2
 
@@ -130,12 +143,12 @@ export async function POST(req: Request) {
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          "estimating", // J status
-          inquiry[10] || "", // K prioritas
-          inquiry[11] || "", // L lokasi
-          inquiry[12] || "", // M catatan
-          rab_id,            // N converted_rab_id
-          project_id         // O converted_project_id
+          "estimating",
+          inquiry[10] || "",
+          inquiry[11] || "",
+          inquiry[12] || "",
+          rab_id,
+          project_id
         ]]
       }
     })

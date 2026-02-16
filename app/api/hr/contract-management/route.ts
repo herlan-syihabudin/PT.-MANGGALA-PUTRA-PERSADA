@@ -3,17 +3,28 @@ import { google } from "googleapis"
 
 export const dynamic = "force-dynamic"
 
-/* ================= GOOGLE AUTH ================= */
+/* ================= SAFE GOOGLE CLIENT ================= */
+function getSheetsClient() {
+  if (
+    !process.env.GOOGLE_CLIENT_EMAIL ||
+    !process.env.GOOGLE_PRIVATE_KEY ||
+    !process.env.GOOGLE_SHEET_ID
+  ) {
+    throw new Error("Missing Google ENV variables")
+  }
 
-const auth = new google.auth.JWT(
-  process.env.GOOGLE_CLIENT_EMAIL!,
-  undefined,
-  process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n"),
-  ["https://www.googleapis.com/auth/spreadsheets"]
-)
+  const auth = new google.auth.JWT(
+    process.env.GOOGLE_CLIENT_EMAIL,
+    undefined,
+    process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+    ["https://www.googleapis.com/auth/spreadsheets"]
+  )
 
-const sheets = google.sheets({ version: "v4", auth })
-const SHEET_ID = process.env.GOOGLE_SHEET_ID!
+  return {
+    sheets: google.sheets({ version: "v4", auth }),
+    sheetId: process.env.GOOGLE_SHEET_ID,
+  }
+}
 
 /* ================= UTIL ================= */
 
@@ -28,18 +39,23 @@ function idx(headers: string[], name: string) {
 }
 
 /* ======================================================
-   GET → CONTRACT MANAGEMENT (LIST + JOIN)
+   GET → CONTRACT MANAGEMENT
 ====================================================== */
 export async function GET() {
   try {
+    const { sheets, sheetId } = getSheetsClient()
+
     /* ===== EMPLOYEE MASTER ===== */
     const empRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: sheetId,
       range: "EMPLOYEE_MASTER!A1:Z",
     })
 
-    const [empHeaders, ...empRows] = empRes.data.values || []
-    if (!empHeaders) return NextResponse.json({ data: [] })
+    const empValues = empRes.data.values || []
+    if (empValues.length === 0) return NextResponse.json({ data: [] })
+
+    const empHeaders = empValues[0]
+    const empRows = empValues.slice(1)
 
     const empIdIdx = idx(empHeaders, "employee_id")
     const namaIdx = idx(empHeaders, "nama_lengkap")
@@ -55,11 +71,16 @@ export async function GET() {
 
     /* ===== CONTRACT ===== */
     const ctrRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: sheetId,
       range: "CONTRACT!A1:Z",
     })
 
-    const [ctrHeaders, ...ctrRows] = ctrRes.data.values || []
+    const ctrValues = ctrRes.data.values || []
+    if (ctrValues.length === 0)
+      return NextResponse.json({ data: employees })
+
+    const ctrHeaders = ctrValues[0]
+    const ctrRows = ctrValues.slice(1)
 
     const ctrEmpIdx = idx(ctrHeaders, "employee_id")
     const statusIdx = idx(ctrHeaders, "status_kontrak")
@@ -69,7 +90,6 @@ export async function GET() {
     const sistemIdx = idx(ctrHeaders, "sistem_bayar")
     const rateIdx = idx(ctrHeaders, "rate")
 
-    /* ===== JOIN ===== */
     const result = employees.map((e) => {
       const activeContract = ctrRows.find(
         (r) =>
@@ -78,10 +98,7 @@ export async function GET() {
       )
 
       return {
-        employee_id: e.employee_id,
-        nama: e.nama,
-        type: e.type,
-        jabatan: e.jabatan,
+        ...e,
         project: activeContract?.[projectIdx] || "-",
         mulai: activeContract?.[startIdx] || "-",
         akhir: activeContract?.[endIdx] || "-",
@@ -93,7 +110,7 @@ export async function GET() {
 
     return NextResponse.json({ data: result })
   } catch (err) {
-    console.error("GET CONTRACT MANAGEMENT ERROR:", err)
+    console.error("GET CONTRACT ERROR:", err)
     return NextResponse.json(
       { error: "Gagal load contract management" },
       { status: 500 }
@@ -102,11 +119,13 @@ export async function GET() {
 }
 
 /* ======================================================
-   POST → CREATE CONTRACT (SUDAH LO BUAT, AMAN)
+   POST → CREATE CONTRACT
 ====================================================== */
 export async function POST(req: NextRequest) {
   try {
+    const { sheets, sheetId } = getSheetsClient()
     const body = await req.json()
+
     const {
       employee_id,
       start_date,
@@ -126,13 +145,17 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    /* ===== CEK EMPLOYEE MASTER ===== */
     const empRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: sheetId,
       range: "EMPLOYEE_MASTER!A1:Z",
     })
 
-    const [empHeaders, ...empRows] = empRes.data.values || []
+    const empValues = empRes.data.values || []
+    if (empValues.length === 0)
+      return NextResponse.json({ error: "Employee kosong" }, { status: 500 })
+
+    const empHeaders = empValues[0]
+    const empRows = empValues.slice(1)
 
     const empIdIdx = idx(empHeaders, "employee_id")
     const activeIdx = idx(empHeaders, "is_active")
@@ -157,13 +180,16 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
 
-    /* ===== CEK KONTRAK AKTIF ===== */
+    /* ===== CHECK ACTIVE CONTRACT ===== */
     const ctrRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: sheetId,
       range: "CONTRACT!A1:Z",
     })
 
-    const [ctrHeaders, ...ctrRows] = ctrRes.data.values || []
+    const ctrValues = ctrRes.data.values || []
+    const ctrHeaders = ctrValues[0] || []
+    const ctrRows = ctrValues.slice(1)
+
     const ctrEmpIdx = idx(ctrHeaders, "employee_id")
     const statusIdx = idx(ctrHeaders, "status_kontrak")
 
@@ -179,9 +205,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
 
-    /* ===== INSERT CONTRACT ===== */
+    /* ===== INSERT ===== */
     await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: sheetId,
       range: "CONTRACT!A2",
       valueInputOption: "RAW",
       requestBody: {

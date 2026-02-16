@@ -71,24 +71,25 @@ export async function POST(req: Request) {
     // ===== CREATE PROJECT =====
     const project_id = "PRJ-" + nanoid(8).toUpperCase()
 
-    // ⚠️ range disamakan dengan jumlah kolom yang kamu isi (8 kolom => A:H)
     await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
-      range: `${PROJECT_SHEET}!A:H`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [[
-          project_id,       // A project_id
-          nama_pekerjaan,   // B project_name
-          customer_id,      // C customer_id
-          customer_name,    // D customer_name
-          lokasi,           // E lokasi
-          0,                // F nilai_kontrak (sementara)
-          created_at,       // G created_at
-          "planning",       // H status
-        ]],
-      },
-    })
+  spreadsheetId: SHEET_ID,
+  range: `${PROJECT_SHEET}!A:J`,
+  valueInputOption: "USER_ENTERED",
+  requestBody: {
+    values: [[
+      project_id,        // A
+      nama_pekerjaan,    // B
+      customer_id,       // C
+      lokasi,            // D
+      0,                 // E nilai_kontrak
+      "",                // F start_date
+      "",                // G end_date
+      "planning",        // H status
+      created_at,        // I created_at
+      "MEP"              // J project_type (atau kosong "")
+    ]]
+  }
+})
 
     // ===== CREATE RAB HEADER =====
     const rab_id = "RAB-" + nanoid(6).toUpperCase()

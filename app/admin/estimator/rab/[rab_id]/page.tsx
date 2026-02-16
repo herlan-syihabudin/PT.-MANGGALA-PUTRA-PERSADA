@@ -1,17 +1,22 @@
+"use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { formatIDR } from "@/lib/format"
+import AddItemForm from "./AddItemForm"
 
 export const dynamic = "force-dynamic"
 
 /* ================= TYPES ================= */
 
 type RabItem = {
+  item_id: string
   rab_id: string
+  project_id: string
   scope: string
   item_name: string
   category: string
-  volume: number
+  qty: number
   unit: string
   unit_price: number
   total_price: number
@@ -26,33 +31,39 @@ type RabResponse = {
   items: RabItem[]
 }
 
-/* ================= FETCH ================= */
-
-async function fetchRAB(rab_id: string): Promise<RabResponse> {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/estimator/rab?rab_id=${rab_id}`,
-    { cache: "no-store" }
-  )
-
-  if (!res.ok) {
-    return {
-      summary: { total_items: 0, total_value: 0 },
-      items: [],
-    }
-  }
-
-  return res.json()
-}
-
-
 /* ================= PAGE ================= */
 
-export default async function EstimatorRABDetail({
+export default function EstimatorRABDetail({
   params,
 }: {
   params: { rab_id: string }
 }) {
-  const data = await fetchRAB(params.rab_id)
+  const [data, setData] = useState<RabResponse>({
+    summary: { total_items: 0, total_value: 0 },
+    items: [],
+  })
+
+  const [loading, setLoading] = useState(true)
+
+  async function loadData() {
+    setLoading(true)
+
+    const res = await fetch(
+      `/api/estimator/rab?rab_id=${params.rab_id}`,
+      { cache: "no-store" }
+    )
+
+    if (res.ok) {
+      const json = await res.json()
+      setData(json)
+    }
+
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
 
   return (
     <div className="p-6 space-y-6">
@@ -64,8 +75,8 @@ export default async function EstimatorRABDetail({
             RAB Project – Estimator
           </h1>
           <p className="text-xs text-gray-500">
-  RAB ID: {params.rab_id}
-</p>
+            RAB ID: {params.rab_id}
+          </p>
         </div>
 
         <Link
@@ -75,6 +86,13 @@ export default async function EstimatorRABDetail({
           ← Kembali ke List RAB
         </Link>
       </div>
+
+      {/* 🔥 ADD ITEM FORM */}
+      <AddItemForm
+        rab_id={params.rab_id}
+        project_id={data.items[0]?.project_id || ""}
+        onSuccess={loadData}
+      />
 
       {/* SUMMARY */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -100,7 +118,7 @@ export default async function EstimatorRABDetail({
                 "Scope",
                 "Item",
                 "Kategori",
-                "Volume",
+                "Qty",
                 "Unit",
                 "Harga Satuan",
                 "Total",
@@ -114,22 +132,25 @@ export default async function EstimatorRABDetail({
           </thead>
 
           <tbody>
-            {data.items.length === 0 ? (
+            {loading ? (
               <tr>
-                <td
-                  colSpan={8}
-                  className="p-6 text-center text-gray-500"
-                >
+                <td colSpan={8} className="p-6 text-center text-gray-400">
+                  Loading...
+                </td>
+              </tr>
+            ) : data.items.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="p-6 text-center text-gray-500">
                   Belum ada item RAB
                 </td>
               </tr>
             ) : (
               data.items.map((i) => (
-                <tr key={i.rab_id} className="border-t hover:bg-gray-50">
+                <tr key={i.item_id} className="border-t hover:bg-gray-50">
                   <td className="p-3">{i.scope}</td>
                   <td className="p-3">{i.item_name}</td>
                   <td className="p-3">{i.category}</td>
-                  <td className="p-3">{i.volume}</td>
+                  <td className="p-3">{i.qty}</td>
                   <td className="p-3">{i.unit}</td>
                   <td className="p-3">
                     {formatIDR(i.unit_price)}

@@ -20,9 +20,7 @@ function focusNext(current: HTMLElement) {
   if (!form) return
 
   const focusable = Array.from(
-    form.querySelectorAll<HTMLElement>(
-      "input, button"
-    )
+    form.querySelectorAll<HTMLElement>("input, button")
   ).filter((el) => !el.hasAttribute("disabled"))
 
   const index = focusable.indexOf(current)
@@ -31,13 +29,18 @@ function focusNext(current: HTMLElement) {
   }
 }
 
-export default function AddItemForm({ rab_id, project_id, onSuccess, onCreated }: Props) {
+export default function AddItemForm({
+  rab_id,
+  project_id,
+  onSuccess,
+  onCreated,
+}: Props) {
   const itemInputRef = useRef<HTMLInputElement>(null)
 
   const [scope, setScope] = useState("")
   const [itemName, setItemName] = useState("")
   const [category, setCategory] = useState("")
-  const [qty, setQty] = useState<number>(0)
+  const [qty, setQty] = useState<number>(1)
   const [unit, setUnit] = useState("")
   const [material, setMaterial] = useState<number>(0)
   const [labour, setLabour] = useState<number>(0)
@@ -47,16 +50,15 @@ export default function AddItemForm({ rab_id, project_id, onSuccess, onCreated }
   const unitPrice = material + labour
   const total = qty * unitPrice
 
+  const isValid = itemName.trim().length > 0
+
   const handleNumberChange = (val: string, setter: (n: number) => void) => {
     const num = parseFloat(val)
     setter(isNaN(num) ? 0 : num)
   }
 
   async function handleSubmit() {
-    if (!itemName.trim()) {
-      alert("Nama item wajib diisi")
-      return
-    }
+    if (!isValid || loading) return
 
     setLoading(true)
 
@@ -66,11 +68,11 @@ export default function AddItemForm({ rab_id, project_id, onSuccess, onCreated }
       body: JSON.stringify({
         rab_id,
         project_id,
-        scope,
-        item_name: itemName,
-        category,
+        scope: scope.trim(),
+        item_name: itemName.trim(),
+        category: category.trim(),
         qty,
-        unit,
+        unit: unit.trim(),
         material_price: material,
         labour_price: labour,
         created_by: "Estimator",
@@ -88,10 +90,10 @@ export default function AddItemForm({ rab_id, project_id, onSuccess, onCreated }
     const json = await res.json()
     if (json?.item) onCreated?.(json.item)
 
-    // Reset kecuali scope
+    // Reset (scope tetap)
     setItemName("")
     setCategory("")
-    setQty(0)
+    setQty(1)
     setUnit("")
     setMaterial(0)
     setLabour(0)
@@ -99,7 +101,7 @@ export default function AddItemForm({ rab_id, project_id, onSuccess, onCreated }
     itemInputRef.current?.focus()
 
     setSuccessMsg(true)
-    setTimeout(() => setSuccessMsg(false), 1000)
+    setTimeout(() => setSuccessMsg(false), 800)
 
     onSuccess()
   }
@@ -107,63 +109,63 @@ export default function AddItemForm({ rab_id, project_id, onSuccess, onCreated }
   /* ================= UI ================= */
 
   return (
-    <form
-      className="space-y-3"
-      onKeyDown={(e) => {
-        if (e.ctrlKey && e.key === "Enter") {
-          e.preventDefault()
-          handleSubmit()
-        }
-      }}
-    >
-      <div>
-        <h2 className="text-lg font-semibold">Tambah Item RAB</h2>
-        <p className="text-xs text-gray-500">
+    <>
+      {/* TITLE */}
+      <div className="mb-2">
+        <h2 className="text-sm font-semibold">Tambah Item RAB</h2>
+        <p className="text-[11px] text-gray-500">
           Enter = pindah field | Ctrl + Enter = tambah item
         </p>
       </div>
 
       {successMsg && (
-        <div className="text-xs bg-green-100 text-green-700 px-3 py-2 rounded">
+        <div className="text-xs bg-green-100 text-green-700 px-3 py-2 rounded mb-2">
           ✔ Item berhasil ditambahkan
         </div>
       )}
 
-      <div className="bg-white border rounded-lg p-4 space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+      <form
+        className="bg-white border rounded-lg p-3 space-y-3 shadow-sm"
+        onKeyDown={(e) => {
+          if (e.ctrlKey && e.key === "Enter") {
+            e.preventDefault()
+            handleSubmit()
+          }
+        }}
+      >
+        {/* Scope */}
+        <input
+          className="w-full border rounded px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+          value={scope}
+          onChange={(e) => setScope(e.target.value)}
+          placeholder="Scope Pekerjaan"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.ctrlKey) {
+              e.preventDefault()
+              focusNext(e.currentTarget)
+            }
+          }}
+        />
 
-          {/* Scope */}
-          <input
-            className="col-span-2 border px-3 py-2 text-sm rounded"
-            value={scope}
-            onChange={(e) => setScope(e.target.value)}
-            placeholder="Scope Pekerjaan"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.ctrlKey) {
-                e.preventDefault()
-                focusNext(e.currentTarget)
-              }
-            }}
-          />
+        {/* Item */}
+        <input
+          ref={itemInputRef}
+          className="w-full border rounded px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+          value={itemName}
+          onChange={(e) => setItemName(e.target.value)}
+          placeholder="Nama Item"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.ctrlKey) {
+              e.preventDefault()
+              focusNext(e.currentTarget)
+            }
+          }}
+        />
 
-          {/* Item Name */}
+        {/* Row 1 */}
+        <div className="grid grid-cols-3 gap-2">
           <input
-            ref={itemInputRef}
-            className="col-span-2 border px-3 py-2 text-sm rounded"
-            value={itemName}
-            onChange={(e) => setItemName(e.target.value)}
-            placeholder="Nama Item"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.ctrlKey) {
-                e.preventDefault()
-                focusNext(e.currentTarget)
-              }
-            }}
-          />
-
-          {/* Category */}
-          <input
-            className="border px-3 py-2 text-sm rounded"
+            className="border rounded px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             placeholder="Kategori"
@@ -175,9 +177,8 @@ export default function AddItemForm({ rab_id, project_id, onSuccess, onCreated }
             }}
           />
 
-          {/* Unit */}
           <input
-            className="border px-3 py-2 text-sm rounded"
+            className="border rounded px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
             value={unit}
             onChange={(e) => setUnit(e.target.value)}
             placeholder="Unit"
@@ -189,12 +190,14 @@ export default function AddItemForm({ rab_id, project_id, onSuccess, onCreated }
             }}
           />
 
-          {/* Qty */}
           <input
             type="number"
-            className="border px-3 py-2 text-sm rounded"
-            value={qty === 0 ? "" : qty}
+            min="0"
+            step="any"
+            className="border rounded px-2 py-1 text-sm text-right focus:ring-1 focus:ring-blue-500 outline-none"
+            value={qty}
             onChange={(e) => handleNumberChange(e.target.value, setQty)}
+            placeholder="Qty"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.ctrlKey) {
                 e.preventDefault()
@@ -202,13 +205,18 @@ export default function AddItemForm({ rab_id, project_id, onSuccess, onCreated }
               }
             }}
           />
+        </div>
 
-          {/* Material */}
+        {/* Row 2 */}
+        <div className="grid grid-cols-2 gap-2">
           <input
             type="number"
-            className="border px-3 py-2 text-sm rounded"
-            value={material === 0 ? "" : material}
+            min="0"
+            step="any"
+            className="border rounded px-2 py-1 text-sm text-right focus:ring-1 focus:ring-blue-500 outline-none"
+            value={material}
             onChange={(e) => handleNumberChange(e.target.value, setMaterial)}
+            placeholder="Material Price"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.ctrlKey) {
                 e.preventDefault()
@@ -217,40 +225,56 @@ export default function AddItemForm({ rab_id, project_id, onSuccess, onCreated }
             }}
           />
 
-          {/* Labour */}
           <input
             type="number"
-            className="col-span-2 border px-3 py-2 text-sm rounded"
-            value={labour === 0 ? "" : labour}
+            min="0"
+            step="any"
+            className="border rounded px-2 py-1 text-sm text-right focus:ring-1 focus:ring-blue-500 outline-none"
+            value={labour}
             onChange={(e) => handleNumberChange(e.target.value, setLabour)}
+            placeholder="Labour Price"
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.ctrlKey) {
+              if (e.key === "Enter") {
                 e.preventDefault()
-                focusNext(e.currentTarget)
+                handleSubmit()
               }
             }}
           />
         </div>
 
         {/* Summary */}
-        <div className="bg-gray-50 p-3 rounded text-sm space-y-1">
+        <div
+          className={`flex justify-between text-xs rounded px-2 py-2 ${
+            total > 0 ? "bg-green-50" : "bg-gray-50"
+          }`}
+        >
           <div>
-            Harga Satuan: <b className="ml-1 text-blue-600">Rp {formatRupiah(unitPrice)}</b>
+            Harga Satuan:
+            <span className="ml-1 font-semibold text-blue-600">
+              Rp {formatRupiah(unitPrice)}
+            </span>
           </div>
           <div>
-            Total: <b className="ml-1 text-green-600 text-base">Rp {formatRupiah(total)}</b>
+            Total:
+            <span className="ml-1 font-semibold text-green-700">
+              Rp {formatRupiah(total)}
+            </span>
           </div>
         </div>
 
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={loading}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded"
+          disabled={!isValid || loading}
+          className={`w-full text-xs py-2 rounded transition ${
+            isValid
+              ? "bg-blue-600 hover:bg-blue-700 text-white"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          }`}
         >
           {loading ? "Menyimpan..." : "Tambah Item"}
         </button>
-      </div>
-    </form>
+      </form>
+    </>
   )
 }

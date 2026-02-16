@@ -4,7 +4,6 @@ import { nanoid } from "nanoid"
 
 export const dynamic = "force-dynamic"
 
-// ===== AUTH =====
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL,
   undefined,
@@ -13,12 +12,8 @@ const auth = new google.auth.JWT(
 )
 
 const sheets = google.sheets({ version: "v4", auth })
+const SHEET_ID = process.env.GSHEET_ESTIMATOR_ID!
 
-// ===== SPREADSHEET IDs =====
-const CRM_SHEET_ID = process.env.GSHEET_CRM_ID!
-const ESTIMATOR_SHEET_ID = process.env.GSHEET_ESTIMATOR_ID!
-
-// ===== SHEET NAMES =====
 const INQUIRY_SHEET = "CRM_INQUIRY"
 const PROJECT_SHEET = "PROJECT MASTER"
 const RAB_PROJECT = "RAB_PROJECT"
@@ -34,12 +29,11 @@ export async function POST(req: Request) {
       )
     }
 
-    // =====================================================
-    // 1️⃣ GET INQUIRY (DARI CRM SHEET)
-    // =====================================================
+    /* ================= GET INQUIRY ================= */
+
     const inquiryRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: CRM_SHEET_ID,
-      range: `${INQUIRY_SHEET}!A2:Q`,
+      spreadsheetId: SHEET_ID,
+      range: `${INQUIRY_SHEET}!A2:Q1000`, // WAJIB ADA ANGKA AKHIR
     })
 
     const inquiryRows = inquiryRes.data.values || []
@@ -61,26 +55,14 @@ export async function POST(req: Request) {
     const nama_pekerjaan = inquiry[4] || ""
     const lokasi = inquiry[11] || ""
 
-    const alreadyRab = inquiry[13]
-    const alreadyProject = inquiry[14]
-
-    if (alreadyRab && alreadyProject) {
-      return NextResponse.json({
-        message: "Inquiry sudah pernah dibuatkan RAB",
-        rab_id: alreadyRab,
-        project_id: alreadyProject,
-      })
-    }
-
     const created_at = new Date().toISOString()
 
-    // =====================================================
-    // 2️⃣ CREATE PROJECT (KE ESTIMATOR SHEET)
-    // =====================================================
+    /* ================= CREATE PROJECT ================= */
+
     const project_id = "PRJ-" + nanoid(8).toUpperCase()
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId: ESTIMATOR_SHEET_ID,
+      spreadsheetId: SHEET_ID,
       range: `${PROJECT_SHEET}!A:J`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
@@ -99,13 +81,12 @@ export async function POST(req: Request) {
       }
     })
 
-    // =====================================================
-    // 3️⃣ CREATE RAB HEADER (KE ESTIMATOR SHEET)
-    // =====================================================
+    /* ================= CREATE RAB HEADER ================= */
+
     const rab_id = "RAB-" + nanoid(6).toUpperCase()
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId: ESTIMATOR_SHEET_ID,
+      spreadsheetId: SHEET_ID,
       range: `${RAB_PROJECT}!A:K`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
@@ -119,32 +100,31 @@ export async function POST(req: Request) {
           0,
           "Draft",
           "Estimator",
-          created_by || "Estimator",
-          created_at,
+          created_by || "System",
+          created_at
         ]]
       }
     })
 
-    // =====================================================
-    // 4️⃣ UPDATE INQUIRY STATUS + CONVERTED IDS
-    // =====================================================
+    /* ================= UPDATE INQUIRY ================= */
+
     const row = inquiryIndex + 2
 
-    await sheets.spreadsheets.values.batchUpdate({
-      spreadsheetId: CRM_SHEET_ID,
+    // Update status + rab_id + project_id SEKALIGUS
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range: `${INQUIRY_SHEET}!J${row}:O${row}`,
+      valueInputOption: "USER_ENTERED",
       requestBody: {
-        valueInputOption: "USER_ENTERED",
-        data: [
-          {
-            range: `${INQUIRY_SHEET}!J${row}`,
-            values: [["estimating"]],
-          },
-          {
-            range: `${INQUIRY_SHEET}!N${row}:O${row}`,
-            values: [[rab_id, project_id]],
-          },
-        ],
-      },
+        values: [[
+          "estimating", // J status
+          inquiry[10] || "", // K prioritas
+          inquiry[11] || "", // L lokasi
+          inquiry[12] || "", // M catatan
+          rab_id,            // N converted_rab_id
+          project_id         // O converted_project_id
+        ]]
+      }
     })
 
     return NextResponse.json({
@@ -155,6 +135,7 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error("CREATE RAB ERROR:", error)
+
     return NextResponse.json(
       { message: "Gagal membuat RAB" },
       { status: 500 }

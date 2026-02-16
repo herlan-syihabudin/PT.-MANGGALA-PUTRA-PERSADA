@@ -1,19 +1,19 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useRef, useState } from "react"
 
 type Props = {
   rab_id: string
   project_id: string
   onSuccess: () => void
+  onCreated?: (item: any) => void
 }
 
 function formatRupiah(value: number) {
   return new Intl.NumberFormat("id-ID").format(value)
 }
 
-export default function AddItemForm({ rab_id, project_id, onSuccess }: Props) {
-
+export default function AddItemForm({ rab_id, project_id, onSuccess, onCreated }: Props) {
   const itemInputRef = useRef<HTMLInputElement>(null)
 
   const [scope, setScope] = useState("")
@@ -29,10 +29,7 @@ export default function AddItemForm({ rab_id, project_id, onSuccess }: Props) {
   const unitPrice = material + labour
   const total = qty * unitPrice
 
-  const handleNumberChange = (
-    val: string,
-    setter: (n: number) => void
-  ) => {
+  const handleNumberChange = (val: string, setter: (n: number) => void) => {
     const num = parseFloat(val)
     setter(isNaN(num) ? 0 : num)
   }
@@ -40,6 +37,14 @@ export default function AddItemForm({ rab_id, project_id, onSuccess }: Props) {
   async function handleSubmit() {
     if (!itemName.trim()) {
       alert("Nama item wajib diisi")
+      return
+    }
+    if (!rab_id) {
+      alert("rab_id kosong")
+      return
+    }
+    if (!project_id) {
+      alert("project_id kosong (cek header RAB dulu)")
       return
     }
 
@@ -65,9 +70,13 @@ export default function AddItemForm({ rab_id, project_id, onSuccess }: Props) {
     setLoading(false)
 
     if (!res.ok) {
-      alert("Gagal tambah item")
+      const t = await res.text()
+      alert("Gagal tambah item: " + t)
       return
     }
+
+    const json = await res.json()
+    if (json?.item) onCreated?.(json.item)
 
     // Reset kecuali scope
     setItemName("")
@@ -77,30 +86,21 @@ export default function AddItemForm({ rab_id, project_id, onSuccess }: Props) {
     setMaterial(0)
     setLabour(0)
 
-    // Auto focus balik ke Nama Item
     itemInputRef.current?.focus()
 
-    // Success feedback
     setSuccessMsg(true)
-    setTimeout(() => setSuccessMsg(false), 1500)
+    setTimeout(() => setSuccessMsg(false), 1200)
 
     onSuccess()
   }
 
   return (
-    <div className="space-y-4">
-
-      {/* HEADER */}
+    <div className="space-y-3">
       <div>
-        <h2 className="text-lg font-semibold">
-          Tambah Item RAB
-        </h2>
-        <p className="text-xs text-gray-500">
-          Isi detail pekerjaan yang akan dimasukkan ke dalam RAB
-        </p>
+        <h2 className="text-lg font-semibold">Tambah Item RAB</h2>
+        <p className="text-xs text-gray-500">Isi detail pekerjaan yang akan dimasukkan ke dalam RAB</p>
       </div>
 
-      {/* SUCCESS TOAST */}
       {successMsg && (
         <div className="text-xs bg-green-100 text-green-700 px-3 py-2 rounded">
           ✔ Item berhasil ditambahkan
@@ -108,126 +108,93 @@ export default function AddItemForm({ rab_id, project_id, onSuccess }: Props) {
       )}
 
       <div className="bg-white border rounded-lg p-4 space-y-4">
-
         <div className="grid grid-cols-2 gap-4">
-
-          {/* SCOPE */}
           <div className="col-span-2 flex flex-col gap-1">
-            <label className="text-[10px] uppercase text-gray-400 font-bold">
-              Scope Pekerjaan
-            </label>
+            <label className="text-[10px] uppercase text-gray-400 font-bold">Scope Pekerjaan</label>
             <input
               className="border px-3 py-2 text-sm rounded focus:ring-2 focus:ring-blue-500 outline-none"
               value={scope}
               onChange={(e) => setScope(e.target.value)}
+              placeholder="Contoh: Pekerjaan Elektrikal"
             />
           </div>
 
-          {/* ITEM NAME */}
           <div className="col-span-2 flex flex-col gap-1">
-            <label className="text-[10px] uppercase text-gray-400 font-bold">
-              Nama Item
-            </label>
+            <label className="text-[10px] uppercase text-gray-400 font-bold">Nama Item</label>
             <input
               ref={itemInputRef}
               className="border px-3 py-2 text-sm rounded focus:ring-2 focus:ring-blue-500 outline-none"
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              placeholder="Contoh: Pengadaan Trafo 400kVA"
             />
           </div>
 
-          {/* KATEGORI */}
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase text-gray-400 font-bold">
-              Kategori
-            </label>
+            <label className="text-[10px] uppercase text-gray-400 font-bold">Kategori</label>
             <input
               className="border px-3 py-2 text-sm rounded"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
+              placeholder="Material / Jasa / dll"
             />
           </div>
 
-          {/* UNIT */}
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase text-gray-400 font-bold">
-              Unit
-            </label>
+            <label className="text-[10px] uppercase text-gray-400 font-bold">Unit</label>
             <input
               className="border px-3 py-2 text-sm rounded"
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
+              placeholder="m2, m3, ls, unit"
             />
           </div>
 
-          {/* QTY */}
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase text-gray-400 font-bold">
-              Qty
-            </label>
+            <label className="text-[10px] uppercase text-gray-400 font-bold">Qty</label>
             <input
               type="number"
               min="0"
               step="any"
               className="border px-3 py-2 text-sm rounded"
               value={qty === 0 ? "" : qty}
-              onChange={(e) =>
-                handleNumberChange(e.target.value, setQty)
-              }
+              onChange={(e) => handleNumberChange(e.target.value, setQty)}
             />
           </div>
 
-          {/* MATERIAL */}
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase text-gray-400 font-bold">
-              Material Price
-            </label>
+            <label className="text-[10px] uppercase text-gray-400 font-bold">Material Price</label>
             <input
               type="number"
               min="0"
               step="any"
               className="border px-3 py-2 text-sm rounded"
               value={material === 0 ? "" : material}
-              onChange={(e) =>
-                handleNumberChange(e.target.value, setMaterial)
-              }
+              onChange={(e) => handleNumberChange(e.target.value, setMaterial)}
             />
           </div>
 
-          {/* LABOUR */}
           <div className="flex flex-col gap-1 col-span-2">
-            <label className="text-[10px] uppercase text-gray-400 font-bold">
-              Labour Price
-            </label>
+            <label className="text-[10px] uppercase text-gray-400 font-bold">Labour Price</label>
             <input
               type="number"
               min="0"
               step="any"
               className="border px-3 py-2 text-sm rounded"
               value={labour === 0 ? "" : labour}
-              onChange={(e) =>
-                handleNumberChange(e.target.value, setLabour)
-              }
+              onChange={(e) => handleNumberChange(e.target.value, setLabour)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
             />
           </div>
-
         </div>
 
-        {/* LIVE CALC */}
         <div className="bg-gray-50 p-3 rounded text-sm space-y-1">
           <div>
-            Harga Satuan: 
-            <b className="ml-1 text-blue-600">
-              Rp {formatRupiah(unitPrice)}
-            </b>
+            Harga Satuan: <b className="ml-1 text-blue-600">Rp {formatRupiah(unitPrice)}</b>
           </div>
           <div>
-            Total: 
-            <b className="ml-1 text-green-600 text-base">
-              Rp {formatRupiah(total)}
-            </b>
+            Total: <b className="ml-1 text-green-600 text-base">Rp {formatRupiah(total)}</b>
           </div>
         </div>
 
@@ -238,7 +205,6 @@ export default function AddItemForm({ rab_id, project_id, onSuccess }: Props) {
         >
           {loading ? "Menyimpan..." : "Tambah Item"}
         </button>
-
       </div>
     </div>
   )

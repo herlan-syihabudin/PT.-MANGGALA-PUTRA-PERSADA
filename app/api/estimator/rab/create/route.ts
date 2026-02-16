@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     // ===== GET INQUIRY =====
     const inquiryRes = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${INQUIRY_SHEET}!A2:Q`, // aman, karena sheet kamu sampai created_by
+      range: `${INQUIRY_SHEET}!A2:Q1000`, // aman, karena sheet kamu sampai created_by
     })
 
     const inquiryRows = inquiryRes.data.values || []
@@ -122,21 +122,35 @@ export async function POST(req: Request) {
     // status ada di kolom J (10) pada sheet => J{row}
     // converted_rab_id kolom N (14th col) => N{row}
     // converted_project_id kolom O (15th col) => O{row}
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SHEET_ID,
-      range: `${INQUIRY_SHEET}!J${row}:O${row}`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [[
-          "estimating", // J status
-          inquiry[10] || "", // K prioritas (biarin tetap kalau ada)
-          inquiry[11] || "", // L lokasi (biarin tetap)
-          inquiry[12] || "", // M catatan (biarin tetap)
-          rab_id,       // N converted_rab_id
-          project_id,   // O converted_project_id
-        ]],
-      },
-    })
+    // update status
+await sheets.spreadsheets.values.update({
+  spreadsheetId: SHEET_ID,
+  range: `${INQUIRY_SHEET}!J${row}`,
+  valueInputOption: "USER_ENTERED",
+  requestBody: {
+    values: [["estimating"]],
+  },
+})
+
+// update converted_rab_id
+await sheets.spreadsheets.values.update({
+  spreadsheetId: SHEET_ID,
+  range: `${INQUIRY_SHEET}!N${row}`,
+  valueInputOption: "USER_ENTERED",
+  requestBody: {
+    values: [[rab_id]],
+  },
+})
+
+// update converted_project_id
+await sheets.spreadsheets.values.update({
+  spreadsheetId: SHEET_ID,
+  range: `${INQUIRY_SHEET}!O${row}`,
+  valueInputOption: "USER_ENTERED",
+  requestBody: {
+    values: [[project_id]],
+  },
+})
 
     return NextResponse.json({
       message: "RAB berhasil dibuat",

@@ -254,13 +254,19 @@ const safeIndex = currentStepIndex < 0 ? 0 : currentStepIndex
         {/* RIGHT SIDE */}
         <div className="space-y-6">
           {/* ESTIMASI CARD */}
-          <div className="bg-[#0f172a] text-white rounded-[2rem] p-10 shadow-2xl relative overflow-hidden">
-            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em]">Estimasi Nilai (IDR)</p>
-            <h2 className="text-3xl font-extrabold mt-3">
-              <span className="text-blue-400 text-lg mr-1">Rp</span>
-              {Number(data.estimasi_nilai || 0).toLocaleString("id-ID")}
-</h2>
-          </div>
+          <div className="bg-white border rounded-[2rem] p-10 shadow-soft">
+  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">
+    Estimasi Nilai (IDR)
+  </p>
+
+  <h2 className="text-4xl font-black mt-3 text-blue-600 tracking-tight">
+    Rp {Number(data.estimasi_nilai || 0).toLocaleString("id-ID")}
+  </h2>
+
+  <p className="text-xs text-gray-400 mt-2">
+    Perkiraan nilai proyek saat ini
+  </p>
+</div>
 
           {/* ACTION CARD */}
           <div className="bg-white border rounded-[2rem] p-8 shadow-soft space-y-4">

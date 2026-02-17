@@ -70,23 +70,26 @@ console.log("ESTIMASI RAW:", row[6])
   nama_pekerjaan: row[4],
   layanan: row[5],
 
-  estimasi_nilai: Number(
-    String(row[6] || 0).replace(/[^\d]/g, "")
-  ),
+  const rawBudget = String(row[6] || "").replace(/[^\d]/g, "")
 
-  sumber: row[7],
-
-  assigned_to: row[8],      // ✅
-  status: String(row[9] || "new").toLowerCase(),           // ✅
-  prioritas: row[10],
-  lokasi: row[11],
-  catatan: row[12],
-
-  converted_rab_id: row[13],      // ✅
-  converted_project_id: row[14],  // ✅
-
-  created_at: row[15],
-  created_by: row[16],
+const data = {
+  inquiry_id: row[0] || "",
+  tanggal_masuk: row[1] || "",
+  customer_id: row[2] || "",
+  customer_name: row[3] || "",
+  nama_pekerjaan: row[4] || "",
+  layanan: row[5] || "",
+  estimasi_nilai: rawBudget ? Number(rawBudget) : null,
+  sumber: row[7] || "",
+  assigned_to: row[8] || "",
+  status: String(row[9] || "new").toLowerCase(),
+  prioritas: row[10] || "",
+  lokasi: row[11] || "",
+  catatan: row[12] || "",
+  converted_rab_id: row[13] || "",
+  converted_project_id: row[14] || "",
+  created_at: row[15] || "",
+  created_by: row[16] || "",
 }
 
     return NextResponse.json(data)

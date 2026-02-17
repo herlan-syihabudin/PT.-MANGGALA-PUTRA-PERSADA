@@ -43,7 +43,7 @@ export async function GET(
     const rows = res.data.values || []
 
     const normalize = (val: string) =>
-  String(val).replace(/[\s-]/g, "").trim()
+  String(val).trim()
 
 const rowIndex = rows.findIndex((r) =>
   normalize(r[0]) === normalize(inquiryId)
@@ -150,6 +150,8 @@ const rowIndex = rows.findIndex((r) =>
   prioritas: "K",
   lokasi: "L",
   catatan: "M",
+  converted_rab_id: "N",
+  converted_project_id: "O",
 }
 
     /* ================= DYNAMIC UPDATE ================= */

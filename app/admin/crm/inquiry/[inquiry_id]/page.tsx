@@ -287,6 +287,8 @@ const safeIndex = currentStepIndex < 0 ? 0 : currentStepIndex
           </div>
 
         </div>
+         )
+}
 
 function Info({ label, value }: any) {
   return (

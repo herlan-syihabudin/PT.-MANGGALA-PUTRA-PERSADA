@@ -96,12 +96,20 @@ export default function InquiryDetailPage() {
 
   /* ================= DERIVED DATA ================= */
 
+const statusLower =
+  typeof data.status === "string"
+    ? data.status.toLowerCase()
+    : "new"
+
 const currentStepIndex =
-  STEPS.indexOf(data.status?.toLowerCase()) >= 0
-    ? STEPS.indexOf(data.status?.toLowerCase())
+  STEPS.indexOf(statusLower) >= 0
+    ? STEPS.indexOf(statusLower)
     : 0
 
-const services = data.layanan ? data.layanan.split("|") : []
+const services =
+  typeof data.layanan === "string"
+    ? data.layanan.split("|")
+    : []
 
 // Pipeline Age
 const pipelineAge = useMemo(() => {
@@ -119,7 +127,7 @@ const conversionProbability = {
   sent: 80,
   won: 100,
   lost: 0,
-}[data.status] ?? 10
+}[statusLower] ?? 10
 
 // ================= VALUE WEIGHT =================
 const estimasiValue = Number(data.estimasi_nilai || 0)
@@ -281,7 +289,7 @@ const surveyTooLong =
   <KPI 
     icon={<DollarSign size={18} />} 
     label="Potential Revenue" 
-    value={`Rp ${expectedRevenue.toLocaleString("id-ID")}`} 
+    value={`Rp ${Number(expectedRevenue || 0).toLocaleString("id-ID")}`}
   />
 
 </div>

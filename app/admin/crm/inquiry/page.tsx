@@ -61,7 +61,7 @@ async function fetchInquiry(): Promise<InquiryResponse> {
 /* ================= HELPER ================= */
 
 const formatCurrency = (value?: number | null) => {
-  if (!value) return "-"
+ if (value === null || value === undefined) return "-"
 
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -189,11 +189,11 @@ export default async function InquiryPage() {
                       Assign
                     </Link>
 
-                    {i.status === "won" ? (
-                      <ConvertButton inquiry_id={i.inquiry_id} />
-                    ) : (
-                      <span className="text-xs text-gray-300">Convert</span>
-                    )}
+                    {i.status !== "lost" && !i.converted_rab_id ? (
+  <ConvertButton inquiry_id={i.inquiry_id} />
+) : (
+  <span className="text-xs text-gray-300">Convert</span>
+)}
                   </td>
                 </tr>
               ))

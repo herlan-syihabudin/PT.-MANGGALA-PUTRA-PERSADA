@@ -10,71 +10,68 @@ import {
   useMotionValue,
   useSpring,
   useTransform,
-  animate,
 } from "framer-motion"
-import { ReactNode, useEffect, useMemo } from "react"
-
-type TrendType = "up" | "down" | "neutral"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 type KPICardProps = {
   title: string
   value: number
+  previousValue?: number
   note?: string
-  trend?: TrendType
-  trendLabel?: string
   loading?: boolean
   currency?: "IDR" | "USD" | "NONE"
   sparkline?: number[]
   dark?: boolean
+  realtime?: boolean
 }
 
 export default function KPICard({
   title,
   value,
+  previousValue,
   note,
-  trend = "neutral",
-  trendLabel,
   loading = false,
   currency = "NONE",
   sparkline,
   dark = false,
+  realtime = false,
 }: KPICardProps) {
-  /* ================= TREND CONFIG ================= */
+  /* ================= AUTO TREND DETECTION ================= */
 
-  const trendConfig: Record<
-    TrendType,
-    { icon: ReactNode; pill: string; glow: string }
-  > = {
-    up: {
-      icon: <ArrowUpRight className="w-4 h-4" />,
-      pill: "bg-green-100 text-green-600",
-      glow: "shadow-green-400/30",
-    },
-    down: {
-      icon: <ArrowDownRight className="w-4 h-4" />,
-      pill: "bg-red-100 text-red-600",
-      glow: "shadow-red-400/30",
-    },
-    neutral: {
-      icon: <Minus className="w-4 h-4" />,
-      pill: "bg-gray-100 text-gray-500",
-      glow: "",
-    },
-  }
+  const trend =
+    previousValue === undefined
+      ? "neutral"
+      : value > previousValue
+      ? "up"
+      : value < previousValue
+      ? "down"
+      : "neutral"
 
-  const { icon, pill, glow } = trendConfig[trend]
+  const trendStyle =
+    trend === "up"
+      ? "text-emerald-500"
+      : trend === "down"
+      ? "text-red-500"
+      : "text-gray-400"
 
-  /* ================= COUNTER (SPRING BASED) ================= */
+  const glow =
+    trend === "up"
+      ? "shadow-emerald-500/20"
+      : trend === "down"
+      ? "shadow-red-500/20"
+      : ""
 
-  const motionValue = useMotionValue(0)
+  /* ================= SPRING COUNTER ================= */
+
+  const motionValue = useMotionValue(previousValue ?? 0)
   const spring = useSpring(motionValue, {
-    stiffness: 120,
+    stiffness: 90,
     damping: 20,
   })
 
   useEffect(() => {
     if (!loading) {
-      animate(motionValue, value, { duration: 0.8 })
+      motionValue.set(value)
     }
   }, [value, loading])
 
@@ -87,21 +84,25 @@ export default function KPICard({
   const sparkPath = useMemo(() => {
     if (!sparkline || sparkline.length < 2) return ""
 
-    const safe = sparkline.filter((n) => typeof n === "number")
-    if (safe.length < 2) return ""
-
-    const max = Math.max(...safe)
-    const min = Math.min(...safe)
+    const max = Math.max(...sparkline)
+    const min = Math.min(...sparkline)
     const range = max - min || 1
 
-    return safe
+    return sparkline
       .map((val, i) => {
-        const x = (i / (safe.length - 1)) * 100
+        const x = (i / (sparkline.length - 1)) * 100
         const y = 30 - ((val - min) / range) * 30
         return `${i === 0 ? "M" : "L"} ${x},${y}`
       })
       .join(" ")
   }, [sparkline])
+
+  /* ================= DELTA % ================= */
+
+  const delta =
+    previousValue && previousValue !== 0
+      ? (((value - previousValue) / previousValue) * 100).toFixed(1)
+      : null
 
   /* ================= COMPONENT ================= */
 
@@ -109,16 +110,12 @@ export default function KPICard({
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{
-        rotateX: 3,
-        rotateY: -3,
-        scale: 1.02,
-      }}
+      whileHover={{ scale: 1.02 }}
       transition={{ type: "spring", stiffness: 120 }}
       className={`relative rounded-2xl p-6 overflow-hidden
       ${
         dark
-          ? "bg-gray-900 border border-gray-800 text-white"
+          ? "bg-white/5 backdrop-blur-xl border border-white/10 text-white"
           : "bg-white border border-gray-200"
       }
       shadow-sm hover:shadow-xl ${glow}`}
@@ -126,9 +123,19 @@ export default function KPICard({
       {/* Gradient Accent */}
       <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
 
+      {/* Realtime Indicator */}
+      {realtime && (
+        <div className="absolute top-4 right-4 flex items-center gap-2 text-xs">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          </span>
+        </div>
+      )}
+
       {/* TITLE */}
       <p
-        className={`text-sm font-medium mb-2 ${
+        className={`text-xs uppercase tracking-widest font-bold mb-2 ${
           dark ? "text-gray-400" : "text-gray-500"
         }`}
       >
@@ -142,18 +149,20 @@ export default function KPICard({
         ) : (
           <motion.p
             aria-live="polite"
-            className="text-3xl font-extrabold"
+            className="text-3xl font-black"
           >
             {display}
           </motion.p>
         )}
 
-        {!loading && (
+        {/* TREND PILL */}
+        {!loading && trend !== "neutral" && (
           <div
-            className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${pill}`}
+            className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${trendStyle} bg-current/10`}
           >
-            {icon}
-            {trendLabel && <span>{trendLabel}</span>}
+            {trend === "up" && <ArrowUpRight size={14} />}
+            {trend === "down" && <ArrowDownRight size={14} />}
+            {delta && <span>{delta}%</span>}
           </div>
         )}
       </div>
@@ -173,13 +182,7 @@ export default function KPICard({
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
             transition={{ duration: 0.8 }}
-            className={
-              trend === "up"
-                ? "text-green-500"
-                : trend === "down"
-                ? "text-red-500"
-                : "text-gray-400"
-            }
+            className={trendStyle}
           />
         </svg>
       )}

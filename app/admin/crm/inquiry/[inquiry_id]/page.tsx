@@ -284,10 +284,10 @@ const safeIndex = currentStepIndex < 0 ? 0 : currentStepIndex
                 {isUpdating ? "Processing..." : "Convert ke RAB"}
               </button>
             )}
-          </div>
-
-        </div>
-         )
+                  </div>
+      </div>
+    </div>
+  )
 }
 
 function Info({ label, value }: any) {

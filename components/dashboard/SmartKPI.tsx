@@ -24,7 +24,7 @@ function formatCompactIDR(value: number) {
     return `Rp ${(value / 1_000_000).toFixed(1)}M`
   if (value >= 1_000)
     return `Rp ${(value / 1_000).toFixed(1)}K`
-  return `Rp ${value}`
+  return `Rp ${value.toLocaleString("id-ID")}`
 }
 
 export default function SmartKPI({
@@ -68,7 +68,7 @@ export default function SmartKPI({
       ? "shadow-red-500/20"
       : "shadow-gray-200/30"
 
-  // Sparkline path
+  // Sparkline normalize
   const max = sparkline.length ? Math.max(...sparkline) : 1
   const min = sparkline.length ? Math.min(...sparkline) : 0
 
@@ -86,10 +86,16 @@ export default function SmartKPI({
 
   return (
     <motion.div
-      whileHover={{ y: -4 }}
-      transition={{ type: "spring", stiffness: 250 }}
-      className={`relative bg-white rounded-3xl p-6 border border-gray-100 shadow-xl ${glow} transition-all`}
+      whileHover={{ y: -6, scale: 1.015 }}
+      transition={{ type: "spring", stiffness: 260, damping: 18 }}
+      style={{ transformStyle: "preserve-3d" }}
+      className={`relative bg-gradient-to-br from-white to-gray-50 
+      rounded-3xl p-6 border border-gray-100 
+      shadow-xl ${glow} transition-all overflow-hidden`}
     >
+      {/* Soft highlight glass effect */}
+      <div className="absolute -top-20 -right-20 w-40 h-40 bg-white/60 blur-3xl rounded-full pointer-events-none" />
+
       {/* Title */}
       <p className="text-xs uppercase font-bold text-gray-400 tracking-widest">
         {title}
@@ -100,7 +106,7 @@ export default function SmartKPI({
         <motion.h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight">
           {currency === "IDR" ? (
             <motion.span>
-              {formatCompactIDR(rounded.get())}
+              {rounded.to((v) => formatCompactIDR(v))}
             </motion.span>
           ) : (
             <motion.span>{rounded}</motion.span>

@@ -43,13 +43,13 @@ export async function POST(req: Request) {
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          proposal_id,
-          pipeline_id,
-          rab_id || "",
-          total_value || 0,
-          "Draft",
-          created_at
-        ]]
+  proposal_id,
+  pipeline_id,
+  rab_id || "",
+  total_value || 0,
+  "DRAFT",
+  created_at
+]]
       }
     })
 

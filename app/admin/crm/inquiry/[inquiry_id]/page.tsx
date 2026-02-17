@@ -130,16 +130,13 @@ const conversionProbability = {
 }[statusLower] ?? 10
 
 // ================= VALUE WEIGHT =================
+
+
 const estimasiValue = useMemo(() => {
-  if (!data?.estimasi_nilai) return 0
-
-  const clean = String(data.estimasi_nilai).replace(/\./g, "").replace(/,/g, "")
-  const parsed = Number(clean)
-
-  return isNaN(parsed) ? 0 : parsed
+  return Number(data?.estimasi_nilai || 0)
 }, [data?.estimasi_nilai])
 
-const valueWeight =
+  const valueWeight =
   estimasiValue > 500_000_000
     ? 90
     : estimasiValue > 100_000_000
@@ -175,7 +172,7 @@ const heatLevel =
 
 // ================= SURVEY TOO LONG =================
 const surveyTooLong =
-  data.status === "survey" && pipelineAge > 5
+  statusLower === "survey" && pipelineAge > 5
   
   /* ================= UI ================= */
 
@@ -412,7 +409,12 @@ function KPI({ icon, label, value, heat }: any) {
       <div className="text-blue-600">{icon}</div>
       <div>
         <p className="text-xs text-gray-400">{label}</p>
-        <p className="font-bold text-lg text-gray-900">{value}</p>
+
+        {typeof value === "string" || typeof value === "number" ? (
+          <p className="font-bold text-lg text-gray-900">{value}</p>
+        ) : (
+          <div className="font-bold text-lg text-gray-900">{value}</div>
+        )}
       </div>
     </div>
   )

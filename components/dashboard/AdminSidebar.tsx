@@ -236,7 +236,7 @@ export default function AdminSidebar() {
   const totalNotif =
     estimator_inquiry + finance_approval + purchasing_request
 
-  const sidebarWidth = collapsed ? "w-20" : "w-72"
+  const sidebarWidth = collapsed ? "w-[80px]" : "w-[280px]"
   const padX = collapsed ? "px-3" : "px-6"
   
 
@@ -270,7 +270,8 @@ export default function AdminSidebar() {
     <aside
       className={`${sidebarWidth} overflow-visible hidden md:flex flex-col h-screen fixed top-0 left-0 z-50
       bg-gradient-to-b from-[#0B1120] via-[#0f172a] to-[#111827]
-      text-gray-400 border-r border-gray-800 shadow-2xl shadow-black/40 transition-all duration-300`}
+      backdrop-blur-xl
+      text-gray-400 border-r border-gray-800 shadow-2xl shadow-black/40 transition-[margin] duration-300 ease-in-out`}
     >
       {/* ===== TOP AREA ===== */}
       <div className={`${padX} pt-6 pb-4 flex items-center justify-between`}>

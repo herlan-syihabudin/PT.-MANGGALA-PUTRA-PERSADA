@@ -14,8 +14,6 @@ type Inquiry = {
   estimasi_nilai?: number | null
   assigned_to?: string
   status: string
-
-  // 👉 WAJIB ADA karena dipakai di UI
   converted_rab_id?: string
   converted_project_id?: string
 }
@@ -24,11 +22,15 @@ type InquiryResponse = {
   data: Inquiry[]
   summary: {
     total: number
+    active: number
     new: number
-    ongoing: number
+    survey: number
+    estimating: number
+    sent: number
     won: number
     lost: number
     pipeline_value: number
+    conversion_rate: number
   }
   page: number
   totalPages: number
@@ -48,11 +50,15 @@ async function fetchInquiry(): Promise<InquiryResponse> {
       data: [],
       summary: {
         total: 0,
+        active: 0,
         new: 0,
-        ongoing: 0,
+        survey: 0,
+        estimating: 0,
+        sent: 0,
         won: 0,
         lost: 0,
         pipeline_value: 0,
+        conversion_rate: 0,
       },
       page: 1,
       totalPages: 1,
@@ -65,7 +71,7 @@ async function fetchInquiry(): Promise<InquiryResponse> {
 /* ================= HELPER ================= */
 
 const formatCurrency = (value?: number | null) => {
- if (value === null || value === undefined) return "-"
+  if (value === null || value === undefined) return "-"
 
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -78,9 +84,7 @@ const formatCurrency = (value?: number | null) => {
 
 export default async function InquiryPage() {
   const response = await fetchInquiry()
-
-  const data = response.data
-  const summary = response.summary
+  const { data, summary } = response
 
   return (
     <div className="space-y-6">
@@ -90,7 +94,7 @@ export default async function InquiryPage() {
         <div>
           <h1 className="text-2xl font-bold">Inquiry / Lead Masuk</h1>
           <p className="text-sm text-gray-500">
-            Gerbang awal semua peluang project perusahaan
+            Monitoring pipeline marketing & konversi project
           </p>
         </div>
 
@@ -102,13 +106,21 @@ export default async function InquiryPage() {
         </Link>
       </div>
 
-      {/* KPI */}
+      {/* KPI BARIS 1 */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <KPI label="Total" value={summary.total} />
-        <KPI label="New" value={summary.new} />
-        <KPI label="Ongoing" value={summary.ongoing} highlight="blue" />
-        <KPI label="Won" value={summary.won} highlight="green" />
+        <KPI label="Active" value={summary.active} highlight="blue" />
+        <KPI label="Won (PO)" value={summary.won} highlight="green" />
         <KPI label="Lost" value={summary.lost} highlight="red" />
+        <KPI label="Conversion %" value={`${summary.conversion_rate}%`} />
+      </div>
+
+      {/* KPI BARIS 2 */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <KPI label="New" value={summary.new} />
+        <KPI label="Survey" value={summary.survey} />
+        <KPI label="Estimating" value={summary.estimating} />
+        <KPI label="Sent" value={summary.sent} />
       </div>
 
       {/* TABLE */}
@@ -130,19 +142,8 @@ export default async function InquiryPage() {
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={8} className="p-12 text-center">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="text-5xl">📭</div>
-                    <p className="text-gray-500 text-sm">
-                      Belum ada inquiry masuk
-                    </p>
-                    <Link
-                      href="/admin/crm/inquiry/create"
-                      className="text-blue-600 text-xs underline"
-                    >
-                      Buat inquiry pertama
-                    </Link>
-                  </div>
+                <td colSpan={8} className="p-12 text-center text-gray-400">
+                  Belum ada inquiry
                 </td>
               </tr>
             ) : (
@@ -179,6 +180,7 @@ export default async function InquiryPage() {
                   </td>
 
                   <td className="p-3 text-center space-x-3">
+
                     <Link
                       href={`/admin/crm/inquiry/${i.inquiry_id}`}
                       className="text-xs text-blue-600"
@@ -193,11 +195,12 @@ export default async function InquiryPage() {
                       Assign
                     </Link>
 
-                    {i.status !== "lost" && !i.converted_rab_id ? (
-  <ConvertButton inquiry_id={i.inquiry_id} />
-) : (
-  <span className="text-xs text-gray-300">Convert</span>
-)}
+                    {!i.converted_project_id && i.status !== "lost" ? (
+                      <ConvertButton inquiry_id={i.inquiry_id} />
+                    ) : (
+                      <span className="text-xs text-gray-300">Converted</span>
+                    )}
+
                   </td>
                 </tr>
               ))
@@ -206,13 +209,14 @@ export default async function InquiryPage() {
         </table>
       </div>
 
-      {/* OPTIONAL: PIPELINE VALUE */}
+      {/* PIPELINE VALUE */}
       <div className="text-right text-sm text-gray-600">
-        Total Pipeline:{" "}
-        <span className="font-semibold">
+        Total Pipeline:
+        <span className="font-semibold ml-2">
           {formatCurrency(summary.pipeline_value)}
         </span>
       </div>
+
     </div>
   )
 }

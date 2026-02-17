@@ -88,8 +88,7 @@ export async function POST(req: Request) {
     /* ================= GENERATE ID ================= */
 
     const rabId = "RAB-" + nanoid(6).toUpperCase()
-    const projectId = "PRJ-" + nanoid(8).toUpperCase()
-    const createdAt = new Date().toISOString()
+const createdAt = new Date().toISOString()
 
     /* ================= INSERT RAB PROJECT ================= */
 
@@ -99,41 +98,40 @@ export async function POST(req: Request) {
   valueInputOption: "USER_ENTERED",
   requestBody: {
     values: [[
-      rabId,            // A rab_id
-      inquiry_id,       // B inquiry_id
-      projectId,        // C project_id
-      projectName,      // D project_name
-      customerName,     // E customer_name
-      0,                // F total_item
-      0,                // G total_nilai_rab
-      "Draft",          // H status
-      "Estimator",      // I aksi
-      "System",         // J created_by
-      createdAt         // K created_at
-    ]]
+  rabId,
+  inquiry_id,
+  "",                 // project_id kosong dulu
+  projectName,
+  customerName,
+  0,
+  0,
+  "Draft",
+  "Estimator",
+  "System",
+  createdAt
+]]
   }
 })
 
     /* ================= UPDATE CRM ================= */
 
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: CRM_SHEET_ID,
-      range: `${CRM_SHEET}!N${sheetRowNumber}:O${sheetRowNumber}`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [[
-          rabId,        // converted_rab_id (col N)
-          projectId     // converted_project_id (col O)
-        ]]
-      }
-    })
+   await sheets.spreadsheets.values.update({
+  spreadsheetId: CRM_SHEET_ID,
+  range: `${CRM_SHEET}!N${sheetRowNumber}:O${sheetRowNumber}`,
+  valueInputOption: "USER_ENTERED",
+  requestBody: {
+    values: [[
+      rabId,   // col N
+      ""       // col O kosong dulu
+    ]]
+  }
+})
 
     return NextResponse.json({
-      success: true,
-      message: "Berhasil convert ke RAB",
-      rab_id: rabId,
-      project_id: projectId
-    })
+  success: true,
+  message: "Berhasil convert ke RAB",
+  rab_id: rabId
+})
 
   } catch (error) {
     console.error("Convert Error:", error)

@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useSidebar } from "@/store/useSidebar"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -194,15 +195,9 @@ export default function AdminSidebar() {
   const [notifOpen, setNotifOpen] = useState(false)
   const [quickOpen, setQuickOpen] = useState(false)
 
-  // Collapsible sidebar (persist)
-  const [collapsed, setCollapsed] = useState(false)
+  const { collapsed, toggle } = useSidebar()
 
-  useEffect(() => {
-    try {
-      const v = localStorage.getItem("mpp_sidebar_collapsed")
-      if (v === "1") setCollapsed(true)
-    } catch {}
-  }, [])
+  // Collapsible sidebar (persist)
 
   useEffect(() => {
     try {
@@ -243,6 +238,7 @@ export default function AdminSidebar() {
 
   const sidebarWidth = collapsed ? "w-20" : "w-72"
   const padX = collapsed ? "px-3" : "px-6"
+  
 
   const quickActions = useMemo(
     () => [
@@ -300,11 +296,10 @@ export default function AdminSidebar() {
         <div className="flex items-center gap-2">
           {/* Collapse toggle */}
           <button
-            type="button"
-            onClick={() => setCollapsed((v) => !v)}
-            className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-gray-700 bg-gray-900/50 hover:bg-gray-800 transition-colors"
-            title={collapsed ? "Expand" : "Collapse"}
-          >
+  type="button"
+  onClick={toggle}
+  className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-gray-700 bg-gray-900/50 hover:bg-gray-800 transition-colors"
+>
             {collapsed ? (
               <ChevronRight size={16} className="text-gray-300" />
             ) : (

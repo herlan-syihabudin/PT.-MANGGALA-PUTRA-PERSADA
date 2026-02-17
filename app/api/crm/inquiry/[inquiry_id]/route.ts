@@ -59,8 +59,7 @@ const rowIndex = rows.findIndex((r) =>
     const row = rows[rowIndex]
 
 // ✅ BIKIN DULU DI LUAR OBJECT
-const rawValue = String(row[6] || "").split(',')[0].split('.')[0] // ambil angka depan aja kalo ada desimal
-const cleanedBudget = rawValue.replace(/[^\d]/g, "")
+const rawBudget = String(row[6] || "").replace(/[^\d]/g, "")
     
 const data = {
   inquiry_id: row[0] || "",

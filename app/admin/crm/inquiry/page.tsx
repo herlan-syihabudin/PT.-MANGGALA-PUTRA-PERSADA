@@ -11,70 +11,72 @@ type Inquiry = {
   customer_name: string
   nama_pekerjaan: string
   layanan?: string
-  estimasi_nilai?: number
+  estimasi_nilai?: number | null
   assigned_to?: string
   status: string
 }
 
+type InquiryResponse = {
+  data: Inquiry[]
+  summary: {
+    total: number
+    new: number
+    ongoing: number
+    won: number
+    lost: number
+    pipeline_value: number
+  }
+  page: number
+  totalPages: number
+}
+
 /* ================= FETCH ================= */
 
-async function fetchInquiry(): Promise<Inquiry[]> {
+async function fetchInquiry(): Promise<InquiryResponse> {
   const base = process.env.NEXT_PUBLIC_BASE_URL
 
-  const res = await fetch(`${base}/api/crm/inquiry`, {
+  const res = await fetch(`${base}/api/crm/inquiry?page=1&limit=20`, {
     cache: "no-store",
   })
 
-  if (!res.ok) return []
+  if (!res.ok) {
+    return {
+      data: [],
+      summary: {
+        total: 0,
+        new: 0,
+        ongoing: 0,
+        won: 0,
+        lost: 0,
+        pipeline_value: 0,
+      },
+      page: 1,
+      totalPages: 1,
+    }
+  }
+
   return res.json()
 }
 
 /* ================= HELPER ================= */
 
-const formatCurrency = (value?: number | string) => {
-  if (value === undefined || value === null || value === "")
-    return "-"
-
-  const numeric = typeof value === "number"
-    ? value
-    : parseInt(String(value).replace(/[^0-9]/g, ""), 10)
-
-  if (!numeric || isNaN(numeric))
-    return "-"
+const formatCurrency = (value?: number | null) => {
+  if (!value) return "-"
 
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
-  }).format(numeric)
+  }).format(value)
 }
 
 /* ================= PAGE ================= */
 
 export default async function InquiryPage() {
-  const rawData = await fetchInquiry()
-  const data = rawData ?? []
+  const response = await fetchInquiry()
 
-  /* ===== NORMALIZE + SORT TERBARU ===== */
-  const normalized = data
-    .map(i => ({
-      ...i,
-      status: i.status?.toLowerCase() || "new"
-    }))
-    .sort((a, b) => {
-      const dateA = a.tanggal_masuk ? new Date(a.tanggal_masuk).getTime() : 0
-      const dateB = b.tanggal_masuk ? new Date(b.tanggal_masuk).getTime() : 0
-      return dateB - dateA // terbaru di atas
-    })
-
-  const total = normalized.length
-  const newCount = normalized.filter(i => i.status === "new").length
-  const won = normalized.filter(i => i.status === "won").length
-  const lost = normalized.filter(i => i.status === "lost").length
-
-  const ongoing = normalized.filter(i =>
-    !["new", "won", "lost"].includes(i.status)
-  ).length
+  const data = response.data
+  const summary = response.summary
 
   return (
     <div className="space-y-6">
@@ -98,11 +100,11 @@ export default async function InquiryPage() {
 
       {/* KPI */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <KPI label="Total" value={total} />
-        <KPI label="New" value={newCount} />
-        <KPI label="Ongoing" value={ongoing} highlight="blue" />
-        <KPI label="Won" value={won} highlight="green" />
-        <KPI label="Lost" value={lost} highlight="red" />
+        <KPI label="Total" value={summary.total} />
+        <KPI label="New" value={summary.new} />
+        <KPI label="Ongoing" value={summary.ongoing} highlight="blue" />
+        <KPI label="Won" value={summary.won} highlight="green" />
+        <KPI label="Lost" value={summary.lost} highlight="red" />
       </div>
 
       {/* TABLE */}
@@ -122,7 +124,7 @@ export default async function InquiryPage() {
           </thead>
 
           <tbody>
-            {normalized.length === 0 ? (
+            {data.length === 0 ? (
               <tr>
                 <td colSpan={8} className="p-12 text-center">
                   <div className="flex flex-col items-center gap-3">
@@ -140,7 +142,7 @@ export default async function InquiryPage() {
                 </td>
               </tr>
             ) : (
-              normalized.map((i) => (
+              data.map((i) => (
                 <tr key={i.inquiry_id} className="border-t hover:bg-gray-50">
                   <td className="p-3">
                     {i.tanggal_masuk
@@ -188,16 +190,24 @@ export default async function InquiryPage() {
                     </Link>
 
                     {i.status === "won" ? (
-  <ConvertButton inquiry_id={i.inquiry_id} />
-) : (
-  <span className="text-xs text-gray-300">Convert</span>
-)}
+                      <ConvertButton inquiry_id={i.inquiry_id} />
+                    ) : (
+                      <span className="text-xs text-gray-300">Convert</span>
+                    )}
                   </td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* OPTIONAL: PIPELINE VALUE */}
+      <div className="text-right text-sm text-gray-600">
+        Total Pipeline:{" "}
+        <span className="font-semibold">
+          {formatCurrency(summary.pipeline_value)}
+        </span>
       </div>
     </div>
   )

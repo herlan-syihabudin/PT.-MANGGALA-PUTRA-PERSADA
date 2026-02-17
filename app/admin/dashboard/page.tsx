@@ -174,7 +174,6 @@ export default function AdminDashboardPage({ data, isLoading }: any) {
       title="Revenue Bulan Ini"
       value={1250000000}
       previousValue={980000000}
-      prefix="Rp "
       sparkline={[400, 600, 750, 900, 1100, 1250]}
     />
   </motion.div>
@@ -184,7 +183,6 @@ export default function AdminDashboardPage({ data, isLoading }: any) {
       title="Cashflow"
       value={820000000}
       previousValue={900000000}
-      prefix="Rp "
       sparkline={[950, 910, 880, 860, 830, 820]}
     />
   </motion.div>
@@ -194,7 +192,6 @@ export default function AdminDashboardPage({ data, isLoading }: any) {
       title="Net Profit"
       value={320000000}
       previousValue={280000000}
-      prefix="Rp "
       sparkline={[180, 200, 230, 260, 300, 320]}
     />
   </motion.div>
@@ -204,7 +201,6 @@ export default function AdminDashboardPage({ data, isLoading }: any) {
       title="Total Project Value"
       value={5400000000}
       previousValue={5000000000}
-      prefix="Rp "
       sparkline={[4200, 4500, 4700, 5000, 5200, 5400]}
     />
   </motion.div>

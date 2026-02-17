@@ -72,6 +72,80 @@ function groupByScope(items: RabItem[]) {
   }))
 }
 
+function handlePrint() {
+  const printContent = document.getElementById("print-area")
+  if (!printContent) return
+
+  const win = window.open("", "", "width=1000,height=800")
+  if (!win) return
+
+  win.document.write(`
+    <html>
+      <head>
+        <title>RAB Proposal</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+          }
+
+          h2 {
+            margin-bottom: 20px;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+          }
+
+          th, td {
+            border: 1px solid #ccc;
+            padding: 6px;
+          }
+
+          th {
+            background: #f3f3f3;
+          }
+
+          input {
+            border: none;
+          }
+
+          button {
+            display: none;
+          }
+
+          summary {
+            display: none;
+          }
+
+          details {
+            display: block;
+          }
+
+          .right {
+            text-align: right;
+          }
+
+          @media print {
+            body {
+              margin: 0;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <h2>RINCIAN ANGGARAN BIAYA</h2>
+        ${printContent.innerHTML}
+      </body>
+    </html>
+  `)
+
+  win.document.close()
+  win.print()
+}
+
 /* ================= inline editor ================= */
 
 function useDebouncedCommit<T extends (...args: any[]) => void>(fn: T, delay = 600) {
@@ -86,6 +160,28 @@ function useDebouncedCommit<T extends (...args: any[]) => void>(fn: T, delay = 6
 export default function RABDetailClient({ rab_id, project_id, initialData }: Props) {
   const [data, setData] = useState<RabResponse>(initialData)
   const [loading, setLoading] = useState(false)
+
+  // ===== ENTERPRISE STATES =====
+const [searchTerm, setSearchTerm] = useState("")
+const [expandAll, setExpandAll] = useState(true)
+const [lockMode, setLockMode] = useState<boolean>(data.header?.status === "LOCKED")
+
+// global numbering
+const globalItems = useMemo(() => {
+  return [...data.items].sort((a, b) => {
+    const ta = a.created_at || ""
+    const tb = b.created_at || ""
+    return ta.localeCompare(tb)
+  })
+}, [data.items])
+
+const globalIndexMap = useMemo(() => {
+  const map = new Map<string, number>()
+  globalItems.forEach((it, i) => {
+    map.set(it.item_id, i + 1)
+  })
+  return map
+}, [globalItems])
 
   // profit panel
   const [overheadPct, setOverheadPct] = useState<number>(10)
@@ -122,7 +218,20 @@ export default function RABDetailClient({ rab_id, project_id, initialData }: Pro
     return Math.round(totalValue * factor)
   }, [totalValue, overheadPct, profitPct])
 
-  const grouped = useMemo(() => groupByScope(data.items), [data.items])
+  const filteredItems = useMemo(() => {
+  if (!searchTerm) return data.items
+  return data.items.filter(
+    (i) =>
+      i.item_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      i.scope.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      i.category.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+}, [data.items, searchTerm])
+
+const grouped = useMemo(() => groupByScope(filteredItems), [filteredItems])
+  function scopeTotal(items: RabItem[]) {
+  return items.reduce((sum, i) => sum + n(i.total_price), 0)
+}
 
   /* ================= CRUD ================= */
 
@@ -275,18 +384,25 @@ export default function RABDetailClient({ rab_id, project_id, initialData }: Pro
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={reload}
-            className="text-xs px-3 py-2 border rounded hover:bg-gray-50"
-            disabled={loading}
-          >
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
+  <button
+    onClick={reload}
+    className="text-xs px-3 py-2 border rounded hover:bg-gray-50"
+    disabled={loading}
+  >
+    {loading ? "Refreshing..." : "Refresh"}
+  </button>
 
-          <Link href="/admin/estimator/rab" className="text-xs text-gray-600">
-            ← Kembali
-          </Link>
-        </div>
+  <button
+    onClick={handlePrint}
+    className="text-xs px-3 py-2 border rounded hover:bg-gray-50"
+  >
+    Print
+  </button>
+
+  <Link href="/admin/estimator/rab" className="text-xs text-gray-600">
+    ← Kembali
+  </Link>
+</div>
       </div>
 
       {/* ADD ITEM */}
@@ -388,8 +504,34 @@ export default function RABDetailClient({ rab_id, project_id, initialData }: Pro
         </div>
       </div>
 
+      {/* ENTERPRISE CONTROL PANEL */}
+<div className="bg-white border rounded-lg p-4 flex items-center justify-between gap-4 sticky top-0 z-10">
+  <div className="flex items-center gap-3">
+    <input
+      placeholder="Search item / scope..."
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      className="border rounded px-3 py-1 text-sm"
+    />
+
+    <button
+      onClick={() => setExpandAll(!expandAll)}
+      className="text-xs px-3 py-1 border rounded"
+    >
+      {expandAll ? "Collapse All" : "Expand All"}
+    </button>
+  </div>
+
+  <div className="text-sm font-semibold">
+    GRAND TOTAL:{" "}
+    <span className="text-green-700">
+      {formatIDR(totalValue)}
+    </span>
+  </div>
+</div>
+      
       {/* ACCORDION BY SCOPE */}
-      <div className="space-y-3">
+<div id="print-area" className="space-y-3">
         <div className="text-sm font-semibold">Item RAB (Grouped by Scope)</div>
 
         {grouped.length === 0 ? (
@@ -398,7 +540,11 @@ export default function RABDetailClient({ rab_id, project_id, initialData }: Pro
           </div>
         ) : (
           grouped.map((g) => (
-            <details key={g.scope} className="bg-white border rounded-lg overflow-hidden" open>
+            <details
+  key={g.scope}
+  className="bg-white border rounded-lg overflow-hidden"
+  open={expandAll}
+>
               <summary className="flex items-center justify-between gap-3 p-4 cursor-pointer select-none bg-gray-50">
                 <div className="font-semibold text-sm">{g.scope}</div>
                 <div className="flex items-center gap-3 text-xs text-gray-600">
@@ -427,7 +573,9 @@ export default function RABDetailClient({ rab_id, project_id, initialData }: Pro
                   <tbody>
                     {g.items.map((it, idx) => (
                       <tr key={it.item_id} className="border-b hover:bg-gray-50">
-                        <td className="p-3 text-gray-500">{pad3(idx + 1)}</td>
+                        <td className="p-3 text-gray-500">
+  {pad3(globalIndexMap.get(it.item_id) || idx + 1)}
+</td>
 
                         {/* item_name */}
                         <td className="p-3">
@@ -527,6 +675,19 @@ export default function RABDetailClient({ rab_id, project_id, initialData }: Pro
                       </tr>
                     ))}
                   </tbody>
+
+                  <tfoot>
+  <tr className="bg-gray-100 font-semibold">
+    <td colSpan={8} className="p-3 text-right">
+      SUBTOTAL {g.scope}
+    </td>
+    <td className="p-3 text-green-700">
+      {formatIDR(scopeTotal(g.items))}
+    </td>
+    <td />
+  </tr>
+</tfoot>
+                  
                 </table>
               </div>
             </details>
@@ -534,6 +695,8 @@ export default function RABDetailClient({ rab_id, project_id, initialData }: Pro
         )}
       </div>
 
+      
+      
       <p className="text-xs text-gray-400">
         🔐 Modul ini adalah sumber RAB resmi. Project Management membaca dari sini.
       </p>

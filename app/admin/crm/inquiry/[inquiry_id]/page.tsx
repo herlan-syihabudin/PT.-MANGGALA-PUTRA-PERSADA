@@ -269,16 +269,21 @@ const safeIndex = currentStepIndex < 0 ? 0 : currentStepIndex
 </div>
 
           {/* ACTION CARD */}
-          <div className="bg-white border rounded-[2rem] p-8 shadow-soft space-y-4">
-            <button
-              onClick={convertToRAB}
-              disabled={data.status !== "estimating" || isUpdating}
-              className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-30 disabled:grayscale"
-            >
-              {isUpdating ? "Processing..." : "Convert ke RAB"}
-            </button>
-          </div>
-        </div>
+  <div className="bg-white border rounded-[2rem] p-8 shadow-soft space-y-4">
+  {data.converted_rab_id || data.converted_project_id ? (
+    <div className="text-center py-4 text-green-600 font-semibold text-sm">
+      ✔ Sudah dikonversi ke RAB Project
+    </div>
+  ) : (
+    <button
+      onClick={convertToRAB}
+      disabled={data.status !== "estimating" || isUpdating}
+      className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-30 disabled:grayscale"
+    >
+      {isUpdating ? "Processing..." : "Convert ke RAB"}
+    </button>
+  )}
+</div>
       </div>
     </div>
   )

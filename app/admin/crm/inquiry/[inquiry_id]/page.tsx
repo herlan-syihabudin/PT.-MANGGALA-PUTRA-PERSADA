@@ -105,11 +105,11 @@ const services = data.layanan ? data.layanan.split("|") : []
 
 // Pipeline Age
 const pipelineAge = useMemo(() => {
-  if (!data.tanggal_masuk) return 0
-  const start = new Date(data.tanggal_masuk).getTime()
-  const now = Date.now()
-  return Math.floor((now - start) / (1000 * 60 * 60 * 24))
-}, [data.tanggal_masuk])
+  if (!data?.tanggal_masuk) return 0
+  const start = new Date(data.tanggal_masuk).getTime()
+  const now = Date.now()
+  return Math.floor((now - start) / (1000 * 60 * 60 * 24))
+}, [data])
 
 // ================= CONVERSION PROBABILITY =================
 const conversionProbability = {

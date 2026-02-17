@@ -1,12 +1,7 @@
 "use client"
 
-import {
-  motion,
-  useMotionValue,
-  useSpring,
-  useTransform,
-} from "framer-motion"
-import { useEffect } from "react"
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion"
+import { useEffect, useMemo } from "react"
 import { ArrowUpRight, ArrowDownRight } from "lucide-react"
 
 type SmartKPIProps = {
@@ -18,13 +13,10 @@ type SmartKPIProps = {
 }
 
 function formatCompactIDR(value: number) {
-  if (value >= 1_000_000_000)
-    return `Rp ${(value / 1_000_000_000).toFixed(2)}B`
-  if (value >= 1_000_000)
-    return `Rp ${(value / 1_000_000).toFixed(1)}M`
-  if (value >= 1_000)
-    return `Rp ${(value / 1_000).toFixed(1)}K`
-  return `Rp ${value.toLocaleString("id-ID")}`
+  if (value >= 1_000_000_000) return `Rp ${(value / 1_000_000_000).toFixed(2)}B`
+  if (value >= 1_000_000) return `Rp ${(value / 1_000_000).toFixed(1)}M`
+  if (value >= 1_000) return `Rp ${(value / 1_000).toFixed(1)}K`
+  return `Rp ${Math.round(value).toLocaleString("id-ID")}`
 }
 
 export default function SmartKPI({
@@ -34,25 +26,39 @@ export default function SmartKPI({
   sparkline = [],
   currency = "IDR",
 }: SmartKPIProps) {
-  const motionValue = useMotionValue(previousValue ?? 0)
+  // start animation from previousValue (kalau ada), kalau tidak mulai dari 0
+  const start = previousValue ?? 0
+
+  const motionValue = useMotionValue(start)
   const spring = useSpring(motionValue, { stiffness: 70, damping: 20 })
   const rounded = useTransform(spring, (latest) => Math.round(latest))
+
+  // ✅ FIX: buat "display" sebagai MotionValue<string> (bukan rounded.to)
+  const display = useTransform(rounded, (v) =>
+    currency === "IDR" ? formatCompactIDR(v) : v.toLocaleString("id-ID")
+  )
 
   useEffect(() => {
     motionValue.set(value)
   }, [value, motionValue])
 
-  const trend =
-    previousValue && value > previousValue
-      ? "up"
-      : previousValue && value < previousValue
-      ? "down"
-      : "neutral"
+  // ✅ FIX: previousValue=0 jangan dianggap false
+  const hasPrev = typeof previousValue === "number"
 
-  const percentChange =
-    previousValue && previousValue !== 0
-      ? (((value - previousValue) / previousValue) * 100).toFixed(1)
-      : null
+  const trend: "up" | "down" | "neutral" = !hasPrev
+    ? "neutral"
+    : value > (previousValue as number)
+    ? "up"
+    : value < (previousValue as number)
+    ? "down"
+    : "neutral"
+
+  const percentChange = useMemo(() => {
+    if (!hasPrev) return null
+    if ((previousValue as number) === 0) return null
+    const pct = ((value - (previousValue as number)) / (previousValue as number)) * 100
+    return pct
+  }, [hasPrev, previousValue, value])
 
   const color =
     trend === "up"
@@ -72,15 +78,14 @@ export default function SmartKPI({
   const max = sparkline.length ? Math.max(...sparkline) : 1
   const min = sparkline.length ? Math.min(...sparkline) : 0
 
-  const path =
+  const points =
     sparkline.length > 1
       ? sparkline
-          .map(
-            (v, i) =>
-              `${(i / (sparkline.length - 1)) * 100},${
-                100 - ((v - min) / (max - min || 1)) * 100
-              }`
-          )
+          .map((v, i) => {
+            const x = (i / (sparkline.length - 1)) * 100
+            const y = 100 - ((v - min) / (max - min || 1)) * 100
+            return `${x},${y}`
+          })
           .join(" ")
       : ""
 
@@ -88,63 +93,43 @@ export default function SmartKPI({
     <motion.div
       whileHover={{ y: -6, scale: 1.015 }}
       transition={{ type: "spring", stiffness: 260, damping: 18 }}
-      style={{ transformStyle: "preserve-3d" }}
-      className={`relative bg-gradient-to-br from-white to-gray-50 
-      rounded-3xl p-6 border border-gray-100 
-      shadow-xl ${glow} transition-all overflow-hidden`}
+      className={`relative bg-gradient-to-br from-white to-gray-50 rounded-3xl p-6 border border-gray-100 shadow-xl ${glow} overflow-hidden`}
     >
-      {/* Soft highlight glass effect */}
+      {/* Soft highlight */}
       <div className="absolute -top-20 -right-20 w-40 h-40 bg-white/60 blur-3xl rounded-full pointer-events-none" />
 
-      {/* Title */}
       <p className="text-xs uppercase font-bold text-gray-400 tracking-widest">
         {title}
       </p>
 
-      {/* Value */}
       <div className="flex justify-between items-center mt-2">
         <motion.h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight">
-          {currency === "IDR" ? (
-            <motion.span>
-              {rounded.to((v) => formatCompactIDR(v))}
-            </motion.span>
-          ) : (
-            <motion.span>{rounded}</motion.span>
-          )}
+          {/* ✅ render MotionValue<string> */}
+          <motion.span>{display}</motion.span>
         </motion.h2>
 
-        {trend === "up" && (
-          <ArrowUpRight className={`${color} w-5 h-5`} />
-        )}
-        {trend === "down" && (
-          <ArrowDownRight className={`${color} w-5 h-5`} />
-        )}
+        {trend === "up" && <ArrowUpRight className={`${color} w-5 h-5`} />}
+        {trend === "down" && <ArrowDownRight className={`${color} w-5 h-5`} />}
       </div>
 
-      {/* Percent change */}
-      {percentChange && (
+      {typeof percentChange === "number" && (
         <div className={`text-xs mt-1 font-semibold ${color}`}>
-          {trend === "up" ? "+" : ""}
-          {percentChange}% vs last period
+          {percentChange > 0 ? "+" : ""}
+          {percentChange.toFixed(1)}% vs last period
         </div>
       )}
 
-      {/* Sparkline */}
       {sparkline.length > 1 && (
         <svg viewBox="0 0 100 100" className="mt-4 h-12 w-full">
           <motion.polyline
             fill="none"
             stroke="currentColor"
             strokeWidth="3"
-            points={path}
+            points={points}
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
             transition={{ duration: 1 }}
-            className={
-              trend === "down"
-                ? "text-red-500"
-                : "text-blue-500"
-            }
+            className={trend === "down" ? "text-red-500" : "text-blue-500"}
           />
         </svg>
       )}

@@ -130,7 +130,14 @@ const conversionProbability = {
 }[statusLower] ?? 10
 
 // ================= VALUE WEIGHT =================
-const estimasiValue = Number(data.estimasi_nilai || 0)
+const estimasiValue = useMemo(() => {
+  if (!data?.estimasi_nilai) return 0
+
+  const clean = String(data.estimasi_nilai).replace(/\./g, "").replace(/,/g, "")
+  const parsed = Number(clean)
+
+  return isNaN(parsed) ? 0 : parsed
+}, [data?.estimasi_nilai])
 
 const valueWeight =
   estimasiValue > 500_000_000
@@ -153,9 +160,10 @@ const themeColor = useMemo(() => {
 }, [conversionProbability, data.status])
 
 // ================= EXPECTED REVENUE =================
-const expectedRevenue = Math.round(
-  estimasiValue * (conversionProbability / 100)
-)
+const expectedRevenue = useMemo(() => {
+  const value = estimasiValue * (conversionProbability / 100)
+  return isNaN(value) ? 0 : Math.round(value)
+}, [estimasiValue, conversionProbability])
   
 // ================= HEAT LEVEL =================
 const heatLevel =
@@ -289,7 +297,7 @@ const surveyTooLong =
   <KPI 
     icon={<DollarSign size={18} />} 
     label="Potential Revenue" 
-    value={`Rp ${Number(expectedRevenue || 0).toLocaleString("id-ID")}`}
+    value={`Rp ${(expectedRevenue ?? 0).toLocaleString("id-ID")}`}
   />
 
 </div>

@@ -130,13 +130,19 @@ export default function ProposalPage() {
               {filteredData.map((p) => (
                 <tr key={p.proposal_id} className="hover:bg-blue-50/30 transition-colors group">
                   <td className="p-5">
-                    <Link href={`/admin/crm/proposal/${p.proposal_id}`} className="font-black text-blue-600 hover:underline block mb-1">
-                      {p.proposal_id}
-                    </Link>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      Created: {new Date(p.created_at).toLocaleDateString("id-ID", { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </span>
-                  </td>
+  {statusConfig[p.status] ? (
+    <span
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tight ${statusConfig[p.status].color}`}
+    >
+      {statusConfig[p.status].icon}
+      {p.status}
+    </span>
+  ) : (
+    <span className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase bg-gray-100 text-gray-400">
+      {p.status || "UNKNOWN"}
+    </span>
+  )}
+</td>
                   <td className="p-5">
                     <div className="flex flex-col gap-1">
                       <Link href={`/admin/estimator/rab/${p.rab_id}`} className="text-xs font-bold text-slate-600 flex items-center gap-1 hover:text-blue-500">

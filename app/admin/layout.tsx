@@ -1,10 +1,12 @@
 "use client"
 
+import { useEffect } from "react"
 import AdminSidebar from "@/components/dashboard/AdminSidebar"
 import AdminHeader from "@/components/dashboard/AdminHeader"
 import Breadcrumb from "@/components/dashboard/ui/Breadcrumb"
 import { Toaster } from "sonner"
 import { useERPStore } from "@/store/erpStore"
+import { useThemeStore } from "@/store/useThemeStore"
 
 export default function AdminLayout({
   children,
@@ -12,10 +14,23 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   const collapsed = useERPStore((s) => s.collapsed)
+  const { dark } = useThemeStore()
+
+  /* ================= APPLY DARK MODE GLOBAL ================= */
+  useEffect(() => {
+    if (dark) {
+      document.documentElement.classList.add("dark")
+    } else {
+      document.documentElement.classList.remove("dark")
+    }
+  }, [dark])
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      
+    <div
+      className={`min-h-screen flex transition-colors duration-300
+        ${dark ? "bg-gray-950 text-gray-100" : "bg-gray-50 text-gray-900"}
+      `}
+    >
       {/* SIDEBAR */}
       <AdminSidebar />
 
@@ -28,10 +43,18 @@ export default function AdminLayout({
         {/* HEADER */}
         <AdminHeader />
 
-        {/* SUB HEADER */}
-        <div className="px-8 py-3 border-b bg-white/50 backdrop-blur-sm flex items-center justify-between">
+        {/* SUB HEADER (GLASS EFFECT) */}
+        <div
+          className={`px-8 py-3 border-b flex items-center justify-between backdrop-blur-xl
+            ${
+              dark
+                ? "bg-white/5 border-white/10"
+                : "bg-white/60 border-gray-200"
+            }
+          `}
+        >
           <Breadcrumb />
-          <div className="hidden md:block text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+          <div className="hidden md:block text-[10px] font-bold uppercase tracking-tighter opacity-60">
             Manggala Putra Persada v1.0
           </div>
         </div>
@@ -44,15 +67,7 @@ export default function AdminLayout({
         </main>
       </div>
 
-      {/* TOASTER */}
-      <Toaster 
-        position="top-right" 
-        richColors 
-        closeButton 
-        toastOptions={{
-          style: { borderRadius: '1rem' },
-        }} 
-      />
+      <Toaster position="top-right" richColors closeButton />
     </div>
   )
 }

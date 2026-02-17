@@ -14,6 +14,10 @@ type Inquiry = {
   estimasi_nilai?: number | null
   assigned_to?: string
   status: string
+
+  // 👉 WAJIB ADA karena dipakai di UI
+  converted_rab_id?: string
+  converted_project_id?: string
 }
 
 type InquiryResponse = {

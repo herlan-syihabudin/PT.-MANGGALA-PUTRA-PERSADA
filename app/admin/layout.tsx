@@ -4,21 +4,27 @@ import AdminSidebar from "@/components/dashboard/AdminSidebar"
 import AdminHeader from "@/components/dashboard/AdminHeader"
 import Breadcrumb from "@/components/dashboard/ui/Breadcrumb"
 import { Toaster } from "sonner"
+import { useSidebar } from "@/store/useSidebar"
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const { collapsed } = useSidebar()
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       
-      {/* SIDEBAR (Fixed inside component) */}
+      {/* SIDEBAR */}
       <AdminSidebar />
 
-      {/* MAIN WRAPPER (shifted by sidebar width) */}
-      <div className="flex-1 flex flex-col min-w-0 ml-72 transition-all duration-300">
-        
+      {/* MAIN WRAPPER */}
+      <div
+        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
+          collapsed ? "ml-20" : "ml-72"
+        }`}
+      >
         {/* HEADER */}
         <AdminHeader />
 
@@ -38,7 +44,7 @@ export default function AdminLayout({
         </main>
       </div>
 
-      {/* GLOBAL TOASTER */}
+      {/* TOASTER */}
       <Toaster 
         position="top-right" 
         richColors 

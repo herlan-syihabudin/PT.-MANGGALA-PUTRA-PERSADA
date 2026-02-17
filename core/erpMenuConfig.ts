@@ -81,7 +81,7 @@ export const ERP_MENU = [
     { name: "Inquiry", href: "/admin/crm/inquiry", icon: Inbox },
     { name: "Sales Pipeline", href: "/admin/crm/pipeline", icon: GitBranch },
     { name: "Customers", href: "/admin/crm/customers", icon: Users },
-    { name: "Proposals", href: "/admin/crm/proposals", icon: FileText },
+    { name: "Proposals", href: "/admin/crm/proposal", icon: FileText },
     { name: "Contracts", href: "/admin/crm/contracts", icon: ScrollText },
   ],
 },

@@ -251,43 +251,42 @@ const safeIndex = currentStepIndex < 0 ? 0 : currentStepIndex
           )}
         </div>
 
-        {/* RIGHT SIDE */}
+               {/* RIGHT SIDE */}
         <div className="space-y-6">
+
           {/* ESTIMASI CARD */}
           <div className="bg-white border rounded-[2rem] p-10 shadow-soft">
-  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">
-    Estimasi Nilai (IDR)
-  </p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">
+              Estimasi Nilai (IDR)
+            </p>
 
-  <h2 className="text-4xl font-black mt-3 text-blue-600 tracking-tight">
-    Rp {Number(data.estimasi_nilai || 0).toLocaleString("id-ID")}
-  </h2>
+            <h2 className="text-4xl font-black mt-3 text-blue-600 tracking-tight">
+              Rp {Number(data.estimasi_nilai || 0).toLocaleString("id-ID")}
+            </h2>
 
-  <p className="text-xs text-gray-400 mt-2">
-    Perkiraan nilai proyek saat ini
-  </p>
-</div>
+            <p className="text-xs text-gray-400 mt-2">
+              Perkiraan nilai proyek saat ini
+            </p>
+          </div>
 
           {/* ACTION CARD */}
-  <div className="bg-white border rounded-[2rem] p-8 shadow-soft space-y-4">
-  {data.converted_rab_id || data.converted_project_id ? (
-    <div className="text-center py-4 text-green-600 font-semibold text-sm">
-      ✔ Sudah dikonversi ke RAB Project
-    </div>
-  ) : (
-    <button
-      onClick={convertToRAB}
-      disabled={data.status !== "estimating" || isUpdating}
-      className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-30 disabled:grayscale"
-    >
-      {isUpdating ? "Processing..." : "Convert ke RAB"}
-    </button>
-  )}
-</div>
-      </div>
-    </div>
-  )
-}
+          <div className="bg-white border rounded-[2rem] p-8 shadow-soft space-y-4">
+            {data.converted_rab_id || data.converted_project_id ? (
+              <div className="text-center py-4 text-green-600 font-semibold text-sm">
+                ✔ Sudah dikonversi ke RAB Project
+              </div>
+            ) : (
+              <button
+                onClick={convertToRAB}
+                disabled={data.status !== "estimating" || isUpdating}
+                className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-30 disabled:grayscale"
+              >
+                {isUpdating ? "Processing..." : "Convert ke RAB"}
+              </button>
+            )}
+          </div>
+
+        </div>
 
 function Info({ label, value }: any) {
   return (

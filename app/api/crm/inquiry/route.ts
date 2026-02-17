@@ -23,11 +23,10 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
 
     const page = Math.max(1, Number(searchParams.get("page") || 1))
-const limit = Math.min(50, Math.max(1, Number(searchParams.get("limit") || 20)))
+    const limit = Math.min(50, Math.max(1, Number(searchParams.get("limit") || 20)))
     const filterStatus = searchParams.get("status")
     const filterCustomerId = searchParams.get("customer_id")
 
-    // Batasi range biar tidak baca ribuan row kosong
     const inquiryRes = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A2:Q`,
@@ -56,7 +55,7 @@ const limit = Math.min(50, Math.max(1, Number(searchParams.get("limit") || 20)))
         lokasi: row[11] || "",
         catatan: row[12] || "",
         converted_rab_id: row[13] || "",
-        converted_project_id: row[14] || "",
+        converted_project_id: row[14] || "", // 👉 penentu WON
         created_at: row[15] || "",
         created_by: row[16] || "",
       }
@@ -76,7 +75,7 @@ const limit = Math.min(50, Math.max(1, Number(searchParams.get("limit") || 20)))
       )
     }
 
-    /* ================= SORT (TERBARU) ================= */
+    /* ================= SORT ================= */
 
     data.sort((a, b) => {
       const dateA = a.tanggal_masuk ? new Date(a.tanggal_masuk).getTime() : 0
@@ -84,21 +83,26 @@ const limit = Math.min(50, Math.max(1, Number(searchParams.get("limit") || 20)))
       return dateB - dateA
     })
 
-    /* ================= SUMMARY KPI ================= */
+    /* ================= KPI ================= */
 
     const total = data.length
     const newCount = data.filter(i => i.status === "new").length
-    const won = data.filter(i => i.status === "won").length
     const lost = data.filter(i => i.status === "lost").length
+
+    // ✅ WON dihitung dari project_id (artinya sudah PO)
+    const won = data.filter(i => i.converted_project_id).length
+
     const ongoingStatuses = ["survey", "estimating", "sent"]
+    const ongoing = data.filter(i =>
+      ongoingStatuses.includes(i.status)
+    ).length
 
-const ongoing = data.filter(i =>
-  ongoingStatuses.includes(i.status)
-).length
-
-    const pipelineValue = data.reduce((acc, i) =>
-      acc + (i.estimasi_nilai || 0), 0
-    )
+    // ✅ Pipeline hanya yang belum lost & belum PO
+    const pipelineValue = data
+      .filter(i => !i.converted_project_id && i.status !== "lost")
+      .reduce((acc, i) =>
+        acc + (i.estimasi_nilai || 0), 0
+      )
 
     /* ================= PAGINATION ================= */
 
@@ -167,8 +171,8 @@ export async function POST(req: Request) {
           String(body.prioritas || "normal").trim(),
           String(body.lokasi || "").trim(),
           String(body.catatan || "").trim(),
-          "",
-          "",
+          "", // converted_rab_id
+          "", // converted_project_id
           now,
           String(body.created_by || "Marketing").trim(),
         ]],

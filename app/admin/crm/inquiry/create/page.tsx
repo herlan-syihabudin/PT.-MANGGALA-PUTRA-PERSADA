@@ -46,7 +46,6 @@ export default function CreateInquiryPage() {
     lokasi: "",
     catatan: "",
     tanggal_masuk: new Date().toISOString().slice(0, 10),
-    estimasi_deal_date: "",
   })
 
   /* LOAD DATA */
@@ -95,7 +94,7 @@ export default function CreateInquiryPage() {
     }
 
     if (selectedServices.length === 0) {
-      toast.error("Pilih minimal 1 jenis pekerjaan")
+      toast.error("Pilih minimal 1 jenis layanan")
       return
     }
 
@@ -107,8 +106,8 @@ export default function CreateInquiryPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          estimasi_nilai: Number(form.estimasi_nilai || 0),
           layanan: selectedServices.join("|"),
+          estimasi_nilai: Number(form.estimasi_nilai || 0),
           status: "new",
         }),
       })
@@ -126,7 +125,7 @@ export default function CreateInquiryPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-20 animate-in fade-in duration-500">
+    <div className="max-w-6xl mx-auto space-y-8 pb-20">
 
       {/* HEADER */}
       <div className="flex items-center justify-between">
@@ -155,12 +154,9 @@ export default function CreateInquiryPage() {
           {/* INFORMASI PROYEK */}
           <div className="bg-white border rounded-3xl p-8 shadow-sm space-y-6">
 
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-6 bg-blue-600 rounded-full" />
-              <h2 className="text-xs font-black uppercase tracking-widest">
-                Informasi Proyek
-              </h2>
-            </div>
+            <h2 className="text-xs font-black uppercase tracking-widest">
+              Informasi Proyek
+            </h2>
 
             <div className="grid md:grid-cols-2 gap-6">
 
@@ -170,7 +166,7 @@ export default function CreateInquiryPage() {
                   Customer *
                 </label>
                 <select
-                  className="w-full mt-2 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full mt-2 bg-gray-50 rounded-xl px-4 py-3 text-sm"
                   value={form.customer_id}
                   onChange={(e) => {
                     const selected = customers.find(
@@ -198,11 +194,39 @@ export default function CreateInquiryPage() {
                   Nama Pekerjaan *
                 </label>
                 <input
-                  className="w-full mt-2 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                  placeholder="Contoh: Renovasi Kantor Pusat"
+                  className="w-full mt-2 bg-gray-50 rounded-xl px-4 py-3 text-sm"
                   value={form.nama_pekerjaan}
                   onChange={(e) =>
                     setForm({ ...form, nama_pekerjaan: e.target.value })
+                  }
+                />
+              </div>
+
+              {/* SUMBER */}
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase">
+                  Sumber Inquiry
+                </label>
+                <input
+                  className="w-full mt-2 bg-gray-50 rounded-xl px-4 py-3 text-sm"
+                  placeholder="Website / Tender / Referensi / Repeat"
+                  value={form.sumber}
+                  onChange={(e) =>
+                    setForm({ ...form, sumber: e.target.value })
+                  }
+                />
+              </div>
+
+              {/* LOKASI */}
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase">
+                  Lokasi Proyek
+                </label>
+                <input
+                  className="w-full mt-2 bg-gray-50 rounded-xl px-4 py-3 text-sm"
+                  value={form.lokasi}
+                  onChange={(e) =>
+                    setForm({ ...form, lokasi: e.target.value })
                   }
                 />
               </div>
@@ -218,22 +242,18 @@ export default function CreateInquiryPage() {
                 {SERVICE_OPTIONS.map(service => {
                   const active = selectedServices.includes(service)
                   return (
-                    <label
+                    <button
+                      type="button"
                       key={service}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition border ${
+                      onClick={() => toggleService(service)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold border ${
                         active
                           ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-white text-gray-600 border-gray-200 hover:border-blue-400"
+                          : "bg-white text-gray-600 border-gray-200"
                       }`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={active}
-                        onChange={() => toggleService(service)}
-                        className="hidden"
-                      />
                       {service}
-                    </label>
+                    </button>
                   )
                 })}
               </div>
@@ -246,9 +266,8 @@ export default function CreateInquiryPage() {
               Catatan
             </label>
             <textarea
-              className="w-full mt-3 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-amber-500 outline-none"
+              className="w-full mt-3 bg-gray-50 rounded-xl px-4 py-3 text-sm"
               rows={4}
-              placeholder="Tambahkan detail lokasi atau instruksi..."
               value={form.catatan}
               onChange={(e) =>
                 setForm({ ...form, catatan: e.target.value })
@@ -261,14 +280,14 @@ export default function CreateInquiryPage() {
         {/* RIGHT SIDE */}
         <div className="space-y-6">
 
-          {/* ESTIMASI CARD */}
-          <div className="bg-[#0f172a] rounded-3xl p-8 text-white shadow-xl space-y-6">
+          {/* ESTIMASI */}
+          <div className="bg-[#0f172a] rounded-3xl p-8 text-white space-y-6">
             <div>
-              <label className="text-xs text-blue-400 uppercase tracking-widest font-bold">
+              <label className="text-xs uppercase font-bold text-blue-400">
                 Estimasi Nilai (IDR)
               </label>
               <input
-                className="w-full mt-3 bg-white/10 rounded-xl px-4 py-4 text-xl font-black focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full mt-3 bg-white/10 rounded-xl px-4 py-4 text-xl font-black"
                 value={estimasiDisplay}
                 onChange={(e) =>
                   handleEstimasiChange(e.target.value)
@@ -277,12 +296,12 @@ export default function CreateInquiryPage() {
               />
             </div>
 
-            <div className="pt-4 border-t border-white/10">
-              <label className="text-xs text-blue-400 uppercase tracking-widest font-bold">
+            <div>
+              <label className="text-xs uppercase font-bold text-blue-400">
                 Assigned Estimator
               </label>
               <select
-                className="w-full mt-3 bg-white/10 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full mt-3 bg-white/10 rounded-xl px-4 py-3 text-sm font-bold"
                 value={form.assigned_to}
                 onChange={(e) =>
                   setForm({ ...form, assigned_to: e.target.value })
@@ -318,14 +337,13 @@ export default function CreateInquiryPage() {
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="w-full mt-4 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-sm transition disabled:opacity-50"
+              className="w-full mt-4 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-sm disabled:opacity-50"
             >
               {loading ? "PROCESSING..." : "SIMPAN INQUIRY"}
             </button>
           </div>
 
         </div>
-
       </div>
     </div>
   )

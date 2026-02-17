@@ -78,12 +78,13 @@ export default function InquiryDetailPage() {
     }
   }
 
-  if (!data)
-    return (
-      <div className="flex items-center justify-center h-96 text-gray-400 font-medium animate-pulse">
-        Loading inquiry data...
-      </div>
-    )
+ if (!data) {
+  return (
+    <div className="flex items-center justify-center h-96 text-gray-400 font-medium animate-pulse">
+      Loading inquiry data...
+    </div>
+  )
+}
 
   const currentStepIndex = STEPS.indexOf(data.status?.toLowerCase())
 const safeIndex = currentStepIndex < 0 ? 0 : currentStepIndex

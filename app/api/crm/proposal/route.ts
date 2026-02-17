@@ -5,6 +5,8 @@ export const dynamic = "force-dynamic"
 
 const PROPOSAL_SHEET = "PROPOSAL"
 
+/* ================= GOOGLE AUTH ================= */
+
 function getSheets() {
   if (
     !process.env.GOOGLE_CLIENT_EMAIL ||
@@ -24,19 +26,25 @@ function getSheets() {
   return google.sheets({ version: "v4", auth })
 }
 
+/* ================= GET PROPOSAL LIST ================= */
+
 export async function GET() {
   try {
     const sheets = getSheets()
 
-    const res = await sheets.spreadsheets.values.get({
+    const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GSHEET_CRM_ID!,
       range: `${PROPOSAL_SHEET}!A2:F2000`,
     })
 
-    const rows = res.data.values || []
+    const rows = response.data.values || []
+
+    if (!rows.length) {
+      return NextResponse.json([])
+    }
 
     const data = rows
-      .filter((r) => r[0]) // hanya row yg ada proposal_id
+      .filter((r) => r && r[0]) // hanya ambil row yg ada proposal_id
       .map((r) => ({
         proposal_id: r[0] || "",
         pipeline_id: r[1] || "",
@@ -47,10 +55,15 @@ export async function GET() {
       }))
 
     return NextResponse.json(data)
-  } catch (e) {
-    console.error("GET PROPOSAL ERROR:", e)
+
+  } catch (error: any) {
+    console.error("GET PROPOSAL ERROR:", error.message)
+
     return NextResponse.json(
-      { message: "Gagal ambil proposal" },
+      {
+        message: "Gagal ambil proposal",
+        error: error.message,
+      },
       { status: 500 }
     )
   }

@@ -27,12 +27,12 @@ export async function GET(req: Request) {
     const filterStatus = searchParams.get("status")
     const filterCustomerId = searchParams.get("customer_id")
 
-    const inquiryRes = await sheets.spreadsheets.values.get({
+    const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A2:Q`,
     })
 
-    const rows = (inquiryRes.data.values || []).filter(row => row[0])
+    const rows = (res.data.values || []).filter(r => r[0])
 
     const normalize = (val: any) =>
       String(val || "").replace(/\s+/g, "").trim()
@@ -75,7 +75,7 @@ export async function GET(req: Request) {
       )
     }
 
-    /* ================= SORT ================= */
+    /* ================= SORT TERBARU ================= */
 
     data.sort((a, b) => {
       const dateA = a.tanggal_masuk ? new Date(a.tanggal_masuk).getTime() : 0
@@ -86,23 +86,26 @@ export async function GET(req: Request) {
     /* ================= KPI ================= */
 
     const total = data.length
+
     const newCount = data.filter(i => i.status === "new").length
+    const survey = data.filter(i => i.status === "survey").length
+    const estimating = data.filter(i => i.status === "estimating").length
+    const sent = data.filter(i => i.status === "sent").length
     const lost = data.filter(i => i.status === "lost").length
 
-    // ✅ WON dihitung dari project_id (artinya sudah PO)
+    // ✅ WON = sudah ada PROJECT ID (PO terbit)
     const won = data.filter(i => i.converted_project_id).length
 
-    const ongoingStatuses = ["survey", "estimating", "sent"]
-    const ongoing = data.filter(i =>
-      ongoingStatuses.includes(i.status)
+    const active = data.filter(
+      i => !i.converted_project_id && i.status !== "lost"
     ).length
 
-    // ✅ Pipeline hanya yang belum lost & belum PO
     const pipelineValue = data
       .filter(i => !i.converted_project_id && i.status !== "lost")
-      .reduce((acc, i) =>
-        acc + (i.estimasi_nilai || 0), 0
-      )
+      .reduce((acc, i) => acc + (i.estimasi_nilai || 0), 0)
+
+    const conversionRate =
+      total > 0 ? Number(((won / total) * 100).toFixed(1)) : 0
 
     /* ================= PAGINATION ================= */
 
@@ -113,11 +116,15 @@ export async function GET(req: Request) {
       data: paginated,
       summary: {
         total,
+        active,
         new: newCount,
-        ongoing,
+        survey,
+        estimating,
+        sent,
         won,
         lost,
         pipeline_value: pipelineValue,
+        conversion_rate: conversionRate,
       },
       page,
       totalPages: Math.ceil(total / limit),
@@ -158,23 +165,23 @@ export async function POST(req: Request) {
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          inquiryId,
-          body.tanggal_masuk || new Date().toISOString().split("T")[0],
-          String(body.customer_id).trim(),
-          String(body.customer_name || "").trim(),
-          String(body.nama_pekerjaan).trim(),
-          String(body.layanan || "").trim(),
-          budget,
-          String(body.sumber || "").trim(),
-          String(body.assigned_to || "").trim(),
-          "new",
-          String(body.prioritas || "normal").trim(),
-          String(body.lokasi || "").trim(),
-          String(body.catatan || "").trim(),
-          "", // converted_rab_id
-          "", // converted_project_id
-          now,
-          String(body.created_by || "Marketing").trim(),
+          inquiryId,                                   // A
+          body.tanggal_masuk || new Date().toISOString().split("T")[0], // B
+          String(body.customer_id).trim(),              // C
+          String(body.customer_name || "").trim(),      // D
+          String(body.nama_pekerjaan).trim(),           // E
+          String(body.layanan || "").trim(),            // F
+          budget,                                       // G
+          String(body.sumber || "").trim(),             // H
+          String(body.assigned_to || "").trim(),        // I
+          "new",                                        // J
+          String(body.prioritas || "normal").trim(),    // K
+          String(body.lokasi || "").trim(),             // L
+          String(body.catatan || "").trim(),            // M
+          "",                                           // N converted_rab_id
+          "",                                           // O converted_project_id
+          now,                                          // P
+          String(body.created_by || "Marketing").trim() // Q
         ]],
       },
     })

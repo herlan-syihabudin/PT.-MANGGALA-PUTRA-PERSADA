@@ -54,6 +54,7 @@ export async function POST(req: Request) {
     const INQUIRY_SHEET = "CRM_INQUIRY"
     const PROJECT_SHEET = "PROJECT MASTER"
     const RAB_PROJECT = "RAB_PROJECT"
+    const SALES_PIPELINE = "SALES_PIPELINE"
 
     /* ================= GET INQUIRY ================= */
 
@@ -152,6 +153,60 @@ export async function POST(req: Request) {
         ]]
       }
     })
+
+    /* ================= UPDATE SALES PIPELINE ================= */
+
+const pipelineRes = await sheets.spreadsheets.values.get({
+  spreadsheetId: CRM_SHEET_ID,
+  range: `${SALES_PIPELINE}!A2:I2000`,
+})
+
+const pipelineRows = pipelineRes.data.values || []
+
+// asumsi pipeline_id = inquiry_id (kolom A)
+let pIndex = pipelineRows.findIndex((r) => r[0] === inquiry_id)
+
+// kalau belum ada row pipeline, kita CREATE dulu
+if (pIndex === -1) {
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: CRM_SHEET_ID,
+    range: `${SALES_PIPELINE}!A:I`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[
+        inquiry_id,                // A pipeline_id
+        customer_id,               // B customer_id
+        nama_pekerjaan,            // C project_name
+        "PENAWARAN",               // D stage
+        0,                         // E estimated_value (nanti update dari total RAB)
+        rab_id,                    // F rab_id
+        "",                        // G proposal_id
+        created_at,                // H created_at
+        created_at,                // I updated_at
+      ]],
+    },
+  })
+} else {
+  const prow = pIndex + 2
+
+  const existingCreatedAt = pipelineRows[pIndex]?.[7] || created_at
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: CRM_SHEET_ID,
+    range: `${SALES_PIPELINE}!D${prow}:I${prow}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[
+        "PENAWARAN",              // D stage
+        0,                        // E estimated_value
+        rab_id,                   // F rab_id
+        "",                       // G proposal_id
+        existingCreatedAt,        // H created_at
+        new Date().toISOString(), // I updated_at
+      ]],
+    },
+  })
+}
 
     return NextResponse.json({
       message: "RAB berhasil dibuat",

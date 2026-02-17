@@ -16,6 +16,9 @@ const SHEET_ID = process.env.GSHEET_ESTIMATOR_ID!
 const RAB_PROJECT = "RAB_PROJECT"
 const RAB_ITEM = "RAB_ITEM"
 
+const CRM_SHEET_ID = process.env.GSHEET_CRM_ID
+const SALES_PIPELINE = "SALES_PIPELINE"
+
 function n(x: any) {
   const v = Number(x)
   return Number.isFinite(v) ? v : 0
@@ -48,6 +51,38 @@ async function recalcHeader(rab_id: string) {
   })
 
   return { total_items, total_value }
+}
+
+async function syncSalesPipeline(rab_id: string, total_value: number) {
+  if (!CRM_SHEET_ID) return
+
+  const pipelineRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: CRM_SHEET_ID,
+    range: `'${SALES_PIPELINE}'!A2:I2000`,
+  })
+
+  const rows = pipelineRes.data.values || []
+
+  const idx = rows.findIndex((r) => r[5] === rab_id) // kolom F = rab_id
+  if (idx === -1) return
+
+  const rowNumber = idx + 2
+  const existingCreatedAt = rows[idx]?.[7] || new Date().toISOString()
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: CRM_SHEET_ID,
+    range: `'${SALES_PIPELINE}'!E${rowNumber}:I${rowNumber}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[
+        total_value,                 // E estimated_value
+        rab_id,                      // F rab_id
+        rows[idx]?.[6] || "",        // G proposal_id
+        existingCreatedAt,           // H created_at
+        new Date().toISOString(),    // I updated_at
+      ]],
+    },
+  })
 }
 
 export async function POST(req: Request) {
@@ -116,7 +151,11 @@ export async function POST(req: Request) {
       },
     })
 
+    
     const summary = await recalcHeader(rab_id)
+
+// 🔥 AUTO SYNC PIPELINE
+await syncSalesPipeline(rab_id, summary.total_value)
 
     return NextResponse.json({
       message: "Item updated",

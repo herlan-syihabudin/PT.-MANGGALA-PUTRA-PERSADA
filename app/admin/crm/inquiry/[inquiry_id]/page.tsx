@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft, Check } from "lucide-react"
 import { toast } from "sonner"
 
-const STEPS = ["new", "survey", "estimating", "won"]
+const STEPS = ["new", "survey", "estimating", "sent"]
 
 export default function InquiryDetailPage() {
   const params = useParams()
@@ -86,6 +86,7 @@ export default function InquiryDetailPage() {
     )
 
   const currentStepIndex = STEPS.indexOf(data.status?.toLowerCase())
+const safeIndex = currentStepIndex < 0 ? 0 : currentStepIndex
   const services = data.layanan ? data.layanan.split("|") : []
 
   /* ================= BUTTON HELPER ================= */
@@ -118,7 +119,7 @@ export default function InquiryDetailPage() {
         <div
           className="absolute top-1/2 left-0 h-[2px] bg-blue-600 -translate-y-1/2 z-0 transition-all duration-700"
           style={{
-            width: `${(currentStepIndex / (STEPS.length - 1)) * 100}%`,
+            width: `${(safeIndex / (STEPS.length - 1)) * 100}%`,
           }}
         />
 
@@ -219,7 +220,7 @@ export default function InquiryDetailPage() {
 
               <button
                 disabled={isUpdating}
-                onClick={() => updateInquiry({ status: "won" })}
+          
                 className="px-6 py-3 bg-green-600 text-white rounded-2xl text-xs font-bold hover:bg-green-700 transition-all disabled:opacity-50"
               >
                 {getButtonText("Project WON / Deal")}
@@ -265,7 +266,7 @@ export default function InquiryDetailPage() {
           <div className="bg-white border rounded-[2rem] p-8 shadow-soft space-y-4">
             <button
               onClick={convertToRAB}
-              disabled={!["estimating", "won"].includes(data.status) || isUpdating}
+              disabled={data.status !== "estimating" || isUpdating}
               className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-30 disabled:grayscale"
             >
               {isUpdating ? "Processing..." : "Convert ke RAB"}

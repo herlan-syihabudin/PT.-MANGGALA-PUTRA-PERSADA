@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useSidebar } from "@/store/useSidebar"
+import { useERPStore } from "@/store/erpStore"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -33,41 +33,31 @@ type RealtimeCounts = {
 
 /* ========= HOOK: REALTIME COUNTS (SSE + FALLBACK POLLING) ========= */
 
-function useRealtimeCounts(): RealtimeCounts {
-  const [counts, setCounts] = useState<RealtimeCounts>({
-    estimator_inquiry: 0,
-    finance_approval: 0,
-    purchasing_request: 0,
-  })
+function useRealtimeListener() {
+  const setCounts = useERPStore((s) => s.setCounts)
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null
     let es: EventSource | null = null
 
     function updateFromPayload(payload: any) {
-      setCounts((prev) => ({
+      setCounts({
         estimator_inquiry:
           typeof payload?.estimator_inquiry === "number"
             ? payload.estimator_inquiry
-            : prev.estimator_inquiry,
+            : undefined,
         finance_approval:
           typeof payload?.finance_approval === "number"
             ? payload.finance_approval
-            : prev.finance_approval,
+            : undefined,
         purchasing_request:
           typeof payload?.purchasing_request === "number"
             ? payload.purchasing_request
-            : prev.purchasing_request,
-      }))
+            : undefined,
+      })
     }
 
     async function fetchSnapshot() {
-      if (
-        typeof document !== "undefined" &&
-        document.visibilityState !== "visible"
-      )
-        return
-
       try {
         const res = await fetch("/api/notifications/summary")
         if (!res.ok) return
@@ -78,31 +68,27 @@ function useRealtimeCounts(): RealtimeCounts {
       }
     }
 
-    if (typeof window !== "undefined") {
-      try {
-        es = new EventSource("/api/notifications/stream")
+    try {
+      es = new EventSource("/api/notifications/stream")
 
-        es.onmessage = (event) => {
-          try {
-            const payload = JSON.parse(event.data)
-            updateFromPayload(payload)
-          } catch (err) {
-            console.error("SSE parse error:", err)
-          }
+      es.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data)
+          updateFromPayload(payload)
+        } catch (err) {
+          console.error("SSE parse error:", err)
         }
+      }
 
-        es.onerror = () => {
-          console.warn("SSE error, fallback to polling…")
-          es?.close()
-          es = null
-          fetchSnapshot()
-          interval = setInterval(fetchSnapshot, 10000)
-        }
-      } catch (err) {
-        console.error("SSE init error, fallback to polling:", err)
+      es.onerror = () => {
+        es?.close()
+        es = null
         fetchSnapshot()
         interval = setInterval(fetchSnapshot, 10000)
       }
+    } catch (err) {
+      fetchSnapshot()
+      interval = setInterval(fetchSnapshot, 10000)
     }
 
     fetchSnapshot()
@@ -111,9 +97,7 @@ function useRealtimeCounts(): RealtimeCounts {
       if (es) es.close()
       if (interval) clearInterval(interval)
     }
-  }, [])
-
-  return counts
+  }, [setCounts])
 }
 
 /* ========= HOOK: SESSION USER ========= */
@@ -186,24 +170,21 @@ function useClickOutside(
 /* ========= COMPONENT: SIDEBAR ========= */
 
 export default function AdminSidebar() {
+  useRealtimeListener()
   const pathname = usePathname()
 
-  const { estimator_inquiry, finance_approval, purchasing_request } =
-    useRealtimeCounts()
+  const estimator_inquiry = useERPStore((s) => s.counts.estimator_inquiry)
+const finance_approval = useERPStore((s) => s.counts.finance_approval)
+const purchasing_request = useERPStore((s) => s.counts.purchasing_request)
   const user = useSessionUser()
 
   const [notifOpen, setNotifOpen] = useState(false)
   const [quickOpen, setQuickOpen] = useState(false)
 
-  const { collapsed, toggle } = useSidebar()
+  const collapsed = useERPStore((s) => s.collapsed)
+const toggle = useERPStore((s) => s.toggleSidebar)
 
   // Collapsible sidebar (persist)
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("mpp_sidebar_collapsed", collapsed ? "1" : "0")
-    } catch {}
-  }, [collapsed])
 
   const notifBtnRef = useRef<HTMLButtonElement>(null)
   const notifPanelRef = useRef<HTMLDivElement>(null)

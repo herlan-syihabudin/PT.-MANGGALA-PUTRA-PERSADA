@@ -4,14 +4,14 @@ import AdminSidebar from "@/components/dashboard/AdminSidebar"
 import AdminHeader from "@/components/dashboard/AdminHeader"
 import Breadcrumb from "@/components/dashboard/ui/Breadcrumb"
 import { Toaster } from "sonner"
-import { useSidebar } from "@/store/useSidebar"
+import { useERPStore } from "@/store/erpStore"
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { collapsed } = useSidebar()
+  const collapsed = useERPStore((s) => s.collapsed)
 
   return (
     <div className="min-h-screen bg-gray-50 flex">

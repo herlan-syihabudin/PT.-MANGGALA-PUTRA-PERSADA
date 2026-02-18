@@ -14,7 +14,7 @@ import {
   Edit,
   RefreshCcw
 } from 'lucide-react'
-import StatusBadge from '@/components/procurement/StatusBadge'
+import StatusBadge from '@/components/dashboard/procurement/StatusBadge'
 
 interface Vendor {
   vendor_id: string

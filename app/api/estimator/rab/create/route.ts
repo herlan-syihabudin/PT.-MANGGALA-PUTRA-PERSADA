@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server"
 import { google } from "googleapis"
-import { nanoid } from "nanoid"
 
 export const dynamic = "force-dynamic"
-
-/* ===================================================== */
-/* ================= CREATE RAB FROM INQUIRY =========== */
-/* ===================================================== */
 
 export async function POST(req: Request) {
   try {
@@ -19,7 +14,7 @@ export async function POST(req: Request) {
       )
     }
 
-    /* ================= SAFE ENV CHECK ================= */
+    /* ================= ENV CHECK ================= */
 
     if (
       !process.env.GOOGLE_CLIENT_EMAIL ||
@@ -34,8 +29,6 @@ export async function POST(req: Request) {
       )
     }
 
-    /* ================= AUTH (MOVED INSIDE) ================= */
-
     const auth = new google.auth.JWT(
       process.env.GOOGLE_CLIENT_EMAIL,
       undefined,
@@ -44,8 +37,6 @@ export async function POST(req: Request) {
     )
 
     const sheets = google.sheets({ version: "v4", auth })
-
-    /* ================= SHEET CONFIG ================= */
 
     const CRM_SHEET_ID = process.env.GSHEET_CRM_ID
     const PROJECT_SHEET_ID = process.env.GSHEET_PROJECT_ID
@@ -78,16 +69,37 @@ export async function POST(req: Request) {
 
     const inquiry = inquiryRows[inquiryIndex]
 
+    /* 🔥 Prevent Double Create */
+    if (inquiry[13]) {
+      return NextResponse.json(
+        { message: "Inquiry sudah pernah dibuat RAB" },
+        { status: 400 }
+      )
+    }
+
     const customer_id = inquiry[2] || ""
     const customer_name = inquiry[3] || ""
     const nama_pekerjaan = inquiry[4] || ""
     const lokasi = inquiry[11] || ""
 
+    const estimasi_nilai = Number(
+      String(inquiry[6] || "0").replace(/[^\d]/g, "")
+    )
+
     const created_at = new Date().toISOString()
+    const year = new Date().getFullYear()
 
-    /* ================= CREATE PROJECT ================= */
+    /* ================= AUTO NUMBER PROJECT ================= */
 
-    const project_id = "PRJ-" + nanoid(8).toUpperCase()
+    const projectRes = await sheets.spreadsheets.values.get({
+      spreadsheetId: PROJECT_SHEET_ID,
+      range: `${PROJECT_SHEET}!A2:A1000`,
+    })
+
+    const existingProjects = projectRes.data.values || []
+    const nextProjectNumber = existingProjects.length + 1
+
+    const project_id = `PRJ-${year}-${String(nextProjectNumber).padStart(3, "0")}`
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: PROJECT_SHEET_ID,
@@ -109,9 +121,17 @@ export async function POST(req: Request) {
       }
     })
 
-    /* ================= CREATE RAB HEADER ================= */
+    /* ================= AUTO NUMBER RAB ================= */
 
-    const rab_id = "RAB-" + nanoid(6).toUpperCase()
+    const rabRes = await sheets.spreadsheets.values.get({
+      spreadsheetId: ESTIMATOR_SHEET_ID,
+      range: `${RAB_PROJECT}!A2:A1000`,
+    })
+
+    const existingRabs = rabRes.data.values || []
+    const nextRabNumber = existingRabs.length + 1
+
+    const rab_id = `RAB-${year}-${String(nextRabNumber).padStart(3, "0")}`
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: ESTIMATOR_SHEET_ID,
@@ -127,7 +147,6 @@ export async function POST(req: Request) {
           0,
           0,
           "Draft",
-          "Estimator",
           created_by || "System",
           created_at
         ]]
@@ -156,57 +175,52 @@ export async function POST(req: Request) {
 
     /* ================= UPDATE SALES PIPELINE ================= */
 
-const pipelineRes = await sheets.spreadsheets.values.get({
-  spreadsheetId: CRM_SHEET_ID,
-  range: `${SALES_PIPELINE}!A2:I2000`,
-})
+    const pipelineRes = await sheets.spreadsheets.values.get({
+      spreadsheetId: CRM_SHEET_ID,
+      range: `${SALES_PIPELINE}!A2:I2000`,
+    })
 
-const pipelineRows = pipelineRes.data.values || []
+    const pipelineRows = pipelineRes.data.values || []
+    const pIndex = pipelineRows.findIndex((r) => r[0] === inquiry_id)
 
-// asumsi pipeline_id = inquiry_id (kolom A)
-let pIndex = pipelineRows.findIndex((r) => r[0] === inquiry_id)
+    if (pIndex === -1) {
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: CRM_SHEET_ID,
+        range: `${SALES_PIPELINE}!A:I`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [[
+            inquiry_id,
+            customer_id,
+            nama_pekerjaan,
+            "PENAWARAN",
+            estimasi_nilai,
+            rab_id,
+            "",
+            created_at,
+            created_at
+          ]]
+        }
+      })
+    } else {
+      const prow = pIndex + 2
 
-// kalau belum ada row pipeline, kita CREATE dulu
-if (pIndex === -1) {
-  await sheets.spreadsheets.values.append({
-    spreadsheetId: CRM_SHEET_ID,
-    range: `${SALES_PIPELINE}!A:I`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: {
-      values: [[
-        inquiry_id,                // A pipeline_id
-        customer_id,               // B customer_id
-        nama_pekerjaan,            // C project_name
-        "PENAWARAN",               // D stage
-        0,                         // E estimated_value (nanti update dari total RAB)
-        rab_id,                    // F rab_id
-        "",                        // G proposal_id
-        created_at,                // H created_at
-        created_at,                // I updated_at
-      ]],
-    },
-  })
-} else {
-  const prow = pIndex + 2
-
-  const existingCreatedAt = pipelineRows[pIndex]?.[7] || created_at
-
-  await sheets.spreadsheets.values.update({
-    spreadsheetId: CRM_SHEET_ID,
-    range: `${SALES_PIPELINE}!D${prow}:I${prow}`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: {
-      values: [[
-        "PENAWARAN",              // D stage
-        0,                        // E estimated_value
-        rab_id,                   // F rab_id
-        "",                       // G proposal_id
-        existingCreatedAt,        // H created_at
-        new Date().toISOString(), // I updated_at
-      ]],
-    },
-  })
-}
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: CRM_SHEET_ID,
+        range: `${SALES_PIPELINE}!D${prow}:I${prow}`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [[
+            "PENAWARAN",
+            estimasi_nilai,
+            rab_id,
+            "",
+            created_at,
+            new Date().toISOString()
+          ]]
+        }
+      })
+    }
 
     return NextResponse.json({
       message: "RAB berhasil dibuat",
@@ -216,7 +230,6 @@ if (pIndex === -1) {
 
   } catch (error) {
     console.error("CREATE RAB ERROR:", error)
-
     return NextResponse.json(
       { message: "Gagal membuat RAB" },
       { status: 500 }

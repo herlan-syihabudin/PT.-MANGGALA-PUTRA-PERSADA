@@ -8,6 +8,15 @@ import StatusBadge from '@/components/dashboard/procurement/StatusBadge'
 import Money from '@/components/dashboard/procurement/Money'
 import DateText from '@/components/dashboard/procurement/DateText'
 
+interface PRItem {
+  pr_item_id: string
+  description: string
+  qty: number
+  unit: string
+  estimated_price?: number
+  subtotal?: number
+}
+
 interface PR {
   pr_id: string
   pr_code: string
@@ -17,7 +26,7 @@ interface PR {
   request_date: string
   needed_date?: string
   status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'ORDERED'
-  items: any[]
+  items: PRItem[]
 }
 
 export default function PRListPage() {
@@ -39,9 +48,9 @@ export default function PRListPage() {
       setLoading(true)
       setError(null)
 
-      const res = await fetch('/api/procurement/pr', {
-        signal: controller.signal
-      })
+      const res = await fetch('/api/procurement/pr?include_items=true', {
+  signal: controller.signal
+})
 
       const data = await res.json()
 
@@ -76,10 +85,13 @@ export default function PRListPage() {
 
   const filteredPRs = useMemo(() => {
     return computedPRs.filter(pr => {
-      const matchesSearch =
-        search === '' ||
-        pr.pr_code.toLowerCase().includes(search.toLowerCase()) ||
-        pr.project_name?.toLowerCase().includes(search.toLowerCase())
+      const q = search.toLowerCase()
+
+const matchesSearch =
+  search === '' ||
+  pr.pr_code?.toLowerCase()?.includes(q) ||
+  pr.requested_by?.toLowerCase()?.includes(q) ||
+  pr.project_id?.toLowerCase()?.includes(q)
 
       const matchesStatus =
         statusFilter === '' || pr.status === statusFilter

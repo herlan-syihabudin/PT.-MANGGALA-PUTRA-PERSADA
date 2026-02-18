@@ -14,186 +14,150 @@ import {
   Plus,
   LayoutDashboard,
   Search,
-  Settings,
-  HelpCircle,
-  Moon,
-  Sun,
-  Globe,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Activity,
-  Zap,
-  Crown,
-  Mail,
-  FileText,
-  ShoppingCart,
-  CheckSquare,
-  Users,
-  DollarSign,
-  X,
 } from "lucide-react"
 import { ERP_MENU } from "@/core/erpMenuConfig"
 
 /* ========= TYPES ========= */
+
 type SessionUser = {
   name: string
   email: string
   role: string
-  avatar?: string
 }
 
 type RealtimeCounts = {
   estimator_inquiry: number
   finance_approval: number
   purchasing_request: number
-  project_overdue?: number
-  task_today?: number
-  message_unread?: number
 }
 
-interface Notification {
-  id: string
-  type: "info" | "success" | "warning" | "error"
-  title: string
-  message: string
-  timestamp: string
-  read: boolean
-  link?: string
-}
+/* ========= HOOK: REALTIME COUNTS (SSE + FALLBACK POLLING) ========= */
 
-/* ========= CONFIG ========= */
-const THEME_CONFIG = {
-  dark: "bg-gradient-to-b from-[#0B1120] via-[#0f172a] to-[#111827] border-gray-800 text-gray-400",
-  light: "bg-gradient-to-b from-gray-50 via-white to-gray-100 border-gray-200 text-gray-600",
-}
-
-const LANG = {
-  id: {
-    search: "Cari...",
-    notifications: "Notifikasi",
-    quickCreate: "Buat Cepat",
-    system: "Sistem",
-    logout: "Keluar",
-    version: "v2.2.0",
-    profile: "Profil",
-    settings: "Pengaturan",
-    help: "Bantuan",
-  },
-  en: {
-    search: "Search...",
-    notifications: "Notifications",
-    quickCreate: "Quick Create",
-    system: "System",
-    logout: "Logout",
-    version: "v2.2.0",
-    profile: "Profile",
-    settings: "Settings",
-    help: "Help",
-  },
-}
-
-/* ========= HOOKS ========= */
-function useRealtime() {
+function useRealtimeListener() {
   const setCounts = useERPStore((s) => s.setCounts)
+
   useEffect(() => {
-    const fetchData = async () => {
+    let interval: ReturnType<typeof setInterval> | null = null
+    let es: EventSource | null = null
+
+    function updateFromPayload(payload: any) {
+      setCounts({
+        estimator_inquiry:
+          typeof payload?.estimator_inquiry === "number"
+            ? payload.estimator_inquiry
+            : undefined,
+        finance_approval:
+          typeof payload?.finance_approval === "number"
+            ? payload.finance_approval
+            : undefined,
+        purchasing_request:
+          typeof payload?.purchasing_request === "number"
+            ? payload.purchasing_request
+            : undefined,
+      })
+    }
+
+    async function fetchSnapshot() {
       try {
         const res = await fetch("/api/notifications/summary")
+        if (!res.ok) return
         const data = await res.json()
-        setCounts(data)
+        updateFromPayload(data)
       } catch (err) {
-        console.error("Failed to fetch counts", err)
+        console.error("Fetch notif summary error:", err)
       }
     }
-    fetchData()
-    const interval = setInterval(fetchData, 30000)
-    return () => clearInterval(interval)
+
+    try {
+      es = new EventSource("/api/notifications/stream")
+
+      es.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data)
+          updateFromPayload(payload)
+        } catch (err) {
+          console.error("SSE parse error:", err)
+        }
+      }
+
+      es.onerror = () => {
+        es?.close()
+        es = null
+        fetchSnapshot()
+        interval = setInterval(fetchSnapshot, 10000)
+      }
+    } catch (err) {
+      fetchSnapshot()
+      interval = setInterval(fetchSnapshot, 10000)
+    }
+
+    fetchSnapshot()
+
+    return () => {
+      if (es) es.close()
+      if (interval) clearInterval(interval)
+    }
   }, [setCounts])
 }
 
-function useUser(): SessionUser {
+/* ========= HOOK: SESSION USER ========= */
+
+function useSessionUser(): SessionUser {
   const [user, setUser] = useState<SessionUser>({
     name: "Estimator Utama",
     email: "estimator@mpp.co.id",
     role: "ESTIMATOR",
   })
+
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then(res => res.json())
-      .then(data => setUser({
-        name: data.name || "User",
-        email: data.email || "user@mpp.co.id",
-        role: (data.role || "STAFF").toUpperCase(),
-        avatar: data.avatar,
-      }))
-      .catch(console.error)
+    let cancelled = false
+
+    async function fetchUser() {
+      try {
+        const res = await fetch("/api/auth/me")
+        if (!res.ok) return
+        const data = await res.json()
+        if (cancelled) return
+
+        setUser({
+          name: data.name || "User",
+          email: data.email || "user@mpp.co.id",
+          role: (data.role || "STAFF").toUpperCase(),
+        })
+      } catch (err) {
+        console.error("Fetch session user error:", err)
+      }
+    }
+
+    fetchUser()
+    return () => {
+      cancelled = true
+    }
   }, [])
+
   return user
 }
 
-function useTheme() {
-  const [theme, setTheme] = useState<"dark" | "light">("dark")
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    setMounted(true)
-    const saved = localStorage.getItem("theme") as "dark" | "light"
-    if (saved) setTheme(saved)
-  }, [])
-  const toggle = () => {
-    const newTheme = theme === "dark" ? "light" : "dark"
-    setTheme(newTheme)
-    localStorage.setItem("theme", newTheme)
-  }
-  return { theme, toggle, mounted }
-}
+/* ========= UTIL: CLICK OUTSIDE ========= */
 
-function useLang() {
-  const [lang, setLang] = useState<"id" | "en">("id")
-  useEffect(() => {
-    const saved = localStorage.getItem("lang") as "id" | "en"
-    if (saved) setLang(saved)
-  }, [])
-  const toggle = () => {
-    const newLang = lang === "id" ? "en" : "id"
-    setLang(newLang)
-    localStorage.setItem("lang", newLang)
-  }
-  return { lang, toggle, t: LANG[lang] }
-}
-
-function useNotifications() {
-  const [notifs, setNotifs] = useState<Notification[]>([])
-  const [unread, setUnread] = useState(0)
-  useEffect(() => {
-    // Mock data - ganti dengan API call
-    setNotifs([
-      { id: "1", type: "info", title: "Inquiry Baru", message: "PT Maju Jaya", timestamp: new Date().toISOString(), read: false, link: "/admin/estimator/to-estimate" },
-      { id: "2", type: "success", title: "RAB Selesai", message: "RAB-123", timestamp: new Date(Date.now() - 3600000).toISOString(), read: false },
-      { id: "3", type: "warning", title: "Project Overdue", message: "Gedung X", timestamp: new Date(Date.now() - 86400000).toISOString(), read: true },
-    ])
-    setUnread(2)
-  }, [])
-  const markRead = (id: string) => {
-    setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
-    setUnread(prev => Math.max(0, prev - 1))
-  }
-  const deleteNotif = (id: string) => {
-    const notif = notifs.find(n => n.id === id)
-    setNotifs(prev => prev.filter(n => n.id !== id))
-    if (notif && !notif.read) setUnread(prev => Math.max(0, prev - 1))
-  }
-  return { notifs, unread, markRead, deleteNotif }
-}
-
-function useClickOutside(refs: React.RefObject<HTMLElement>[], onOutside: () => void, enabled: boolean) {
+function useClickOutside(
+  refs: React.RefObject<HTMLElement>[],
+  onOutside: () => void,
+  enabled: boolean
+) {
   useEffect(() => {
     if (!enabled) return
-    const handler = (e: MouseEvent) => {
-      if (!refs.some(r => r.current?.contains(e.target as Node))) onOutside()
+
+    function handler(e: MouseEvent) {
+      const target = e.target as Node
+      const insideAny = refs.some((r) => r.current?.contains(target))
+      if (!insideAny) onOutside()
     }
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onOutside()
+
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onOutside()
+    }
+
     document.addEventListener("mousedown", handler)
     document.addEventListener("keydown", onKey)
     return () => {
@@ -203,126 +167,144 @@ function useClickOutside(refs: React.RefObject<HTMLElement>[], onOutside: () => 
   }, [refs, onOutside, enabled])
 }
 
-function useSearch() {
-  const [query, setQuery] = useState("")
-  const [results, setResults] = useState<any[]>([])
-  const [open, setOpen] = useState(false)
-  useEffect(() => {
-    if (query.length < 2) {
-      setResults([])
-      return
-    }
-    // Mock search
-    setResults([
-      { type: "project", label: "Gedung X", href: "/admin/projects/1" },
-      { type: "inquiry", label: "INQ-123", href: "/admin/crm/inquiry/1" },
-      { type: "rab", label: "RAB-456", href: "/admin/estimator/rab/1" },
-    ].filter(r => r.label.toLowerCase().includes(query.toLowerCase())))
-  }, [query])
-  return { query, setQuery, results, open, setOpen }
-}
+/* ========= COMPONENT: SIDEBAR ========= */
 
-/* ========= MAIN COMPONENT ========= */
 export default function AdminSidebar() {
-  useRealtime()
+  useRealtimeListener()
   const pathname = usePathname()
-  const router = useRouter()
-  
-  // Store
-  const counts = useERPStore((s) => s.counts)
-  const collapsed = useERPStore((s) => s.collapsed)
-  const toggle = useERPStore((s) => s.toggleSidebar)
 
-  // Hooks
-  const user = useUser()
-  const { theme, toggle: toggleTheme, mounted } = useTheme()
-  const { lang, toggle: toggleLang, t } = useLang()
-  const { notifs, unread, markRead, deleteNotif } = useNotifications()
-  const search = useSearch()
+  const estimator_inquiry = useERPStore((s) => s.counts.estimator_inquiry)
+const finance_approval = useERPStore((s) => s.counts.finance_approval)
+const purchasing_request = useERPStore((s) => s.counts.purchasing_request)
+  const user = useSessionUser()
 
-  // UI State
   const [notifOpen, setNotifOpen] = useState(false)
   const [quickOpen, setQuickOpen] = useState(false)
-  const [userOpen, setUserOpen] = useState(false)
 
-  // Refs
-  const notifRef = useRef<HTMLDivElement>(null)
-  const quickRef = useRef<HTMLDivElement>(null)
-  const userRef = useRef<HTMLDivElement>(null)
-  const searchRef = useRef<HTMLDivElement>(null)
+  const collapsed = useERPStore((s) => s.collapsed)
+const toggle = useERPStore((s) => s.toggleSidebar)
 
-  useClickOutside([notifRef], () => setNotifOpen(false), notifOpen)
-  useClickOutside([quickRef], () => setQuickOpen(false), quickOpen)
-  useClickOutside([userRef], () => setUserOpen(false), userOpen)
-  useClickOutside([searchRef], () => search.setOpen(false), search.open)
+  // Collapsible sidebar (persist)
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/")
+  const notifBtnRef = useRef<HTMLButtonElement>(null)
+  const notifPanelRef = useRef<HTMLDivElement>(null)
+  const quickBtnRef = useRef<HTMLButtonElement>(null)
+  const quickPanelRef = useRef<HTMLDivElement>(null)
+
+  useClickOutside(
+    [notifBtnRef, notifPanelRef],
+    () => setNotifOpen(false),
+    notifOpen
+  )
+  useClickOutside(
+    [quickBtnRef, quickPanelRef],
+    () => setQuickOpen(false),
+    quickOpen
+  )
+
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(href + "/")
+
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" })
+    } catch (err) {
+      console.error("Logout error:", err)
+    }
+    window.location.href = "/login"
+  }
+
+  const totalNotif =
+    estimator_inquiry + finance_approval + purchasing_request
+
+  const sidebarWidth = collapsed ? "w-[80px]" : "w-[280px]"
+  const padX = collapsed ? "px-3" : "px-6"
   
-  const totalNotif = (counts.estimator_inquiry || 0) + (counts.finance_approval || 0) + 
-                     (counts.purchasing_request || 0) + (counts.project_overdue || 0) + unread
 
-  const quickActions = [
-    { label: "Inquiry", href: "/admin/crm/inquiry/new", icon: FileText, color: "blue" },
-    { label: "RAB", href: "/admin/estimator/rab/new", icon: DollarSign, color: "green" },
-    { label: "Project", href: "/admin/projects/new", icon: LayoutDashboard, color: "purple" },
-    { label: "Customer", href: "/admin/crm/customers/new", icon: Users, color: "red" },
-  ]
-
-  if (!mounted) return null
+  const quickActions = useMemo(
+    () => [
+      {
+        label: "New Inquiry",
+        desc: "Buat lead masuk",
+        href: "/admin/crm/inquiry/new",
+      },
+      {
+        label: "New RAB",
+        desc: "Mulai estimator",
+        href: "/admin/estimator/rab/new",
+      },
+      {
+        label: "New Project",
+        desc: "Create proyek",
+        href: "/admin/projects/new",
+      },
+      {
+        label: "New PO",
+        desc: "Purchase Order",
+        href: "/admin/purchasing/po/new",
+      },
+    ],
+    []
+  )
 
   return (
-    <aside className={`${collapsed ? "w-[80px]" : "w-[280px]"} hidden md:flex flex-col h-screen fixed top-0 left-0 z-50
-      ${THEME_CONFIG[theme]} border-r backdrop-blur-xl transition-all duration-300`}>
-      
-      {/* ===== TOP ===== */}
-      <div className={`${collapsed ? "px-3" : "px-6"} pt-6 pb-4 flex items-center justify-between`}>
-        <div className="flex items-center gap-2">
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-bold text-white cursor-pointer"
-            onClick={() => router.push("/admin/dashboard")}
-          >
+    <aside
+      className={`${sidebarWidth} overflow-visible hidden md:flex flex-col h-screen fixed top-0 left-0 z-50
+      bg-gradient-to-b from-[#0B1120] via-[#0f172a] to-[#111827]
+      backdrop-blur-xl
+      text-gray-400 border-r border-gray-800 shadow-2xl shadow-black/40 transition-[margin] duration-300 ease-in-out`}
+    >
+      {/* ===== TOP AREA ===== */}
+      <div className={`${padX} pt-6 pb-4 flex items-center justify-between`}>
+        {/* LOGO */}
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center font-black text-white italic shadow-lg shadow-blue-500/20 shrink-0">
             M
-          </motion.div>
+          </div>
+
           {!collapsed && (
-            <div>
-              <p className="text-lg font-bold text-white">MPP ERP</p>
-              <p className="text-[8px] text-gray-500">Estimation System</p>
+            <div className="min-w-0">
+              <p className="text-lg font-bold text-white tracking-tight truncate">
+                MPP<span className="text-blue-500 font-extralight ml-1">ERP</span>
+              </p>
+              <p className="text-[10px] text-gray-500 mt-0.5 font-medium tracking-widest uppercase italic truncate">
+                Estimation & Project System
+              </p>
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-1">
-          {/* Search */}
-          <button onClick={() => search.setOpen(true)} className="w-8 h-8 rounded-lg hover:bg-gray-800/50 flex items-center justify-center">
-            <Search size={16} />
+        {/* RIGHT TOP ICONS */}
+        <div className="flex items-center gap-2">
+          {/* Collapse toggle */}
+          <button
+  type="button"
+  onClick={toggle}
+  className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-gray-700 bg-gray-900/50 hover:bg-gray-800 transition-colors"
+>
+            {collapsed ? (
+              <ChevronRight size={16} className="text-gray-300" />
+            ) : (
+              <ChevronLeft size={16} className="text-gray-300" />
+            )}
           </button>
 
-          {/* Theme */}
-          <button onClick={toggleTheme} className="w-8 h-8 rounded-lg hover:bg-gray-800/50 flex items-center justify-center">
-            {theme === "dark" ? <Sun size={16} className="text-yellow-400" /> : <Moon size={16} />}
-          </button>
-
-          {/* Lang */}
-          <button onClick={toggleLang} className="w-8 h-8 rounded-lg hover:bg-gray-800/50 flex items-center justify-center text-xs font-bold">
-            {lang.toUpperCase()}
-          </button>
-
-          {/* Collapse */}
-          <button onClick={toggle} className="w-8 h-8 rounded-lg hover:bg-gray-800/50 flex items-center justify-center">
-            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-          </button>
-
-          {/* Notif */}
-          <div className="relative" ref={notifRef}>
+          {/* Global notif bell */}
+          <div className="relative">
             <button
-              onClick={() => setNotifOpen(!notifOpen)}
-              className="relative w-8 h-8 rounded-lg hover:bg-gray-800/50 flex items-center justify-center"
+              ref={notifBtnRef}
+              type="button"
+              onClick={() => {
+                setNotifOpen((v) => !v)
+                setQuickOpen(false)
+              }}
+              className="relative inline-flex items-center justify-center w-9 h-9 rounded-xl border border-gray-700 bg-gray-900/60 hover:bg-gray-800 transition-colors"
+              title="Notifications"
             >
-              <Bell size={16} />
+              <Bell size={16} className="text-gray-300" />
               {totalNotif > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-[8px] text-white rounded-full px-1 min-w-[14px] h-3.5 flex items-center justify-center">
-                  {totalNotif > 9 ? '9+' : totalNotif}
+                <span className="absolute -top-1 -right-1 bg-red-500 text-[9px] text-white rounded-full px-1.5 py-[1px] font-bold shadow-lg shadow-red-500/40">
+                  {totalNotif}
                 </span>
               )}
             </button>
@@ -330,37 +312,43 @@ export default function AdminSidebar() {
             <AnimatePresence>
               {notifOpen && (
                 <motion.div
-                  initial={{ opacity: 0, y: -10 }}
+                  ref={notifPanelRef}
+                  initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="absolute right-0 mt-2 w-80 bg-gray-900 border border-gray-800 rounded-xl shadow-2xl z-50"
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-2 w-80 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-20"
                 >
-                  <div className="p-3 border-b border-gray-800 flex justify-between">
-                    <p className="text-xs font-semibold">{t.notifications}</p>
-                    <p className="text-[8px] text-gray-500">{totalNotif} unread</p>
+                  <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+                    <p className="text-xs font-semibold text-gray-200">
+                      Notification Center
+                    </p>
+                    <span className="text-[10px] text-gray-500">Realtime</span>
                   </div>
-                  <div className="max-h-96 overflow-y-auto">
-                    {/* System Notifs */}
-                    <div className="p-2">
-                      <p className="text-[8px] text-gray-500 px-2 mb-1">System</p>
-                      {Object.entries(counts).map(([key, val]) => val > 0 && (
-                        <SystemNotif key={key} label={key} count={val} />
-                      ))}
-                    </div>
-                    {/* User Notifs */}
-                    {notifs.length > 0 && (
-                      <div className="p-2 border-t border-gray-800">
-                        <p className="text-[8px] text-gray-500 px-2 mb-1">Personal</p>
-                        {notifs.map(n => (
-                          <UserNotif
-                            key={n.id}
-                            notif={n}
-                            onRead={() => markRead(n.id)}
-                            onDelete={() => deleteNotif(n.id)}
-                          />
-                        ))}
-                      </div>
-                    )}
+
+                  <div className="py-2 text-xs">
+                    <NotifRow
+                      label="Estimator – Inquiry baru"
+                      count={estimator_inquiry}
+                      href="/admin/estimator/to-estimate"
+                      onClick={() => setNotifOpen(false)}
+                    />
+                    <NotifRow
+                      label="Finance – Menunggu approval"
+                      count={finance_approval}
+                      href="/admin/finance/approval"
+                      onClick={() => setNotifOpen(false)}
+                    />
+                    <NotifRow
+                      label="Purchasing – Request baru"
+                      count={purchasing_request}
+                      href="/admin/purchasing/request"
+                      onClick={() => setNotifOpen(false)}
+                    />
+                  </div>
+
+                  <div className="px-4 py-2 border-t border-gray-800 text-[10px] text-gray-500">
+                    Klik item untuk membuka modul terkait • ESC to close
                   </div>
                 </motion.div>
               )}
@@ -369,79 +357,66 @@ export default function AdminSidebar() {
         </div>
       </div>
 
-      {/* ===== SEARCH ===== */}
-      {!collapsed && (
-        <div className="px-4 pb-4" ref={searchRef}>
-          <div className="relative">
-            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-            <input
-              placeholder={t.search}
-              value={search.query}
-              onChange={(e) => search.setQuery(e.target.value)}
-              onFocus={() => search.setOpen(true)}
-              className="w-full pl-8 pr-3 py-1.5 bg-gray-900/50 border border-gray-800 rounded-lg text-xs"
-            />
-            <AnimatePresence>
-              {search.open && search.results.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
-                  className="absolute top-full left-0 right-0 mt-1 bg-gray-900 border border-gray-800 rounded-lg z-50"
-                >
-                  {search.results.map((r, i) => (
-                    <Link key={i} href={r.href} onClick={() => search.setOpen(false)}>
-                      <div className="px-3 py-2 hover:bg-gray-800 text-xs flex items-center gap-2">
-                        <div className="w-5 h-5 bg-gray-800 rounded flex items-center justify-center">
-                          {r.type === "project" && <LayoutDashboard size={10} className="text-blue-400" />}
-                          {r.type === "inquiry" && <FileText size={10} className="text-green-400" />}
-                          {r.type === "rab" && <DollarSign size={10} className="text-yellow-400" />}
-                        </div>
-                        {r.label}
-                      </div>
-                    </Link>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      )}
-
       {/* ===== QUICK ACTION ===== */}
-      <div className={`${collapsed ? "px-3" : "px-4"} pb-4`}>
-        <div className="relative" ref={quickRef}>
+      <div className={`${collapsed ? "px-3" : "px-4"} pb-3`}>
+        <div className="relative">
           <button
-            onClick={() => setQuickOpen(!quickOpen)}
-            className={`w-full flex items-center justify-center gap-2 rounded-lg border border-gray-800 bg-blue-600/10 hover:bg-blue-600/20 transition
-              ${collapsed ? "py-2" : "py-2.5"}`}
+            ref={quickBtnRef}
+            type="button"
+            onClick={() => {
+              setQuickOpen((v) => !v)
+              setNotifOpen(false)
+            }}
+            className={`w-full inline-flex items-center justify-center gap-2 rounded-xl border border-gray-800
+            bg-gradient-to-r from-blue-600/25 to-transparent hover:from-blue-600/35 transition-colors
+            ${collapsed ? "py-2" : "py-2.5"}`}
+            title="Quick Actions"
           >
-            <Plus size={16} className="text-blue-400" />
-            {!collapsed && <span className="text-xs font-medium">{t.quickCreate}</span>}
+            <Plus size={16} className="text-blue-300" />
+            {!collapsed && (
+              <span className="text-[12px] font-semibold text-gray-100">
+                Create
+              </span>
+            )}
           </button>
 
           <AnimatePresence>
             {quickOpen && (
               <motion.div
-                initial={{ opacity: 0, y: -5 }}
+                ref={quickPanelRef}
+                initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                className="absolute left-0 mt-2 w-64 bg-gray-900 border border-gray-800 rounded-xl shadow-2xl z-40"
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.15 }}
+                className="absolute left-0 mt-2 w-80 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-30"
               >
+                <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+                  <p className="text-xs font-semibold text-gray-200">
+                    Quick Create
+                  </p>
+                  <span className="text-[10px] text-gray-500">Fast entry</span>
+                </div>
+
                 <div className="p-2">
-                  {quickActions.map(a => (
-                    <Link key={a.href} href={a.href} onClick={() => setQuickOpen(false)}>
-                      <div className="px-3 py-2 rounded-lg hover:bg-gray-800 flex items-center gap-3">
-                        <div className={`w-7 h-7 rounded-lg bg-${a.color}-500/10 flex items-center justify-center`}>
-                          <a.icon size={14} className={`text-${a.color}-400`} />
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium">{a.label}</p>
-                          <p className="text-[8px] text-gray-500">Create new</p>
-                        </div>
+                  {quickActions.map((a) => (
+                    <Link
+                      key={a.href}
+                      href={a.href}
+                      onClick={() => setQuickOpen(false)}
+                      className="block"
+                    >
+                      <div className="px-3 py-2 rounded-lg hover:bg-gray-800/80 transition-colors">
+                        <p className="text-[12px] font-semibold text-gray-100">
+                          {a.label}
+                        </p>
+                        <p className="text-[10px] text-gray-500">{a.desc}</p>
                       </div>
                     </Link>
                   ))}
+                </div>
+
+                <div className="px-4 py-2 border-t border-gray-800 text-[10px] text-gray-500">
+                  Tips: Create dulu → nanti detail bisa dilengkapi
                 </div>
               </motion.div>
             )}
@@ -449,173 +424,249 @@ export default function AdminSidebar() {
         </div>
       </div>
 
-      {/* ===== SYSTEM STATUS ===== */}
+      {/* ===== MINI WIDGET (SYSTEM STATUS) ===== */}
       <div className={`${collapsed ? "px-3" : "px-4"} pb-4`}>
-        <div className="bg-gray-900/40 border border-gray-800 rounded-xl p-3">
+        <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-3">
           <div className="flex items-center justify-between">
-            <p className="text-[8px] text-gray-500 uppercase tracking-wider">{t.system}</p>
-            <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            <p className="text-[10px] text-gray-500 uppercase tracking-widest">
+              System
+            </p>
+            <span className="text-[10px] text-green-400 font-semibold">
+              Live
+            </span>
           </div>
-          {!collapsed && (
-            <div className="mt-2 grid grid-cols-3 gap-1">
-              <Stat label="Inq" value={counts.estimator_inquiry || 0} />
-              <Stat label="Fin" value={counts.finance_approval || 0} />
-              <Stat label="Pur" value={counts.purchasing_request || 0} />
+
+          {!collapsed ? (
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              <MiniStat label="Inquiry" value={estimator_inquiry} />
+              <MiniStat label="Approval" value={finance_approval} />
+              <MiniStat label="Request" value={purchasing_request} />
+            </div>
+          ) : (
+            <div className="mt-2 flex items-center justify-center">
+              <div className="w-2 h-2 rounded-full bg-green-400 shadow shadow-green-500/40" />
             </div>
           )}
         </div>
       </div>
 
       {/* ===== MENU ===== */}
-      <nav className="flex-1 px-3 overflow-y-auto">
-        {ERP_MENU.map((group) => (
-          <div key={group.section} className="mb-6">
-            {!collapsed && (
-              <p className="px-3 mb-2 text-[8px] uppercase tracking-wider text-gray-600 font-bold">
-                {group.section}
-              </p>
-            )}
-            {group.items.map((item) => {
-              const Icon = item.icon
-              const active = isActive(item.href)
-              const badge = item.href.includes("estimator") ? counts.estimator_inquiry :
-                           item.href.includes("finance") ? counts.finance_approval :
-                           item.href.includes("purchasing") ? counts.purchasing_request :
-                           item.href.includes("projects") ? counts.project_overdue : 0
+      <nav className="flex-1 px-3 pb-4 pt-2 overflow-y-auto space-y-8 scrollbar-thin scrollbar-thumb-gray-800">
+        {ERP_MENU.map((group) => {
+          const sectionActive = group.items.some((i) => isActive(i.href))
 
-              return (
-                <Link key={item.href} href={item.href}>
-                  <div className={`relative flex items-center gap-3 px-3 py-2 rounded-lg transition-all
-                    ${active ? "bg-blue-600/20 text-blue-400 border-l-2 border-blue-500" : "hover:bg-gray-800/50"}`}>
-                    <Icon size={18} />
-                    {!collapsed && (
-                      <>
-                        <span className="text-xs flex-1">{item.name}</span>
-                        {badge > 0 && (
-                          <span className="bg-red-500 text-white text-[8px] px-1.5 py-0.5 rounded-full">
-                            {badge}
-                          </span>
-                        )}
-                      </>
-                    )}
-                    {collapsed && badge > 0 && (
-                      <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-                    )}
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        ))}
+          return (
+            <div key={group.section}>
+              {/* SECTION HEADER */}
+              {!collapsed && (
+                <div
+                  className={`px-4 mb-3 flex items-center gap-2 text-[10px] uppercase font-bold tracking-[0.15em]
+                  ${sectionActive ? "text-blue-400" : "text-gray-600"}`}
+                >
+                  {group.section}
+                </div>
+              )}
+
+              {/* ITEMS */}
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const Icon = item.icon
+                  const active = isActive(item.href)
+
+                  const badgeCount =
+                    item.href === "/admin/estimator/rab"
+                      ? estimator_inquiry
+                      : item.href === "/admin/finance/approval"
+                      ? finance_approval
+                      : item.href === "/admin/purchasing/request"
+                      ? purchasing_request
+                      : 0
+
+                  const hasNotification = badgeCount > 0
+
+                  return (
+                    <SidebarItem
+                      key={item.href}
+                      href={item.href}
+                      label={item.name}
+                      active={active}
+                      collapsed={collapsed}
+                      badgeCount={badgeCount}
+                    >
+                      <Icon
+                        size={18}
+                        className={`transition-transform duration-300 group-hover:scale-110
+                        ${active ? "text-blue-400" : "text-gray-500"}`}
+                      />
+                      {/* keep children only for icon */}
+                      {hasNotification && collapsed && (
+                        <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 shadow shadow-red-500/40" />
+                      )}
+                    </SidebarItem>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
       </nav>
 
-      {/* ===== USER ===== */}
-      <div className={`${collapsed ? "p-3" : "p-4"} relative`} ref={userRef}>
+      {/* ===== USER PROFILE CARD ===== */}
+      <div className={`${collapsed ? "p-3" : "p-4"} mt-auto`}>
         <div
-          onClick={() => setUserOpen(!userOpen)}
-          className={`flex items-center gap-3 bg-gray-900/40 border border-gray-800 rounded-xl p-3 cursor-pointer hover:bg-gray-800/50 transition
-            ${collapsed ? "justify-center" : ""}`}
+          className={`bg-gray-800/40 rounded-2xl border border-gray-800 flex items-center gap-3 group
+          ${collapsed ? "p-3 justify-center" : "p-4"}`}
         >
-          <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
-            {user.avatar ? <img src={user.avatar} className="w-full h-full rounded-full" /> : <UserCircle size={20} />}
+          <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20 shrink-0">
+            <UserCircle size={24} />
           </div>
+
           {!collapsed && (
-            <>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium truncate flex items-center gap-1">
-                  {user.name}
-                  {user.role === "ADMIN" && <Crown size={10} className="text-yellow-400" />}
-                </p>
-                <p className="text-[8px] text-gray-500 truncate">{user.email}</p>
-              </div>
-              <ChevronRight size={12} className={`transition-transform ${userOpen ? "rotate-90" : ""}`} />
-            </>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-gray-200 truncate">
+                {user.name}
+              </p>
+              <p className="text-[10px] text-blue-400 font-semibold uppercase tracking-wide">
+                {user.role}
+              </p>
+              <p className="text-[10px] text-gray-500 truncate italic">
+                {user.email}
+              </p>
+            </div>
           )}
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className={`text-gray-600 hover:text-red-400 transition-colors ${
+              collapsed ? "hidden" : ""
+            }`}
+            title="Logout"
+          >
+            <LogOut size={16} />
+          </button>
         </div>
 
-        <AnimatePresence>
-          {userOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              className="absolute bottom-full left-4 right-4 mb-2 bg-gray-900 border border-gray-800 rounded-xl shadow-2xl z-40"
-            >
-              <div className="p-1">
-                <MenuItem icon={UserCircle} label={t.profile} href="/admin/profile" />
-                <MenuItem icon={Settings} label={t.settings} href="/admin/settings" />
-                <MenuItem icon={HelpCircle} label={t.help} href="/admin/help" />
-                <MenuItem icon={LogOut} label={t.logout} onClick={() => router.push("/logout")} danger />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {!collapsed && (
-          <p className="text-[6px] text-gray-600 text-center mt-4">{t.version} • live</p>
+          <p className="text-[10px] text-gray-600 mt-4 text-center font-mono">
+            v2.2.0-2026 • live
+          </p>
         )}
       </div>
     </aside>
   )
 }
 
-/* ========= SMALL COMPONENTS ========= */
-const Stat = ({ label, value }: { label: string; value: number }) => (
-  <div className="text-center bg-gray-800/50 rounded-lg py-1">
-    <p className="text-[8px] text-gray-500">{label}</p>
-    <p className="text-[10px] font-bold">{value}</p>
-  </div>
-)
+/* ========= COMPONENTS ========= */
 
-const SystemNotif = ({ label, count }: { label: string; count: number }) => (
-  <div className="px-3 py-1.5 flex items-center justify-between text-xs">
-    <span className="text-gray-300">{label.replace('_', ' ')}</span>
-    <span className="bg-red-500/80 text-white text-[8px] px-1.5 py-0.5 rounded-full">{count}</span>
-  </div>
-)
-
-const UserNotif = ({ notif, onRead, onDelete }: { notif: Notification; onRead: () => void; onDelete: () => void }) => {
-  const colors = {
-    info: "bg-blue-500/10 text-blue-400",
-    success: "bg-green-500/10 text-green-400",
-    warning: "bg-yellow-500/10 text-yellow-400",
-    error: "bg-red-500/10 text-red-400",
-  }
-  const icons = { info: AlertCircle, success: CheckCircle, warning: AlertCircle, error: XCircle }
-  const Icon = icons[notif.type]
-
+function MiniStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="px-3 py-2 rounded-lg hover:bg-gray-800/80 transition relative group">
-      <div className="flex gap-2">
-        <div className={`w-6 h-6 rounded-lg ${colors[notif.type]} flex items-center justify-center`}>
-          <Icon size={12} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-medium">{notif.title}</p>
-          <p className="text-[8px] text-gray-400">{notif.message}</p>
-        </div>
-      </div>
-      <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100">
-        {!notif.read && (
-          <button onClick={onRead} className="p-0.5 hover:bg-gray-700 rounded">
-            <CheckCircle size={8} className="text-green-400" />
-          </button>
-        )}
-        <button onClick={onDelete} className="p-0.5 hover:bg-gray-700 rounded">
-          <X size={8} className="text-gray-400" />
-        </button>
-      </div>
+    <div className="bg-gray-800/40 border border-gray-800 rounded-xl px-2 py-2 text-center">
+      <p className="text-[9px] text-gray-500 uppercase tracking-widest">
+        {label}
+      </p>
+      <p className="text-[12px] font-bold text-gray-100 mt-0.5">{value}</p>
     </div>
   )
 }
 
-const MenuItem = ({ icon: Icon, label, href, onClick, danger }: any) => {
-  const content = (
-    <div className={`px-3 py-2 rounded-lg flex items-center gap-2 text-xs transition-colors
-      ${danger ? "text-red-400 hover:bg-red-500/10" : "text-gray-300 hover:bg-gray-800"}`}>
-      <Icon size={14} />
-      {label}
-    </div>
+function SidebarItem({
+  href,
+  label,
+  active,
+  collapsed,
+  badgeCount,
+  children,
+}: {
+  href: string
+  label: string
+  active: boolean
+  collapsed: boolean
+  badgeCount?: number
+  children: React.ReactNode
+}) {
+  return (
+    <Link href={href} className="block">
+      <div
+        className={`relative flex items-center gap-3 rounded-xl transition-all duration-300 group
+        ${collapsed ? "px-3 py-3 justify-center" : "px-4 py-2.5"}
+        ${active ? "text-white" : "hover:text-gray-200"}`}
+      >
+        {/* active background */}
+        <AnimatePresence>
+          {active && (
+            <motion.div
+              layoutId="active-pill"
+              className="absolute inset-0 bg-gradient-to-r from-blue-600/22 to-transparent rounded-xl border-l-2 border-blue-500"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+          )}
+        </AnimatePresence>
+
+        <div className="relative z-10">{children}</div>
+
+        {!collapsed && (
+          <span className="relative z-10 font-medium text-[13px]">
+            {label}
+          </span>
+        )}
+
+        {!collapsed && (badgeCount ?? 0) > 0 && (
+          <motion.span
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="ml-auto relative z-10 flex h-5 min-w-[1.25rem] px-1 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-lg shadow-red-500/40"
+          >
+            {badgeCount}
+          </motion.span>
+        )}
+
+        {/* tooltip when collapsed */}
+        {collapsed && (
+          <div className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+            <div className="bg-gray-900 border border-gray-700 text-[11px] text-gray-100 px-2 py-1 rounded-lg shadow-xl whitespace-nowrap">
+              {label}
+            </div>
+          </div>
+        )}
+      </div>
+    </Link>
   )
-  return href ? <Link href={href}>{content}</Link> : <button onClick={onClick} className="w-full">{content}</button>
+}
+
+/* ========= SMALL COMPONENT: NOTIF ROW ========= */
+
+function NotifRow({
+  label,
+  count,
+  href,
+  onClick,
+}: {
+  label: string
+  count: number
+  href: string
+  onClick?: () => void
+}) {
+  const has = count > 0
+
+  return (
+    <Link href={href} onClick={onClick}>
+      <div
+        className={`px-4 py-2 flex items-center justify-between hover:bg-gray-800/80 cursor-pointer transition-colors ${
+          !has ? "opacity-60" : ""
+        }`}
+      >
+        <span className="text-[11px] text-gray-200">{label}</span>
+        <span
+          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+            has ? "bg-red-500/80 text-white" : "bg-gray-700 text-gray-300"
+          }`}
+        >
+          {count}
+        </span>
+      </div>
+    </Link>
+  )
 }

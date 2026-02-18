@@ -1,23 +1,9 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { motion } from "framer-motion"
-import {
-  ArrowLeft,
-  CheckCircle,
-  User,
-  FileText,
-  DollarSign,
-  ArrowRight,
-  Clock,
-  Activity,
-  AlertTriangle,
-  TrendingUp,
-} from "lucide-react"
+import { ArrowLeft, CheckCircle } from "lucide-react"
 import { toast } from "sonner"
-
-const STEPS = ["new", "survey", "estimating", "sent"]
 
 export default function InquiryDetailPage() {
   const params = useParams()
@@ -29,10 +15,8 @@ export default function InquiryDetailPage() {
       : params.inquiry_id?.[0]
 
   const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
-  const [error, setError] = useState(false)
-
-  /* ================= LOAD ================= */
 
   useEffect(() => {
     if (!inquiry_id) return
@@ -47,70 +31,16 @@ export default function InquiryDetailPage() {
         const json = await res.json()
         setData(json)
       } catch {
-        setError(true)
+        toast.error("Gagal load detail")
+      } finally {
+        setLoading(false)
       }
     }
 
     load()
   }, [inquiry_id])
 
-  /* ================= DERIVED STATE ================= */
-
-  const statusLower = data?.status?.toLowerCase() || "new"
-
-  const currentStepIndex =
-    STEPS.indexOf(statusLower) >= 0
-      ? STEPS.indexOf(statusLower)
-      : 0
-
-  const services = data?.layanan
-    ? data.layanan.split("|")
-    : []
-
-  const pipelineAge = useMemo(() => {
-    if (!data?.tanggal_masuk) return 0
-    const date = new Date(data.tanggal_masuk)
-    if (isNaN(date.getTime())) return 0
-    return Math.floor((Date.now() - date.getTime()) / 86400000)
-  }, [data?.tanggal_masuk])
-
-  const conversionProbability = {
-    new: 20,
-    survey: 40,
-    estimating: 65,
-    sent: 80,
-    won: 100,
-    lost: 0,
-  }[statusLower] ?? 10
-
-  const estimasiValue = Number(data?.estimasi_nilai || 0)
-
-  const expectedRevenue = Math.round(
-    estimasiValue * (conversionProbability / 100)
-  )
-
-  const themeColor = useMemo(() => {
-    if (statusLower === "lost") return "red"
-    if (conversionProbability > 70) return "green"
-    if (conversionProbability > 30) return "blue"
-    return "slate"
-  }, [conversionProbability, statusLower])
-
-  const heatLevel =
-    pipelineAge > 10
-      ? "high"
-      : pipelineAge > 5
-      ? "medium"
-      : "normal"
-
-  const surveyTooLong =
-    statusLower === "survey" && pipelineAge > 5
-
-  /* ================= CONVERT ================= */
-
   const convertToRAB = async () => {
-    if (!inquiry_id) return
-
     try {
       setIsUpdating(true)
 
@@ -126,34 +56,30 @@ export default function InquiryDetailPage() {
       toast.success("Berhasil convert ke RAB")
       router.push(`/admin/estimator/rab/${result.rab_id}`)
     } catch {
-      toast.error("Gagal convert ke RAB")
+      toast.error("Gagal convert")
     } finally {
       setIsUpdating(false)
     }
   }
 
-  /* ================= EARLY RETURN ================= */
-
-  if (error) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-96 text-red-500 font-semibold">
-        Data tidak ditemukan / gagal load
+      <div className="h-96 flex items-center justify-center text-gray-400">
+        Loading detail...
       </div>
     )
   }
 
   if (!data) {
     return (
-      <div className="flex items-center justify-center h-96 text-gray-400 animate-pulse">
-        Loading inquiry data...
+      <div className="h-96 flex items-center justify-center text-red-500">
+        Data tidak ditemukan
       </div>
     )
   }
 
-  /* ================= UI ================= */
-
   return (
-    <div className="max-w-7xl mx-auto space-y-10 pb-24">
+    <div className="max-w-5xl mx-auto space-y-8 pb-20">
 
       {/* HEADER */}
       <div className="flex justify-between items-end">
@@ -165,118 +91,96 @@ export default function InquiryDetailPage() {
             <ArrowLeft size={14} /> BACK
           </button>
 
-          <h1 className="text-4xl font-extrabold tracking-tight">
-            Inquiry Intelligence Panel
+          <h1 className="text-3xl font-bold">
+            Detail Inquiry
           </h1>
-          <p className="text-gray-500 text-sm">
-            CRM Performance Monitoring
-          </p>
         </div>
 
         <span className="text-xs bg-slate-100 px-3 py-1 rounded-full">
-          {inquiry_id}
+          {data.inquiry_id}
         </span>
       </div>
 
-      {/* STEP PROGRESS */}
-      <div className="bg-white border rounded-3xl p-10 relative">
-        <div className="flex justify-between relative">
-          {STEPS.map((step, index) => {
-            const active = index <= currentStepIndex
-            return (
-              <div key={step} className="flex flex-col items-center flex-1">
-                <motion.div
-                  animate={{ scale: active ? 1 : 0.9 }}
-                  className={`w-10 h-10 flex items-center justify-center rounded-full text-xs font-bold
-                  ${active ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"}`}
-                >
-                  {index + 1}
-                </motion.div>
+      {/* CUSTOMER CARD */}
+      <div className="bg-white border rounded-xl p-6 space-y-4">
+        <h2 className="font-semibold text-lg">Customer Information</h2>
 
-                <span className="text-xs mt-3 uppercase tracking-wide text-gray-500">
-                  {step}
-                </span>
-              </div>
-            )
-          })}
-        </div>
-
-        <motion.div
-          animate={{
-            width: `${(currentStepIndex / (STEPS.length - 1)) * 100}%`,
-          }}
-          className="absolute bottom-0 left-0 h-1 bg-blue-600 rounded-full"
-        />
+        <Info label="Customer ID" value={data.customer_id} />
+        <Info label="Customer Name" value={data.customer_name} />
+        <Info label="Lokasi Project" value={data.lokasi} />
       </div>
 
-      {/* KPI GRID */}
-      <div className="grid lg:grid-cols-4 gap-6">
+      {/* PROJECT CARD */}
+      <div className="bg-white border rounded-xl p-6 space-y-4">
+        <h2 className="font-semibold text-lg">Project Information</h2>
 
-        <KPI
-          icon={<TrendingUp size={18} />}
-          label="Win Probability"
-          value={`${conversionProbability}%`}
-        />
-
-        <KPI
-          icon={<Clock size={18} />}
-          label="Pipeline Age"
-          value={`${pipelineAge} Hari`}
-          heat={heatLevel}
-        />
-
-        <KPI
-          icon={<DollarSign size={18} />}
-          label="Potential Revenue"
-          value={`Rp ${expectedRevenue.toLocaleString("id-ID")}`}
-        />
-
-        <KPI
-          icon={<Activity size={18} />}
-          label="Efficiency Index"
-          value={
-            pipelineAge < 7
-              ? "High"
-              : "Needs Review"
-          }
-        />
+        <Info label="Nama Pekerjaan" value={data.nama_pekerjaan} />
+        <Info label="Jenis Layanan" value={data.layanan} />
+        <Info label="Sumber Lead" value={data.sumber} />
+        <Info label="Prioritas" value={data.prioritas} />
+        <Info label="Assigned To" value={data.assigned_to} />
+        <Info label="Status" value={data.status} />
       </div>
 
-      {surveyTooLong && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 flex items-center gap-4">
-          <AlertTriangle className="text-yellow-600" />
-          <div>
-            <p className="font-semibold text-yellow-800">
-              Survey terlalu lama
-            </p>
-            <p className="text-sm text-yellow-700">
-              Inquiry sudah {pipelineAge} hari di pipeline.
-            </p>
-          </div>
+      {/* FINANCIAL */}
+      <div className="bg-white border rounded-xl p-6">
+        <h2 className="font-semibold text-lg mb-4">Financial</h2>
+
+        <p className="text-2xl font-bold text-blue-600">
+          {data.estimasi_nilai
+            ? new Intl.NumberFormat("id-ID", {
+                style: "currency",
+                currency: "IDR",
+                maximumFractionDigits: 0,
+              }).format(data.estimasi_nilai)
+            : "-"}
+        </p>
+      </div>
+
+      {/* NOTES */}
+      {data.catatan && (
+        <div className="bg-white border rounded-xl p-6">
+          <h2 className="font-semibold text-lg mb-2">Catatan</h2>
+          <p className="text-gray-600 whitespace-pre-wrap">
+            {data.catatan}
+          </p>
         </div>
       )}
 
+      {/* CONVERT SECTION */}
+      <div className="bg-white border rounded-xl p-6 text-center">
+
+        {data.converted_rab_id ? (
+          <button
+            onClick={() =>
+              router.push(`/admin/estimator/rab/${data.converted_rab_id}`)
+            }
+            className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold"
+          >
+            <CheckCircle className="inline mr-2" size={18} />
+            View RAB
+          </button>
+        ) : (
+          <button
+            onClick={convertToRAB}
+            disabled={data.status !== "estimating" || isUpdating}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-40"
+          >
+            {isUpdating ? "Processing..." : "Convert ke RAB"}
+          </button>
+        )}
+      </div>
     </div>
   )
 }
 
-/* ================= COMPONENTS ================= */
-
-function KPI({ icon, label, value, heat }: any) {
-  const heatColor =
-    heat === "high"
-      ? "border-red-300 bg-red-50"
-      : heat === "medium"
-      ? "border-yellow-300 bg-yellow-50"
-      : "border-gray-200 bg-white"
-
+function Info({ label, value }: any) {
   return (
-    <div className={`border rounded-2xl p-6 flex items-center gap-4 ${heatColor}`}>
-      <div className="text-blue-600">{icon}</div>
-      <div>
-        <p className="text-xs text-gray-400">{label}</p>
-        <p className="font-bold text-lg text-gray-900">{value}</p>
-      </div>
+    <div>
+      <p className="text-xs text-gray-400">{label}</p>
+      <p className="font-medium text-gray-800">
+        {value || "-"}
+      </p>
     </div>
   )
 }

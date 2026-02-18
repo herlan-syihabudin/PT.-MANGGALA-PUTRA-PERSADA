@@ -5,6 +5,24 @@ import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft, CheckCircle } from "lucide-react"
 import { toast } from "sonner"
 
+interface InquiryDetail {
+  inquiry_id: string
+  tanggal_masuk: string
+  customer_id: string
+  customer_name: string
+  nama_pekerjaan: string
+  layanan: string
+  estimasi_nilai: number | null
+  sumber: string
+  assigned_to: string
+  status: string
+  prioritas: string
+  lokasi: string
+  catatan: string
+  converted_rab_id?: string
+  converted_project_id?: string
+}
+
 export default function InquiryDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -12,26 +30,31 @@ export default function InquiryDetailPage() {
   const inquiry_id =
     typeof params.inquiry_id === "string"
       ? params.inquiry_id
-      : params.inquiry_id?.[0]
+      : params.inquiry_id?.[0] || ""
 
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<InquiryDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
+
+  /* ================= LOAD DATA FROM API ================= */
 
   useEffect(() => {
     if (!inquiry_id) return
 
     const load = async () => {
       try {
+        setLoading(true)
+
         const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
           cache: "no-store",
         })
 
         if (!res.ok) throw new Error()
+
         const json = await res.json()
         setData(json)
       } catch {
-        toast.error("Gagal load detail")
+        toast.error("Gagal load detail inquiry")
       } finally {
         setLoading(false)
       }
@@ -39,6 +62,8 @@ export default function InquiryDetailPage() {
 
     load()
   }, [inquiry_id])
+
+  /* ================= CONVERT TO RAB ================= */
 
   const convertToRAB = async () => {
     try {
@@ -56,16 +81,18 @@ export default function InquiryDetailPage() {
       toast.success("Berhasil convert ke RAB")
       router.push(`/admin/estimator/rab/${result.rab_id}`)
     } catch {
-      toast.error("Gagal convert")
+      toast.error("Gagal convert ke RAB")
     } finally {
       setIsUpdating(false)
     }
   }
 
+  /* ================= LOADING ================= */
+
   if (loading) {
     return (
       <div className="h-96 flex items-center justify-center text-gray-400">
-        Loading detail...
+        Loading detail inquiry...
       </div>
     )
   }
@@ -77,6 +104,8 @@ export default function InquiryDetailPage() {
       </div>
     )
   }
+
+  /* ================= UI ================= */
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-20">
@@ -102,30 +131,24 @@ export default function InquiryDetailPage() {
       </div>
 
       {/* CUSTOMER CARD */}
-      <div className="bg-white border rounded-xl p-6 space-y-4">
-        <h2 className="font-semibold text-lg">Customer Information</h2>
-
+      <Card title="Customer Information">
         <Info label="Customer ID" value={data.customer_id} />
         <Info label="Customer Name" value={data.customer_name} />
         <Info label="Lokasi Project" value={data.lokasi} />
-      </div>
+      </Card>
 
       {/* PROJECT CARD */}
-      <div className="bg-white border rounded-xl p-6 space-y-4">
-        <h2 className="font-semibold text-lg">Project Information</h2>
-
+      <Card title="Project Information">
         <Info label="Nama Pekerjaan" value={data.nama_pekerjaan} />
         <Info label="Jenis Layanan" value={data.layanan} />
         <Info label="Sumber Lead" value={data.sumber} />
         <Info label="Prioritas" value={data.prioritas} />
         <Info label="Assigned To" value={data.assigned_to} />
         <Info label="Status" value={data.status} />
-      </div>
+      </Card>
 
       {/* FINANCIAL */}
-      <div className="bg-white border rounded-xl p-6">
-        <h2 className="font-semibold text-lg mb-4">Financial</h2>
-
+      <Card title="Financial">
         <p className="text-2xl font-bold text-blue-600">
           {data.estimasi_nilai
             ? new Intl.NumberFormat("id-ID", {
@@ -135,21 +158,19 @@ export default function InquiryDetailPage() {
               }).format(data.estimasi_nilai)
             : "-"}
         </p>
-      </div>
+      </Card>
 
       {/* NOTES */}
       {data.catatan && (
-        <div className="bg-white border rounded-xl p-6">
-          <h2 className="font-semibold text-lg mb-2">Catatan</h2>
+        <Card title="Catatan">
           <p className="text-gray-600 whitespace-pre-wrap">
             {data.catatan}
           </p>
-        </div>
+        </Card>
       )}
 
       {/* CONVERT SECTION */}
       <div className="bg-white border rounded-xl p-6 text-center">
-
         {data.converted_rab_id ? (
           <button
             onClick={() =>
@@ -170,6 +191,17 @@ export default function InquiryDetailPage() {
           </button>
         )}
       </div>
+    </div>
+  )
+}
+
+/* ================= COMPONENTS ================= */
+
+function Card({ title, children }: any) {
+  return (
+    <div className="bg-white border rounded-xl p-6 space-y-4">
+      <h2 className="font-semibold text-lg">{title}</h2>
+      {children}
     </div>
   )
 }

@@ -13,287 +13,107 @@ const auth = new google.auth.JWT(
 
 const sheets = google.sheets({ version: "v4", auth })
 const SHEET_ID = process.env.GSHEET_PROCUREMENT_ID!
+
 const PO_SHEET = "PURCHASE_ORDER"
 const PO_ITEM_SHEET = "PO_ITEMS"
 const PR_SHEET = "PURCHASE_REQUEST"
 const VENDOR_SHEET = "VENDORS"
 const PROJECT_SHEET = "PROJECTS"
+const AUDIT_SHEET = "PO_AUDIT_LOG"
 
-type PO = {
-  po_id: string
-  po_code: string
-  vendor_id: string
-  project_id: string
-  pr_id?: string
-  order_date: string
-  delivery_date?: string
-  status: "DRAFT" | "SENT" | "CONFIRMED" | "DELIVERED" | "CLOSED"
-  notes?: string
-  total_amount: number
-  created_by?: string
-  updated_by?: string
-  deleted_by?: string
-  created_at: string
-  updated_at: string
-  deleted_at?: string | null
+const now = () => new Date().toISOString()
+
+type POStatus = "DRAFT" | "SENT" | "CONFIRMED" | "DELIVERED" | "CLOSED"
+
+const STATUS_FLOW: Record<POStatus, POStatus[]> = {
+  DRAFT: ["SENT"],
+  SENT: ["CONFIRMED"],
+  CONFIRMED: ["DELIVERED"],
+  DELIVERED: ["CLOSED"],
+  CLOSED: [],
 }
 
-type POItem = {
-  po_item_id: string
-  po_id: string
-  material_id?: string
-  description: string
-  qty: number
-  unit: string
-  unit_price: number
-  subtotal: number
+function n(v: any) {
+  const x = Number(v)
+  return Number.isFinite(x) ? x : 0
 }
 
-// Helper: Validate vendor exists
-async function validateVendor(vendor_id: string): Promise<boolean> {
+async function getRows(range: string) {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${VENDOR_SHEET}!A2:A`,
+    range,
   })
-  const vendors = (res.data.values || []).map(r => r[0])
-  return vendors.includes(vendor_id)
+  return res.data.values || []
 }
 
-// Helper: Validate PR exists and get its status
-async function validatePR(pr_id: string): Promise<{ exists: boolean; status: string }> {
-  const res = await sheets.spreadsheets.values.get({
+async function validateExist(sheet: string, id: string) {
+  const rows = await getRows(`${sheet}!A2:A`)
+  return rows.map(r => r[0]).includes(id)
+}
+
+async function logAudit(po_id: string, action: string, oldStatus: string, newStatus: string, user: string) {
+  await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
-    range: `${PR_SHEET}!A2:G`,
+    range: `${AUDIT_SHEET}!A:G`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[
+        "LOG-" + nanoid(8).toUpperCase(),
+        po_id,
+        action,
+        oldStatus,
+        newStatus,
+        user,
+        now()
+      ]]
+    }
   })
-  const rows = res.data.values || []
-  const pr = rows.find(r => r[0] === pr_id && !r[14])
-  
-  if (!pr) return { exists: false, status: "" }
-  return { exists: true, status: pr[6] || "" }
 }
 
-// Helper: Validate project exists
-async function validateProject(project_id: string): Promise<boolean> {
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range: `${PROJECT_SHEET}!A2:A`,
-  })
-  const projects = (res.data.values || []).map(r => r[0])
-  return projects.includes(project_id)
-}
-
-// Valid status transitions
-const VALID_PO_STATUS_TRANSITIONS: Record<string, string[]> = {
-  "DRAFT": ["SENT"],
-  "SENT": ["CONFIRMED"],
-  "CONFIRMED": ["DELIVERED"],
-  "DELIVERED": ["CLOSED"],
-  "CLOSED": [],
-}
-
-// ==================== GET ALL POs ====================
-export async function GET(req: Request) {
-  try {
-    const { searchParams } = new URL(req.url)
-    const status = searchParams.get('status')
-    const vendor_id = searchParams.get('vendor_id')
-    const project_id = searchParams.get('project_id')
-    const includeDeleted = searchParams.get('include_deleted') === 'true'
-
-    const poRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `${PO_SHEET}!A2:P`,
-    })
-
-    let poRows = poRes.data.values || []
-    
-    // Filter out deleted
-    if (!includeDeleted) {
-      poRows = poRows.filter(r => !r[15]) // kolom P = deleted_at
-    }
-
-    const pos: PO[] = poRows.map(r => ({
-      po_id: r[0] || "",
-      po_code: r[1] || "",
-      vendor_id: r[2] || "",
-      project_id: r[3] || "",
-      pr_id: r[4] || undefined,
-      order_date: r[5] || new Date().toISOString(),
-      delivery_date: r[6] || undefined,
-      status: r[7] as PO["status"] || "DRAFT",
-      notes: r[8] || undefined,
-      total_amount: Number(r[9] || 0),
-      created_by: r[10] || undefined,
-      updated_by: r[11] || undefined,
-      deleted_by: r[12] || undefined,
-      created_at: r[13] || "",
-      updated_at: r[14] || "",
-      deleted_at: r[15] || null,
-    }))
-
-    // Apply filters
-    let filtered = pos
-    if (status) {
-      filtered = filtered.filter(p => p.status === status)
-    }
-    if (vendor_id) {
-      filtered = filtered.filter(p => p.vendor_id === vendor_id)
-    }
-    if (project_id) {
-      filtered = filtered.filter(p => p.project_id === project_id)
-    }
-
-    // Fetch items for each PO
-    const itemRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `${PO_ITEM_SHEET}!A2:J`,
-    })
-    const itemRows = itemRes.data.values || []
-    
-    const itemsByPO = itemRows.reduce((acc, r) => {
-      const po_id = r[1]
-      if (!acc[po_id]) acc[po_id] = []
-      acc[po_id].push({
-        po_item_id: r[0] || "",
-        po_id: r[1] || "",
-        material_id: r[2] || undefined,
-        description: r[3] || "",
-        qty: Number(r[4] || 0),
-        unit: r[5] || "",
-        unit_price: Number(r[6] || 0),
-        subtotal: Number(r[7] || 0),
-      })
-      return acc
-    }, {} as Record<string, POItem[]>)
-
-    const result = filtered.map(po => ({
-      ...po,
-      items: itemsByPO[po.po_id] || []
-    }))
-
-    return NextResponse.json({
-      success: true,
-      data: result,
-      error: null
-    })
-
-  } catch (error) {
-    console.error("GET POs ERROR:", error)
-    return NextResponse.json({
-      success: false,
-      data: null,
-      error: "Failed to fetch POs"
-    }, { status: 500 })
-  }
-}
-
-// ==================== CREATE PO ====================
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    
-    // Validate required fields
-    if (!body.po_code) {
-      return NextResponse.json({
-        success: false,
-        data: null,
-        error: "po_code is required"
-      }, { status: 400 })
-    }
-    
-    if (!body.vendor_id) {
-      return NextResponse.json({
-        success: false,
-        data: null,
-        error: "vendor_id is required"
-      }, { status: 400 })
-    }
 
-    if (!body.project_id) {
-      return NextResponse.json({
-        success: false,
-        data: null,
-        error: "project_id is required"
-      }, { status: 400 })
-    }
+    if (!body.po_code || !body.vendor_id || !body.project_id)
+      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 })
 
-    // Validate vendor exists
-    const vendorExists = await validateVendor(body.vendor_id)
-    if (!vendorExists) {
-      return NextResponse.json({
-        success: false,
-        data: null,
-        error: "Vendor not found"
-      }, { status: 400 })
-    }
+    if (!(await validateExist(VENDOR_SHEET, body.vendor_id)))
+      return NextResponse.json({ success: false, error: "Vendor not found" }, { status: 400 })
 
-    // Validate project exists
-    const projectExists = await validateProject(body.project_id)
-    if (!projectExists) {
-      return NextResponse.json({
-        success: false,
-        data: null,
-        error: "Project not found"
-      }, { status: 400 })
-    }
+    if (!(await validateExist(PROJECT_SHEET, body.project_id)))
+      return NextResponse.json({ success: false, error: "Project not found" }, { status: 400 })
 
-    // Validate PR if provided
-    if (body.pr_id) {
-      const pr = await validatePR(body.pr_id)
-      if (!pr.exists) {
-        return NextResponse.json({
-          success: false,
-          data: null,
-          error: "PR not found"
-        }, { status: 400 })
-      }
-      
-      // Rule: Cannot create PO without APPROVED PR (unless manual override)
-      if (!body.manual_override && pr.status !== "APPROVED") {
-        return NextResponse.json({
-          success: false,
-          data: null,
-          error: "PR must be APPROVED before creating PO"
-        }, { status: 400 })
-      }
-    }
-
-    // Check duplicate po_code
-    const checkRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `${PO_SHEET}!B2:B`,
-    })
-    
-    const existingCodes = (checkRes.data.values || []).map(r => String(r[0] || "").trim().toLowerCase())
-    if (existingCodes.includes(String(body.po_code).trim().toLowerCase())) {
-      return NextResponse.json({
-        success: false,
-        data: null,
-        error: "po_code must be unique"
-      }, { status: 400 })
-    }
+    const existing = await getRows(`${PO_SHEET}!B2:P`)
+    const dup = existing.some(r =>
+      String(r[0]).toLowerCase() === body.po_code.toLowerCase() &&
+      !r[14]
+    )
+    if (dup)
+      return NextResponse.json({ success: false, error: "po_code already exists" }, { status: 409 })
 
     const po_id = "PO-" + nanoid(8).toUpperCase()
-    const now = new Date().toISOString()
+    const created_at = now()
+    const version = 1
 
-    // Calculate total amount from items
-    let total_amount = 0
+    let total = 0
     const items = body.items || []
-    const createdItems: POItem[] = []
 
-    for (const item of items) {
-      if (!item.description) continue
-      
-      const qty = Number(item.qty || 0)
-      const unit_price = Number(item.unit_price || 0)
-      const subtotal = qty * unit_price
-      total_amount += subtotal
+    if (!items.length)
+      return NextResponse.json({ success: false, error: "Items required" }, { status: 400 })
+
+    for (const it of items) {
+      const qty = n(it.qty)
+      const price = n(it.unit_price)
+
+      if (!it.description || qty <= 0 || price < 0)
+        return NextResponse.json({ success: false, error: "Invalid item data" }, { status: 400 })
+
+      total += qty * price
     }
 
-    // Create PO header
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${PO_SHEET}!A:P`,
+      range: `${PO_SHEET}!A:Q`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
@@ -302,29 +122,26 @@ export async function POST(req: Request) {
           body.vendor_id,
           body.project_id,
           body.pr_id || "",
-          body.order_date || now,
+          body.order_date || created_at,
           body.delivery_date || "",
-          body.status || "DRAFT",
+          "DRAFT",
           body.notes || "",
-          total_amount,
+          total,
           body.created_by || "SYSTEM",
           body.created_by || "SYSTEM",
           "",
-          now,
-          now,
+          created_at,
+          created_at,
           "",
+          version
         ]]
       }
     })
 
-    // Create PO items
-    for (const item of items) {
-      if (!item.description) continue
-
-      const po_item_id = "POI-" + nanoid(8).toUpperCase()
-      const qty = Number(item.qty || 0)
-      const unit_price = Number(item.unit_price || 0)
-      const subtotal = qty * unit_price
+    for (const it of items) {
+      const qty = n(it.qty)
+      const price = n(it.unit_price)
+      const subtotal = qty * price
 
       await sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_ID,
@@ -332,60 +149,171 @@ export async function POST(req: Request) {
         valueInputOption: "USER_ENTERED",
         requestBody: {
           values: [[
-            po_item_id,
+            "POI-" + nanoid(8).toUpperCase(),
             po_id,
-            item.material_id || "",
-            item.description,
+            it.material_id || "",
+            it.description,
             qty,
-            item.unit || "",
-            unit_price,
+            it.unit || "",
+            price,
             subtotal,
-            now,
-            now,
+            created_at,
+            created_at
           ]]
         }
       })
-
-      createdItems.push({
-        po_item_id,
-        po_id,
-        material_id: item.material_id,
-        description: item.description,
-        qty,
-        unit: item.unit || "",
-        unit_price,
-        subtotal,
-      })
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        po_id,
-        po_code: body.po_code,
-        vendor_id: body.vendor_id,
-        project_id: body.project_id,
-        pr_id: body.pr_id,
-        order_date: body.order_date || now,
-        delivery_date: body.delivery_date,
-        status: body.status || "DRAFT",
-        notes: body.notes,
-        total_amount,
-        created_by: body.created_by || "SYSTEM",
-        updated_by: body.created_by || "SYSTEM",
-        created_at: now,
-        updated_at: now,
-        items: createdItems,
-      },
-      error: null
-    }, { status: 201 })
+    return NextResponse.json({ success: true, po_id })
 
-  } catch (error) {
-    console.error("CREATE PO ERROR:", error)
-    return NextResponse.json({
-      success: false,
-      data: null,
-      error: "Failed to create PO"
-    }, { status: 500 })
+  } catch (err) {
+    console.error(err)
+    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 })
   }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const body = await req.json()
+    const { po_id, if_match_version, status, items, updated_by } = body
+
+    const rows = await getRows(`${PO_SHEET}!A2:Q`)
+    const index = rows.findIndex(r => r[0] === po_id && !r[15])
+    if (index === -1)
+      return NextResponse.json({ success: false, error: "PO not found" }, { status: 404 })
+
+    const row = rows[index]
+    const currentStatus = row[7] as POStatus
+    const currentVersion = n(row[16])
+
+    if (currentVersion !== if_match_version)
+      return NextResponse.json({ success: false, error: "Version conflict" }, { status: 409 })
+
+    if (currentStatus === "DELIVERED" || currentStatus === "CLOSED")
+      return NextResponse.json({ success: false, error: "PO locked" }, { status: 409 })
+
+    if (status && !STATUS_FLOW[currentStatus].includes(status))
+      return NextResponse.json({ success: false, error: "Invalid status transition" }, { status: 400 })
+
+    let total = 0
+
+    if (items && items.length) {
+      // delete old items
+      const itemRows = await getRows(`${PO_ITEM_SHEET}!A2:J`)
+      const filtered = itemRows.filter(r => r[1] !== po_id)
+
+      await sheets.spreadsheets.values.clear({
+        spreadsheetId: SHEET_ID,
+        range: `${PO_ITEM_SHEET}!A2:J`,
+      })
+
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: SHEET_ID,
+        range: `${PO_ITEM_SHEET}!A2`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: { values: filtered }
+      })
+
+      for (const it of items) {
+        const qty = n(it.qty)
+        const price = n(it.unit_price)
+        const subtotal = qty * price
+        total += subtotal
+
+        await sheets.spreadsheets.values.append({
+          spreadsheetId: SHEET_ID,
+          range: `${PO_ITEM_SHEET}!A:J`,
+          valueInputOption: "USER_ENTERED",
+          requestBody: {
+            values: [[
+              "POI-" + nanoid(8).toUpperCase(),
+              po_id,
+              it.material_id || "",
+              it.description,
+              qty,
+              it.unit || "",
+              price,
+              subtotal,
+              now(),
+              now()
+            ]]
+          }
+        })
+      }
+    } else {
+      total = n(row[9])
+    }
+
+    const newVersion = currentVersion + 1
+    const updated_at = now()
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range: `${PO_SHEET}!H${index + 2}:Q${index + 2}`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [[
+          status || currentStatus,
+          row[8],
+          total,
+          updated_by || "SYSTEM",
+          row[12],
+          row[13],
+          updated_at,
+          row[15],
+          newVersion
+        ]]
+      }
+    })
+
+    if (status === "CONFIRMED" && row[4]) {
+      const prRows = await getRows(`${PR_SHEET}!A2:O`)
+      const prIndex = prRows.findIndex(r => r[0] === row[4])
+      if (prIndex !== -1) {
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: SHEET_ID,
+          range: `${PR_SHEET}!G${prIndex + 2}`,
+          valueInputOption: "USER_ENTERED",
+          requestBody: { values: [["ORDERED"]] }
+        })
+      }
+    }
+
+    await logAudit(po_id, "UPDATE", currentStatus, status || currentStatus, updated_by || "SYSTEM")
+
+    return NextResponse.json({ success: true, version: newVersion })
+
+  } catch (err) {
+    console.error(err)
+    return NextResponse.json({ success: false, error: "Update failed" }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const po_id = searchParams.get("po_id")
+  const deleted_by = searchParams.get("deleted_by") || "SYSTEM"
+
+  const rows = await getRows(`${PO_SHEET}!A2:Q`)
+  const index = rows.findIndex(r => r[0] === po_id && !r[15])
+  if (index === -1)
+    return NextResponse.json({ success: false, error: "PO not found" }, { status: 404 })
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: `${PO_SHEET}!M${index + 2}:P${index + 2}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[
+        deleted_by,
+        rows[index][13],
+        now(),
+        now()
+      ]]
+    }
+  })
+
+  await logAudit(po_id, "DELETE", rows[index][7], "DELETED", deleted_by)
+
+  return NextResponse.json({ success: true })
 }

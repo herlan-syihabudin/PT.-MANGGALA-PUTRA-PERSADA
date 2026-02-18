@@ -72,7 +72,6 @@ import {
   Umbrella,
   Thermometer,
   ThermometerSun,
-  ThermometerSnow,
   ThermometerLow,
   Gauge,
   GaugeCircle,

@@ -29,7 +29,7 @@ export async function GET(req: Request) {
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2:Q`,
+      range: `${SHEET_NAME}!A2:S`,
     })
 
     const rows = (res.data.values || []).filter(r => r[0])
@@ -58,6 +58,8 @@ export async function GET(req: Request) {
         converted_project_id: row[14] || "", // 👉 penentu WON
         created_at: row[15] || "",
         created_by: row[16] || "",
+        stage: row[17] || "NEW",
+converted_proposal_id: row[18] || "",
       }
     })
 
@@ -161,28 +163,30 @@ export async function POST(req: Request) {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:Q`,
+      range: `${SHEET_NAME}!A:S`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          inquiryId,                                   // A
-          body.tanggal_masuk || new Date().toISOString().split("T")[0], // B
-          String(body.customer_id).trim(),              // C
-          String(body.customer_name || "").trim(),      // D
-          String(body.nama_pekerjaan).trim(),           // E
-          String(body.layanan || "").trim(),            // F
-          budget,                                       // G
-          String(body.sumber || "").trim(),             // H
-          String(body.assigned_to || "").trim(),        // I
-          "new",                                        // J
-          String(body.prioritas || "normal").trim(),    // K
-          String(body.lokasi || "").trim(),             // L
-          String(body.catatan || "").trim(),            // M
-          "",                                           // N converted_rab_id
-          "",                                           // O converted_project_id
-          now,                                          // P
-          String(body.created_by || "Marketing").trim() // Q
-        ]],
+  inquiryId,                                   // A
+  body.tanggal_masuk || new Date().toISOString().split("T")[0], // B
+  String(body.customer_id).trim(),              // C
+  String(body.customer_name || "").trim(),      // D
+  String(body.nama_pekerjaan).trim(),           // E
+  String(body.layanan || "").trim(),            // F
+  budget,                                       // G
+  String(body.sumber || "").trim(),             // H
+  String(body.assigned_to || "").trim(),        // I
+  "new",                                        // J
+  String(body.prioritas || "normal").trim(),    // K
+  String(body.lokasi || "").trim(),             // L
+  String(body.catatan || "").trim(),            // M
+  "",                                           // N converted_rab_id
+  "",                                           // O converted_project_id
+  now,                                          // P
+  String(body.created_by || "Marketing").trim(), // Q
+  "NEW",                                        // R stage
+  "",                                           // S converted_proposal_id
+]],
       },
     })
 

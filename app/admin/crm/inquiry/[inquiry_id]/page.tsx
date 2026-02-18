@@ -964,4 +964,3 @@ function MetricCard({ label, value, max, color }: any) {
   )
 }
 
-bakal berhasil build gk ya?

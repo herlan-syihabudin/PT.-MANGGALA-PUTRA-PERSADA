@@ -70,6 +70,36 @@ async function logAudit(po_id: string, action: string, oldStatus: string, newSta
   })
 }
 
+/* ================= GET ================= */
+
+export async function GET() {
+  try {
+    const rows = await getRows(`${PO_SHEET}!A2:Q`)
+
+    const data = rows
+      .filter(r => !r[12]) // deleted_by kosong
+      .map(r => ({
+        po_id: r[0],
+        po_code: r[1],
+        vendor_id: r[2],
+        project_id: r[3],
+        pr_id: r[4],
+        order_date: r[5],
+        delivery_date: r[6],
+        status: r[7],
+        total_amount: n(r[9]),
+        version: n(r[16])
+      }))
+
+    return NextResponse.json({ success: true, data })
+
+  } catch (err) {
+    return NextResponse.json({ success: false, error: "Failed to load POs" }, { status: 500 })
+  }
+}
+
+/* ================= POST ================= */
+
 export async function POST(req: Request) {
   try {
     const body = await req.json()
@@ -83,11 +113,8 @@ export async function POST(req: Request) {
     if (!(await validateExist(PROJECT_SHEET, body.project_id)))
       return NextResponse.json({ success: false, error: "Project not found" }, { status: 400 })
 
-    const existing = await getRows(`${PO_SHEET}!B2:P`)
-    const dup = existing.some(r =>
-      String(r[0]).toLowerCase() === body.po_code.toLowerCase() &&
-      !r[14]
-    )
+    const existing = await getRows(`${PO_SHEET}!B2:B`)
+    const dup = existing.some(r => String(r[0]).toLowerCase() === body.po_code.toLowerCase())
     if (dup)
       return NextResponse.json({ success: false, error: "po_code already exists" }, { status: 409 })
 
@@ -129,10 +156,10 @@ export async function POST(req: Request) {
           total,
           body.created_by || "SYSTEM",
           body.created_by || "SYSTEM",
-          "",
+          "",             // deleted_by
           created_at,
           created_at,
-          "",
+          "",             // deleted_at
           version
         ]]
       }
@@ -164,7 +191,10 @@ export async function POST(req: Request) {
       })
     }
 
-    return NextResponse.json({ success: true, po_id })
+    return NextResponse.json({
+      success: true,
+      data: { po_id }
+    })
 
   } catch (err) {
     console.error(err)
@@ -172,13 +202,15 @@ export async function POST(req: Request) {
   }
 }
 
+/* ================= PATCH ================= */
+
 export async function PATCH(req: Request) {
   try {
     const body = await req.json()
     const { po_id, if_match_version, status, items, updated_by } = body
 
     const rows = await getRows(`${PO_SHEET}!A2:Q`)
-    const index = rows.findIndex(r => r[0] === po_id && !r[15])
+    const index = rows.findIndex(r => r[0] === po_id && !r[12])
     if (index === -1)
       return NextResponse.json({ success: false, error: "PO not found" }, { status: 404 })
 
@@ -195,10 +227,11 @@ export async function PATCH(req: Request) {
     if (status && !STATUS_FLOW[currentStatus].includes(status))
       return NextResponse.json({ success: false, error: "Invalid status transition" }, { status: 400 })
 
-    let total = 0
+    let total = n(row[9])
 
     if (items && items.length) {
-      // delete old items
+      total = 0
+
       const itemRows = await getRows(`${PO_ITEM_SHEET}!A2:J`)
       const filtered = itemRows.filter(r => r[1] !== po_id)
 
@@ -207,12 +240,14 @@ export async function PATCH(req: Request) {
         range: `${PO_ITEM_SHEET}!A2:J`,
       })
 
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: SHEET_ID,
-        range: `${PO_ITEM_SHEET}!A2`,
-        valueInputOption: "USER_ENTERED",
-        requestBody: { values: filtered }
-      })
+      if (filtered.length) {
+        await sheets.spreadsheets.values.append({
+          spreadsheetId: SHEET_ID,
+          range: `${PO_ITEM_SHEET}!A2`,
+          valueInputOption: "USER_ENTERED",
+          requestBody: { values: filtered }
+        })
+      }
 
       for (const it of items) {
         const qty = n(it.qty)
@@ -240,8 +275,6 @@ export async function PATCH(req: Request) {
           }
         })
       }
-    } else {
-      total = n(row[9])
     }
 
     const newVersion = currentVersion + 1
@@ -266,19 +299,6 @@ export async function PATCH(req: Request) {
       }
     })
 
-    if (status === "CONFIRMED" && row[4]) {
-      const prRows = await getRows(`${PR_SHEET}!A2:O`)
-      const prIndex = prRows.findIndex(r => r[0] === row[4])
-      if (prIndex !== -1) {
-        await sheets.spreadsheets.values.update({
-          spreadsheetId: SHEET_ID,
-          range: `${PR_SHEET}!G${prIndex + 2}`,
-          valueInputOption: "USER_ENTERED",
-          requestBody: { values: [["ORDERED"]] }
-        })
-      }
-    }
-
     await logAudit(po_id, "UPDATE", currentStatus, status || currentStatus, updated_by || "SYSTEM")
 
     return NextResponse.json({ success: true, version: newVersion })
@@ -289,13 +309,15 @@ export async function PATCH(req: Request) {
   }
 }
 
+/* ================= DELETE ================= */
+
 export async function DELETE(req: Request) {
   const { searchParams } = new URL(req.url)
   const po_id = searchParams.get("po_id")
   const deleted_by = searchParams.get("deleted_by") || "SYSTEM"
 
   const rows = await getRows(`${PO_SHEET}!A2:Q`)
-  const index = rows.findIndex(r => r[0] === po_id && !r[15])
+  const index = rows.findIndex(r => r[0] === po_id && !r[12])
   if (index === -1)
     return NextResponse.json({ success: false, error: "PO not found" }, { status: 404 })
 

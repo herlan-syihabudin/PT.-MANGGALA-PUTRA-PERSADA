@@ -809,6 +809,15 @@ function KanbanView({
   )
 }
 
+const BAR_COLOR: Record<string, string> = {
+  blue: "bg-blue-500",
+  orange: "bg-orange-500",
+  yellow: "bg-yellow-500",
+  green: "bg-green-500",
+  purple: "bg-purple-500",
+  red: "bg-red-500",
+}
+
 // ================= ANALYTICS VIEW =================
 function AnalyticsView({ 
   stats, 
@@ -844,20 +853,11 @@ function AnalyticsView({
                     <span className="font-medium">{formatCompactCurrency(data.value)}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                     const BAR_COLOR: Record<string, string> = {
-  blue: "bg-blue-500",
-  orange: "bg-orange-500",
-  yellow: "bg-yellow-500",
-  green: "bg-green-500",
-  purple: "bg-purple-500",
-  red: "bg-red-500",
-}
-                    <div
-  className={`h-2 rounded-full ${BAR_COLOR[config.color]}`}
-  style={{ width: `${percentage}%` }}
-/>
-                  </div>
+  <div
+    className={`h-2 rounded-full ${BAR_COLOR[config.color as keyof typeof BAR_COLOR]}`}
+    style={{ width: `${percentage}%` }}
+  />
+</div>
                   <div className="flex justify-between text-xs text-gray-400 mt-1">
                     <span>{data.count} deals</span>
                     <span>{percentage.toFixed(1)}%</span>

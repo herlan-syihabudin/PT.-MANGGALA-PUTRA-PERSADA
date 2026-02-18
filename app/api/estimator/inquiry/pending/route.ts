@@ -26,7 +26,7 @@ export async function GET() {
   .filter(row => row[0])
   .filter(row => {
     const status = (row[9] || "").toString().toLowerCase()
-    return status.includes("estim")
+    return status === "estimating"
   })
   .filter(row => {
     const rabId = (row[13] || "").toString().trim()

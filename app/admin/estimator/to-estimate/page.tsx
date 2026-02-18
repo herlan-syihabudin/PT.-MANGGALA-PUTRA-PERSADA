@@ -11,8 +11,6 @@ type Inquiry = {
   prioritas?: string
 }
 
-/* ================= FETCH FUNCTION ================= */
-
 async function fetchPending(): Promise<Inquiry[]> {
   const base = process.env.NEXT_PUBLIC_BASE_URL
 
@@ -24,8 +22,6 @@ async function fetchPending(): Promise<Inquiry[]> {
   if (!res.ok) return []
   return res.json()
 }
-
-/* ================= PAGE ================= */
 
 export default async function ToEstimatePage() {
   const data = await fetchPending()

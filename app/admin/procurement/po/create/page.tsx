@@ -29,11 +29,10 @@ export default function CreatePOPage() {
   /* ================= COMPUTED ================= */
 
   const total = useMemo(() => {
-    return form.items.reduce(
-      (sum, item) => sum + (item.subtotal || 0),
-      0
-    )
-  }, [form.items])
+  return form.items.reduce((sum, item) => {
+    return sum + (item.qty || 0) * (item.estimated_price || 0)
+  }, 0)
+}, [form.items])
 
   const isValid =
     form.po_code.trim() !== '' &&

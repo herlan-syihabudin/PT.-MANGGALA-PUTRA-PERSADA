@@ -175,52 +175,105 @@ export default function InquiryDetailPage() {
   }
 
   // ================= ANALYTICS =================
-  const analytics = useMemo(() => {
-    if (!data) return null
+const analytics = useMemo(() => {
+  if (!data) return null
 
-    const tanggalMasuk = new Date(data.tanggal_masuk).getTime()
-    const now = Date.now()
-    const daysInPipeline = Math.floor((now - tanggalMasuk) / (1000 * 60 * 60 * 24))
+  const tanggalMasuk = new Date(data.tanggal_masuk).getTime()
+  const now = Date.now()
+  const daysInPipeline = isNaN(tanggalMasuk)
+    ? 0
+    : Math.floor((now - tanggalMasuk) / (1000 * 60 * 60 * 24))
 
-    // Win probability based on status
-    const probabilityMap: Record<string, number> = {
-      new: 20,
-      survey: 40,
-      estimating: 65,
-      sent: 80,
-      won: 100,
-      lost: 0,
-    }
-    let probability = probabilityMap[data.status?.toLowerCase()] || 10
+  /* ================= BASE PROBABILITY ================= */
 
-    // Adjust based on pipeline age
-    if (daysInPipeline > 30) probability = Math.round(probability * 0.7)
-    else if (daysInPipeline > 14) probability = Math.round(probability * 0.85)
+  const probabilityMap: Record<string, number> = {
+    new: 20,
+    survey: 40,
+    estimating: 65,
+    sent: 80,
+    won: 100,
+    lost: 0,
+  }
 
-    // Lead quality score
-    let qualityScore = 0
-    if (data.estimasi_nilai) {
-      if (data.estimasi_nilai > 500000000) qualityScore += 40
-      else if (data.estimasi_nilai > 100000000) qualityScore += 30
-      else if (data.estimasi_nilai > 50000000) qualityScore += 20
-      else qualityScore += 10
-    }
+  let probability = probabilityMap[data.status?.toLowerCase()] ?? 10
 
-    if (data.prioritas?.toLowerCase() === 'high') qualityScore += 20
-    if (data.prioritas?.toLowerCase() === 'medium') qualityScore += 10
-    if (data.lokasi) qualityScore += 10
+  /* ================= AGE DECAY ENGINE ================= */
 
-    return {
-      daysInPipeline,
-      probability,
-      qualityScore: Math.min(100, qualityScore),
-      expectedRevenue: data.estimasi_nilai ? 
-        Math.round(data.estimasi_nilai * (probability / 100)) : 0,
-      isAging: daysInPipeline > 14,
-      isStale: daysInPipeline > 30,
-      needsFollowUp: daysInPipeline > 7 && activities.length < 3,
-    }
-  }, [data, activities])
+  if (daysInPipeline > 45) probability *= 0.6
+  else if (daysInPipeline > 30) probability *= 0.7
+  else if (daysInPipeline > 14) probability *= 0.85
+
+  probability = Math.round(probability)
+
+  /* ================= LEAD QUALITY SCORE ================= */
+
+  let qualityScore = 0
+
+  if (data.estimasi_nilai) {
+    if (data.estimasi_nilai > 1000000000) qualityScore += 45
+    else if (data.estimasi_nilai > 500000000) qualityScore += 35
+    else if (data.estimasi_nilai > 100000000) qualityScore += 25
+    else if (data.estimasi_nilai > 50000000) qualityScore += 15
+    else qualityScore += 8
+  }
+
+  if (data.prioritas?.toLowerCase() === "high") qualityScore += 20
+  if (data.prioritas?.toLowerCase() === "medium") qualityScore += 10
+
+  if (data.assigned_to) qualityScore += 5
+  if (activities.length >= 2) qualityScore += 5
+
+  qualityScore = Math.min(100, qualityScore)
+
+  /* ================= DEAL SCORE (BARU 🔥) ================= */
+
+  const dealScore = Math.round(
+    probability * 0.4 +
+    qualityScore * 0.4 +
+    (daysInPipeline < 14 ? 20 : 10)
+  )
+
+  /* ================= EXPECTED REVENUE ================= */
+
+  const expectedRevenue = data.estimasi_nilai
+    ? Math.round(data.estimasi_nilai * (probability / 100))
+    : 0
+
+  /* ================= INTELLIGENCE FLAGS ================= */
+
+  const isAging = daysInPipeline > 14
+  const isStale = daysInPipeline > 30
+  const needsFollowUp =
+    daysInPipeline > 7 && activities.length < 2
+
+  /* ================= AI RECOMMENDATION ================= */
+
+  let recommendation = "Monitor progress"
+
+  if (isStale)
+    recommendation = "Escalate atau close sebagai lost"
+
+  else if (needsFollowUp)
+    recommendation = "Segera lakukan follow up"
+
+  else if (data.status?.toLowerCase() === "estimating")
+    recommendation = "Push ke proposal dan kirim penawaran"
+
+  else if (probability > 75)
+    recommendation = "High chance deal – prioritaskan closing"
+
+  return {
+    daysInPipeline,
+    probability,
+    qualityScore,
+    dealScore,
+    expectedRevenue,
+    isAging,
+    isStale,
+    needsFollowUp,
+    recommendation,
+  }
+}, [data, activities])
 
   if (loading) {
     return (
@@ -328,6 +381,13 @@ export default function InquiryDetailPage() {
               value={`Rp ${analytics.expectedRevenue.toLocaleString('id-ID')}`}
               color="green"
             />
+            <AnalyticCard
+  icon={<Star className="text-amber-600" size={20} />}
+  label="Deal Score"
+  value={`${analytics.dealScore}/100`}
+  progress={analytics.dealScore}
+  color="amber"
+/>
             <AnalyticCard
               icon={<Activity className="text-red-600" size={20} />}
               label="Follow Up"
@@ -883,6 +943,14 @@ function PriorityBadge({ priority }: { priority: string }) {
 }
 
 function StatBar({ label, value, color }: any) {
+  const colorMap: Record<string, string> = {
+    blue: "bg-blue-600",
+    green: "bg-green-600",
+    red: "bg-red-600",
+    purple: "bg-purple-600",
+    amber: "bg-amber-600",
+  }
+
   return (
     <div>
       <div className="flex justify-between text-sm mb-1">
@@ -890,8 +958,8 @@ function StatBar({ label, value, color }: any) {
         <span className="font-medium">{value}%</span>
       </div>
       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-        <div 
-          className={`h-full bg-${color}-600 rounded-full transition-all duration-500`}
+        <div
+          className={`h-full ${colorMap[color] || "bg-blue-600"} rounded-full transition-all duration-500`}
           style={{ width: `${value}%` }}
         />
       </div>

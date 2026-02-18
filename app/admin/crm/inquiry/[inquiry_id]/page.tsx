@@ -2,12 +2,14 @@
 
 import { useEffect, useState, useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { motion } from "framer-motion"
 import {
   ArrowLeft,
   CheckCircle,
   User,
   FileText,
   DollarSign,
+  ArrowRight,
   Clock,
   Activity,
   AlertTriangle,
@@ -15,16 +17,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
-interface InquiryData {
-  status?: string
-  tanggal_masuk?: string
-  layanan?: string | null
-  customer_name?: string
-  nama_pekerjaan?: string
-  estimasi_nilai?: string | number
-  converted_rab_id?: string
-  inquiry_id?: string
-}
+const STEPS = ["new", "survey", "estimating", "sent"]
 
 export default function InquiryDetailPage() {
   const params = useParams()
@@ -33,18 +26,16 @@ export default function InquiryDetailPage() {
   const inquiry_id =
     typeof params.inquiry_id === "string"
       ? params.inquiry_id
-      : params.inquiry_id?.[0] || ""
+      : params.inquiry_id?.[0]
 
-  const [data, setData] = useState<InquiryData | null>(null)
+  const [data, setData] = useState<any>(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [error, setError] = useState(false)
 
-  /* ================= LOAD DATA ================= */
+  /* ================= LOAD ================= */
+
   useEffect(() => {
-    if (!inquiry_id) {
-      setError(true)
-      return
-    }
+    if (!inquiry_id) return
 
     const load = async () => {
       try {
@@ -52,31 +43,71 @@ export default function InquiryDetailPage() {
           cache: "no-store",
         })
 
-        if (!res.ok) throw new Error("Failed to fetch")
-
+        if (!res.ok) throw new Error()
         const json = await res.json()
-
-        setData({
-          status: json.status ?? "new",
-          tanggal_masuk: json.tanggal_masuk ?? "",
-          layanan: json.layanan ?? null,
-          customer_name: json.customer_name ?? "",
-          nama_pekerjaan: json.nama_pekerjaan ?? "",
-          estimasi_nilai: json.estimasi_nilai ?? 0,
-          converted_rab_id: json.converted_rab_id,
-          inquiry_id: json.inquiry_id || inquiry_id,
-        })
-      } catch (err) {
-        console.error("Error:", err)
+        setData(json)
+      } catch {
         setError(true)
-        toast.error("Gagal memuat data")
       }
     }
 
     load()
   }, [inquiry_id])
 
-  /* ================= CONVERT TO RAB ================= */
+  /* ================= DERIVED STATE ================= */
+
+  const statusLower = data?.status?.toLowerCase() || "new"
+
+  const currentStepIndex =
+    STEPS.indexOf(statusLower) >= 0
+      ? STEPS.indexOf(statusLower)
+      : 0
+
+  const services = data?.layanan
+    ? data.layanan.split("|")
+    : []
+
+  const pipelineAge = useMemo(() => {
+    if (!data?.tanggal_masuk) return 0
+    const date = new Date(data.tanggal_masuk)
+    if (isNaN(date.getTime())) return 0
+    return Math.floor((Date.now() - date.getTime()) / 86400000)
+  }, [data?.tanggal_masuk])
+
+  const conversionProbability = {
+    new: 20,
+    survey: 40,
+    estimating: 65,
+    sent: 80,
+    won: 100,
+    lost: 0,
+  }[statusLower] ?? 10
+
+  const estimasiValue = Number(data?.estimasi_nilai || 0)
+
+  const expectedRevenue = Math.round(
+    estimasiValue * (conversionProbability / 100)
+  )
+
+  const themeColor = useMemo(() => {
+    if (statusLower === "lost") return "red"
+    if (conversionProbability > 70) return "green"
+    if (conversionProbability > 30) return "blue"
+    return "slate"
+  }, [conversionProbability, statusLower])
+
+  const heatLevel =
+    pipelineAge > 10
+      ? "high"
+      : pipelineAge > 5
+      ? "medium"
+      : "normal"
+
+  const surveyTooLong =
+    statusLower === "survey" && pipelineAge > 5
+
+  /* ================= CONVERT ================= */
+
   const convertToRAB = async () => {
     if (!inquiry_id) return
 
@@ -90,92 +121,39 @@ export default function InquiryDetailPage() {
       })
 
       const result = await res.json()
-
-      if (!res.ok) throw new Error(result.message)
+      if (!res.ok) throw new Error()
 
       toast.success("Berhasil convert ke RAB")
       router.push(`/admin/estimator/rab/${result.rab_id}`)
-    } catch (err) {
-      console.error("Convert error:", err)
+    } catch {
       toast.error("Gagal convert ke RAB")
     } finally {
       setIsUpdating(false)
     }
   }
 
-  /* ================= ERROR STATE ================= */
+  /* ================= EARLY RETURN ================= */
+
   if (error) {
     return (
-      <div className="p-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <AlertTriangle className="w-8 h-8 text-red-500 mb-2" />
-          <h2 className="text-lg font-bold text-red-700 mb-2">
-            Error Loading Data
-          </h2>
-          <button
-            onClick={() => router.back()}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
-          >
-            Kembali
-          </button>
-        </div>
+      <div className="flex items-center justify-center h-96 text-red-500 font-semibold">
+        Data tidak ditemukan / gagal load
       </div>
     )
   }
 
   if (!data) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+      <div className="flex items-center justify-center h-96 text-gray-400 animate-pulse">
+        Loading inquiry data...
       </div>
     )
   }
 
-  /* ================= SAFE DATA ================= */
-  const safeStatus = data.status || "new"
-  const safeTanggalMasuk = data.tanggal_masuk || ""
-  const safeCustomerName = data.customer_name || "-"
-  const safeNamaPekerjaan = data.nama_pekerjaan || "-"
-  const safeLayanan = data.layanan || ""
-
-  const estimasiValue = useMemo(() => {
-    const val = data.estimasi_nilai
-    if (!val) return 0
-    const num = typeof val === "string" ? parseFloat(val) : val
-    return isNaN(num) ? 0 : num
-  }, [data.estimasi_nilai])
-
-  const pipelineAge = useMemo(() => {
-    if (!safeTanggalMasuk) return 0
-    const start = new Date(safeTanggalMasuk).getTime()
-    if (isNaN(start)) return 0
-    return Math.floor((Date.now() - start) / (1000 * 60 * 60 * 24))
-  }, [safeTanggalMasuk])
-
-  const conversionProbability = useMemo(() => {
-    const map: Record<string, number> = {
-      new: 20,
-      survey: 40,
-      estimating: 65,
-      sent: 80,
-      won: 100,
-      lost: 0,
-    }
-    return map[safeStatus.toLowerCase()] ?? 10
-  }, [safeStatus])
-
-  const expectedRevenue = Math.round(
-    estimasiValue * (conversionProbability / 100)
-  )
-
-  const services = useMemo(() => {
-    if (!safeLayanan || typeof safeLayanan !== "string") return []
-    return safeLayanan.split("|").filter(Boolean)
-  }, [safeLayanan])
-
   /* ================= UI ================= */
+
   return (
-    <div className="max-w-7xl mx-auto space-y-10 pb-24 px-4">
+    <div className="max-w-7xl mx-auto space-y-10 pb-24">
 
       {/* HEADER */}
       <div className="flex justify-between items-end">
@@ -186,99 +164,118 @@ export default function InquiryDetailPage() {
           >
             <ArrowLeft size={14} /> BACK
           </button>
-          <h1 className="text-4xl font-extrabold">Inquiry Detail</h1>
+
+          <h1 className="text-4xl font-extrabold tracking-tight">
+            Inquiry Intelligence Panel
+          </h1>
+          <p className="text-gray-500 text-sm">
+            CRM Performance Monitoring
+          </p>
         </div>
+
         <span className="text-xs bg-slate-100 px-3 py-1 rounded-full">
-          ID: {inquiry_id}
+          {inquiry_id}
         </span>
       </div>
 
-      {/* KPI */}
-      <div className="grid grid-cols-4 gap-6">
-        <KPI icon={<TrendingUp size={18} />} label="Win Probability" value={`${conversionProbability}%`} />
-        <KPI icon={<Clock size={18} />} label="Pipeline Age" value={`${pipelineAge} Hari`} />
-        <KPI icon={<Activity size={18} />} label="Efficiency" value={pipelineAge < 7 ? "High" : "Review"} />
-        <KPI icon={<DollarSign size={18} />} label="Potential Revenue" value={`Rp ${expectedRevenue.toLocaleString("id-ID")}`} />
+      {/* STEP PROGRESS */}
+      <div className="bg-white border rounded-3xl p-10 relative">
+        <div className="flex justify-between relative">
+          {STEPS.map((step, index) => {
+            const active = index <= currentStepIndex
+            return (
+              <div key={step} className="flex flex-col items-center flex-1">
+                <motion.div
+                  animate={{ scale: active ? 1 : 0.9 }}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full text-xs font-bold
+                  ${active ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"}`}
+                >
+                  {index + 1}
+                </motion.div>
+
+                <span className="text-xs mt-3 uppercase tracking-wide text-gray-500">
+                  {step}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+
+        <motion.div
+          animate={{
+            width: `${(currentStepIndex / (STEPS.length - 1)) * 100}%`,
+          }}
+          className="absolute bottom-0 left-0 h-1 bg-blue-600 rounded-full"
+        />
       </div>
 
-      {/* MAIN */}
-      <div className="grid grid-cols-3 gap-8">
-        <div className="col-span-2 bg-white border rounded-3xl p-10 space-y-8">
-          <Info icon={<User size={18} />} label="Customer" value={safeCustomerName} />
-          <Info icon={<FileText size={18} />} label="Pekerjaan" value={safeNamaPekerjaan} />
+      {/* KPI GRID */}
+      <div className="grid lg:grid-cols-4 gap-6">
 
+        <KPI
+          icon={<TrendingUp size={18} />}
+          label="Win Probability"
+          value={`${conversionProbability}%`}
+        />
+
+        <KPI
+          icon={<Clock size={18} />}
+          label="Pipeline Age"
+          value={`${pipelineAge} Hari`}
+          heat={heatLevel}
+        />
+
+        <KPI
+          icon={<DollarSign size={18} />}
+          label="Potential Revenue"
+          value={`Rp ${expectedRevenue.toLocaleString("id-ID")}`}
+        />
+
+        <KPI
+          icon={<Activity size={18} />}
+          label="Efficiency Index"
+          value={
+            pipelineAge < 7
+              ? "High"
+              : "Needs Review"
+          }
+        />
+      </div>
+
+      {surveyTooLong && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 flex items-center gap-4">
+          <AlertTriangle className="text-yellow-600" />
           <div>
-            <p className="text-xs font-semibold text-gray-400 mb-3">Layanan</p>
-            <div className="flex flex-wrap gap-2">
-              {services.length > 0 ? (
-                services.map((s, i) => (
-                  <span key={i} className="px-3 py-1 bg-slate-100 rounded-lg text-xs">
-                    {s}
-                  </span>
-                ))
-              ) : (
-                <span className="text-gray-400">-</span>
-              )}
-            </div>
+            <p className="font-semibold text-yellow-800">
+              Survey terlalu lama
+            </p>
+            <p className="text-sm text-yellow-700">
+              Inquiry sudah {pipelineAge} hari di pipeline.
+            </p>
           </div>
         </div>
+      )}
 
-        <div className="space-y-6">
-          <div className="bg-white border rounded-3xl p-8">
-            <p className="text-xs text-gray-400 mb-2">Estimasi Nilai</p>
-            <h2 className="text-3xl font-extrabold text-blue-600">
-              Rp {estimasiValue.toLocaleString("id-ID")}
-            </h2>
-          </div>
-
-          <div className="bg-white border rounded-3xl p-6">
-            {data.converted_rab_id ? (
-              <button
-                onClick={() => router.push(`/admin/estimator/rab/${data.converted_rab_id}`)}
-                className="w-full py-3 bg-green-600 text-white rounded-xl font-semibold"
-              >
-                <CheckCircle className="inline mr-2" size={18} />
-                View RAB
-              </button>
-            ) : (
-              <button
-                onClick={convertToRAB}
-                disabled={safeStatus !== "estimating" || isUpdating}
-                className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold disabled:opacity-40"
-              >
-                {isUpdating ? "Processing..." : "Convert ke RAB"}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
 
 /* ================= COMPONENTS ================= */
 
-function KPI({ icon, label, value }: any) {
-  return (
-    <div className="border rounded-2xl p-6">
-      <div className="flex items-center gap-4">
-        <div className="text-blue-600">{icon}</div>
-        <div>
-          <p className="text-xs text-gray-400">{label}</p>
-          <p className="font-bold text-lg text-gray-900">{value}</p>
-        </div>
-      </div>
-    </div>
-  )
-}
+function KPI({ icon, label, value, heat }: any) {
+  const heatColor =
+    heat === "high"
+      ? "border-red-300 bg-red-50"
+      : heat === "medium"
+      ? "border-yellow-300 bg-yellow-50"
+      : "border-gray-200 bg-white"
 
-function Info({ icon, label, value }: any) {
   return (
-    <div className="flex items-start gap-4">
+    <div className={`border rounded-2xl p-6 flex items-center gap-4 ${heatColor}`}>
       <div className="text-blue-600">{icon}</div>
       <div>
-        <p className="text-xs text-gray-400 mb-1">{label}</p>
-        <p className="font-semibold text-gray-900">{value || "-"}</p>
+        <p className="text-xs text-gray-400">{label}</p>
+        <p className="font-bold text-lg text-gray-900">{value}</p>
       </div>
     </div>
   )

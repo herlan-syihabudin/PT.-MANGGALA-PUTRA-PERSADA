@@ -1,6 +1,32 @@
 "use client"
 
-import { Search, Bell, ChevronDown, LogOut, User, Settings, HelpCircle, Moon, Sun, Globe, Home, Calendar, Clock, MessageSquare, FileText, Users, Building, Briefcase, DollarSign, TrendingUp, AlertCircle, CheckCircle, XCircle, Info, Award, Star, Zap, Menu, X, Maximize2, Minimize2, Wifi, WifiOff, Battery, BatteryCharging, Volume2, VolumeX, Camera, Mic, Headphones, Printer, Download, Upload, Copy, RefreshCw, Eye, EyeOff, Lock, Unlock, Shield, Key, Fingerprint, ShieldAlert, ShieldCheck, ShieldOff, Cpu, HardDrive, Server, Cloud, CloudOff, CloudRain, CloudSnow, CloudLightning, CloudDrizzle, CloudFog, Sun, SunDim, SunMedium, SunHigh, Moon as MoonIcon, MoonDim, MoonMedium, MoonHigh, StarHalf, StarFull, StarOff, Heart, HeartOff, ThumbsUp, ThumbsDown, Smile, Frown, Meh, Laugh, Angry, Sad, Surprise, Gift, GiftOpen, Sparkles, Flame, Droplet, Wind, Tornado, Hurricane, Rainbow, Umbrella, Thermometer, ThermometerSun, ThermometerSnow, ThermometerLow, Gauge, GaugeCircle, GaugeHigh, GaugeLow, Compass, Navigation, Map, MapPin, Flag, FlagTriangleRight, FlagOff, Award as AwardIcon, Medal, Trophy, Crown, Rocket, Space, Satellite, Alien, Ghost, Robot, Cat, Dog, Fish, Bird, Bug, Flower, Tree, Leaf, Mountain, Sunset, Sunrise, Cloudy, Haze, Mist, Smoke, Dust, Fog, Blur, Contrast, Brightness, Grip, GripHorizontal, GripVertical, Grid, List, Table, LayoutDashboard, PieChart, BarChart3, Activity, TrendingDown, TrendingUp as TrendingUpIcon, LineChart, AreaChart, ScatterChart, Radar, Polaroid, Image, Video, Music, Headphones as HeadphonesIcon, Speaker, Volume, Volume1, Volume2 as Volume2Icon, VolumeX as VolumeXIcon, Mic as MicIcon, MicOff, Video as VideoIcon, VideoOff, Camera as CameraIcon, CameraOff, Phone, PhoneOff, PhoneCall, PhoneIncoming, PhoneOutgoing, PhoneMissed, PhoneForwarded, MessageCircle, MessageSquare as MessageSquareIcon, Mail, MailOpen, MailCheck, MailX, Inbox, Send, Reply, ReplyAll, Forward, Archive, ArchiveX, Trash, Trash2, Trash2 as TrashIcon, Ban, Circle, CircleDot, CircleDashed, CircleDotDashed, CircleSlash, CircleSlash2, Square, SquareDot, SquareDashed, SquareDotDashed, SquareSlash, SquareSlash2, Triangle, TriangleRight, TriangleLeft, TriangleDown, TriangleUp, Diamond, Hexagon, Octagon, Pentagon, Rectangle, RectangleHorizontal, RectangleVertical, Ruler, RulerIcon, Scale, Weight, WeightIcon, Speed, Gauge as GaugeIcon, Tachometer, TachometerIcon, Thermometer as ThermometerIcon, ThermometerHigh, ThermometerLow as ThermometerLowIcon, ThermometerSun as ThermometerSunIcon, ThermometerSnow as ThermometerSnowIcon, Fan, FanIcon, Blower, BlowerIcon, AirVent, AirVentIcon, Wind as WindIcon, WindIcon as WindIcon2, Compass as CompassIcon, Navigation as NavigationIcon, Map as MapIcon, MapPin as MapPinIcon, MapPinned, MapPinnedIcon, Flag as FlagIcon, FlagOff as FlagOffIcon, FlagTriangleRight as FlagTriangleRightIcon, Award as AwardIcon2, Medal as MedalIcon, Trophy as TrophyIcon, Crown as CrownIcon, Rocket as RocketIcon, Space as SpaceIcon, Satellite as SatelliteIcon, Alien as AlienIcon, Ghost as GhostIcon, Robot as RobotIcon, Cat as CatIcon, Dog as DogIcon, Fish as FishIcon, Bird as BirdIcon, Bug as BugIcon, Flower as FlowerIcon, Tree as TreeIcon, Leaf as LeafIcon, Mountain as MountainIcon, Sunset as SunsetIcon, Sunrise as SunriseIcon, Cloudy as CloudyIcon, Haze as HazeIcon, Mist as MistIcon, Smoke as SmokeIcon, Dust as DustIcon, Fog as FogIcon, Blur as BlurIcon, Contrast as ContrastIcon, Brightness as BrightnessIcon, Grip as GripIcon, GripHorizontal as GripHorizontalIcon, GripVertical as GripVerticalIcon, Grid as GridIcon, List as ListIcon, Table as TableIcon, LayoutDashboard as LayoutDashboardIcon, PieChart as PieChartIcon, BarChart3 as BarChart3Icon, Activity as ActivityIcon, TrendingDown as TrendingDownIcon, TrendingUp as TrendingUpIcon2, LineChart as LineChartIcon, AreaChart as AreaChartIcon, ScatterChart as ScatterChartIcon, Radar as RadarIcon, Polaroid as PolaroidIcon, Image as ImageIcon, Video as VideoIcon, Music as MusicIcon, Headphones as HeadphonesIcon2, Speaker as SpeakerIcon, Volume as VolumeIcon, Volume1 as Volume1Icon, Volume2 as Volume2Icon2, VolumeX as VolumeXIcon2, Mic as MicIcon2, MicOff as MicOffIcon, Video as VideoIcon2, VideoOff as VideoOffIcon, Camera as CameraIcon2, CameraOff as CameraOffIcon, Phone as PhoneIcon, PhoneOff as PhoneOffIcon, PhoneCall as PhoneCallIcon, PhoneIncoming as PhoneIncomingIcon, PhoneOutgoing as PhoneOutgoingIcon, PhoneMissed as PhoneMissedIcon, PhoneForwarded as PhoneForwardedIcon, MessageCircle as MessageCircleIcon, MessageSquare as MessageSquareIcon2, Mail as MailIcon, MailOpen as MailOpenIcon, MailCheck as MailCheckIcon, MailX as MailXIcon, Inbox as InboxIcon, Send as SendIcon, Reply as ReplyIcon, ReplyAll as ReplyAllIcon, Forward as ForwardIcon, Archive as ArchiveIcon, ArchiveX as ArchiveXIcon, Trash as TrashIcon2, Trash2 as Trash2Icon, Ban as BanIcon, Circle as CircleIcon, CircleDot as CircleDotIcon, CircleDashed as CircleDashedIcon, CircleDotDashed as CircleDotDashedIcon, CircleSlash as CircleSlashIcon, CircleSlash2 as CircleSlash2Icon, Square as SquareIcon, SquareDot as SquareDotIcon, SquareDashed as SquareDashedIcon, SquareDotDashed as SquareDotDashedIcon, SquareSlash as SquareSlashIcon, SquareSlash2 as SquareSlash2Icon, Triangle as TriangleIcon, TriangleRight as TriangleRightIcon, TriangleLeft as TriangleLeftIcon, TriangleDown as TriangleDownIcon, TriangleUp as TriangleUpIcon, Diamond as DiamondIcon, Hexagon as HexagonIcon, Octagon as OctagonIcon, Pentagon as PentagonIcon, Rectangle as RectangleIcon, RectangleHorizontal as RectangleHorizontalIcon, RectangleVertical as RectangleVerticalIcon, Ruler as RulerIcon2, Scale as ScaleIcon, Weight as WeightIcon2, Speed as SpeedIcon, Gauge as GaugeIcon2, Tachometer as TachometerIcon2 } from "lucide-react"
+import {
+  Search,
+  Bell,
+  ChevronDown,
+  LogOut,
+  User,
+  Settings,
+  HelpCircle,
+  Moon,
+  Sun,
+  Globe,
+  Crown,
+  FileText,
+  Users,
+  Building,
+  DollarSign,
+  CheckCircle,
+  AlertCircle,
+  XCircle,
+  Info,
+  Zap,
+  Menu,
+  X,
+  Maximize2,
+  Minimize2,
+  Activity,
+} from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"

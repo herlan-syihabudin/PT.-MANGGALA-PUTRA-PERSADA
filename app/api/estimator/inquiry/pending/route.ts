@@ -23,24 +23,26 @@ export async function GET() {
     const rows = res.data.values || []
 
     const pending = rows
-      .filter(row => row[0]) // pastikan inquiry_id ada
-      .filter(row =>
-  (row[8] || "")
-    .toString()
-    .trim()
-    .toLowerCase()
-    .includes("new")
-)
-      .map(row => ({
-        inquiry_id: row[0],
-        tanggal_masuk: row[1],
-        customer_name: row[3],
-        nama_pekerjaan: row[4],
-        layanan: row[5],
-        estimasi_nilai: Number(
-          String(row[6] || 0).replace(/[^\d]/g, "")
-        ),
-      }))
+  .filter(row => row[0])
+  .filter(row =>
+    (row[9] || "")
+      .toString()
+      .trim()
+      .toLowerCase() === "estimating"
+  )
+  .filter(row =>
+    !(row[13] || "").toString().trim()
+  )
+  .map(row => ({
+    inquiry_id: row[0],
+    tanggal_masuk: row[1],
+    customer_name: row[3],
+    nama_pekerjaan: row[4],
+    layanan: row[5],
+    estimasi_nilai: Number(
+      String(row[6] || 0).replace(/[^\d]/g, "")
+    ),
+  }))
       .sort((a, b) => {
   const tA = a.tanggal_masuk ? new Date(a.tanggal_masuk).getTime() : 0
   const tB = b.tanggal_masuk ? new Date(b.tanggal_masuk).getTime() : 0

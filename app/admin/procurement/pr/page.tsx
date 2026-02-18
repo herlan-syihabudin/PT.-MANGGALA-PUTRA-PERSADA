@@ -144,10 +144,10 @@ const matchesSearch =
             <RefreshCcw size={16} />
           </button>
 
-          <Link
-            href="/procurement/pr/create"
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
+         <Link
+  href="/admin/procurement/pr/create"
+  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+>
             <Plus size={18} />
             New PR
           </Link>

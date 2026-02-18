@@ -23,15 +23,16 @@ export async function GET() {
     const rows = res.data.values || []
 
     const pending = rows
-  .filter(row => row[0])
+  .filter(row => row[0]) // harus ada inquiry_id
   .filter(row =>
     (row[9] || "")
       .toString()
       .trim()
-      .toLowerCase() === "estimating"
+      .toLowerCase()
+      .includes("estim")
   )
   .filter(row =>
-    !(row[13] || "").toString().trim()
+    !(row[13] || "").toString().trim() // belum ada rab_id
   )
   .map(row => ({
     inquiry_id: row[0],

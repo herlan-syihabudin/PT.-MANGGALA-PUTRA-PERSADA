@@ -1,10 +1,8 @@
 import RABDetailClient from "./RABDetailClient"
 
-export const dynamic = "force-dynamic"
-
 async function fetchRAB(rab_id: string) {
   const base = process.env.NEXT_PUBLIC_BASE_URL || ""
-  const res = await fetch(`${base}/api/estimator/rab?rab_id=${rab_id}`, {
+  const res = await fetch(`${base}/api/estimator/rab/${rab_id}`, {
     cache: "no-store",
   })
 
@@ -12,9 +10,9 @@ async function fetchRAB(rab_id: string) {
     return {
       rab_id,
       project_id: "",
-      summary: { total_items: 0, total_value: 0 },
+      total_items: 0,
+      total_value: 0,
       items: [],
-      header: null,
     }
   }
 

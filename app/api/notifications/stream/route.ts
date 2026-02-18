@@ -1,5 +1,15 @@
 export async function GET() {
-  return new Response("event: message\ndata: connected\n\n", {
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(
+        new TextEncoder().encode(
+          `data: ${JSON.stringify({ message: "connected" })}\n\n`
+        )
+      )
+    },
+  })
+
+  return new Response(stream, {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",

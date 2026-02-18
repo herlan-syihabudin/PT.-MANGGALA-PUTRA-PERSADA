@@ -23,17 +23,15 @@ export async function GET() {
     const rows = res.data.values || []
 
     const pending = rows
-  .filter(row => row[0]) // harus ada inquiry_id
-  .filter(row =>
-    (row[9] || "")
-      .toString()
-      .trim()
-      .toLowerCase()
-      .includes("estim")
-  )
-  .filter(row =>
-    !(row[13] || "").toString().trim() // belum ada rab_id
-  )
+  .filter(row => row[0])
+  .filter(row => {
+    const status = (row[9] || "").toString().toLowerCase()
+    return status.includes("estim")
+  })
+  .filter(row => {
+    const rabId = (row[13] || "").toString().trim()
+    return rabId === ""
+  })
   .map(row => ({
     inquiry_id: row[0],
     tanggal_masuk: row[1],

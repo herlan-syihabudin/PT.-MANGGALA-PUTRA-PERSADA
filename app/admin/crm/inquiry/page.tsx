@@ -39,9 +39,7 @@ type InquiryResponse = {
 /* ================= FETCH ================= */
 
 async function fetchInquiry(): Promise<InquiryResponse> {
-  const base = process.env.NEXT_PUBLIC_BASE_URL
-
-  const res = await fetch(`${base}/api/crm/inquiry?page=1&limit=20`, {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/crm/inquiry?page=1&limit=20`, {
     cache: "no-store",
   })
 

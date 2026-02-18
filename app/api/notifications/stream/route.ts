@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
 export async function GET() {
   const stream = new ReadableStream({
     start(controller) {

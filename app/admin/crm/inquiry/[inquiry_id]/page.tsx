@@ -70,9 +70,14 @@ export default function InquiryDetailPage() {
 
     const load = async () => {
       try {
-        const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
-          cache: "no-store",
-        })
+        const baseUrl = window.location.origin
+
+const res = await fetch(
+  `${baseUrl}/api/crm/inquiry/${inquiry_id}`,
+  {
+    cache: "no-store",
+  }
+)
 
         if (!res.ok) throw new Error("Failed to fetch")
        const json = await res.json()

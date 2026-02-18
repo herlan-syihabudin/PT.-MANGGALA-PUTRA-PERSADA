@@ -330,6 +330,26 @@ const analytics = useMemo(() => {
             </div>
 
             <div className="flex gap-2">
+              {data.status?.toLowerCase() === "new" && (
+  <button
+    onClick={async () => {
+      await fetch(`/api/crm/inquiry/${inquiry_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "estimating",
+          assigned_to: "Estimator"
+        }),
+      })
+
+      toast.success("Assigned ke Estimator")
+      router.refresh()
+    }}
+    className="px-4 py-2 bg-yellow-500 text-white rounded-lg text-sm font-semibold hover:bg-yellow-600 transition-colors"
+  >
+    Assign ke Estimator
+  </button>
+)}
               <button
                 onClick={() => setShowFollowUpModal(true)}
                 className="px-4 py-2 bg-white text-blue-600 rounded-lg font-semibold text-sm hover:bg-blue-50 transition-colors flex items-center gap-2"

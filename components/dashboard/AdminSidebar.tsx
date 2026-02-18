@@ -68,7 +68,6 @@ import {
   Droplet,
   Wind,
   Tornado,
-  Hurricane,
   Rainbow,
   Umbrella,
   Thermometer,

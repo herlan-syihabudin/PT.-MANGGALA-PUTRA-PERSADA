@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Plus, Search, Edit, Eye, RefreshCcw, ArrowUpDown } from 'lucide-react'
-import StatusBadge from '@/components/procurement/StatusBadge'
+import StatusBadge from '@/components/dashboard/procurement/StatusBadge'
 
 interface Vendor {
   vendor_id: string

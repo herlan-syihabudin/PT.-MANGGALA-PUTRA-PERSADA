@@ -22,11 +22,15 @@ type PendingInquiry = {
 
 async function fetchRABList(): Promise<RabProject[]> {
   const base = process.env.NEXT_PUBLIC_BASE_URL
-  const res = await fetch(`${base}/api/estimator/rab/projects`, {
+  const res = await fetch(`${base}/api/estimator/rab`, {
     cache: "no-store",
   })
+
   if (!res.ok) return []
-  return res.json()
+
+  const result = await res.json()
+
+  return result.data || []
 }
 
 async function fetchPendingInquiry(): Promise<PendingInquiry[]> {

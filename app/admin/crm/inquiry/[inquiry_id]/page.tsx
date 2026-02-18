@@ -398,6 +398,12 @@ const analytics = useMemo(() => {
           </div>
         )}
 
+        <Card title="AI Recommendation" icon={Zap}>
+  <p className="font-semibold text-blue-700">
+    {analytics.recommendation}
+  </p>
+</Card>
+        
         {/* Warning Banner */}
         {analytics?.isStale && (
           <motion.div

@@ -158,12 +158,12 @@ export default function PRListPage() {
 
   // Stats
   const stats = useMemo(() => ({
-    total: prs.length,
-    draft: prs.filter(p => p.status === 'DRAFT').length,
-    submitted: prs.filter(p => p.status === 'SUBMITTED').length,
-    approved: prs.filter(p => p.status === 'APPROVED').length,
-    totalValue: prs.reduce((sum, p) => sum + (p.total || 0), 0)
-  }), [prs])
+  total: computedPRs.length,
+  draft: computedPRs.filter(p => p.status === 'DRAFT').length,
+  submitted: computedPRs.filter(p => p.status === 'SUBMITTED').length,
+  approved: computedPRs.filter(p => p.status === 'APPROVED').length,
+  totalValue: computedPRs.reduce((sum, p) => sum + p.total, 0)
+}), [computedPRs])
 
   // Selection handlers
   const toggleSelect = (id: string) => {

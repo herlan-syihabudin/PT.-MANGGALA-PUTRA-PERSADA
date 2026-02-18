@@ -26,7 +26,7 @@ interface InquiryData {
   nama_pekerjaan: string
   estimasi_nilai: string | number
   converted_rab_id?: string
-  id?: string
+  inquiry_id?: string
 }
 
 interface KPIProps {
@@ -72,25 +72,28 @@ export default function InquiryDetailPage() {
       try {
         const baseUrl = window.location.origin
 
-const res = await fetch(
-  `${baseUrl}/api/crm/inquiry/${inquiry_id}`,
-  {
-    cache: "no-store",
-  }
-)
+        const res = await fetch(
+          `${baseUrl}/api/crm/inquiry/${inquiry_id}`,
+          {
+            cache: "no-store",
+          }
+        )
 
         if (!res.ok) throw new Error("Failed to fetch")
-       const json = await res.json()
-setData({
-  status: json.status ?? "new",
-  tanggal_masuk: json.tanggal_masuk ?? "",
-  layanan: json.layanan ?? null,
-  customer_name: json.customer_name ?? "",
-  nama_pekerjaan: json.nama_pekerjaan ?? "",
-  estimasi_nilai: json.estimasi_nilai ?? 0,
-  converted_rab_id: json.converted_rab_id,
-  id: json.id,
-})
+        
+        const json = await res.json()
+        console.log("API Response:", json) // Untuk debugging
+        
+        setData({
+          status: json.status ?? "new",
+          tanggal_masuk: json.tanggal_masuk ?? "",
+          layanan: json.layanan ?? null,
+          customer_name: json.customer_name ?? "",
+          nama_pekerjaan: json.nama_pekerjaan ?? "",
+          estimasi_nilai: json.estimasi_nilai ?? 0,
+          converted_rab_id: json.converted_rab_id,
+          inquiry_id: json.inquiry_id, // ✅ FIX: ganti dari id ke inquiry_id
+        })
       } catch (err) {
         console.error("Error loading inquiry:", err)
         setError(true)
@@ -217,11 +220,6 @@ setData({
     if (estimasiValue > 100_000_000) return 50
     return 20
   }, [estimasiValue])
-
-  // Final Score
-  const finalScore = useMemo(() => {
-    return Math.round(conversionProbability * 0.6 + valueWeight * 0.4)
-  }, [conversionProbability, valueWeight])
 
   // Theme Color
   const themeColor = useMemo(() => {

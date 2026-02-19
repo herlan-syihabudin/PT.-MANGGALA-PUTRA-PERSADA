@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+
 import Hero from "@/components/Hero"
 import Services from "@/components/Services"
 import Projects from "@/components/Projects"
@@ -7,6 +8,7 @@ import CTA from "@/components/CTA"
 import Partners from "@/components/Partners"
 import { WhyChooseUs } from "@/components/WhyChooseUs"
 import { ProjectOutcome } from "@/components/ProjectOutcome"
+import ProjectFilters from "@/components/ProjectFilters"
 
 export const metadata: Metadata = {
   title:
@@ -17,30 +19,28 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <>
-      {/* 
-        IMPORTANT SEO NOTE:
-        H1 WAJIB ADA DI DALAM KOMPONEN <Hero />
-        DAN HARUS MENGANDUNG KEYWORD UTAMA
-      */}
+    <main className="overflow-x-hidden">
+      {/* HERO (HARUS ADA H1 DI DALAMNYA) */}
       <Hero />
 
-      {/* Internal linking power */}
+      {/* SERVICES */}
       <Services />
 
-      {/* Trust & authority signals */}
+      {/* AUTHORITY & TRUST */}
       <WhyChooseUs />
       <ProjectOutcome />
 
-      {/* Proof of execution */}
+      {/* PORTFOLIO */}
       <Projects />
+
+      {/* PARTNERS */}
       <Partners />
 
-      {/* Search intent support */}
+      {/* FAQ */}
       <FAQ />
 
-      {/* Conversion */}
+      {/* CTA */}
       <CTA />
-    </>
+    </main>
   )
 }

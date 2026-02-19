@@ -5,7 +5,7 @@ import WhatsAppFloat from "@/components/WhatsAppFloat"
 import Script from "next/script"
 import type { Metadata, Viewport } from "next"
 
-import "./globals.css"
+import "../globals.css"
 
 // ===== FONT OPTIMIZATION =====
 const inter = Inter({

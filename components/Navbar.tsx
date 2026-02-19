@@ -2,179 +2,399 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useState } from "react"
+import { usePathname } from "next/navigation"
+import { useState, useEffect, useRef } from "react"
+import { 
+  Menu, 
+  X, 
+  ChevronDown,
+  Phone,
+  Mail,
+  Building2,
+  HardHat,
+  Zap,
+  Paintbrush,
+  Hammer,
+  Compass,
+  ChevronRight
+} from "lucide-react"
 
 export default function Navbar() {
-  const [openMobile, setOpenMobile] = useState(false)
+  const pathname = usePathname()
+  const [isOpen, setIsOpen] = useState(false)
   const [openService, setOpenService] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const mobileMenuRef = useRef<HTMLDivElement>(null)
+
+  // Detect scroll untuk efek header
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20)
+    }
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenService(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  // Prevent scroll when mobile menu open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = "unset"
+    }
+    return () => {
+      document.body.style.overflow = "unset"
+    }
+  }, [isOpen])
+
+  const isActive = (path: string) => {
+    if (path === "/") return pathname === "/"
+    return pathname?.startsWith(path)
+  }
+
+  const services = [
+    {
+      href: "/layanan/konstruksi-sipil",
+      label: "Konstruksi Sipil",
+      icon: Building2,
+      description: "Pembangunan infrastruktur, gedung, dan fasilitas sipil"
+    },
+    {
+      href: "/layanan/struktur-baja",
+      label: "Struktur Baja",
+      icon: HardHat,
+      description: "Fabrikasi dan erection struktur baja berat"
+    },
+    {
+      href: "/layanan/mep",
+      label: "MEP",
+      icon: Zap,
+      description: "Mechanical, Electrical, & Plumbing"
+    },
+    {
+      href: "/layanan/fit-out",
+      label: "Interior & Fit Out",
+      icon: Paintbrush,
+      description: "Desain interior dan penyelesaian akhir"
+    },
+    {
+      href: "/layanan/design-build",
+      label: "Design & Build",
+      icon: Compass,
+      description: "Solusi terintegrasi desain dan konstruksi"
+    }
+  ]
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-
-        {/* LOGO */}
-        <Link href="/" className="flex items-center gap-2">
-          <Image
-            src="/logo-mp1.png"
-            alt="PT Manggala Putra Persada"
-            width={36}
-            height={36}
-            priority
-          />
-          <span className="font-extrabold text-lg tracking-tight">
-            <span className="text-gray-900">MPP</span>
-            <span className="text-red-600 ml-1">Engineering</span>
-          </span>
-        </Link>
-
-        {/* DESKTOP MENU */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-700">
-          <Link href="/" className="hover:text-red-600 transition">Home</Link>
-          <Link href="/tentang" className="hover:text-red-600 transition">Tentang Kami</Link>
-
-          {/* DROPDOWN LAYANAN – CLICK BASED */}
-<div className="relative">
-  <button
-    onClick={() => setOpenService(!openService)}
-    className="flex items-center gap-1 hover:text-red-600 transition"
-  >
-    Layanan <span className="text-xs">▾</span>
-  </button>
-
-  {openService && (
-    <div
-      className="absolute left-0 top-full mt-3 w-56 bg-white border rounded-lg shadow-lg z-50"
-      onMouseLeave={() => setOpenService(false)}
-    >
-      <Link
-        href="/layanan/konstruksi-sipil"
-        onClick={() => setOpenService(false)}
-        className="block px-4 py-2 hover:bg-gray-50"
+    <>
+      <header 
+        className={`sticky top-0 z-50 transition-all duration-300 ${
+          scrolled 
+            ? "bg-white/95 backdrop-blur-md shadow-md py-2" 
+            : "bg-white/90 backdrop-blur-sm py-0"
+        } border-b`}
       >
-        Konstruksi Sipil
-      </Link>
-      <Link
-        href="/layanan/struktur-baja"
-        onClick={() => setOpenService(false)}
-        className="block px-4 py-2 hover:bg-gray-50"
-      >
-        Struktur Baja
-      </Link>
-      <Link
-        href="/layanan/mep"
-        onClick={() => setOpenService(false)}
-        className="block px-4 py-2 hover:bg-gray-50"
-      >
-        MEP
-      </Link>
-      <Link
-        href="/layanan/fit-out"
-        onClick={() => setOpenService(false)}
-        className="block px-4 py-2 hover:bg-gray-50"
-      >
-        Interior & Fit Out
-      </Link>
-      <Link
-        href="/layanan/design-build"
-        onClick={() => setOpenService(false)}
-        className="block px-4 py-2 hover:bg-gray-50"
-      >
-        Design & Build
-      </Link>
-    </div>
-  )}
-</div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
 
-          <Link href="/proyek" className="hover:text-red-600 transition">Proyek</Link>
-          <Link href="/klien" className="hover:text-red-600 transition">Klien & Mitra</Link>
-          <Link href="/insight" className="hover:text-red-600 transition">Insight</Link>
-
-          {/* CTA */}
-          <Link
-            href="/kontak"
-            className="bg-red-600 text-white px-5 py-2 rounded-md font-semibold hover:bg-red-700 transition shadow-sm"
-          >
-            Konsultasi Proyek
+          {/* LOGO */}
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="relative overflow-hidden rounded-lg">
+              <Image
+                src="/logo-mp1.png"
+                alt="PT Manggala Putra Persada"
+                width={40}
+                height={40}
+                priority
+                className="transition-transform group-hover:scale-105"
+              />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-extrabold text-lg tracking-tight leading-tight">
+                <span className="text-gray-900">MPP</span>
+                <span className="text-red-600 ml-1">Engineering</span>
+              </span>
+              <span className="text-[10px] text-gray-500 -mt-1">
+                Contractors & Engineers
+              </span>
+            </div>
           </Link>
-        </nav>
 
-        {/* MOBILE BUTTON */}
-        <button
-          onClick={() => setOpenMobile(!openMobile)}
-          className="md:hidden text-gray-700 text-xl"
-        >
-          ☰
-        </button>
-      </div>
+          {/* DESKTOP MENU */}
+          <nav className="hidden md:flex items-center gap-1 lg:gap-2 text-sm font-medium">
+            <NavLink href="/" active={isActive("/")}>
+              Home
+            </NavLink>
+            
+            <NavLink href="/tentang" active={isActive("/tentang")}>
+              Tentang Kami
+            </NavLink>
 
-      {/* MOBILE MENU */}
-      {openMobile && (
-  <div className="md:hidden bg-white border-t">
-    <div className="px-6 py-5 space-y-4 text-sm">
+            {/* DROPDOWN LAYANAN - HOVER BASED (lebih user friendly) */}
+            <div 
+              className="relative"
+              ref={dropdownRef}
+              onMouseEnter={() => setOpenService(true)}
+              onMouseLeave={() => setOpenService(false)}
+            >
+              <button
+                className={`flex items-center gap-1 px-3 py-2 rounded-md transition-all ${
+                  isActive("/layanan")
+                    ? "text-red-600 font-semibold"
+                    : "text-gray-700 hover:text-red-600"
+                }`}
+              >
+                Layanan 
+                <ChevronDown 
+                  size={16} 
+                  className={`transition-transform duration-200 ${
+                    openService ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
 
-      <Link href="/" onClick={() => setOpenMobile(false)} className="block">
-        Home
-      </Link>
+              {/* Mega Menu Dropdown */}
+              {openService && (
+                <div className="absolute left-0 top-full mt-1 w-80 bg-white border rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="p-2">
+                    {services.map((service) => (
+                      <Link
+                        key={service.href}
+                        href={service.href}
+                        className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+                        onClick={() => setOpenService(false)}
+                      >
+                        <div className="p-2 bg-red-50 rounded-lg group-hover:bg-red-100 transition-colors">
+                          <service.icon size={18} className="text-red-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{service.label}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{service.description}</p>
+                        </div>
+                        <ChevronRight size={14} className="ml-auto text-gray-400 group-hover:text-red-600" />
+                      </Link>
+                    ))}
+                  </div>
+                  
+                  {/* Footer dropdown */}
+                  <div className="bg-gray-50 px-4 py-3 border-t">
+                    <Link 
+                      href="/layanan" 
+                      className="text-sm text-red-600 hover:underline flex items-center gap-1"
+                      onClick={() => setOpenService(false)}
+                    >
+                      Lihat semua layanan <ChevronRight size={14} />
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
 
-      <Link href="/tentang" onClick={() => setOpenMobile(false)} className="block">
-        Tentang Kami
-      </Link>
+            <NavLink href="/proyek" active={isActive("/proyek")}>
+              Proyek
+            </NavLink>
+            
+            <NavLink href="/klien" active={isActive("/klien")}>
+              Klien & Mitra
+            </NavLink>
+            
+            <NavLink href="/insight" active={isActive("/insight")}>
+              Insight
+            </NavLink>
 
-      {/* MOBILE DROPDOWN LAYANAN */}
-      <div>
-        <button
-          onClick={() => setOpenService(!openService)}
-          className="w-full flex justify-between items-center font-semibold text-gray-900"
-        >
-          Layanan
-          <span>{openService ? "−" : "+"}</span>
-        </button>
-
-        {openService && (
-          <div className="mt-3 ml-3 space-y-2 text-gray-700">
-            <Link href="/layanan/konstruksi-sipil" onClick={() => setOpenMobile(false)} className="block">
-              Konstruksi Sipil
+            {/* Kontak terpisah sebagai CTA */}
+            <Link
+              href="/kontak"
+              className="ml-4 bg-red-600 text-white px-5 py-2 rounded-md font-semibold hover:bg-red-700 transition-all hover:shadow-lg hover:shadow-red-600/20 active:scale-95"
+            >
+              Konsultasi Proyek
             </Link>
-            <Link href="/layanan/struktur-baja" onClick={() => setOpenMobile(false)} className="block">
-              Struktur Baja
-            </Link>
-            <Link href="/layanan/mep" onClick={() => setOpenMobile(false)} className="block">
-              MEP
-            </Link>
-            <Link href="/layanan/fit-out" onClick={() => setOpenMobile(false)} className="block">
-              Interior & Fit Out
-            </Link>
-            <Link href="/layanan/design-build" onClick={() => setOpenMobile(false)} className="block">
-              Design & Build
-            </Link>
+          </nav>
+
+          {/* MOBILE BUTTON */}
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            aria-label="Toggle menu"
+          >
+            {isOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+      </header>
+
+      {/* MOBILE MENU - SIDEBAR STYLE */}
+      {isOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setIsOpen(false)}
+          />
+          
+          {/* Menu panel */}
+          <div 
+            ref={mobileMenuRef}
+            className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-white shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300"
+          >
+            <div className="p-6 space-y-6">
+              
+              {/* Header mobile */}
+              <div className="flex items-center justify-between pb-4 border-b">
+                <Link href="/" className="flex items-center gap-2" onClick={() => setIsOpen(false)}>
+                  <Image
+                    src="/logo-mp1.png"
+                    alt="Logo"
+                    width={32}
+                    height={32}
+                  />
+                  <span className="font-bold text-lg">MPP Engineering</span>
+                </Link>
+                <button 
+                  onClick={() => setIsOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Menu items */}
+              <div className="space-y-4">
+                <MobileLink href="/" onClick={() => setIsOpen(false)}>
+                  Home
+                </MobileLink>
+                
+                <MobileLink href="/tentang" onClick={() => setIsOpen(false)}>
+                  Tentang Kami
+                </MobileLink>
+
+                {/* Mobile Layanan Dropdown */}
+                <div>
+                  <button
+                    onClick={() => setOpenService(!openService)}
+                    className="w-full flex items-center justify-between py-2 text-gray-700 font-medium hover:text-red-600"
+                  >
+                    Layanan
+                    <ChevronDown 
+                      size={18} 
+                      className={`transition-transform duration-200 ${
+                        openService ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {openService && (
+                    <div className="mt-3 ml-4 space-y-3 border-l-2 border-red-200 pl-4">
+                      {services.map((service) => (
+                        <Link
+                          key={service.href}
+                          href={service.href}
+                          className="flex items-start gap-3 py-2 text-gray-600 hover:text-red-600 group"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <service.icon size={16} className="mt-0.5 text-gray-400 group-hover:text-red-600" />
+                          <div>
+                            <p className="font-medium">{service.label}</p>
+                            <p className="text-xs text-gray-500">{service.description}</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <MobileLink href="/proyek" onClick={() => setIsOpen(false)}>
+                  Proyek
+                </MobileLink>
+                
+                <MobileLink href="/klien" onClick={() => setIsOpen(false)}>
+                  Klien & Mitra
+                </MobileLink>
+                
+                <MobileLink href="/insight" onClick={() => setIsOpen(false)}>
+                  Insight
+                </MobileLink>
+              </div>
+
+              {/* Contact Info Mobile */}
+              <div className="pt-6 border-t space-y-3">
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <Phone size={16} className="text-red-600" />
+                  <span>021-1234-5678</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <Mail size={16} className="text-red-600" />
+                  <span>info@mpp.co.id</span>
+                </div>
+              </div>
+
+              {/* CTA Mobile */}
+              <Link
+                href="/kontak"
+                onClick={() => setIsOpen(false)}
+                className="block w-full text-center bg-red-600 text-white py-4 rounded-xl font-semibold hover:bg-red-700 transition-all"
+              >
+                Konsultasi Proyek Gratis
+              </Link>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+    </>
+  )
+}
 
-      <Link href="/proyek" onClick={() => setOpenMobile(false)} className="block">
-        Proyek
-      </Link>
+// Komponen untuk NavLink desktop
+function NavLink({ 
+  href, 
+  children, 
+  active 
+}: { 
+  href: string
+  children: React.ReactNode
+  active: boolean 
+}) {
+  return (
+    <Link
+      href={href}
+      className={`px-3 py-2 rounded-md transition-all ${
+        active
+          ? "text-red-600 font-semibold bg-red-50"
+          : "text-gray-700 hover:text-red-600 hover:bg-gray-50"
+      }`}
+    >
+      {children}
+    </Link>
+  )
+}
 
-      <Link href="/klien" onClick={() => setOpenMobile(false)} className="block">
-        Klien & Mitra
-      </Link>
-
-      <Link href="/insight" onClick={() => setOpenMobile(false)} className="block">
-        Insight
-      </Link>
-
-      {/* CTA */}
-      <Link
-        href="/kontak"
-        onClick={() => setOpenMobile(false)}
-        className="block mt-6 text-center bg-red-600 text-white py-3 rounded-lg font-semibold"
-      >
-        Konsultasi Proyek
-      </Link>
-
-    </div>
-  </div>
-)}
-    </header>
+// Komponen untuk link mobile
+function MobileLink({ 
+  href, 
+  children, 
+  onClick 
+}: { 
+  href: string
+  children: React.ReactNode
+  onClick: () => void
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className="block py-2 text-gray-700 font-medium hover:text-red-600 transition-colors"
+    >
+      {children}
+    </Link>
   )
 }

@@ -1,9 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Filter, Grid3x3, LayoutList, ArrowUpDown } from 'lucide-react'
+import { Grid3x3, LayoutList, ArrowUpDown } from 'lucide-react'
 
-export function ProjectFilters({ categories }: { categories: string[] }) {
+type Props = {
+  categories: string[]
+}
+
+export default function ProjectFilters({ categories }: Props) {
   const [activeCategory, setActiveCategory] = useState('All')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
@@ -29,19 +33,25 @@ export function ProjectFilters({ categories }: { categories: string[] }) {
         <button
           onClick={() => setViewMode('grid')}
           className={`p-2 rounded-lg transition ${
-            viewMode === 'grid' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            viewMode === 'grid'
+              ? 'bg-red-100 text-red-600'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
           <Grid3x3 size={18} />
         </button>
+
         <button
           onClick={() => setViewMode('list')}
           className={`p-2 rounded-lg transition ${
-            viewMode === 'list' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            viewMode === 'list'
+              ? 'bg-red-100 text-red-600'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
           <LayoutList size={18} />
         </button>
+
         <button className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
           <ArrowUpDown size={18} className="text-gray-600" />
         </button>

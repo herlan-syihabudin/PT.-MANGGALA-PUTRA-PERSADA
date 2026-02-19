@@ -48,12 +48,6 @@ export default function Hero() {
           {/* ===== LEFT CONTENT ===== */}
           <div className={`relative z-10 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             
-            {/* 🔥 1️⃣ PAIN HOOK - Langsung nancep! */}
-            <div className="mb-6 animate-pulse-slow">
-              <p className="text-lg md:text-xl font-bold text-red-600 bg-red-50 inline-block px-6 py-3 rounded-xl border border-red-200 shadow-sm">
-                ⚡ Industrial Projects Delayed? Overbudget? Poor Coordination?
-              </p>
-            </div>
             
             {/* Badge with icon */}
             <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-red-50 border border-red-200 rounded-full">

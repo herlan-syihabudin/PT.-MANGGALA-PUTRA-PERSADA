@@ -20,6 +20,7 @@ interface PO {
   delivery_date?: string
   status: 'DRAFT' | 'SENT' | 'CONFIRMED' | 'DELIVERED' | 'CLOSED'
   total_amount: number
+  version?: number
 }
 
 export default function POListPage() {
@@ -44,7 +45,9 @@ export default function POListPage() {
       const res = await fetch('/api/procurement/po', {
         signal: controller.signal,
       })
+      
       const data = await res.json()
+      console.log('API Response:', data) // 👈 Debug
 
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Failed to load POs')
@@ -53,6 +56,7 @@ export default function POListPage() {
       setPOs(data.data || [])
     } catch (err: any) {
       if (err?.name === 'AbortError') return
+      console.error('Fetch error:', err)
       setError(err?.message || 'Failed to load POs')
       setPOs([])
     } finally {
@@ -65,11 +69,11 @@ export default function POListPage() {
     return () => abortRef.current?.abort()
   }, [])
 
+  // 🔥 Ambil data vendor & project (mock - nanti ganti dengan join)
   const computedPOs = useMemo(() => {
-    // siap kalau nanti mau join vendor/project, atau compute field lain
     return pos.map(po => ({
       ...po,
-      _vendor: po.vendor_name || po.vendor_id,
+      _vendor: po.vendor_name || po.vendor_id, // Sementara pake ID
       _project: po.project_name || po.project_id,
     }))
   }, [pos])
@@ -135,8 +139,9 @@ export default function POListPage() {
             <RefreshCcw size={16} />
           </button>
 
+          {/* 🔥 FIX: Tambah /admin/ */}
           <Link
-            href="/procurement/po/create"
+            href="/admin/procurement/po/create"
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <Plus size={18} />
@@ -203,7 +208,7 @@ export default function POListPage() {
                   <tr
                     key={po.po_id}
                     className="border-b hover:bg-gray-50 cursor-pointer"
-                    onClick={() => router.push(`/procurement/po/${po.po_id}`)}
+                    onClick={() => router.push(`/admin/procurement/po/${po.po_id}`)} // 🔥 FIX
                   >
                     <td className="p-4 font-mono font-medium">
                       {po.po_code}
@@ -232,7 +237,7 @@ export default function POListPage() {
                     <td className="p-4">
                       <div className="flex justify-center">
                         <Link
-                          href={`/procurement/po/${po.po_id}`}
+                          href={`/admin/procurement/po/${po.po_id}`} // 🔥 FIX
                           className="p-2 hover:bg-gray-100 rounded"
                           onClick={(e) => e.stopPropagation()}
                         >

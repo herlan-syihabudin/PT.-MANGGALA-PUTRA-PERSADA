@@ -1,10 +1,9 @@
 export type Insight = {
-  // Core fields
   slug: string
   category: string
   title: string
   excerpt: string
-  content: string
+  content?: string   // ← UBAH JADI OPTIONAL
   publishedAt: string
   author?: string
 

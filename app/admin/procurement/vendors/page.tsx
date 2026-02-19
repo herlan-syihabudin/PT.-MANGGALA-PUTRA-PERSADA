@@ -3,7 +3,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, Edit, Eye, RefreshCcw, ArrowUpDown } from 'lucide-react'
+import { 
+  Plus, 
+  Search, 
+  Edit, 
+  Eye, 
+  RefreshCcw, 
+  ArrowUpDown,
+  Building2,
+  Phone,
+  Mail,
+  MapPin,
+  Filter,
+  X
+} from 'lucide-react'
+
 import StatusBadge from '@/components/dashboard/procurement/StatusBadge'
 
 interface Vendor {
@@ -96,6 +110,7 @@ export default function VendorsPage() {
       setVendors(Array.isArray(data.data) ? data.data : [])
     } catch (err: any) {
       if (err?.name === 'AbortError') return
+      console.error('Fetch error:', err)
       setError(err?.message || 'Failed to load vendors')
       setVendors([])
     } finally {
@@ -106,8 +121,7 @@ export default function VendorsPage() {
 
   // initial + refetch on filter/search
   useEffect(() => {
-    // reset pagination on new query
-    setPage(1)
+    setPage(1) // reset pagination on new query
     fetchVendors()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, debouncedSearch])
@@ -150,16 +164,21 @@ export default function VendorsPage() {
 
   function toggleSort(key: SortKey) {
     setPage(1)
-    setSortKey(prev => {
-      if (prev !== key) {
-        setSortDir('asc')
-        return key
-      }
-      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
-      return prev
-    })
+    if (sortKey === key) {
+      setSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir('asc')
+    }
   }
 
+  function clearFilters() {
+    setSearch('')
+    setStatusFilter('')
+    setPage(1)
+  }
+
+  const hasActiveFilters = search || statusFilter
   const isEmpty = !loading && !error && totalRows === 0
 
   if (loading) {
@@ -231,15 +250,16 @@ export default function VendorsPage() {
             title="Refresh"
           >
             <RefreshCcw size={16} className={cn(fetching && 'animate-spin')} />
-            Refresh
+            <span className="hidden sm:inline">Refresh</span>
           </button>
 
           <Link
-            href="/procurement/vendors/create"
+            href="/admin/procurement/vendors/create"
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <Plus size={18} />
-            New Vendor
+            <span className="hidden sm:inline">New Vendor</span>
+            <span className="sm:hidden">New</span>
           </Link>
         </div>
       </div>
@@ -283,12 +303,28 @@ export default function VendorsPage() {
               <option value={25}>25 / page</option>
               <option value={50}>50 / page</option>
             </select>
+
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="px-3 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-1 text-sm"
+                title="Clear filters"
+              >
+                <X size={14} />
+                <span className="hidden sm:inline">Clear</span>
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="mt-3 text-xs text-gray-500">
-          Showing <span className="font-medium text-gray-700">{totalRows}</span> vendor(s)
-          {fetching ? <span className="ml-2">(syncing...)</span> : null}
+        <div className="mt-3 text-xs text-gray-500 flex items-center gap-2">
+          <span>Showing <span className="font-medium text-gray-700">{totalRows}</span> vendor(s)</span>
+          {fetching && (
+            <span className="inline-flex items-center gap-1">
+              <RefreshCcw size={12} className="animate-spin" />
+              syncing...
+            </span>
+          )}
         </div>
       </div>
 
@@ -296,28 +332,30 @@ export default function VendorsPage() {
       {isEmpty ? (
         <div className="bg-white border rounded-xl p-10 text-center">
           <div className="mx-auto max-w-md">
+            <Building2 className="w-12 h-12 mx-auto text-gray-300 mb-4" />
             <div className="text-lg font-semibold">No vendors found</div>
             <div className="text-sm text-gray-500 mt-2">
-              Coba ubah filter/search, atau buat vendor baru untuk mulai transaksi procurement.
+              {hasActiveFilters 
+                ? 'No vendors match your filters. Try different keywords or clear filters.'
+                : 'Coba ubah filter/search, atau buat vendor baru untuk mulai transaksi procurement.'}
             </div>
             <div className="mt-6 flex items-center justify-center gap-3">
               <Link
-                href="/procurement/vendors/create"
+                href="/admin/procurement/vendors/create"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 <Plus size={18} />
                 Create Vendor
               </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  setSearch('')
-                  setStatusFilter('')
-                }}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
-              >
-                Reset Filter
-              </button>
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                >
+                  Clear Filters
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -334,7 +372,6 @@ export default function VendorsPage() {
                         type="button"
                         className="inline-flex items-center gap-1 hover:text-gray-900"
                         onClick={() => toggleSort('vendor_code')}
-                        title="Sort"
                       >
                         Code <ArrowUpDown size={14} />
                       </button>
@@ -344,7 +381,6 @@ export default function VendorsPage() {
                         type="button"
                         className="inline-flex items-center gap-1 hover:text-gray-900"
                         onClick={() => toggleSort('vendor_name')}
-                        title="Sort"
                       >
                         Name <ArrowUpDown size={14} />
                       </button>
@@ -355,7 +391,6 @@ export default function VendorsPage() {
                         type="button"
                         className="inline-flex items-center gap-1 hover:text-gray-900"
                         onClick={() => toggleSort('city')}
-                        title="Sort"
                       >
                         City <ArrowUpDown size={14} />
                       </button>
@@ -365,7 +400,6 @@ export default function VendorsPage() {
                         type="button"
                         className="inline-flex items-center gap-1 hover:text-gray-900"
                         onClick={() => toggleSort('status')}
-                        title="Sort"
                       >
                         Status <ArrowUpDown size={14} />
                       </button>
@@ -378,34 +412,49 @@ export default function VendorsPage() {
                   {pagedVendors.map((vendor) => (
                     <tr
                       key={vendor.vendor_id}
-                      className="border-b hover:bg-gray-50 cursor-pointer"
-                      onClick={() => router.push(`/procurement/vendors/${vendor.vendor_id}`)}
+                      className="border-b hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => router.push(`/admin/procurement/vendors/${vendor.vendor_id}`)}
                     >
                       <td className="p-4 font-mono text-sm whitespace-nowrap">{vendor.vendor_code}</td>
                       <td className="p-4 font-medium">{vendor.vendor_name}</td>
                       <td className="p-4">
-                        <div className="text-sm">{vendor.phone || '-'}</div>
-                        <div className="text-xs text-gray-500">{vendor.email || ''}</div>
+                        <div className="flex items-center gap-1 text-sm">
+                          <Phone size={12} className="text-gray-400" />
+                          {vendor.phone || '-'}
+                        </div>
+                        {vendor.email && (
+                          <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                            <Mail size={10} className="text-gray-400" />
+                            {vendor.email}
+                          </div>
+                        )}
                       </td>
-                      <td className="p-4">{vendor.city || '-'}</td>
+                      <td className="p-4">
+                        {vendor.city ? (
+                          <div className="flex items-center gap-1">
+                            <MapPin size={12} className="text-gray-400" />
+                            {vendor.city}
+                          </div>
+                        ) : '-'}
+                      </td>
                       <td className="p-4">
                         <StatusBadge status={vendor.status} type="vendor" />
                       </td>
                       <td className="p-4">
                         <div className="flex justify-center gap-2">
                           <Link
-                            href={`/procurement/vendors/${vendor.vendor_id}`}
-                            className="p-2 hover:bg-gray-100 rounded"
+                            href={`/admin/procurement/vendors/${vendor.vendor_id}`}
+                            className="p-2 hover:bg-gray-100 rounded transition-colors"
                             onClick={(e) => e.stopPropagation()}
-                            title="View"
+                            title="View Details"
                           >
                             <Eye size={16} className="text-blue-600" />
                           </Link>
                           <Link
-                            href={`/procurement/vendors/${vendor.vendor_id}/edit`}
-                            className="p-2 hover:bg-gray-100 rounded"
+                            href={`/admin/procurement/vendors/${vendor.vendor_id}/edit`}
+                            className="p-2 hover:bg-gray-100 rounded transition-colors"
                             onClick={(e) => e.stopPropagation()}
-                            title="Edit"
+                            title="Edit Vendor"
                           >
                             <Edit size={16} className="text-gray-700" />
                           </Link>
@@ -422,13 +471,14 @@ export default function VendorsPage() {
               <div className="text-sm text-gray-600">
                 Page <span className="font-medium text-gray-900">{page}</span> of{' '}
                 <span className="font-medium text-gray-900">{totalPages}</span>
+                {' '}· Showing <span className="font-medium">{pagedVendors.length}</span> vendors
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setPage(1)}
-                  className="px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                  className="px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm"
                   disabled={page <= 1}
                 >
                   First
@@ -436,15 +486,18 @@ export default function VendorsPage() {
                 <button
                   type="button"
                   onClick={() => setPage(p => Math.max(1, p - 1))}
-                  className="px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                  className="px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm"
                   disabled={page <= 1}
                 >
                   Prev
                 </button>
+                <span className="px-3 py-2 text-sm">
+                  {page} / {totalPages}
+                </span>
                 <button
                   type="button"
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  className="px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                  className="px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm"
                   disabled={page >= totalPages}
                 >
                   Next
@@ -452,7 +505,7 @@ export default function VendorsPage() {
                 <button
                   type="button"
                   onClick={() => setPage(totalPages)}
-                  className="px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                  className="px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm"
                   disabled={page >= totalPages}
                 >
                   Last

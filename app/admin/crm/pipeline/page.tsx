@@ -21,6 +21,12 @@ import {
   RefreshCw,
   ChevronDown,
   Eye,
+  Briefcase,
+  ClipboardCheck,
+  FileCheck,
+  Handshake,
+  Wrench,
+  XCircle,
 } from "lucide-react"
 
 // ================= TYPES =================
@@ -30,15 +36,19 @@ type Deal = {
   customer_id: string
   customer_name: string
   project_name: string
-  stage: "FOLLOW UP" | "PENAWARAN" | "NEGOSIASI" | "DEAL" | "ON GOING" | "LOST"
+  stage: "FOLLOW UP" | "PENAWARAN" | "NEGOSIASI" | "DEAL" | "LOST"
   estimated_value: number
+  proposal_value?: number
+  final_value: number
   rab_id: string
   proposal_id: string
+  proposal_status?: "draft" | "sent" | "approved" | "rejected"
   project_id?: string
   created_at: string
   updated_at: string
   status?: string
   probability: number
+  aging_days: number
 }
 
 type StageConfig = {
@@ -47,7 +57,9 @@ type StageConfig = {
   color: string
   bgColor: string
   textColor: string
+  borderColor: string
   icon: any
+  description: string
 }
 
 type Stats = {
@@ -60,6 +72,8 @@ type Stats = {
   avgDealSize: number
   pipelineHealth: number
   agingBreach: number
+  activeDeals: number
+  wonProjects: number
 }
 
 // ================= CONFIG =================
@@ -67,53 +81,56 @@ const STAGE_CONFIG: Record<string, StageConfig> = {
   "FOLLOW UP": {
     label: "Follow Up",
     probability: 0.2,
-    color: "blue",
-    bgColor: "bg-blue-100",
-    textColor: "text-blue-700",
+    color: "slate",
+    bgColor: "bg-slate-100",
+    textColor: "text-slate-700",
+    borderColor: "border-slate-200",
     icon: Users,
+    description: "Initial contact & qualification"
   },
   PENAWARAN: {
     label: "Penawaran",
     probability: 0.5,
-    color: "orange",
-    bgColor: "bg-orange-100",
-    textColor: "text-orange-700",
+    color: "blue",
+    bgColor: "bg-blue-100",
+    textColor: "text-blue-700",
+    borderColor: "border-blue-200",
     icon: FileText,
+    description: "RAB & proposal sent"
   },
   NEGOSIASI: {
     label: "Negosiasi",
     probability: 0.7,
-    color: "yellow",
-    bgColor: "bg-yellow-100",
-    textColor: "text-yellow-700",
-    icon: TrendingUp,
+    color: "amber",
+    bgColor: "bg-amber-100",
+    textColor: "text-amber-700",
+    borderColor: "border-amber-200",
+    icon: Handshake,
+    description: "Commercial discussion"
   },
   DEAL: {
     label: "Deal",
     probability: 1.0,
-    color: "green",
-    bgColor: "bg-green-100",
-    textColor: "text-green-700",
+    color: "emerald",
+    bgColor: "bg-emerald-100",
+    textColor: "text-emerald-700",
+    borderColor: "border-emerald-200",
     icon: CheckCircle2,
-  },
-  "ON GOING": {
-    label: "On Going",
-    probability: 1.0,
-    color: "purple",
-    bgColor: "bg-purple-100",
-    textColor: "text-purple-700",
-    icon: Target,
+    description: "Contract signed - ready for project"
   },
   LOST: {
     label: "Lost",
     probability: 0.0,
-    color: "red",
-    bgColor: "bg-red-100",
-    textColor: "text-red-700",
-    icon: AlertCircle,
+    color: "rose",
+    bgColor: "bg-rose-100",
+    textColor: "text-rose-700",
+    borderColor: "border-rose-200",
+    icon: XCircle,
+    description: "Deal lost / cancelled"
   },
 }
 
+// ON GOING dihapus dari pipeline, pindah ke project management
 const AGING_THRESHOLDS = {
   warning: 14,
   critical: 30,
@@ -121,11 +138,19 @@ const AGING_THRESHOLDS = {
 
 // ================= HELPER FUNCTIONS =================
 function getStageFromInquiry(i: any): Deal['stage'] {
+  // Lost check first
   if (i.status === "lost") return "LOST"
-  if (i.converted_project_id) return "ON GOING"
-  if (i.converted_proposal_id) return "DEAL"
-  if (i.converted_rab_id) return "NEGOSIASI"
-  if (i.status === "sent" || i.status === "estimating") return "PENAWARAN"
+  
+  // Deal = proposal approved
+  if (i.proposal_status === "approved") return "DEAL"
+  
+  // Negosiasi = proposal sent
+  if (i.proposal_status === "sent") return "NEGOSIASI"
+  
+  // Penawaran = RAB exists
+  if (i.converted_rab_id) return "PENAWARAN"
+  
+  // Default = Follow Up
   return "FOLLOW UP"
 }
 
@@ -184,6 +209,11 @@ export default function CRMPipelinePage() {
 
         const mapped = (json.data || []).map((i: any) => {
           const stage = getStageFromInquiry(i)
+          // Proposal value > inquiry value jika ada
+          const proposalValue = i.proposal_value || 0
+          const estimatedValue = i.estimasi_nilai || 0
+          const finalValue = proposalValue > 0 ? proposalValue : estimatedValue
+          
           return {
             pipeline_id: i.inquiry_id,
             inquiry_id: i.inquiry_id,
@@ -191,14 +221,18 @@ export default function CRMPipelinePage() {
             customer_name: i.customer_name || "-",
             project_name: i.nama_pekerjaan || "Untitled Project",
             stage,
-            estimated_value: i.estimasi_nilai || 0,
+            estimated_value: estimatedValue,
+            proposal_value: proposalValue,
+            final_value: finalValue,
             rab_id: i.converted_rab_id || "",
             proposal_id: i.converted_proposal_id || "",
+            proposal_status: i.proposal_status,
             project_id: i.converted_project_id || "",
             created_at: i.created_at || i.tanggal_masuk || new Date().toISOString(),
             updated_at: i.updated_at || i.created_at || i.tanggal_masuk || new Date().toISOString(),
             status: i.status,
             probability: STAGE_CONFIG[stage]?.probability || 0,
+            aging_days: getAgingDays(i.updated_at || i.created_at || i.tanggal_masuk),
           }
         })
 
@@ -244,10 +278,16 @@ export default function CRMPipelinePage() {
         const aVal = a[sortBy] || ""
         const bVal = b[sortBy] || ""
         
-        if (sortBy === "estimated_value") {
+        if (sortBy === "final_value" || sortBy === "estimated_value") {
           return sortOrder === "asc" 
-            ? (a.estimated_value - b.estimated_value)
-            : (b.estimated_value - a.estimated_value)
+            ? (a.final_value - b.final_value)
+            : (b.final_value - a.final_value)
+        }
+        
+        if (sortBy === "aging_days") {
+          return sortOrder === "asc"
+            ? a.aging_days - b.aging_days
+            : b.aging_days - a.aging_days
         }
         
         if (sortBy === "updated_at" || sortBy === "created_at") {
@@ -264,20 +304,28 @@ export default function CRMPipelinePage() {
   // ================= STATISTICS =================
   const stats = useMemo<Stats>(() => {
     const activeDeals = filteredData.filter(d => d.stage !== "LOST")
-    const totalPipeline = filteredData.reduce((s, d) => s + d.estimated_value, 0)
+    const totalPipeline = filteredData
+  .filter(d => d.stage !== "LOST")
+  .reduce((s, d) => s + d.final_value, 0)
     
     const weightedRevenue = filteredData.reduce(
-      (s, d) => s + (d.estimated_value * d.probability), 0
+      (s, d) => s + (d.final_value * d.probability), 0
     )
 
-    const dealCount = filteredData.filter(d => d.stage === "DEAL" || d.stage === "ON GOING").length
+    const dealCount = filteredData.filter(d => d.stage === "DEAL").length
     const dealValue = filteredData
-      .filter(d => d.stage === "DEAL" || d.stage === "ON GOING")
-      .reduce((s, d) => s + d.estimated_value, 0)
+      .filter(d => d.stage === "DEAL")
+      .reduce((s, d) => s + d.final_value, 0)
 
-    const conversionRate = activeDeals.length > 0
-      ? (dealCount / activeDeals.length) * 100
-      : 0
+    const wonProjects = filteredData.filter(d => d.project_id).length
+
+    const totalClosed = filteredData.filter(d => 
+  d.stage === "DEAL" || d.stage === "LOST"
+).length
+
+const conversionRate = totalClosed > 0
+  ? (dealCount / totalClosed) * 100
+  : 0
 
     const avgDealSize = dealCount > 0 ? dealValue / dealCount : 0
     const pipelineHealth = totalPipeline > 0 
@@ -286,9 +334,8 @@ export default function CRMPipelinePage() {
 
     const agingBreach = filteredData.filter(d => 
       d.stage !== "DEAL" && 
-      d.stage !== "ON GOING" && 
       d.stage !== "LOST" &&
-      getAgingDays(d.updated_at) > AGING_THRESHOLDS.warning
+      d.aging_days > AGING_THRESHOLDS.warning
     ).length
 
     return {
@@ -301,6 +348,8 @@ export default function CRMPipelinePage() {
       avgDealSize,
       pipelineHealth,
       agingBreach,
+      activeDeals: activeDeals.length,
+      wonProjects,
     }
   }, [filteredData])
 
@@ -315,7 +364,7 @@ export default function CRMPipelinePage() {
     filteredData.forEach(d => {
       if (stages[d.stage]) {
         stages[d.stage].count++
-        stages[d.stage].value += d.estimated_value
+        stages[d.stage].value += d.final_value
       }
     })
 
@@ -337,13 +386,13 @@ export default function CRMPipelinePage() {
         map[monthKey] = { month: monthLabel, value: 0, count: 0 }
       }
 
-      map[monthKey].value += d.estimated_value
+      map[monthKey].value += d.final_value
       map[monthKey].count++
     })
 
     return Object.entries(map)
-  .sort(([a], [b]) => a.localeCompare(b))
-  .map(([_, v]) => v)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([_, v]) => v)
   }, [filteredData])
 
   // ================= AGING ANALYSIS =================
@@ -355,13 +404,12 @@ export default function CRMPipelinePage() {
     }
 
     filteredData.forEach(d => {
-      if (d.stage === "DEAL" || d.stage === "ON GOING" || d.stage === "LOST") return
+      if (d.stage === "DEAL" || d.stage === "LOST") return
       
-      const days = getAgingDays(d.updated_at)
-      const status = getAgingStatus(days)
+      const status = getAgingStatus(d.aging_days)
       
       aging[status].count++
-      aging[status].value += d.estimated_value
+      aging[status].value += d.final_value
     })
 
     return aging
@@ -370,10 +418,10 @@ export default function CRMPipelinePage() {
   // ================= LOADING STATE =================
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-          <p className="text-gray-400">Loading Pipeline Intelligence...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-slate-300 border-t-slate-800 mx-auto" />
+          <p className="text-slate-500">Loading Pipeline Intelligence...</p>
         </div>
       </div>
     )
@@ -381,18 +429,19 @@ export default function CRMPipelinePage() {
 
   // ================= RENDER =================
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white sticky top-0 z-10">
+    <div className="min-h-screen bg-slate-50">
+      {/* Header - Premium Industrial */}
+      <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 text-white sticky top-0 z-10 border-b border-slate-600/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-white/10 rounded-xl">
-                <BarChart3 size={28} />
+              <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+                <BarChart3 size={28} className="text-slate-300" />
               </div>
               <div>
-                <h1 className="text-2xl lg:text-3xl font-bold">Pipeline & Deals</h1>
-                <p className="text-blue-100 text-sm mt-1">
+                <h1 className="text-2xl lg:text-3xl font-light tracking-tight">Pipeline & Deals</h1>
+                <p className="text-slate-300 text-sm mt-1 flex items-center gap-2">
+                  <span className="inline-block w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>
                   Real-time revenue tracking and sales intelligence
                 </p>
               </div>
@@ -401,11 +450,11 @@ export default function CRMPipelinePage() {
             <div className="flex items-center gap-3 w-full lg:w-auto">
               {/* Search */}
               <div className="relative flex-1 lg:w-80">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
                   type="text"
                   placeholder="Cari project atau customer..."
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/30"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-white/20"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -415,10 +464,10 @@ export default function CRMPipelinePage() {
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`p-2.5 rounded-xl transition ${
-                  showFilters ? 'bg-white/20' : 'bg-white/10 hover:bg-white/15'
-                }`}
+                  showFilters ? 'bg-white/20' : 'bg-white/5 hover:bg-white/10'
+                } border border-white/10`}
               >
-                <Filter size={20} />
+                <Filter size={20} className="text-slate-300" />
               </button>
 
               {/* Export Button */}
@@ -427,20 +476,20 @@ export default function CRMPipelinePage() {
                   // Implement export to Excel
                   alert("Export feature coming soon!")
                 }}
-                className="p-2.5 bg-white/10 hover:bg-white/15 rounded-xl transition"
+                className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl transition border border-white/10"
               >
-                <Download size={20} />
+                <Download size={20} className="text-slate-300" />
               </button>
             </div>
           </div>
 
           {/* Advanced Filters */}
           {showFilters && (
-            <div className="mt-6 p-4 bg-white/10 rounded-xl grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="mt-6 p-4 bg-white/5 border border-white/10 rounded-xl grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <label className="block text-xs font-medium text-blue-200 mb-2">Stage</label>
+                <label className="block text-xs font-medium text-slate-300 mb-2">Stage</label>
                 <select
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm"
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:ring-2 focus:ring-white/20"
                   value={stageFilter}
                   onChange={(e) => setStageFilter(e.target.value)}
                 >
@@ -450,29 +499,29 @@ export default function CRMPipelinePage() {
                   <option value="PENAWARAN">Penawaran</option>
                   <option value="NEGOSIASI">Negosiasi</option>
                   <option value="DEAL">Deal</option>
-                  <option value="ON GOING">On Going</option>
                   <option value="LOST">Lost</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-blue-200 mb-2">Sort By</label>
+                <label className="block text-xs font-medium text-slate-300 mb-2">Sort By</label>
                 <select
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm"
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as keyof Deal)}
                 >
                   <option value="updated_at">Last Updated</option>
                   <option value="created_at">Created Date</option>
-                  <option value="estimated_value">Value</option>
+                  <option value="final_value">Value</option>
+                  <option value="aging_days">Aging</option>
                   <option value="project_name">Project Name</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-blue-200 mb-2">Sort Order</label>
+                <label className="block text-xs font-medium text-slate-300 mb-2">Sort Order</label>
                 <select
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm"
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm"
                   value={sortOrder}
                   onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
                 >
@@ -482,19 +531,24 @@ export default function CRMPipelinePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-blue-200 mb-2">View Mode</label>
+                <label className="block text-xs font-medium text-slate-300 mb-2">View Mode</label>
                 <div className="flex gap-2">
-                  {['table', 'kanban', 'chart'].map((mode) => (
+                  {[
+                    { id: 'table', label: 'Table', icon: FileText },
+                    { id: 'kanban', label: 'Kanban', icon: Briefcase },
+                    { id: 'chart', label: 'Analytics', icon: PieChart }
+                  ].map((mode) => (
                     <button
-                      key={mode}
-                      onClick={() => setViewMode(mode as any)}
-                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium capitalize transition ${
-                        viewMode === mode
-                          ? 'bg-white text-blue-600'
-                          : 'bg-white/10 text-white hover:bg-white/20'
+                      key={mode.id}
+                      onClick={() => setViewMode(mode.id as any)}
+                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium capitalize transition flex items-center justify-center gap-1 ${
+                        viewMode === mode.id
+                          ? 'bg-white text-slate-800'
+                          : 'bg-white/5 text-slate-300 hover:bg-white/10'
                       }`}
                     >
-                      {mode}
+                      <mode.icon size={14} />
+                      {mode.label}
                     </button>
                   ))}
                 </div>
@@ -506,89 +560,54 @@ export default function CRMPipelinePage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* KPI Cards */}
+        {/* KPI Cards - Premium */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <KpiCard
             title="Total Pipeline"
             value={stats.totalPipeline}
             icon={<DollarSign />}
-            color="blue"
+            color="slate"
             format="currency"
-            trend={+12.5}
+            subtitle={`${stats.activeDeals} active deals`}
           />
           <KpiCard
             title="Forecast Revenue"
             value={stats.forecastRevenue}
             icon={<Target />}
-            color="purple"
+            color="blue"
             format="currency"
-            subtitle={`${stats.pipelineHealth.toFixed(1)}% of pipeline`}
+            subtitle={`${stats.pipelineHealth.toFixed(1)}% weighted`}
           />
           <KpiCard
             title="Closed Deals"
             value={stats.dealCount}
             icon={<CheckCircle2 />}
-            color="green"
-            subtitle={`Rp ${(stats.dealValue / 1_000_000).toFixed(1)} Jt`}
-            trend={+8.3}
+            color="emerald"
+            subtitle={`${stats.wonProjects} projects active`}
           />
           <KpiCard
             title="Conversion Rate"
             value={stats.conversionRate}
             icon={<TrendingUp />}
-            color="orange"
+            color="amber"
             format="percentage"
-            subtitle={`Avg Deal: ${formatCompactCurrency(stats.avgDealSize)}`}
+            subtitle={`Avg: ${formatCompactCurrency(stats.avgDealSize)}`}
           />
         </div>
 
         {/* Aging Alert */}
         {stats.agingBreach > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-            <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 shadow-sm">
+            <AlertCircle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
             <div>
-              <h3 className="font-semibold text-red-800">Aging Pipeline Alert</h3>
-              <p className="text-sm text-red-700">
-                Terdapat {stats.agingBreach} deal yang sudah lebih dari {AGING_THRESHOLDS.warning} hari tanpa update.
+              <h3 className="font-semibold text-amber-800">Aging Pipeline Alert</h3>
+              <p className="text-sm text-amber-700">
+                Terdapat {stats.agingBreach} deal yang sudah lebih dari {AGING_THRESHOLDS.warning} hari tanpa progress.
                 Segera lakukan follow up.
               </p>
             </div>
           </div>
         )}
-
-        {/* View Mode Switch */}
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={() => setViewMode('table')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-              viewMode === 'table' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            Table View
-          </button>
-          <button
-            onClick={() => setViewMode('kanban')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-              viewMode === 'kanban' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            Kanban View
-          </button>
-          <button
-            onClick={() => setViewMode('chart')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-              viewMode === 'chart' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            Analytics View
-          </button>
-        </div>
 
         {/* Content based on view mode */}
         {viewMode === 'table' && (
@@ -617,21 +636,21 @@ export default function CRMPipelinePage() {
         )}
 
         {/* Summary Footer */}
-        <div className="bg-white border rounded-xl p-4 flex flex-wrap justify-between items-center text-sm">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-wrap justify-between items-center text-sm shadow-sm">
           <div className="flex items-center gap-4">
-            <span className="text-gray-500">Showing {filteredData.length} deals</span>
-            <span className="text-gray-300">|</span>
-            <span className="text-gray-500">
+            <span className="text-slate-500">Showing {filteredData.length} deals</span>
+            <span className="text-slate-300">|</span>
+            <span className="text-slate-500">
               Active: {filteredData.filter(d => d.stage !== 'LOST').length}
             </span>
-            <span className="text-gray-300">|</span>
-            <span className="text-gray-500">
+            <span className="text-slate-300">|</span>
+            <span className="text-slate-500">
               Lost: {filteredData.filter(d => d.stage === 'LOST').length}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <RefreshCw size={14} className="text-gray-400" />
-            <span className="text-gray-400 text-xs">
+            <RefreshCw size={14} className="text-slate-400" />
+            <span className="text-slate-400 text-xs">
               Last updated: {new Date().toLocaleTimeString('id-ID')}
             </span>
           </div>
@@ -644,76 +663,82 @@ export default function CRMPipelinePage() {
 // ================= TABLE VIEW =================
 function TableView({ data, onRowClick }: { data: Deal[]; onRowClick: (deal: Deal) => void }) {
   return (
-    <div className="bg-white border rounded-xl overflow-hidden">
+    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="p-4 text-left">Project</th>
-              <th className="p-4 text-left">Customer</th>
-              <th className="p-4 text-left">Stage</th>
-              <th className="p-4 text-right">Value</th>
-              <th className="p-4 text-center">Probability</th>
-              <th className="p-4 text-center">Aging</th>
-              <th className="p-4 text-center">Action</th>
+              <th className="p-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Project</th>
+              <th className="p-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Customer</th>
+              <th className="p-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Stage</th>
+              <th className="p-4 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Value</th>
+              <th className="p-4 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Probability</th>
+              <th className="p-4 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Aging</th>
+              <th className="p-4 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-slate-100">
             {data.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-12 text-center text-gray-400">
+                <td colSpan={7} className="p-12 text-center text-slate-400">
                   Tidak ada data
                 </td>
               </tr>
             ) : (
               data.map((deal) => {
-                const agingDays = getAgingDays(deal.updated_at)
-                const agingStatus = getAgingStatus(agingDays)
+                const agingStatus = getAgingStatus(deal.aging_days)
                 const stage = STAGE_CONFIG[deal.stage]
 
                 return (
                   <tr
                     key={deal.pipeline_id}
-                    className={`hover:bg-gray-50 cursor-pointer transition ${
-                      agingStatus === 'critical' ? 'bg-red-50' :
-                      agingStatus === 'warning' ? 'bg-yellow-50' : ''
+                    className={`hover:bg-slate-50 cursor-pointer transition ${
+                      agingStatus === 'critical' ? 'bg-rose-50/30' :
+                      agingStatus === 'warning' ? 'bg-amber-50/30' : ''
                     }`}
                     onClick={() => onRowClick(deal)}
                   >
                     <td className="p-4">
-                      <div className="font-medium">{deal.project_name}</div>
-                      <div className="text-xs text-gray-400">{deal.inquiry_id}</div>
+                      <div className="font-medium text-slate-800">{deal.project_name}</div>
+                      <div className="text-xs text-slate-400 mt-0.5">{deal.inquiry_id}</div>
                     </td>
-                    <td className="p-4">{deal.customer_name}</td>
+                    <td className="p-4 text-slate-600">{deal.customer_name}</td>
                     <td className="p-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${stage.bgColor} ${stage.textColor}`}>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${stage.bgColor} ${stage.textColor} border ${stage.borderColor}`}>
                         {stage.label}
                       </span>
                     </td>
-                    <td className="p-4 text-right font-semibold">
-                      {formatCompactCurrency(deal.estimated_value)}
+                    <td className="p-4 text-right font-semibold text-slate-800">
+                      {formatCompactCurrency(deal.final_value)}
+                      {deal.proposal_value && deal.proposal_value > deal.estimated_value && (
+                        <div className="text-xs text-emerald-600 font-normal mt-0.5">
+                          ↑ from {formatCompactCurrency(deal.estimated_value)}
+                        </div>
+                      )}
                     </td>
                     <td className="p-4 text-center">
                       <div className="flex items-center justify-center gap-2">
-                        <div className="w-16 bg-gray-200 rounded-full h-2">
+                        <div className="w-16 bg-slate-100 rounded-full h-2">
                           <div
                             className={`h-2 rounded-full ${
-                              deal.probability >= 0.7 ? 'bg-green-500' :
-                              deal.probability >= 0.4 ? 'bg-yellow-500' : 'bg-red-500'
+                              deal.probability >= 0.7 ? 'bg-emerald-500' :
+                              deal.probability >= 0.4 ? 'bg-amber-500' : 'bg-rose-500'
                             }`}
                             style={{ width: `${deal.probability * 100}%` }}
                           />
                         </div>
-                        <span className="text-xs">{Math.round(deal.probability * 100)}%</span>
+                        <span className="text-xs font-medium text-slate-600">
+                          {Math.round(deal.probability * 100)}%
+                        </span>
                       </div>
                     </td>
                     <td className="p-4 text-center">
-                      <span className={`text-xs font-medium ${
-                        agingStatus === 'critical' ? 'text-red-600' :
-                        agingStatus === 'warning' ? 'text-yellow-600' :
-                        'text-gray-500'
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                        agingStatus === 'critical' ? 'bg-rose-100 text-rose-700' :
+                        agingStatus === 'warning' ? 'bg-amber-100 text-amber-700' :
+                        'bg-slate-100 text-slate-600'
                       }`}>
-                        {agingDays} hari
+                        {deal.aging_days} hari
                       </span>
                     </td>
                     <td className="p-4 text-center">
@@ -722,9 +747,9 @@ function TableView({ data, onRowClick }: { data: Deal[]; onRowClick: (deal: Deal
                           e.stopPropagation()
                           onRowClick(deal)
                         }}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition"
+                        className="p-2 hover:bg-slate-100 rounded-lg transition"
                       >
-                        <Eye size={16} className="text-gray-500" />
+                        <Eye size={16} className="text-slate-400" />
                       </button>
                     </td>
                   </tr>
@@ -751,51 +776,54 @@ function KanbanView({
   onDealClick: (deal: Deal) => void
 }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
       {Object.entries(stages).map(([stageKey, config]) => {
         const stageData = data.filter(d => d.stage === stageKey)
         const stageStats = distribution[stageKey] || { count: 0, value: 0 }
         const Icon = config.icon
 
         return (
-          <div key={stageKey} className="bg-white border rounded-xl overflow-hidden">
-            <div className={`p-4 ${config.bgColor} border-b`}>
+          <div key={stageKey} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <div className={`p-4 ${config.bgColor} border-b ${config.borderColor}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Icon size={16} className={config.textColor} />
                   <h3 className={`font-semibold ${config.textColor}`}>{config.label}</h3>
                 </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium bg-white/50 ${config.textColor}`}>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium bg-white/80 ${config.textColor}`}>
                   {stageStats.count}
                 </span>
               </div>
               <p className={`text-sm font-bold mt-2 ${config.textColor}`}>
                 {formatCompactCurrency(stageStats.value)}
               </p>
+              <p className="text-xs text-slate-500 mt-1">{config.description}</p>
             </div>
 
-            <div className="p-3 space-y-2 max-h-[500px] overflow-y-auto">
+            <div className="p-3 space-y-2 max-h-[500px] overflow-y-auto bg-slate-50/50">
               {stageData.length === 0 ? (
-                <p className="text-center text-xs text-gray-400 py-4">No deals</p>
+                <p className="text-center text-xs text-slate-400 py-4">No deals</p>
               ) : (
                 stageData.map((deal) => (
                   <div
                     key={deal.pipeline_id}
-                    className="p-3 bg-gray-50 rounded-lg hover:shadow-sm cursor-pointer transition"
+                    className="p-3 bg-white border border-slate-200 rounded-lg hover:shadow-sm cursor-pointer transition"
                     onClick={() => onDealClick(deal)}
                   >
-                    <p className="font-medium text-sm">{deal.project_name}</p>
-                    <p className="text-xs text-gray-500 mt-1">{deal.customer_name}</p>
-                    <div className="flex justify-between items-center mt-2">
-                      <span className="text-xs font-semibold text-blue-600">
-                        {formatCompactCurrency(deal.estimated_value)}
+                    <p className="font-medium text-sm text-slate-800">{deal.project_name}</p>
+                    <p className="text-xs text-slate-500 mt-1">{deal.customer_name}</p>
+                    <div className="flex justify-between items-center mt-3">
+                      <span className="text-xs font-semibold text-slate-800">
+                        {formatCompactCurrency(deal.final_value)}
                       </span>
-                      <span className={`text-xs ${
-                        getAgingStatus(getAgingDays(deal.updated_at)) === 'critical'
-                          ? 'text-red-600'
-                          : 'text-gray-400'
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        getAgingStatus(deal.aging_days) === 'critical'
+                          ? 'bg-rose-100 text-rose-700'
+                          : getAgingStatus(deal.aging_days) === 'warning'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-slate-100 text-slate-600'
                       }`}>
-                        {getAgingDays(deal.updated_at)}h
+                        {deal.aging_days}hari
                       </span>
                     </div>
                   </div>
@@ -810,12 +838,11 @@ function KanbanView({
 }
 
 const BAR_COLOR: Record<string, string> = {
-  blue: "bg-blue-500",
-  orange: "bg-orange-500",
-  yellow: "bg-yellow-500",
-  green: "bg-green-500",
-  purple: "bg-purple-500",
-  red: "bg-red-500",
+  slate: "bg-slate-600",
+  blue: "bg-blue-600",
+  amber: "bg-amber-600",
+  emerald: "bg-emerald-600",
+  rose: "bg-rose-600",
 }
 
 // ================= ANALYTICS VIEW =================
@@ -833,9 +860,9 @@ function AnalyticsView({
   return (
     <div className="space-y-6">
       {/* Stage Distribution */}
-      <div className="bg-white border rounded-xl p-6">
-        <h3 className="font-semibold mb-4 flex items-center gap-2">
-          <PieChart size={18} className="text-blue-600" />
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+          <PieChart size={18} className="text-slate-600" />
           Stage Distribution
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -849,16 +876,16 @@ function AnalyticsView({
               return (
                 <div key={stage}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className={config.textColor}>{config.label}</span>
-                    <span className="font-medium">{formatCompactCurrency(data.value)}</span>
+                    <span className={`font-medium ${config.textColor}`}>{config.label}</span>
+                    <span className="font-semibold text-slate-800">{formatCompactCurrency(data.value)}</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-  <div
-    className={`h-2 rounded-full ${BAR_COLOR[config.color as keyof typeof BAR_COLOR]}`}
-    style={{ width: `${percentage}%` }}
-  />
-</div>
-                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                  <div className="w-full bg-slate-100 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full ${BAR_COLOR[config.color as keyof typeof BAR_COLOR]}`}
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-400 mt-1">
                     <span>{data.count} deals</span>
                     <span>{percentage.toFixed(1)}%</span>
                   </div>
@@ -868,73 +895,73 @@ function AnalyticsView({
           </div>
 
           <div className="space-y-4">
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-700">Pipeline Health</p>
-              <p className="text-2xl font-bold text-blue-700">{stats.pipelineHealth.toFixed(1)}%</p>
-              <p className="text-xs text-blue-600 mt-1">Weighted vs Total</p>
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+              <p className="text-sm text-slate-600">Pipeline Health</p>
+              <p className="text-2xl font-bold text-slate-800">{stats.pipelineHealth.toFixed(1)}%</p>
+              <p className="text-xs text-slate-500 mt-1">Weighted vs Total</p>
             </div>
 
-            <div className="p-4 bg-green-50 rounded-lg">
-              <p className="text-sm text-green-700">Conversion Rate</p>
-              <p className="text-2xl font-bold text-green-700">{stats.conversionRate.toFixed(1)}%</p>
-              <p className="text-xs text-green-600 mt-1">{stats.dealCount} deals closed</p>
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+              <p className="text-sm text-slate-600">Conversion Rate</p>
+              <p className="text-2xl font-bold text-slate-800">{stats.conversionRate.toFixed(1)}%</p>
+              <p className="text-xs text-slate-500 mt-1">{stats.dealCount} deals closed</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Aging Analysis */}
-      <div className="bg-white border rounded-xl p-6">
-        <h3 className="font-semibold mb-4 flex items-center gap-2">
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
           <Clock size={18} className="text-amber-600" />
           Aging Analysis
         </h3>
         <div className="grid grid-cols-3 gap-4">
-          <div className="p-4 bg-green-50 rounded-lg">
-            <p className="text-sm text-green-700">Normal</p>
-            <p className="text-xl font-bold text-green-700">{agingAnalysis.normal.count}</p>
-            <p className="text-xs text-green-600 mt-1">{formatCompactCurrency(agingAnalysis.normal.value)}</p>
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+            <p className="text-sm text-slate-600">Normal</p>
+            <p className="text-xl font-bold text-slate-800">{agingAnalysis.normal.count}</p>
+            <p className="text-xs text-slate-500 mt-1">{formatCompactCurrency(agingAnalysis.normal.value)}</p>
           </div>
-          <div className="p-4 bg-yellow-50 rounded-lg">
-            <p className="text-sm text-yellow-700">Warning (&gt;14h)</p>
-            <p className="text-xl font-bold text-yellow-700">{agingAnalysis.warning.count}</p>
-            <p className="text-xs text-yellow-600 mt-1">{formatCompactCurrency(agingAnalysis.warning.value)}</p>
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-sm text-amber-700">Warning (&gt;14h)</p>
+            <p className="text-xl font-bold text-amber-700">{agingAnalysis.warning.count}</p>
+            <p className="text-xs text-amber-600 mt-1">{formatCompactCurrency(agingAnalysis.warning.value)}</p>
           </div>
-          <div className="p-4 bg-red-50 rounded-lg">
-            <p className="text-sm text-red-700">Critical (&gt;30h)</p>
-            <p className="text-xl font-bold text-red-700">{agingAnalysis.critical.count}</p>
-            <p className="text-xs text-red-600 mt-1">{formatCompactCurrency(agingAnalysis.critical.value)}</p>
+          <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg">
+            <p className="text-sm text-rose-700">Critical (&gt;30h)</p>
+            <p className="text-xl font-bold text-rose-700">{agingAnalysis.critical.count}</p>
+            <p className="text-xs text-rose-600 mt-1">{formatCompactCurrency(agingAnalysis.critical.value)}</p>
           </div>
         </div>
       </div>
 
       {/* Monthly Trend */}
       {monthlyData.length > 0 && (
-        <div className="bg-white border rounded-xl p-6">
-          <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <Calendar size={18} className="text-purple-600" />
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+          <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+            <Calendar size={18} className="text-slate-600" />
             Monthly Revenue Trend
           </h3>
           <div className="space-y-4">
             {monthlyData.map((item) => {
               const maxValue = Math.max(...monthlyData.map(d => d.value))
-              const percentage = (item.value / maxValue) * 100
+              const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0
 
               return (
                 <div key={item.month}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="font-medium">{item.month}</span>
-                    <span className="text-blue-600 font-semibold">
+                    <span className="font-medium text-slate-600">{item.month}</span>
+                    <span className="text-slate-800 font-semibold">
                       {formatCompactCurrency(item.value)}
                     </span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-3">
+                  <div className="w-full bg-slate-100 rounded-full h-3">
                     <div
-                      className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full"
+                      className="bg-gradient-to-r from-slate-600 to-slate-500 h-3 rounded-full"
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
-                  <div className="text-xs text-gray-400 mt-1">
+                  <div className="text-xs text-slate-400 mt-1">
                     {item.count} deals
                   </div>
                 </div>
@@ -954,8 +981,7 @@ function KpiCard({
   icon, 
   color, 
   format = 'currency',
-  subtitle,
-  trend 
+  subtitle
 }: { 
   title: string
   value: number
@@ -963,13 +989,12 @@ function KpiCard({
   color: string
   format?: 'currency' | 'number' | 'percentage'
   subtitle?: string
-  trend?: number
 }) {
   const colorClasses = {
+    slate: 'bg-slate-100 text-slate-600',
     blue: 'bg-blue-100 text-blue-600',
-    purple: 'bg-purple-100 text-purple-600',
-    green: 'bg-green-100 text-green-600',
-    orange: 'bg-orange-100 text-orange-600',
+    emerald: 'bg-emerald-100 text-emerald-600',
+    amber: 'bg-amber-100 text-amber-600',
   }
 
   const formattedValue = format === 'currency' 
@@ -979,20 +1004,15 @@ function KpiCard({
     : value.toLocaleString('id-ID')
 
   return (
-    <div className="bg-white border rounded-xl p-6 hover:shadow-lg transition">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
       <div className="flex items-start justify-between">
         <div className={`${colorClasses[color as keyof typeof colorClasses]} p-3 rounded-xl`}>
           {icon}
         </div>
-        {trend !== undefined && (
-          <span className={`text-xs font-medium ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {trend >= 0 ? '+' : ''}{trend}%
-          </span>
-        )}
       </div>
-      <p className="text-sm text-gray-500 mt-4">{title}</p>
-      <p className="text-2xl font-bold text-gray-900 mt-1">{formattedValue}</p>
-      {subtitle && <p className="text-xs text-gray-400 mt-2">{subtitle}</p>}
+      <p className="text-sm text-slate-500 mt-4">{title}</p>
+      <p className="text-2xl font-bold text-slate-800 mt-1">{formattedValue}</p>
+      {subtitle && <p className="text-xs text-slate-400 mt-2">{subtitle}</p>}
     </div>
   )
 }

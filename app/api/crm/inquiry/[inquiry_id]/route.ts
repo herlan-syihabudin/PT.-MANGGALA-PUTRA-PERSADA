@@ -3,6 +3,18 @@ import { google } from "googleapis"
 
 export const dynamic = "force-dynamic"
 
+/* ================= ENVIRONMENT VALIDATION ================= */
+function validateEnvironment() {
+  const required = ['GOOGLE_CLIENT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'GSHEET_CRM_ID'] as const
+  const missing = required.filter(key => !process.env[key])
+  
+  if (missing.length > 0) {
+    throw new Error(`Missing environment variables: ${missing.join(', ')}`)
+  }
+}
+
+validateEnvironment()
+
 /* ================= AUTH ================= */
 
 const auth = new google.auth.JWT(
@@ -53,7 +65,6 @@ const COLUMNS = {
   CONVERTED_PROPOSAL_ID: 18,
 } as const
 
-// Update COLUMN_MAP to include estimasi_nilai
 const COLUMN_MAP: Record<string, string> = {
   assigned_to: "I",
   status: "J",
@@ -67,10 +78,35 @@ const COLUMN_MAP: Record<string, string> = {
   converted_proposal_id: "S",
 }
 
-// All columns in order for full row update
-const ALL_COLUMNS = [
-  "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S"
-] as const
+const HEADER_ROWS = 1
+const ROW_OFFSET = HEADER_ROWS + 1
+const SHEET_RANGE = `${SHEET_NAME}!A2:S` as const
+
+const RETRYABLE_CODES = [408, 429, 502, 503] as const
+
+/* ================= TYPES ================= */
+
+interface Inquiry {
+  inquiry_id: string
+  tanggal_masuk: string
+  customer_id: string
+  customer_name: string
+  nama_pekerjaan: string
+  layanan: string
+  estimasi_nilai: number | null
+  sumber: string
+  assigned_to: string
+  status: InquiryStatus
+  prioritas: string
+  lokasi: string
+  catatan: string
+  converted_rab_id: string
+  converted_project_id: string
+  created_at: string
+  created_by: string
+  stage: string
+  converted_proposal_id: string
+}
 
 /* ================= HELPERS ================= */
 
@@ -81,7 +117,7 @@ const safeStatus = (status: any): InquiryStatus => {
   return VALID_STATUS.includes(normalized as any) ? normalized as InquiryStatus : "new"
 }
 
-function mapRowToInquiry(row: any[]): any {
+function mapRowToInquiry(row: any[]): Inquiry {
   const rawBudget = String(row[COLUMNS.ESTIMASI_NILAI] || "").replace(/[^\d]/g, "")
   const statusRaw = String(row[COLUMNS.STATUS] || "new").toLowerCase().trim()
   
@@ -108,7 +144,7 @@ function mapRowToInquiry(row: any[]): any {
   }
 }
 
-function rowFromInquiry(inquiry: any): any[] {
+function rowFromInquiry(inquiry: Inquiry): unknown[] {
   return [
     inquiry.inquiry_id,
     inquiry.tanggal_masuk,
@@ -116,7 +152,7 @@ function rowFromInquiry(inquiry: any): any[] {
     inquiry.customer_name,
     inquiry.nama_pekerjaan,
     inquiry.layanan,
-   inquiry.estimasi_nilai ?? "",
+    inquiry.estimasi_nilai ?? null,
     inquiry.sumber,
     inquiry.assigned_to,
     inquiry.status,
@@ -130,6 +166,50 @@ function rowFromInquiry(inquiry: any): any[] {
     inquiry.stage,
     inquiry.converted_proposal_id,
   ]
+}
+
+/* ================= RETRY WRAPPER ================= */
+
+async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
+  try {
+    return await fn()
+  } catch (error: any) {
+    if (retries > 0 && RETRYABLE_CODES.includes(error.code)) {
+      const baseDelay = 1000 * Math.pow(2, 3 - retries)
+      const jitter = Math.random() * 100
+      const delay = Math.min(baseDelay + jitter, 10000)
+      
+      await new Promise(resolve => setTimeout(resolve, delay))
+      return withRetry(fn, retries - 1)
+    }
+    throw error
+  }
+}
+
+/* ================= STRUCTURED LOGGING ================= */
+
+const logger = {
+  error: (context: string, error: any, metadata: any = {}) => {
+    console.error(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'error',
+      context,
+      error: {
+        message: error?.message,
+        stack: error?.stack,
+        code: error?.code
+      },
+      ...metadata
+    }))
+  },
+  info: (context: string, metadata: any = {}) => {
+    console.log(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'info',
+      context,
+      ...metadata
+    }))
+  }
 }
 
 /* ===================================================== */
@@ -150,10 +230,12 @@ export async function GET(
       )
     }
 
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2:S`,
-    })
+    const res = await withRetry(() => 
+      sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: SHEET_RANGE,
+      })
+    )
 
     const rows = (res.data.values || []).filter(r => r[COLUMNS.INQUIRY_ID])
 
@@ -171,7 +253,6 @@ export async function GET(
     const row = rows[rowIndex]
     const data = mapRowToInquiry(row)
 
-    // Cek apakah sudah dihapus (stage DELETED)
     if (data.stage === "DELETED") {
       return NextResponse.json(
         { message: "Inquiry telah dihapus" },
@@ -179,12 +260,29 @@ export async function GET(
       )
     }
 
+    logger.info('GET Inquiry Success', { inquiryId })
     return NextResponse.json(data)
 
-  } catch (error) {
-    console.error("Detail Inquiry Error:", error)
+  } catch (error: any) {
+    logger.error('GET Inquiry', error, { inquiryId: params.inquiry_id })
+
+    const errorMap: Record<number, { message: string; status: number }> = {
+      404: { message: "Sheet tidak ditemukan", status: 404 },
+      403: { message: "Akses ke Google Sheets ditolak", status: 403 },
+      429: { message: "Terlalu banyak request, coba lagi", status: 429 },
+      503: { message: "Layanan Google Sheets sibuk", status: 503 },
+    }
+
+    const errorResponse = errorMap[error.code]
+    if (errorResponse) {
+      return NextResponse.json(
+        { message: errorResponse.message },
+        { status: errorResponse.status }
+      )
+    }
+
     return NextResponse.json(
-      { message: "Gagal load detail inquiry: " + (error instanceof Error ? error.message : "Unknown error") },
+      { message: "Gagal load detail inquiry" },
       { status: 500 }
     )
   }
@@ -209,10 +307,25 @@ export async function PATCH(
       )
     }
 
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2:S`,
-    })
+    // Validasi fields
+    const allowedFields = Object.keys(COLUMN_MAP)
+    const invalidFields = Object.keys(body).filter(
+      key => !allowedFields.includes(key)
+    )
+
+    if (invalidFields.length > 0) {
+      return NextResponse.json(
+        { message: `Field tidak valid: ${invalidFields.join(', ')}` },
+        { status: 400 }
+      )
+    }
+
+    const res = await withRetry(() =>
+      sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: SHEET_RANGE,
+      })
+    )
 
     const rows = (res.data.values || []).filter(r => r[COLUMNS.INQUIRY_ID])
 
@@ -227,116 +340,115 @@ export async function PATCH(
       )
     }
 
-    // Ambil data existing
     const existingRow = rows[rowIndex]
     const existingData = mapRowToInquiry(existingRow)
 
-    // Cek LOCK RULE: Jika sudah WON (converted_project_id ada), tidak bisa diubah
+    // Lock rules
     if (existingData.converted_project_id) {
       return NextResponse.json(
-        { message: "Inquiry sudah WON (converted_project_id sudah ada), tidak dapat diubah" },
+        { message: "Inquiry sudah WON, tidak dapat diubah" },
         { status: 403 }
       )
     }
 
-    // Cek apakah sudah dihapus
     if (existingData.stage === "DELETED") {
       return NextResponse.json(
-        { message: "Inquiry telah dihapus, tidak dapat diubah" },
+        { message: "Inquiry telah dihapus" },
         { status: 403 }
       )
     }
 
-    // SAFETY CHECK: Validasi status existing sebelum pake STATUS_TRANSITIONS
     const currentStatus = safeStatus(existingData.status)
+    let finalStatus = currentStatus
 
-    // Validasi STATUS TRANSITION jika ada update status
+    // Status transition validation
     if (body.status) {
       const newStatus = safeStatus(body.status)
-      
-      if (!VALID_STATUS.includes(newStatus)) {
-        return NextResponse.json(
-          { message: "Status tidak valid" },
-          { status: 400 }
-        )
-      }
-
       const allowedTransitions = STATUS_TRANSITIONS[currentStatus]
       
       if (!allowedTransitions.includes(newStatus)) {
         return NextResponse.json(
-          { 
-            message: `Status tidak sesuai alur: dari ${currentStatus} hanya bisa ke ${allowedTransitions.join(", ")}` 
-          },
+          { message: `Status tidak sesuai alur: dari ${currentStatus} hanya bisa ke ${allowedTransitions.join(", ")}` },
           { status: 400 }
         )
       }
-
-      // Cek lock untuk won/lost
-      if (currentStatus === "won" || currentStatus === "lost") {
-        return NextResponse.json(
-          { message: `Inquiry dengan status ${currentStatus} tidak dapat diubah` },
-          { status: 403 }
-        )
-      }
+      finalStatus = newStatus
     }
 
-    // Validasi khusus untuk converted_project_id
-    if (body.converted_project_id && currentStatus !== "sent") {
-      return NextResponse.json(
-        { message: "Inquiry hanya bisa di-convert ke WON jika status sudah 'sent'" },
-        { status: 400 }
-      )
-    }
+    // Convert validation
+   const newStatus = body.status ? safeStatus(body.status) : currentStatus
+const finalRabId = body.converted_rab_id || existingData.converted_rab_id
 
-    const actualRowNumber = rowIndex + 2 // karena data mulai dari A2
+if (newStatus === "won" && !finalRabId) {
+  return NextResponse.json(
+    { message: "Inquiry hanya bisa WON jika RAB sudah disetujui" },
+    { status: 400 }
+  )
+}
 
-    /* ================= OPTIMIZED UPDATE ================= */
-    
-    // Mulai dengan data existing
+    const actualRowNumber = rowIndex + ROW_OFFSET
+
+    // Merge data
     const mergedData = { ...existingData }
     
-    // Merge dengan body, handle special cases
     for (const [key, value] of Object.entries(body)) {
-      if (key === "estimasi_nilai") {
-        // Clean budget
-        const cleanedBudget = value ? Number(String(value).replace(/[^\d]/g, "")) : null
-        mergedData.estimasi_nilai = cleanedBudget
-      } 
-      else if (key === "status") {
-        mergedData.status = safeStatus(value as string)
-      }
-      else if (key in mergedData) {
-        // @ts-ignore - dynamic assignment
-        mergedData[key] = value
-      }
-    }
+  if (key === "estimasi_nilai") {
+    mergedData.estimasi_nilai = value
+      ? Number(String(value).replace(/[^\d]/g, ""))
+      : null
 
-    // Konversi merged data ke row array
+  } else if (key === "status") {
+    mergedData.status = safeStatus(value as string)
+
+  } else if (key === "converted_project_id") {
+    mergedData.converted_project_id = value as string
+
+  } else if (key in mergedData) {
+    (mergedData as any)[key] = value
+  }
+}
+
     const updatedRow = rowFromInquiry(mergedData)
 
-    // Single update untuk seluruh row
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A${actualRowNumber}:S${actualRowNumber}`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [updatedRow],
-      },
-    })
+    await withRetry(() =>
+      sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `${SHEET_NAME}!A${actualRowNumber}:S${actualRowNumber}`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: { values: [updatedRow] },
+      })
+    )
 
+    logger.info('PATCH Inquiry Success', { inquiryId, updates: Object.keys(body) })
+    
     return NextResponse.json({
       success: true,
       message: "Inquiry berhasil diperbarui",
       data: mergedData
     })
 
-  } catch (error) {
-    console.error("Update Inquiry Error:", error)
+  } catch (error: any) {
+    logger.error('PATCH Inquiry', error, { inquiryId: params.inquiry_id })
+
+    const errorMap: Record<number, { message: string; status: number }> = {
+      404: { message: "Sheet tidak ditemukan", status: 404 },
+      403: { message: "Akses ke Google Sheets ditolak", status: 403 },
+      429: { message: "Terlalu banyak request, coba lagi", status: 429 },
+      503: { message: "Layanan Google Sheets sibuk", status: 503 },
+    }
+
+    const errorResponse = errorMap[error.code]
+    if (errorResponse) {
+      return NextResponse.json(
+        { success: false, message: errorResponse.message },
+        { status: errorResponse.status }
+      )
+    }
+
     return NextResponse.json(
       { 
         success: false,
-        message: "Gagal update inquiry: " + (error instanceof Error ? error.message : "Unknown error")
+        message: "Gagal update inquiry"
       },
       { status: 500 }
     )

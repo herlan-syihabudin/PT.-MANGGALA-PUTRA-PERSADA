@@ -102,6 +102,93 @@ async function updatePOStatus(po_id: string, newStatus: string) {
   })
 }
 
+// ================= GET ALL GR =================
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const po_id = searchParams.get('po_id')
+    const status = searchParams.get('status')
+    const includeDeleted = searchParams.get('include_deleted') === 'true'
+
+    const rows = await getAllRows(`${GR_SHEET}!A2:Q`)
+
+    let filteredRows = rows
+
+    if (!includeDeleted) {
+      filteredRows = filteredRows.filter(r => !r[16]) // Q = deleted_at
+    }
+
+    if (po_id) {
+      filteredRows = filteredRows.filter(r => r[2] === po_id) // C = po_id
+    }
+
+    if (status) {
+      filteredRows = filteredRows.filter(r => r[7] === status) // H = status
+    }
+
+    // Fetch PO codes for reference
+    const poRows = await getAllRows(`${PO_SHEET}!A2:B`)
+    const poMap: Record<string, string> = {}
+    poRows.forEach(r => {
+      if (r[0]) poMap[r[0]] = r[1] // po_id -> po_code
+    })
+
+    // Fetch item counts per GR
+    const itemRows = await getAllRows(`${GR_ITEM_SHEET}!B2:B`)
+    const itemCountMap: Record<string, number> = {}
+    itemRows.forEach(r => {
+      const gr_id = r[1]
+      if (gr_id) {
+        itemCountMap[gr_id] = (itemCountMap[gr_id] || 0) + 1
+      }
+    })
+
+    const grs = filteredRows.map(r => ({
+      gr_id: r[0] || "",
+      gr_code: r[1] || "",
+      po_id: r[2] || "",
+      po_code: poMap[r[2]] || r[2],
+      vendor_id: r[3] || "",
+      project_id: r[4] || "",
+      receive_date: r[5] || "",
+      delivery_note_no: r[6] || "",
+      status: r[7] || "RECEIVED",
+      notes: r[8] || "",
+      total_received_qty: num(r[9]),
+      total_amount: num(r[10]),
+      created_by: r[11] || "",
+      updated_by: r[12] || "",
+      deleted_by: r[13] || "",
+      created_at: r[14] || "",
+      updated_at: r[15] || "",
+      deleted_at: r[16] || null,
+      item_count: itemCountMap[r[0]] || 0,
+    }))
+
+    // Sort by created_at desc
+   grs.sort((a, b) => {
+  const A = new Date(a.created_at || 0).getTime()
+  const B = new Date(b.created_at || 0).getTime()
+  return B - A
+})
+
+    return NextResponse.json({
+      success: true,
+      data: grs,
+      error: null,
+    })
+
+  } catch (error: any) {
+    console.error("GET GR ERROR:", error)
+    return NextResponse.json({
+      success: false,
+      data: null,
+      error: "Failed to load GRs",
+      details: String(error?.message || error),
+    }, { status: 500 })
+  }
+}
+
 // ---------- POST /procurement/gr ----------
 export async function POST(req: Request) {
   try {

@@ -1,4 +1,19 @@
 // app/api/crm/pipeline/[id]/route.ts - PATCH
+
+import { NextResponse } from "next/server"
+
+async function getDeal(id: string) {
+  throw new Error("getDeal not implemented")
+}
+
+async function updateDeal(id: string, data: any) {
+  return data
+}
+
+async function lockRAB(rabId: string) {
+  return true
+}
+
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }

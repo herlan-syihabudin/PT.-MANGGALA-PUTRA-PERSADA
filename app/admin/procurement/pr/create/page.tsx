@@ -609,7 +609,7 @@ function FormInput({
   iconColor?: string
   hint?: string
 }) {
-  const IconComponent = icon
+  const IconComponent = Icon
 
   return (
     <div>

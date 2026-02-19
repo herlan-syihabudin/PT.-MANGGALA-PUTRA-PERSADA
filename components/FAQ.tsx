@@ -16,14 +16,16 @@ export default function FAQ({ items = faqItems }: FAQProps) {
           {items.map((item, i) => (
             <div
               key={i}
-              className="border border-gray-200 rounded-xl p-6 bg-white"
+              className="border border-gray-200 rounded-xl p-6 bg-white hover:shadow-md transition"
             >
-              <h3 className="font-semibold text-gray-900 mb-2">
+              <h3 className="font-semibold text-gray-900 mb-4">
                 {item.question}
               </h3>
-              <p className="text-gray-700 leading-relaxed">
-                {item.answer}
-              </p>
+
+              <div
+                className="prose prose-gray max-w-none text-gray-700"
+                dangerouslySetInnerHTML={{ __html: item.answer }}
+              />
             </div>
           ))}
         </div>

@@ -1,10 +1,17 @@
+// lib/projects.ts
 export type Project = {
   slug: string
   images: string[]
   category: string
   title: string
   description: string
-  scope: string
+  location?: string
+  completionDate?: string
+  client?: string
+  value?: string
+  duration?: string
+  scope?: string[]
+  featured?: boolean
 }
 
 export const projects: Project[] = [

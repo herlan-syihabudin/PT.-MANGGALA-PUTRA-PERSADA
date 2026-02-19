@@ -90,34 +90,6 @@ async function fetchInquiry(): Promise<InquiryResponse> {
   }
 }
 
-    const response = await res.json()
-    
-    // TIDAK ADA FILTER DI SINI - semua filter sudah di backend
-    // Data langsung dari API sudah bersih dari stage DELETED
-    
-    return response
-  } catch (error) {
-    console.error("Error fetching inquiry:", error)
-    return {
-      data: [],
-      summary: {
-        total: 0,
-        active: 0,
-        new: 0,
-        survey: 0,
-        estimating: 0,
-        sent: 0,
-        won: 0,
-        lost: 0,
-        pipeline_value: 0,
-        conversion_rate: 0,
-        avg_deal_value: 0,
-      },
-      page: 1,
-      totalPages: 1,
-    }
-  }
-}
 
 /* ================= HELPER ================= */
 

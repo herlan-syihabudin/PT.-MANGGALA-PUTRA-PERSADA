@@ -52,33 +52,43 @@ type InquiryResponse = {
 
 async function fetchInquiry(): Promise<InquiryResponse> {
   try {
-    // Gunakan relative URL untuk menghindari masalah baseUrl
-    // API sudah handle filter stage !== "DELETED" di backend
-    const res = await fetch(`/api/crm/inquiry?page=1&limit=50`, {
-      cache: "no-store",
-    })
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL ||
+      `https://${process.env.VERCEL_URL}`
+
+    const res = await fetch(
+      `${baseUrl}/api/crm/inquiry?page=1&limit=50`,
+      { cache: "no-store" }
+    )
 
     if (!res.ok) {
-      console.error("Failed to fetch inquiry:", res.status)
-      return {
-        data: [],
-        summary: {
-          total: 0,
-          active: 0,
-          new: 0,
-          survey: 0,
-          estimating: 0,
-          sent: 0,
-          won: 0,
-          lost: 0,
-          pipeline_value: 0,
-          conversion_rate: 0,
-          avg_deal_value: 0,
-        },
-        page: 1,
-        totalPages: 1,
-      }
+      throw new Error(`Failed to fetch: ${res.status}`)
     }
+
+    return await res.json()
+  } catch (error) {
+    console.error("Error fetching inquiry:", error)
+
+    return {
+      data: [],
+      summary: {
+        total: 0,
+        active: 0,
+        new: 0,
+        survey: 0,
+        estimating: 0,
+        sent: 0,
+        won: 0,
+        lost: 0,
+        pipeline_value: 0,
+        conversion_rate: 0,
+        avg_deal_value: 0,
+      },
+      page: 1,
+      totalPages: 1,
+    }
+  }
+}
 
     const response = await res.json()
     

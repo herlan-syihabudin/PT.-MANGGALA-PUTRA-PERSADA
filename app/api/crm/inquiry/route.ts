@@ -108,6 +108,13 @@ const STATUS_TRANSITIONS: Record<InquiryStatus, InquiryStatus[]> = {
 const normalize = (val: unknown) =>
   String(val ?? "").replace(/\s+/g, "").trim()
 
+function sanitize(value: unknown): string {
+  return String(value ?? "")
+    .replace(/^[=+\-@]/, "") // prevent formula injection
+    .replace(/[<>]/g, "")
+    .trim()
+}
+
 const parseDate = (val?: string) => {
   if (!val) return 0
   const ts = Date.parse(val)

@@ -47,6 +47,7 @@ interface PR {
   needed_date?: string
   status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'ORDERED'
   items: PRItem[]
+  total?: number // 🔥 TAMBAH INI
 }
 
 function useDebouncedValue<T>(value: T, delay = 400) {

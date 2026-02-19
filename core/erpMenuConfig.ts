@@ -127,7 +127,7 @@ export const ERP_MENU = [
     items: [
       { name: "Purchase Request", href: "/admin/procurement/pr", icon: FilePlus2 },
       { name: "Purchase Order", href: "/admin/procurement/po", icon: FileBadge2 },
-      { name: "Vendor & Supplier", href: "/admin/procurement/vendor", icon: Store },
+      { name: "Vendor & Supplier", href: "/admin/procurement/vendors", icon: Store },
       { name: "Price Comparison", href: "/admin/procurement/comparison", icon: Scale },
       { name: "Contract Procurement", href: "/admin/procurement/contracts", icon: Handshake },
     ],

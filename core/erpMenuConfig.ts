@@ -122,16 +122,18 @@ export const ERP_MENU = [
 },
 
   {
-    section: "PROCUREMENT",
-    icon: ShoppingCart,
-    items: [
-      { name: "Purchase Request", href: "/admin/procurement/pr", icon: FilePlus2 },
-      { name: "Purchase Order", href: "/admin/procurement/po", icon: FileBadge2 },
-      { name: "Vendor & Supplier", href: "/admin/procurement/vendors", icon: Store },
-      { name: "Price Comparison", href: "/admin/procurement/comparison", icon: Scale },
-      { name: "Contract Procurement", href: "/admin/procurement/contracts", icon: Handshake },
-    ],
-  },
+  section: "PROCUREMENT",
+  icon: ShoppingCart,
+  items: [
+    { name: "Material Master", href: "/admin/procurement/materials", icon: Boxes },
+    { name: "Purchase Request", href: "/admin/procurement/pr", icon: FilePlus2 },
+    { name: "Price Comparison", href: "/admin/procurement/comparison", icon: Scale },
+    { name: "Purchase Order", href: "/admin/procurement/po", icon: FileBadge2 },
+    { name: "Goods Receipt", href: "/admin/procurement/gr", icon: ArrowDownToLine },
+    { name: "Vendor & Supplier", href: "/admin/procurement/vendors", icon: Store },
+    { name: "Contract Procurement", href: "/admin/procurement/contracts", icon: Handshake },
+  ],
+},
 
   {
     section: "LOGISTICS & INVENTORY",

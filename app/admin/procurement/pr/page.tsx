@@ -22,7 +22,7 @@ import DateText from '@/components/dashboard/procurement/DateText'
 
 /** ================== CONFIG ================== */
 // 🔥 SATU PINTU ROUTE (biar ga 404 lagi)
-const BASE_PATH = '/procurement/pr' // ganti ke '/admin/procurement/pr' kalau struktur kamu admin-based
+const BASE_PATH = '/admin/procurement/pr' // ganti ke '/admin/procurement/pr' kalau struktur kamu admin-based
 const CREATE_PATH = `${BASE_PATH}/create`
 
 type SortField = 'pr_code' | 'request_date' | 'total' | 'status'

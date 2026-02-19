@@ -626,7 +626,6 @@ export default function PRListPage() {
 }
 
 /** ================== UI SMALL PARTS ================== */
-
 function SortableTH({
   label,
   active,

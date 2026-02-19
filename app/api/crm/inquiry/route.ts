@@ -270,22 +270,29 @@ export async function GET(req: Request) {
   }
 }
 
-/* ========== POST ========== */
+/* ========== POST (HARDENED) ========== */
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
 
-    if (!body.customer_id || !body.customer_id.trim()) {
+    if (!body.customer_id || !String(body.customer_id).trim()) {
       return NextResponse.json(
         { message: "Customer ID wajib diisi" },
         { status: 400 }
       )
     }
 
-    if (!body.nama_pekerjaan || !body.nama_pekerjaan.trim()) {
+    if (!body.nama_pekerjaan || !String(body.nama_pekerjaan).trim()) {
       return NextResponse.json(
         { message: "Nama Pekerjaan wajib diisi" },
+        { status: 400 }
+      )
+    }
+
+    if (String(body.nama_pekerjaan).length > 200) {
+      return NextResponse.json(
+        { message: "Nama pekerjaan terlalu panjang" },
         { status: 400 }
       )
     }
@@ -298,24 +305,26 @@ export async function POST(req: Request) {
       ? Number(String(body.estimasi_nilai).replace(/[^\d]/g, ""))
       : ""
 
+    const createdBy = "MARKETING" // nanti ganti session user
+
     const values = [[
       inquiryId,
       body.tanggal_masuk || today,
-      String(body.customer_id).trim(),
-      String(body.customer_name || "").trim(),
-      String(body.nama_pekerjaan).trim(),
-      String(body.layanan || "").trim(),
+      sanitize(body.customer_id),
+      sanitize(body.customer_name),
+      sanitize(body.nama_pekerjaan),
+      sanitize(body.layanan),
       budget,
-      String(body.sumber || "").trim(),
-      String(body.assigned_to || "").trim(),
+      sanitize(body.sumber),
+      sanitize(body.assigned_to),
       "new",
-      String(body.prioritas || "normal").trim(),
-      String(body.lokasi || "").trim(),
-      String(body.catatan || "").trim(),
+      sanitize(body.prioritas || "normal"),
+      sanitize(body.lokasi),
+      sanitize(body.catatan),
       "",
       "",
       now,
-      String(body.created_by || "Marketing").trim(),
+      createdBy,
       "NEW",
       "",
     ]]
@@ -323,7 +332,7 @@ export async function POST(req: Request) {
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A:S`,
-      valueInputOption: "USER_ENTERED",
+      valueInputOption: "RAW",
       requestBody: { values },
     })
 
@@ -337,14 +346,15 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { 
         success: false, 
-        message: "Gagal membuat inquiry: " + (error instanceof Error ? error.message : "Unknown error")
+        message: "Gagal membuat inquiry: " + 
+          (error instanceof Error ? error.message : "Unknown error")
       },
       { status: 500 }
     )
   }
 }
 
-/* ========== PUT ========== */
+/* ========== PUT (HARDENED) ========== */
 
 export async function PUT(req: Request) {
   try {
@@ -394,14 +404,14 @@ export async function PUT(req: Request) {
 
     if (existingInquiry.converted_project_id) {
       return NextResponse.json(
-        { message: "Inquiry sudah WON (converted_project_id sudah ada), tidak dapat diubah" },
+        { message: "Inquiry sudah WON, tidak dapat diubah" },
         { status: 403 }
       )
     }
 
     if (body.status) {
       const newStatus = body.status.toLowerCase() as InquiryStatus
-      
+
       if (!VALID_STATUS.includes(newStatus)) {
         return NextResponse.json(
           { message: "Status tidak valid" },
@@ -410,20 +420,20 @@ export async function PUT(req: Request) {
       }
 
       const allowedTransitions = STATUS_TRANSITIONS[existingInquiry.status]
-      
+
       if (!allowedTransitions.includes(newStatus)) {
         return NextResponse.json(
           { 
-            message: `Status tidak sesuai alur: dari ${existingInquiry.status} hanya bisa ke ${allowedTransitions.join(", ")}` 
+            message: `Status tidak sesuai alur: dari ${existingInquiry.status} hanya bisa ke ${allowedTransitions.join(", ")}`
           },
           { status: 400 }
         )
       }
 
-      if (existingInquiry.status === "won" || existingInquiry.status === "lost") {
+      if (newStatus === "won" && !body.converted_project_id) {
         return NextResponse.json(
-          { message: `Inquiry dengan status ${existingInquiry.status} tidak dapat diubah` },
-          { status: 403 }
+          { message: "Tidak bisa set WON tanpa converted_project_id" },
+          { status: 400 }
         )
       }
     }
@@ -435,23 +445,25 @@ export async function PUT(req: Request) {
     const mergedInquiry: Inquiry = {
       inquiry_id: existingInquiry.inquiry_id,
       tanggal_masuk: body.tanggal_masuk || existingInquiry.tanggal_masuk,
-      customer_id: body.customer_id ? String(body.customer_id).trim() : existingInquiry.customer_id,
-      customer_name: body.customer_name ? String(body.customer_name).trim() : existingInquiry.customer_name,
-      nama_pekerjaan: body.nama_pekerjaan ? String(body.nama_pekerjaan).trim() : existingInquiry.nama_pekerjaan,
-      layanan: body.layanan ? String(body.layanan).trim() : existingInquiry.layanan,
+      customer_id: body.customer_id ? sanitize(body.customer_id) : existingInquiry.customer_id,
+      customer_name: body.customer_name ? sanitize(body.customer_name) : existingInquiry.customer_name,
+      nama_pekerjaan: body.nama_pekerjaan ? sanitize(body.nama_pekerjaan) : existingInquiry.nama_pekerjaan,
+      layanan: body.layanan ? sanitize(body.layanan) : existingInquiry.layanan,
       estimasi_nilai: typeof budget === "number" ? budget : existingInquiry.estimasi_nilai,
-      sumber: body.sumber ? String(body.sumber).trim() : existingInquiry.sumber,
-      assigned_to: body.assigned_to ? String(body.assigned_to).trim() : existingInquiry.assigned_to,
+      sumber: body.sumber ? sanitize(body.sumber) : existingInquiry.sumber,
+      assigned_to: body.assigned_to ? sanitize(body.assigned_to) : existingInquiry.assigned_to,
       status: body.status ? body.status.toLowerCase() as InquiryStatus : existingInquiry.status,
-      prioritas: body.prioritas ? String(body.prioritas).trim() : existingInquiry.prioritas,
-      lokasi: body.lokasi ? String(body.lokasi).trim() : existingInquiry.lokasi,
-      catatan: body.catatan ? String(body.catatan).trim() : existingInquiry.catatan,
-      converted_rab_id: body.converted_rab_id ? String(body.converted_rab_id).trim() : existingInquiry.converted_rab_id,
-      converted_project_id: body.converted_project_id ? String(body.converted_project_id).trim() : existingInquiry.converted_project_id,
+      prioritas: body.prioritas ? sanitize(body.prioritas) : existingInquiry.prioritas,
+      lokasi: body.lokasi ? sanitize(body.lokasi) : existingInquiry.lokasi,
+      catatan: body.catatan ? sanitize(body.catatan) : existingInquiry.catatan,
+      converted_rab_id: body.converted_rab_id ? sanitize(body.converted_rab_id) : existingInquiry.converted_rab_id,
+      converted_project_id: body.converted_project_id ? sanitize(body.converted_project_id) : existingInquiry.converted_project_id,
       created_at: existingInquiry.created_at,
-      created_by: body.created_by ? String(body.created_by).trim() : existingInquiry.created_by,
-      stage: body.stage ? String(body.stage).trim() : existingInquiry.stage,
-      converted_proposal_id: body.converted_proposal_id ? String(body.converted_proposal_id).trim() : existingInquiry.converted_proposal_id,
+      created_by: existingInquiry.created_by, // LOCKED
+      stage: body.stage ? sanitize(body.stage) : existingInquiry.stage,
+      converted_proposal_id: body.converted_proposal_id
+        ? sanitize(body.converted_proposal_id)
+        : existingInquiry.converted_proposal_id,
     }
 
     const values = [rowFromInquiry(mergedInquiry)]
@@ -459,7 +471,7 @@ export async function PUT(req: Request) {
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A${rowIndex}:S${rowIndex}`,
-      valueInputOption: "USER_ENTERED",
+      valueInputOption: "RAW", // FIXED
       requestBody: { values },
     })
 
@@ -472,7 +484,8 @@ export async function PUT(req: Request) {
     return NextResponse.json(
       { 
         success: false, 
-        message: "Gagal update inquiry: " + (error instanceof Error ? error.message : "Unknown error")
+        message: "Gagal update inquiry: " + 
+          (error instanceof Error ? error.message : "Unknown error")
       },
       { status: 500 }
     )
@@ -543,7 +556,7 @@ export async function DELETE(req: Request) {
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A${rowIndex}:S${rowIndex}`,
-      valueInputOption: "USER_ENTERED",
+      valueInputOption: "RAW",
       requestBody: { values },
     })
 

@@ -17,12 +17,127 @@ const sheets = google.sheets({ version: "v4", auth })
 const SHEET_ID = process.env.GSHEET_CRM_ID!
 const SHEET_NAME = "CRM_INQUIRY"
 
+/* ================= CONSTANTS ================= */
+
+const VALID_STATUS = ["new", "survey", "estimating", "sent", "won", "lost"] as const
+type InquiryStatus = typeof VALID_STATUS[number]
+
+const STATUS_TRANSITIONS: Record<InquiryStatus, InquiryStatus[]> = {
+  new: ["survey"],
+  survey: ["estimating"],
+  estimating: ["sent"],
+  sent: ["won", "lost"],
+  won: [],
+  lost: [],
+}
+
+const COLUMNS = {
+  INQUIRY_ID: 0,
+  TANGGAL_MASUK: 1,
+  CUSTOMER_ID: 2,
+  CUSTOMER_NAME: 3,
+  NAMA_PEKERJAAN: 4,
+  LAYANAN: 5,
+  ESTIMASI_NILAI: 6,
+  SUMBER: 7,
+  ASSIGNED_TO: 8,
+  STATUS: 9,
+  PRIORITAS: 10,
+  LOKASI: 11,
+  CATATAN: 12,
+  CONVERTED_RAB_ID: 13,
+  CONVERTED_PROJECT_ID: 14,
+  CREATED_AT: 15,
+  CREATED_BY: 16,
+  STAGE: 17,
+  CONVERTED_PROPOSAL_ID: 18,
+} as const
+
+// Update COLUMN_MAP to include estimasi_nilai
+const COLUMN_MAP: Record<string, string> = {
+  assigned_to: "I",
+  status: "J",
+  prioritas: "K",
+  lokasi: "L",
+  catatan: "M",
+  converted_rab_id: "N",
+  converted_project_id: "O",
+  estimasi_nilai: "G",
+  stage: "R",
+  converted_proposal_id: "S",
+}
+
+// All columns in order for full row update
+const ALL_COLUMNS = [
+  "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S"
+] as const
+
+/* ================= HELPERS ================= */
+
+const normalize = (val: any) => String(val || "").replace(/[\s-]/g, "").trim()
+
+const safeStatus = (status: any): InquiryStatus => {
+  const normalized = String(status || "new").toLowerCase().trim()
+  return VALID_STATUS.includes(normalized as any) ? normalized as InquiryStatus : "new"
+}
+
+function mapRowToInquiry(row: any[]): any {
+  const rawBudget = String(row[COLUMNS.ESTIMASI_NILAI] || "").replace(/[^\d]/g, "")
+  const statusRaw = String(row[COLUMNS.STATUS] || "new").toLowerCase().trim()
+  
+  return {
+    inquiry_id: row[COLUMNS.INQUIRY_ID] || "",
+    tanggal_masuk: row[COLUMNS.TANGGAL_MASUK] || "",
+    customer_id: row[COLUMNS.CUSTOMER_ID] || "",
+    customer_name: row[COLUMNS.CUSTOMER_NAME] || "",
+    nama_pekerjaan: row[COLUMNS.NAMA_PEKERJAAN] || "",
+    layanan: row[COLUMNS.LAYANAN] || "",
+    estimasi_nilai: rawBudget ? Number(rawBudget) : null,
+    sumber: row[COLUMNS.SUMBER] || "",
+    assigned_to: row[COLUMNS.ASSIGNED_TO] || "",
+    status: safeStatus(statusRaw),
+    prioritas: row[COLUMNS.PRIORITAS] || "normal",
+    lokasi: row[COLUMNS.LOKASI] || "",
+    catatan: row[COLUMNS.CATATAN] || "",
+    converted_rab_id: row[COLUMNS.CONVERTED_RAB_ID] || "",
+    converted_project_id: row[COLUMNS.CONVERTED_PROJECT_ID] || "",
+    created_at: row[COLUMNS.CREATED_AT] || "",
+    created_by: row[COLUMNS.CREATED_BY] || "",
+    stage: row[COLUMNS.STAGE] || "NEW",
+    converted_proposal_id: row[COLUMNS.CONVERTED_PROPOSAL_ID] || "",
+  }
+}
+
+function rowFromInquiry(inquiry: any): any[] {
+  return [
+    inquiry.inquiry_id,
+    inquiry.tanggal_masuk,
+    inquiry.customer_id,
+    inquiry.customer_name,
+    inquiry.nama_pekerjaan,
+    inquiry.layanan,
+   inquiry.estimasi_nilai ?? "",
+    inquiry.sumber,
+    inquiry.assigned_to,
+    inquiry.status,
+    inquiry.prioritas,
+    inquiry.lokasi,
+    inquiry.catatan,
+    inquiry.converted_rab_id,
+    inquiry.converted_project_id,
+    inquiry.created_at,
+    inquiry.created_by,
+    inquiry.stage,
+    inquiry.converted_proposal_id,
+  ]
+}
+
 /* ===================================================== */
 /* ====================== GET DETAIL =================== */
 /* ===================================================== */
 
 export async function GET(
-  _: Request,
+  req: Request,
   { params }: { params: { inquiry_id: string } }
 ) {
   try {
@@ -37,17 +152,13 @@ export async function GET(
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2:Q`,
+      range: `${SHEET_NAME}!A2:S`,
     })
 
-    // 🔥 FILTER BARIS KOSONG (WAJIB)
-    const rows = (res.data.values || []).filter(r => r[0])
-
-    const normalize = (val: any) =>
-      String(val || "").replace(/\s+/g, "").trim()
+    const rows = (res.data.values || []).filter(r => r[COLUMNS.INQUIRY_ID])
 
     const rowIndex = rows.findIndex((r) =>
-      normalize(r[0]) === normalize(inquiryId)
+      normalize(r[COLUMNS.INQUIRY_ID]) === normalize(inquiryId)
     )
 
     if (rowIndex === -1) {
@@ -58,27 +169,14 @@ export async function GET(
     }
 
     const row = rows[rowIndex]
+    const data = mapRowToInquiry(row)
 
-    const rawBudget = String(row[6] || "").replace(/[^\d]/g, "")
-
-    const data = {
-      inquiry_id: row[0] || "",
-      tanggal_masuk: row[1] || "",
-      customer_id: row[2] || "",
-      customer_name: row[3] || "",
-      nama_pekerjaan: row[4] || "",
-      layanan: row[5] || "",
-      estimasi_nilai: rawBudget ? Number(rawBudget) : null,
-      sumber: row[7] || "",
-      assigned_to: row[8] || "",
-      status: String(row[9] || "new").toLowerCase(),
-      prioritas: row[10] || "",
-      lokasi: row[11] || "",
-      catatan: row[12] || "",
-      converted_rab_id: row[13] || "",
-      converted_project_id: row[14] || "",
-      created_at: row[15] || "",
-      created_by: row[16] || "",
+    // Cek apakah sudah dihapus (stage DELETED)
+    if (data.stage === "DELETED") {
+      return NextResponse.json(
+        { message: "Inquiry telah dihapus" },
+        { status: 404 }
+      )
     }
 
     return NextResponse.json(data)
@@ -86,7 +184,7 @@ export async function GET(
   } catch (error) {
     console.error("Detail Inquiry Error:", error)
     return NextResponse.json(
-      { message: "Gagal load detail inquiry" },
+      { message: "Gagal load detail inquiry: " + (error instanceof Error ? error.message : "Unknown error") },
       { status: 500 }
     )
   }
@@ -113,17 +211,14 @@ export async function PATCH(
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2:Q`,
+      range: `${SHEET_NAME}!A2:S`,
     })
 
-    const rows = res.data.values || []
+    const rows = (res.data.values || []).filter(r => r[COLUMNS.INQUIRY_ID])
 
-   const normalize = (val: string) =>
-  String(val).replace(/[\s-]/g, "").trim()
-
-const rowIndex = rows.findIndex((r) =>
-  normalize(r[0]) === normalize(inquiryId)
-)
+    const rowIndex = rows.findIndex((r) =>
+      normalize(r[COLUMNS.INQUIRY_ID]) === normalize(inquiryId)
+    )
 
     if (rowIndex === -1) {
       return NextResponse.json(
@@ -132,43 +227,117 @@ const rowIndex = rows.findIndex((r) =>
       )
     }
 
-    // karena data mulai dari A2
-    const actualRowNumber = rowIndex + 2
+    // Ambil data existing
+    const existingRow = rows[rowIndex]
+    const existingData = mapRowToInquiry(existingRow)
 
-    /* ================= COLUMN MAP ================= */
+    // Cek LOCK RULE: Jika sudah WON (converted_project_id ada), tidak bisa diubah
+    if (existingData.converted_project_id) {
+      return NextResponse.json(
+        { message: "Inquiry sudah WON (converted_project_id sudah ada), tidak dapat diubah" },
+        { status: 403 }
+      )
+    }
 
-    const COLUMN_MAP: Record<string, string> = {
-  assigned_to: "I",
-  status: "J",
-  prioritas: "K",
-  lokasi: "L",
-  catatan: "M",
-  converted_rab_id: "N",
-  converted_project_id: "O",
-}
+    // Cek apakah sudah dihapus
+    if (existingData.stage === "DELETED") {
+      return NextResponse.json(
+        { message: "Inquiry telah dihapus, tidak dapat diubah" },
+        { status: 403 }
+      )
+    }
 
-    /* ================= DYNAMIC UPDATE ================= */
+    // SAFETY CHECK: Validasi status existing sebelum pake STATUS_TRANSITIONS
+    const currentStatus = safeStatus(existingData.status)
 
-    for (const key of Object.keys(body)) {
-      if (COLUMN_MAP[key]) {
-        await sheets.spreadsheets.values.update({
-          spreadsheetId: SHEET_ID,
-          range: `${SHEET_NAME}!${COLUMN_MAP[key]}${actualRowNumber}`,
-          valueInputOption: "USER_ENTERED",
-          requestBody: {
-            values: [[body[key]]],
+    // Validasi STATUS TRANSITION jika ada update status
+    if (body.status) {
+      const newStatus = safeStatus(body.status)
+      
+      if (!VALID_STATUS.includes(newStatus)) {
+        return NextResponse.json(
+          { message: "Status tidak valid" },
+          { status: 400 }
+        )
+      }
+
+      const allowedTransitions = STATUS_TRANSITIONS[currentStatus]
+      
+      if (!allowedTransitions.includes(newStatus)) {
+        return NextResponse.json(
+          { 
+            message: `Status tidak sesuai alur: dari ${currentStatus} hanya bisa ke ${allowedTransitions.join(", ")}` 
           },
-        })
+          { status: 400 }
+        )
+      }
+
+      // Cek lock untuk won/lost
+      if (currentStatus === "won" || currentStatus === "lost") {
+        return NextResponse.json(
+          { message: `Inquiry dengan status ${currentStatus} tidak dapat diubah` },
+          { status: 403 }
+        )
       }
     }
 
-    return NextResponse.json({
-      message: "Inquiry berhasil diperbarui",
+    // Validasi khusus untuk converted_project_id
+    if (body.converted_project_id && currentStatus !== "sent") {
+      return NextResponse.json(
+        { message: "Inquiry hanya bisa di-convert ke WON jika status sudah 'sent'" },
+        { status: 400 }
+      )
+    }
+
+    const actualRowNumber = rowIndex + 2 // karena data mulai dari A2
+
+    /* ================= OPTIMIZED UPDATE ================= */
+    
+    // Mulai dengan data existing
+    const mergedData = { ...existingData }
+    
+    // Merge dengan body, handle special cases
+    for (const [key, value] of Object.entries(body)) {
+      if (key === "estimasi_nilai") {
+        // Clean budget
+        const cleanedBudget = value ? Number(String(value).replace(/[^\d]/g, "")) : null
+        mergedData.estimasi_nilai = cleanedBudget
+      } 
+      else if (key === "status") {
+        mergedData.status = safeStatus(value as string)
+      }
+      else if (key in mergedData) {
+        // @ts-ignore - dynamic assignment
+        mergedData[key] = value
+      }
+    }
+
+    // Konversi merged data ke row array
+    const updatedRow = rowFromInquiry(mergedData)
+
+    // Single update untuk seluruh row
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!A${actualRowNumber}:S${actualRowNumber}`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [updatedRow],
+      },
     })
+
+    return NextResponse.json({
+      success: true,
+      message: "Inquiry berhasil diperbarui",
+      data: mergedData
+    })
+
   } catch (error) {
     console.error("Update Inquiry Error:", error)
     return NextResponse.json(
-      { message: "Gagal update inquiry" },
+      { 
+        success: false,
+        message: "Gagal update inquiry: " + (error instanceof Error ? error.message : "Unknown error")
+      },
       { status: 500 }
     )
   }

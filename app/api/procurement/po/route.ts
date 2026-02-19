@@ -74,7 +74,8 @@ async function logAudit(po_id: string, action: string, oldStatus: string, newSta
 
 export async function GET() {
   try {
-    const rows = await getRows(`${PO_SHEET}!A2:Q`)
+    // 🔥 FIX: Ambil sampai P (16 kolom) bukan Q
+    const rows = await getRows(`${PO_SHEET}!A2:P`)
 
     const data = rows
       .filter(r => !r[12]) // deleted_by kosong
@@ -87,13 +88,20 @@ export async function GET() {
         order_date: r[5],
         delivery_date: r[6],
         status: r[7],
+        notes: r[8],
         total_amount: n(r[9]),
-        version: n(r[16])
+        created_by: r[10],
+        updated_by: r[11],
+        deleted_by: r[12],
+        created_at: r[13],
+        updated_at: r[14],
+        deleted_at: r[15] || null, // 🔥 deleted_at di kolom P
       }))
 
     return NextResponse.json({ success: true, data })
 
   } catch (err) {
+    console.error(err)
     return NextResponse.json({ success: false, error: "Failed to load POs" }, { status: 500 })
   }
 }
@@ -120,7 +128,6 @@ export async function POST(req: Request) {
 
     const po_id = "PO-" + nanoid(8).toUpperCase()
     const created_at = now()
-    const version = 1
 
     let total = 0
     const items = body.items || []
@@ -138,9 +145,10 @@ export async function POST(req: Request) {
       total += qty * price
     }
 
+    // 🔥 FIX: Append hanya sampai P (16 kolom)
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${PO_SHEET}!A:Q`,
+      range: `${PO_SHEET}!A:P`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
@@ -160,7 +168,6 @@ export async function POST(req: Request) {
           created_at,
           created_at,
           "",             // deleted_at
-          version
         ]]
       }
     })
@@ -207,19 +214,15 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const body = await req.json()
-    const { po_id, if_match_version, status, items, updated_by } = body
+    const { po_id, status, items, updated_by } = body
 
-    const rows = await getRows(`${PO_SHEET}!A2:Q`)
+    const rows = await getRows(`${PO_SHEET}!A2:P`) // 🔥 FIX: sampai P
     const index = rows.findIndex(r => r[0] === po_id && !r[12])
     if (index === -1)
       return NextResponse.json({ success: false, error: "PO not found" }, { status: 404 })
 
     const row = rows[index]
     const currentStatus = row[7] as POStatus
-    const currentVersion = n(row[16])
-
-    if (currentVersion !== if_match_version)
-      return NextResponse.json({ success: false, error: "Version conflict" }, { status: 409 })
 
     if (currentStatus === "DELIVERED" || currentStatus === "CLOSED")
       return NextResponse.json({ success: false, error: "PO locked" }, { status: 409 })
@@ -277,12 +280,12 @@ export async function PATCH(req: Request) {
       }
     }
 
-    const newVersion = currentVersion + 1
     const updated_at = now()
 
+    // 🔥 FIX: Update hanya sampai O (15 kolom)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${PO_SHEET}!H${index + 2}:Q${index + 2}`,
+      range: `${PO_SHEET}!H${index + 2}:O${index + 2}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
@@ -293,15 +296,14 @@ export async function PATCH(req: Request) {
           row[12],
           row[13],
           updated_at,
-          row[15],
-          newVersion
+          row[15] || "", // deleted_at
         ]]
       }
     })
 
     await logAudit(po_id, "UPDATE", currentStatus, status || currentStatus, updated_by || "SYSTEM")
 
-    return NextResponse.json({ success: true, version: newVersion })
+    return NextResponse.json({ success: true })
 
   } catch (err) {
     console.error(err)
@@ -316,11 +318,12 @@ export async function DELETE(req: Request) {
   const po_id = searchParams.get("po_id")
   const deleted_by = searchParams.get("deleted_by") || "SYSTEM"
 
-  const rows = await getRows(`${PO_SHEET}!A2:Q`)
+  const rows = await getRows(`${PO_SHEET}!A2:P`) // 🔥 FIX: sampai P
   const index = rows.findIndex(r => r[0] === po_id && !r[12])
   if (index === -1)
     return NextResponse.json({ success: false, error: "PO not found" }, { status: 404 })
 
+  // 🔥 FIX: Update kolom M (deleted_by) dan P (deleted_at)
   await sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
     range: `${PO_SHEET}!M${index + 2}:P${index + 2}`,
@@ -329,8 +332,8 @@ export async function DELETE(req: Request) {
       values: [[
         deleted_by,
         rows[index][13],
-        now(),
-        now()
+        rows[index][14],
+        now(), // deleted_at
       ]]
     }
   })

@@ -95,11 +95,9 @@ export default function InquiryDetailPage() {
 
         if (!res.ok) throw new Error()
         const json = await res.json()
-        console.log("API Response:", json) // Untuk debugging
         setData(json)
         setEditedData(json)
         
-        // Mock activities - nanti bisa dari API terpisah
         setActivities([
           {
             id: '1',
@@ -159,7 +157,6 @@ export default function InquiryDetailPage() {
       setIsEditMode(false)
       toast.success("Data berhasil diupdate")
       
-      // Add activity log
       setActivities(prev => [{
         id: Date.now().toString(),
         type: 'note',
@@ -175,112 +172,95 @@ export default function InquiryDetailPage() {
   }
 
   // ================= ANALYTICS =================
-const analytics = useMemo(() => {
-  if (!data) return null
+  const analytics = useMemo(() => {
+    if (!data) return null
 
-  const tanggalMasuk = new Date(data.tanggal_masuk).getTime()
-  const now = Date.now()
-  const daysInPipeline = isNaN(tanggalMasuk)
-    ? 0
-    : Math.floor((now - tanggalMasuk) / (1000 * 60 * 60 * 24))
+    const tanggalMasuk = new Date(data.tanggal_masuk).getTime()
+    const now = Date.now()
+    const daysInPipeline = isNaN(tanggalMasuk)
+      ? 0
+      : Math.floor((now - tanggalMasuk) / (1000 * 60 * 60 * 24))
 
-  /* ================= BASE PROBABILITY ================= */
+    const probabilityMap: Record<string, number> = {
+      new: 20,
+      survey: 40,
+      estimating: 65,
+      sent: 80,
+      won: 100,
+      lost: 0,
+    }
 
-  const probabilityMap: Record<string, number> = {
-    new: 20,
-    survey: 40,
-    estimating: 65,
-    sent: 80,
-    won: 100,
-    lost: 0,
-  }
+    let probability = probabilityMap[data.status?.toLowerCase()] ?? 10
 
-  let probability = probabilityMap[data.status?.toLowerCase()] ?? 10
+    if (daysInPipeline > 45) probability *= 0.6
+    else if (daysInPipeline > 30) probability *= 0.7
+    else if (daysInPipeline > 14) probability *= 0.85
 
-  /* ================= AGE DECAY ENGINE ================= */
+    probability = Math.round(probability)
 
-  if (daysInPipeline > 45) probability *= 0.6
-  else if (daysInPipeline > 30) probability *= 0.7
-  else if (daysInPipeline > 14) probability *= 0.85
+    let qualityScore = 0
 
-  probability = Math.round(probability)
+    if (data.estimasi_nilai) {
+      if (data.estimasi_nilai > 1000000000) qualityScore += 45
+      else if (data.estimasi_nilai > 500000000) qualityScore += 35
+      else if (data.estimasi_nilai > 100000000) qualityScore += 25
+      else if (data.estimasi_nilai > 50000000) qualityScore += 15
+      else qualityScore += 8
+    }
 
-  /* ================= LEAD QUALITY SCORE ================= */
+    if (data.prioritas?.toLowerCase() === "high") qualityScore += 20
+    if (data.prioritas?.toLowerCase() === "medium") qualityScore += 10
 
-  let qualityScore = 0
+    if (data.assigned_to) qualityScore += 5
+    if (activities.length >= 2) qualityScore += 5
 
-  if (data.estimasi_nilai) {
-    if (data.estimasi_nilai > 1000000000) qualityScore += 45
-    else if (data.estimasi_nilai > 500000000) qualityScore += 35
-    else if (data.estimasi_nilai > 100000000) qualityScore += 25
-    else if (data.estimasi_nilai > 50000000) qualityScore += 15
-    else qualityScore += 8
-  }
+    qualityScore = Math.min(100, qualityScore)
 
-  if (data.prioritas?.toLowerCase() === "high") qualityScore += 20
-  if (data.prioritas?.toLowerCase() === "medium") qualityScore += 10
+    const dealScore = Math.round(
+      probability * 0.4 +
+      qualityScore * 0.4 +
+      (daysInPipeline < 14 ? 20 : 10)
+    )
 
-  if (data.assigned_to) qualityScore += 5
-  if (activities.length >= 2) qualityScore += 5
+    const expectedRevenue = data.estimasi_nilai
+      ? Math.round(data.estimasi_nilai * (probability / 100))
+      : 0
 
-  qualityScore = Math.min(100, qualityScore)
+    const isAging = daysInPipeline > 14
+    const isStale = daysInPipeline > 30
+    const needsFollowUp =
+      daysInPipeline > 7 && activities.length < 2
 
-  /* ================= DEAL SCORE (BARU 🔥) ================= */
+    let recommendation = "Monitor progress"
 
-  const dealScore = Math.round(
-    probability * 0.4 +
-    qualityScore * 0.4 +
-    (daysInPipeline < 14 ? 20 : 10)
-  )
+    if (isStale)
+      recommendation = "Escalate atau close sebagai lost"
+    else if (needsFollowUp)
+      recommendation = "Segera lakukan follow up"
+    else if (data.status?.toLowerCase() === "estimating")
+      recommendation = "Push ke proposal dan kirim penawaran"
+    else if (probability > 75)
+      recommendation = "High chance deal – prioritaskan closing"
 
-  /* ================= EXPECTED REVENUE ================= */
-
-  const expectedRevenue = data.estimasi_nilai
-    ? Math.round(data.estimasi_nilai * (probability / 100))
-    : 0
-
-  /* ================= INTELLIGENCE FLAGS ================= */
-
-  const isAging = daysInPipeline > 14
-  const isStale = daysInPipeline > 30
-  const needsFollowUp =
-    daysInPipeline > 7 && activities.length < 2
-
-  /* ================= AI RECOMMENDATION ================= */
-
-  let recommendation = "Monitor progress"
-
-  if (isStale)
-    recommendation = "Escalate atau close sebagai lost"
-
-  else if (needsFollowUp)
-    recommendation = "Segera lakukan follow up"
-
-  else if (data.status?.toLowerCase() === "estimating")
-    recommendation = "Push ke proposal dan kirim penawaran"
-
-  else if (probability > 75)
-    recommendation = "High chance deal – prioritaskan closing"
-
-  return {
-    daysInPipeline,
-    probability,
-    qualityScore,
-    dealScore,
-    expectedRevenue,
-    isAging,
-    isStale,
-    needsFollowUp,
-    recommendation,
-  }
-}, [data, activities])
+    return {
+      daysInPipeline,
+      probability,
+      qualityScore,
+      dealScore,
+      expectedRevenue,
+      isAging,
+      isStale,
+      needsFollowUp,
+      recommendation,
+    }
+  }, [data, activities])
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-gray-400">Memuat data inquiry...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-slate-300 border-t-slate-800 mx-auto mb-4" />
+          <p className="text-slate-500">Memuat data inquiry...</p>
         </div>
       </div>
     )
@@ -288,13 +268,13 @@ const analytics = useMemo(() => {
 
   if (!data) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-500 font-semibold">Data tidak ditemukan</p>
+          <AlertTriangle className="w-12 h-12 text-rose-600 mx-auto mb-4" />
+          <p className="text-rose-600 font-semibold">Data tidak ditemukan</p>
           <button
             onClick={() => router.back()}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
+            className="mt-4 px-4 py-2 bg-slate-800 text-white rounded-lg text-sm hover:bg-slate-700 transition-colors"
           >
             Kembali
           </button>
@@ -304,26 +284,27 @@ const analytics = useMemo(() => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header dengan Background Gradient */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="min-h-screen bg-slate-50 pb-20">
+      {/* Header dengan Industrial Gradient */}
+      <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 text-white border-b border-slate-600/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.back()}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-2 hover:bg-white/5 rounded-lg transition-colors text-slate-300 hover:text-white"
               >
                 <ArrowLeft size={20} />
               </button>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
+                <h1 className="text-2xl sm:text-3xl font-light tracking-tight flex items-center gap-3">
                   {data.nama_pekerjaan || 'Untitled Project'}
-                  <span className="text-sm bg-white/20 px-3 py-1 rounded-full font-mono">
+                  <span className="text-xs bg-white/10 px-3 py-1 rounded-full font-mono text-slate-300 border border-white/10">
                     {data.inquiry_id}
                   </span>
                 </h1>
-                <p className="text-blue-100 mt-1">
+                <p className="text-slate-300 mt-1 flex items-center gap-2">
+                  <Building size={14} className="opacity-70" />
                   {data.customer_name} • {data.lokasi || 'Lokasi tidak ditentukan'}
                 </p>
               </div>
@@ -331,35 +312,35 @@ const analytics = useMemo(() => {
 
             <div className="flex gap-2">
               {data.status?.toLowerCase() === "new" && (
-  <button
-    onClick={async () => {
-      await fetch(`/api/crm/inquiry/${inquiry_id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: "estimating",
-          assigned_to: "Estimator"
-        }),
-      })
-
-      toast.success("Assigned ke Estimator")
-      router.refresh()
-    }}
-    className="px-4 py-2 bg-yellow-500 text-white rounded-lg text-sm font-semibold hover:bg-yellow-600 transition-colors"
-  >
-    Assign ke Estimator
-  </button>
-)}
+                <button
+                  onClick={async () => {
+                    await fetch(`/api/crm/inquiry/${inquiry_id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        status: "estimating",
+                        assigned_to: "Estimator"
+                      }),
+                    })
+                    toast.success("Assigned ke Estimator")
+                    router.refresh()
+                  }}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <Users size={16} />
+                  Assign ke Estimator
+                </button>
+              )}
               <button
                 onClick={() => setShowFollowUpModal(true)}
-                className="px-4 py-2 bg-white text-blue-600 rounded-lg font-semibold text-sm hover:bg-blue-50 transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-white/10"
               >
                 <Phone size={16} />
                 Follow Up
               </button>
               <button
                 onClick={() => setIsEditMode(!isEditMode)}
-                className="px-4 py-2 bg-white/20 text-white rounded-lg font-semibold text-sm hover:bg-white/30 transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
               >
                 <Edit size={16} />
                 {isEditMode ? 'Cancel' : 'Edit'}
@@ -371,70 +352,68 @@ const analytics = useMemo(() => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6">
-        {/* Analytics Cards */}
+        {/* Analytics Cards - Premium Subtle */}
         {analytics && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
             <AnalyticCard
-              icon={<TrendingUp className="text-blue-600" size={20} />}
+              icon={<TrendingUp className="text-slate-600" size={20} />}
               label="Win Probability"
               value={`${analytics.probability}%`}
               progress={analytics.probability}
-              color="blue"
             />
             <AnalyticCard
-              icon={<Clock className="text-amber-600" size={20} />}
+              icon={<Clock className="text-slate-600" size={20} />}
               label="Pipeline Age"
               value={`${analytics.daysInPipeline} hari`}
               subtext={analytics.isAging ? 'Aging' : 'Normal'}
-              color={analytics.isAging ? 'red' : 'green'}
+              status={analytics.isAging ? 'warning' : 'normal'}
             />
             <AnalyticCard
-              icon={<Target className="text-purple-600" size={20} />}
+              icon={<Target className="text-slate-600" size={20} />}
               label="Lead Quality"
               value={analytics.qualityScore.toString()}
               progress={analytics.qualityScore}
-              color="purple"
             />
             <AnalyticCard
-              icon={<DollarSign className="text-green-600" size={20} />}
+              icon={<DollarSign className="text-slate-600" size={20} />}
               label="Expected Revenue"
               value={`Rp ${analytics.expectedRevenue.toLocaleString('id-ID')}`}
-              color="green"
             />
             <AnalyticCard
-  icon={<Star className="text-amber-600" size={20} />}
-  label="Deal Score"
-  value={`${analytics.dealScore}/100`}
-  progress={analytics.dealScore}
-  color="amber"
-/>
-            <AnalyticCard
-              icon={<Activity className="text-red-600" size={20} />}
-              label="Follow Up"
-              value={`${activities.length} kali`}
-              subtext={analytics.needsFollowUp ? 'Butuh follow up' : 'On track'}
-              color={analytics.needsFollowUp ? 'red' : 'green'}
+              icon={<Star className="text-slate-600" size={20} />}
+              label="Deal Score"
+              value={`${analytics.dealScore}/100`}
+              progress={analytics.dealScore}
             />
           </div>
         )}
 
-        <Card title="AI Recommendation" icon={Zap}>
-  <p className="font-semibold text-blue-700">
-    {analytics.recommendation}
-  </p>
-</Card>
+        {/* AI Recommendation - Premium Card */}
+        <div className="bg-white border border-slate-200 rounded-xl p-5 mb-8 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-slate-100 rounded-lg">
+              <Zap size={18} className="text-slate-600" />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">AI RECOMMENDATION</p>
+              <p className="font-medium text-slate-800">
+                {analytics?.recommendation}
+              </p>
+            </div>
+          </div>
+        </div>
         
-        {/* Warning Banner */}
+        {/* Warning Banner - Premium Warning */}
         {analytics?.isStale && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-red-50 border border-red-200 rounded-xl p-4 mb-8 flex items-start gap-3"
+            className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 flex items-start gap-3 shadow-sm"
           >
-            <AlertTriangle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+            <AlertTriangle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
             <div>
-              <h3 className="font-semibold text-red-800">Lead Stale Warning</h3>
-              <p className="text-sm text-red-700">
+              <h3 className="font-semibold text-amber-800">Lead Stale Warning</h3>
+              <p className="text-sm text-amber-700">
                 Inquiry ini sudah {analytics.daysInPipeline} hari di pipeline tanpa progress. 
                 Segera lakukan follow up atau update status.
               </p>
@@ -442,8 +421,8 @@ const analytics = useMemo(() => {
           </motion.div>
         )}
 
-        {/* Tabs Navigation */}
-        <div className="bg-white rounded-xl shadow-sm border mb-6">
+        {/* Tabs Navigation - Premium */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
           <div className="flex overflow-x-auto">
             {[
               { id: 'overview', label: 'Overview', icon: FileText },
@@ -457,8 +436,8 @@ const analytics = useMemo(() => {
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors
                     ${activeTab === tab.id 
-                      ? 'border-blue-600 text-blue-600' 
-                      : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                      ? 'border-slate-800 text-slate-800' 
+                      : 'border-transparent text-slate-400 hover:text-slate-600'}`}
                 >
                   <Icon size={16} />
                   {tab.label}
@@ -501,15 +480,15 @@ const analytics = useMemo(() => {
           </motion.div>
         </AnimatePresence>
 
-        {/* Convert Section */}
-        <div className="mt-8 bg-white border rounded-xl p-6 sticky bottom-4 shadow-lg">
+        {/* Convert Section - Premium Sticky */}
+        <div className="mt-8 bg-white border border-slate-200 rounded-xl p-6 sticky bottom-4 shadow-lg backdrop-blur-sm bg-white/90">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
-              <p className="text-sm text-gray-500">Status saat ini</p>
-              <p className="font-semibold text-lg capitalize flex items-center gap-2">
+              <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Status Pipeline</p>
+              <p className="font-semibold text-lg text-slate-800 flex items-center gap-2">
                 {data.status}
                 {data.status === 'estimating' && (
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                  <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium">
                     Siap convert
                   </span>
                 )}
@@ -519,7 +498,7 @@ const analytics = useMemo(() => {
             {data.converted_rab_id ? (
               <button
                 onClick={() => router.push(`/admin/estimator/rab/${data.converted_rab_id}`)}
-                className="w-full sm:w-auto px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors"
+                className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
               >
                 <CheckCircle size={18} />
                 View RAB Project
@@ -528,7 +507,7 @@ const analytics = useMemo(() => {
               <button
                 onClick={convertToRAB}
                 disabled={data.status?.toLowerCase() !== "estimating" || isUpdating}
-                className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               >
                 {isUpdating ? (
                   <>
@@ -547,7 +526,7 @@ const analytics = useMemo(() => {
         </div>
       </div>
 
-      {/* Follow Up Modal */}
+      {/* Follow Up Modal - Premium */}
       <AnimatePresence>
         {showFollowUpModal && (
           <FollowUpModal
@@ -593,7 +572,6 @@ function OverviewTab({ data, isEditMode, editedData, setEditedData, onSave, isUp
         <Card title="Project Details" icon={FileText}>
           <div className="grid sm:grid-cols-2 gap-6">
             {isEditMode ? (
-              // Edit mode inputs
               <>
                 <EditField
                   label="Nama Pekerjaan"
@@ -626,11 +604,11 @@ function OverviewTab({ data, isEditMode, editedData, setEditedData, onSave, isUp
                   onChange={(e) => setEditedData({ ...editedData, assigned_to: e.target.value })}
                 />
                 <div>
-                  <label className="text-xs text-gray-400 mb-1 block">Prioritas</label>
+                  <label className="text-xs text-slate-400 mb-1 block">Prioritas</label>
                   <select
                     value={editedData.prioritas}
                     onChange={(e) => setEditedData({ ...editedData, prioritas: e.target.value })}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-400 focus:border-transparent"
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -654,11 +632,11 @@ function OverviewTab({ data, isEditMode, editedData, setEditedData, onSave, isUp
             )}
           </div>
           {isEditMode && (
-            <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
+            <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-slate-100">
               <button
                 onClick={onSave}
                 disabled={isUpdating}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold flex items-center gap-2"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
               >
                 {isUpdating ? (
                   <>
@@ -678,7 +656,7 @@ function OverviewTab({ data, isEditMode, editedData, setEditedData, onSave, isUp
 
         {data.catatan && (
           <Card title="Catatan" icon={MessageSquare}>
-            <p className="text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">
+            <p className="text-slate-700 whitespace-pre-wrap bg-slate-50 p-4 rounded-lg border border-slate-100">
               {data.catatan}
             </p>
           </Card>
@@ -704,8 +682,8 @@ function OverviewTab({ data, isEditMode, editedData, setEditedData, onSave, isUp
 
         <Card title="Quick Stats" icon={Activity}>
           <div className="space-y-3">
-            <StatBar label="Data Completion" value={75} color="blue" />
-            <StatBar label="Follow Up Progress" value={60} color="green" />
+            <StatBar label="Data Completion" value={75} />
+            <StatBar label="Follow Up Progress" value={60} />
           </div>
         </Card>
       </div>
@@ -715,12 +693,12 @@ function OverviewTab({ data, isEditMode, editedData, setEditedData, onSave, isUp
 
 function ActivityTab({ activities, onAddFollowUp }: any) {
   return (
-    <div className="bg-white border rounded-xl p-6">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="font-semibold text-lg">Activity History</h2>
+        <h2 className="font-semibold text-slate-800">Activity History</h2>
         <button
           onClick={onAddFollowUp}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+          className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-colors"
         >
           Add Follow Up
         </button>
@@ -733,12 +711,12 @@ function ActivityTab({ activities, onAddFollowUp }: any) {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="flex gap-4 p-4 bg-gray-50 rounded-lg"
+            className="flex gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100"
           >
             <ActivityIcon type={activity.type} />
             <div className="flex-1">
-              <p className="font-medium">{activity.description}</p>
-              <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+              <p className="font-medium text-slate-800">{activity.description}</p>
+              <div className="flex items-center gap-4 mt-2 text-sm text-slate-500">
                 <span className="flex items-center gap-1">
                   <User size={14} />
                   {activity.user}
@@ -753,7 +731,7 @@ function ActivityTab({ activities, onAddFollowUp }: any) {
         ))}
 
         {activities.length === 0 && (
-          <p className="text-center text-gray-400 py-8">
+          <p className="text-center text-slate-400 py-8">
             Belum ada activity
           </p>
         )}
@@ -764,10 +742,10 @@ function ActivityTab({ activities, onAddFollowUp }: any) {
 
 function DocumentsTab({ inquiryId }: any) {
   return (
-    <div className="bg-white border rounded-xl p-6">
-      <h2 className="font-semibold text-lg mb-6">Documents</h2>
-      <div className="text-center py-12 text-gray-400">
-        <Paperclip className="w-12 h-12 mx-auto mb-4 opacity-50" />
+    <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+      <h2 className="font-semibold text-slate-800 mb-6">Documents</h2>
+      <div className="text-center py-12 text-slate-400 border-2 border-dashed border-slate-200 rounded-lg">
+        <Paperclip className="w-12 h-12 mx-auto mb-4 opacity-30" />
         <p>Belum ada dokumen</p>
         <p className="text-sm mt-2">Fitur upload dokumen akan segera hadir</p>
       </div>
@@ -793,19 +771,19 @@ function FollowUpModal({ onClose, onSave }: any) {
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-white rounded-xl max-w-md w-full p-6"
+        className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Add Follow Up</h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
-            <X size={20} />
+          <h2 className="text-xl font-semibold text-slate-800">Add Follow Up</h2>
+          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded">
+            <X size={20} className="text-slate-400" />
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-slate-600 mb-2">
               Type
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -813,10 +791,10 @@ function FollowUpModal({ onClose, onSave }: any) {
                 <button
                   key={t}
                   onClick={() => setType(t)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium capitalize
+                  className={`px-3 py-2 rounded-lg text-sm font-medium capitalize transition-colors
                     ${type === t 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                      ? 'bg-slate-800 text-white' 
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                 >
                   {t}
                 </button>
@@ -825,14 +803,14 @@ function FollowUpModal({ onClose, onSave }: any) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-slate-600 mb-2">
               Notes
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
-              className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-slate-400 focus:border-transparent"
               placeholder="Tulis hasil follow up..."
             />
           </div>
@@ -840,7 +818,7 @@ function FollowUpModal({ onClose, onSave }: any) {
           <button
             onClick={() => onSave(type, notes)}
             disabled={!notes.trim()}
-            className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Save Follow Up
           </button>
@@ -854,10 +832,10 @@ function FollowUpModal({ onClose, onSave }: any) {
 
 function Card({ title, icon: Icon, children }: any) {
   return (
-    <div className="bg-white border rounded-xl p-6">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center gap-2 mb-4">
-        {Icon && <Icon size={18} className="text-blue-600" />}
-        <h3 className="font-semibold text-gray-900">{title}</h3>
+        {Icon && <Icon size={18} className="text-slate-500" />}
+        <h3 className="font-medium text-slate-800">{title}</h3>
       </div>
       {children}
     </div>
@@ -867,8 +845,8 @@ function Card({ title, icon: Icon, children }: any) {
 function InfoField({ label, value, children }: any) {
   return (
     <div>
-      <p className="text-xs text-gray-400 mb-1">{label}</p>
-      <p className="font-medium text-gray-900 break-words">
+      <p className="text-xs text-slate-400 mb-1">{label}</p>
+      <p className="font-medium text-slate-800 break-words">
         {value || '-'}
       </p>
       {children}
@@ -879,49 +857,40 @@ function InfoField({ label, value, children }: any) {
 function EditField({ label, name, value, onChange }: any) {
   return (
     <div>
-      <label className="text-xs text-gray-400 mb-1 block">{label}</label>
+      <label className="text-xs text-slate-400 mb-1 block">{label}</label>
       <input
         type="text"
         name={name}
         value={value || ''}
         onChange={onChange}
-        className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-400 focus:border-transparent"
       />
     </div>
   )
 }
 
-function AnalyticCard({ icon, label, value, subtext, progress, color }: any) {
-  const colors = {
-    blue: 'bg-blue-50 border-blue-200',
-    green: 'bg-green-50 border-green-200',
-    red: 'bg-red-50 border-red-200',
-    purple: 'bg-purple-50 border-purple-200',
-    amber: 'bg-amber-50 border-amber-200',
+function AnalyticCard({ icon, label, value, subtext, progress, status }: any) {
+  const statusColors = {
+    warning: 'bg-amber-50 border-amber-200',
+    normal: 'bg-white border-slate-200',
   }
 
-  const progressColors = {
-    blue: 'bg-blue-600',
-    green: 'bg-green-600',
-    red: 'bg-red-600',
-    purple: 'bg-purple-600',
-    amber: 'bg-amber-600',
-  }
+  const bgColor = status ? statusColors[status] : 'bg-white border-slate-200'
 
   return (
-    <div className={`${colors[color]} border rounded-xl p-4`}>
+    <div className={`${bgColor} border rounded-xl p-4 shadow-sm`}>
       <div className="flex items-center gap-3 mb-2">
-        <div className={`p-2 bg-white rounded-lg`}>
+        <div className="p-2 bg-slate-100 rounded-lg">
           {icon}
         </div>
-        <p className="text-xs text-gray-600">{label}</p>
+        <p className="text-xs text-slate-500 uppercase tracking-wider">{label}</p>
       </div>
-      <p className="text-xl font-bold text-gray-900">{value}</p>
-      {subtext && <p className="text-xs text-gray-500 mt-1">{subtext}</p>}
+      <p className="text-xl font-semibold text-slate-800">{value}</p>
+      {subtext && <p className="text-xs text-slate-400 mt-1">{subtext}</p>}
       {progress !== undefined && (
-        <div className="mt-2 h-1.5 bg-white rounded-full overflow-hidden">
+        <div className="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
           <div 
-            className={`h-full ${progressColors[color]} rounded-full transition-all duration-500`}
+            className="h-full bg-slate-600 rounded-full transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -933,12 +902,12 @@ function AnalyticCard({ icon, label, value, subtext, progress, color }: any) {
 function TimelineItem({ label, value, icon: Icon }: any) {
   return (
     <div className="flex items-start gap-3">
-      <div className="p-2 bg-gray-100 rounded-lg">
-        <Icon size={16} className="text-gray-600" />
+      <div className="p-2 bg-slate-100 rounded-lg">
+        <Icon size={16} className="text-slate-500" />
       </div>
       <div>
-        <p className="text-xs text-gray-400">{label}</p>
-        <p className="text-sm font-medium text-gray-900">{value}</p>
+        <p className="text-xs text-slate-400">{label}</p>
+        <p className="text-sm font-medium text-slate-800">{value}</p>
       </div>
     </div>
   )
@@ -946,46 +915,38 @@ function TimelineItem({ label, value, icon: Icon }: any) {
 
 function ActivityIcon({ type }: { type: string }) {
   const icons = {
-    note: <FileText size={20} className="text-blue-600" />,
-    call: <Phone size={20} className="text-green-600" />,
-    email: <Mail size={20} className="text-purple-600" />,
-    meeting: <Users size={20} className="text-amber-600" />,
-    status_change: <RefreshCw size={20} className="text-orange-600" />,
+    note: <FileText size={20} className="text-slate-600" />,
+    call: <Phone size={20} className="text-slate-600" />,
+    email: <Mail size={20} className="text-slate-600" />,
+    meeting: <Users size={20} className="text-slate-600" />,
+    status_change: <RefreshCw size={20} className="text-slate-600" />,
   }
-  return icons[type as keyof typeof icons] || <Activity size={20} className="text-gray-600" />
+  return icons[type as keyof typeof icons] || <Activity size={20} className="text-slate-600" />
 }
 
 function PriorityBadge({ priority }: { priority: string }) {
   const colors = {
-    high: 'bg-red-100 text-red-700',
-    medium: 'bg-yellow-100 text-yellow-700',
-    low: 'bg-green-100 text-green-700',
+    high: 'bg-rose-100 text-rose-700',
+    medium: 'bg-amber-100 text-amber-700',
+    low: 'bg-emerald-100 text-emerald-700',
   }
   return (
-    <span className={`text-xs px-2 py-1 rounded-full ml-2 ${colors[priority.toLowerCase() as keyof typeof colors] || 'bg-gray-100 text-gray-700'}`}>
+    <span className={`text-xs px-2 py-1 rounded-full ml-2 font-medium ${colors[priority.toLowerCase() as keyof typeof colors] || 'bg-slate-100 text-slate-700'}`}>
       {priority}
     </span>
   )
 }
 
-function StatBar({ label, value, color }: any) {
-  const colorMap: Record<string, string> = {
-    blue: "bg-blue-600",
-    green: "bg-green-600",
-    red: "bg-red-600",
-    purple: "bg-purple-600",
-    amber: "bg-amber-600",
-  }
-
+function StatBar({ label, value }: any) {
   return (
     <div>
       <div className="flex justify-between text-sm mb-1">
-        <span className="text-gray-600">{label}</span>
-        <span className="font-medium">{value}%</span>
+        <span className="text-slate-500">{label}</span>
+        <span className="font-medium text-slate-700">{value}%</span>
       </div>
-      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
         <div
-          className={`h-full ${colorMap[color] || "bg-blue-600"} rounded-full transition-all duration-500`}
+          className="h-full bg-slate-600 rounded-full transition-all duration-500"
           style={{ width: `${value}%` }}
         />
       </div>

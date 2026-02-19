@@ -5,19 +5,16 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Plus, Search, Eye, RefreshCcw } from 'lucide-react'
 
-import StatusBadge from '@/components/dashboard/procurement/StatusBadge'
-import DateText from '@/components/dashboard/procurement/DateText'
-
 interface GR {
   gr_id: string
   gr_code: string
   po_id: string
   po_code?: string
-  received_date: string
-  received_by: string
+  receive_date: string
+  created_by: string
   notes?: string
-  items?: any[]
   status?: string
+  item_count?: number
 }
 
 export default function GRListPage() {
@@ -49,13 +46,13 @@ export default function GRListPage() {
       const data = await res.json()
 
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to load GRs')
+        throw new Error(data.error || 'Failed to load GR')
       }
 
       setGRs(data.data || [])
     } catch (err: any) {
       if (err?.name === 'AbortError') return
-      setError(err?.message || 'Failed to load GRs')
+      setError(err?.message || 'Failed to load GR')
       setGRs([])
     } finally {
       setLoading(false)
@@ -67,20 +64,13 @@ export default function GRListPage() {
     return () => abortRef.current?.abort()
   }, [])
 
-  /* ================= COMPUTED ================= */
-
-  const computedGRs = useMemo(() => {
-    return grs.map(gr => ({
-      ...gr,
-      item_count: gr.items?.length || 0,
-    }))
-  }, [grs])
+  /* ================= FILTER ================= */
 
   const filteredGRs = useMemo(() => {
-    return computedGRs.filter(gr => {
+    return grs.filter(gr => {
       const matchesSearch =
         search === '' ||
-        gr.gr_code.toLowerCase().includes(search.toLowerCase()) ||
+        gr.gr_code?.toLowerCase().includes(search.toLowerCase()) ||
         gr.po_code?.toLowerCase().includes(search.toLowerCase())
 
       const matchesStatus =
@@ -89,7 +79,7 @@ export default function GRListPage() {
 
       return matchesSearch && matchesStatus
     })
-  }, [computedGRs, search, statusFilter])
+  }, [grs, search, statusFilter])
 
   /* ================= LOADING ================= */
 
@@ -146,7 +136,7 @@ export default function GRListPage() {
           </button>
 
           <Link
-            href="/procurement/gr/create"
+            href="/admin/procurement/gr/create"
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <Plus size={18} />
@@ -164,7 +154,7 @@ export default function GRListPage() {
           />
           <input
             type="text"
-            placeholder="Search GR..."
+            placeholder="Search GR or PO..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border rounded-lg"
@@ -179,8 +169,6 @@ export default function GRListPage() {
           <option value="">All Status</option>
           <option value="RECEIVED">Received</option>
           <option value="PARTIAL">Partial</option>
-          <option value="RETURNED">Returned</option>
-          <option value="CLOSED">Closed</option>
         </select>
       </div>
 
@@ -190,10 +178,10 @@ export default function GRListPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b sticky top-0 z-10">
               <tr>
-                <th className="p-4 text-left">GR Number</th>
-                <th className="p-4 text-left">PO Number</th>
-                <th className="p-4 text-left">Received Date</th>
-                <th className="p-4 text-left">Received By</th>
+                <th className="p-4 text-left">GR Code</th>
+                <th className="p-4 text-left">PO Code</th>
+                <th className="p-4 text-left">Receive Date</th>
+                <th className="p-4 text-left">Created By</th>
                 <th className="p-4 text-left">Items</th>
                 <th className="p-4 text-left">Status</th>
                 <th className="p-4 text-center">Action</th>
@@ -203,10 +191,7 @@ export default function GRListPage() {
             <tbody>
               {filteredGRs.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={7}
-                    className="p-12 text-center text-gray-500"
-                  >
+                  <td colSpan={7} className="p-12 text-center text-gray-500">
                     No Goods Receipt found
                   </td>
                 </tr>
@@ -216,7 +201,7 @@ export default function GRListPage() {
                     key={gr.gr_id}
                     className="border-b hover:bg-gray-50 cursor-pointer"
                     onClick={() =>
-                      router.push(`/procurement/gr/${gr.gr_id}`)
+                      router.push(`/admin/procurement/gr/${gr.gr_id}`)
                     }
                   >
                     <td className="p-4 font-mono font-medium">
@@ -228,37 +213,35 @@ export default function GRListPage() {
                     </td>
 
                     <td className="p-4">
-                      <DateText date={gr.received_date} />
+                      {new Date(gr.receive_date).toLocaleDateString()}
                     </td>
 
                     <td className="p-4">
-                      {gr.received_by}
+                      {gr.created_by}
                     </td>
 
                     <td className="p-4">
-                      {gr.item_count}
+                      {gr.item_count || 0}
                     </td>
 
                     <td className="p-4">
-                      <StatusBadge
-                        status={gr.status || 'RECEIVED'}
-                        type="gr"
-                      />
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        gr.status === 'PARTIAL'
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-green-100 text-green-700'
+                      }`}>
+                        {gr.status || 'RECEIVED'}
+                      </span>
                     </td>
 
                     <td className="p-4">
                       <div className="flex justify-center">
                         <Link
-                          href={`/procurement/gr/${gr.gr_id}`}
+                          href={`/admin/procurement/gr/${gr.gr_id}`}
                           className="p-2 hover:bg-gray-100 rounded"
-                          onClick={(e) =>
-                            e.stopPropagation()
-                          }
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <Eye
-                            size={16}
-                            className="text-blue-600"
-                          />
+                          <Eye size={16} className="text-blue-600" />
                         </Link>
                       </div>
                     </td>

@@ -75,7 +75,7 @@ async function logAudit(po_id: string, action: string, oldStatus: string, newSta
 export async function GET() {
   try {
     // 🔥 FIX: Ambil sampai P (16 kolom) bukan Q
-    const rows = await getRows(`${PO_SHEET}!A2:P`)
+    const rows = await getRows(`'${PO_SHEET}'!A2:P`)
 
     const data = rows
       .filter(r => !r[12]) // deleted_by kosong
@@ -148,7 +148,7 @@ export async function POST(req: Request) {
     // 🔥 FIX: Append hanya sampai P (16 kolom)
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${PO_SHEET}!A:P`,
+      range: `'${PO_SHEET}'!A:P`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
@@ -216,7 +216,7 @@ export async function PATCH(req: Request) {
     const body = await req.json()
     const { po_id, status, items, updated_by } = body
 
-    const rows = await getRows(`${PO_SHEET}!A2:P`) // 🔥 FIX: sampai P
+    const rows = await getRows(`'${PO_SHEET}'!A2:P`) // 🔥 FIX: sampai P
     const index = rows.findIndex(r => r[0] === po_id && !r[12])
     if (index === -1)
       return NextResponse.json({ success: false, error: "PO not found" }, { status: 404 })
@@ -318,7 +318,7 @@ export async function DELETE(req: Request) {
   const po_id = searchParams.get("po_id")
   const deleted_by = searchParams.get("deleted_by") || "SYSTEM"
 
-  const rows = await getRows(`${PO_SHEET}!A2:P`) // 🔥 FIX: sampai P
+  const rows = await getRows(`'${PO_SHEET}'!A2:P`) // 🔥 FIX: sampai P
   const index = rows.findIndex(r => r[0] === po_id && !r[12])
   if (index === -1)
     return NextResponse.json({ success: false, error: "PO not found" }, { status: 404 })

@@ -254,24 +254,21 @@ export default async function InquiryPage() {
                       )}
 
                       {/* CONVERT BUTTON - SESUAI LOGIC API */}
-                      {!i.converted_project_id && i.status === "sent" && (
-                        <ConvertButton 
-                          inquiry_id={i.inquiry_id} 
-                          disabled={i.status !== "sent"}
-                        />
-                      )}
+{!i.converted_project_id && i.status === "sent" && (
+  <ConvertButton inquiry_id={i.inquiry_id} />
+)}
 
-                      {i.converted_project_id && (
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                          Converted
-                        </span>
-                      )}
+{i.converted_project_id && (
+  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+    Converted
+  </span>
+)}
 
-                      {i.status === "lost" && !i.converted_project_id && (
-                        <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
-                          Lost
-                        </span>
-                      )}
+{i.status === "lost" && !i.converted_project_id && (
+  <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
+    Lost
+  </span>
+)}
                     </div>
                   </td>
                 </tr>

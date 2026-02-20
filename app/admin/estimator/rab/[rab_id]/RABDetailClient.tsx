@@ -6,7 +6,30 @@ import { formatIDR } from "@/lib/format"
 import AddItemForm from "./AddItemForm"
 import { useDropzone } from "react-dropzone"
 import * as XLSX from "xlsx"
-import { Copy, Trash2, ChevronDown, Upload } from "lucide-react"
+import { 
+  Copy, 
+  Trash2, 
+  ChevronDown, 
+  Upload,
+  Search,
+  RefreshCw,
+  Printer,
+  ArrowLeft,
+  Download,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  DollarSign,
+  Package,
+  Wrench,
+  TrendingUp,
+  FileText,
+  Eye,
+  EyeOff,
+  Lock,
+  Unlock
+} from "lucide-react"
+import { toast } from "sonner"
 
 type RabItem = {
   item_id: string
@@ -59,7 +82,6 @@ function groupByScope(items: RabItem[]) {
     if (!map.has(key)) map.set(key, [])
     map.get(key)!.push(it)
   }
-  // stable order: scope A-Z, items by created_at then item_name
   const scopes = Array.from(map.keys()).sort((a, b) => a.localeCompare(b))
   return scopes.map((scope) => ({
     scope,
@@ -82,62 +104,27 @@ function handlePrint() {
   win.document.write(`
     <html>
       <head>
-        <title>RAB Proposal</title>
+        <title>RAB - Rincian Anggaran Biaya</title>
         <style>
-          body {
-            font-family: Arial, sans-serif;
-            padding: 40px;
-          }
-
-          h2 {
-            margin-bottom: 20px;
-          }
-
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-          }
-
-          th, td {
-            border: 1px solid #ccc;
-            padding: 6px;
-          }
-
-          th {
-            background: #f3f3f3;
-          }
-
-          input {
-            border: none;
-          }
-
-          button {
-            display: none;
-          }
-
-          summary {
-            display: none;
-          }
-
-          details {
-            display: block;
-          }
-
-          .right {
-            text-align: right;
-          }
-
-          @media print {
-            body {
-              margin: 0;
-            }
-          }
+          body { font-family: 'Inter', Arial, sans-serif; padding: 40px; background: white; }
+          h1 { font-size: 24px; font-weight: 300; margin-bottom: 8px; color: #1e293b; }
+          h2 { font-size: 18px; font-weight: 500; margin-bottom: 24px; color: #475569; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; }
+          th { background: #f8fafc; color: #475569; font-weight: 600; text-align: left; padding: 12px; border: 1px solid #e2e8f0; }
+          td { padding: 10px; border: 1px solid #e2e8f0; color: #1e293b; }
+          .scope-header { background: #f1f5f9; font-weight: 600; }
+          .text-right { text-align: right; }
+          .font-semibold { font-weight: 600; }
+          .text-emerald-600 { color: #059669; }
+          .mt-8 { margin-top: 32px; }
+          .footer { margin-top: 40px; font-size: 10px; color: #94a3b8; text-align: center; }
         </style>
       </head>
       <body>
-        <h2>RINCIAN ANGGARAN BIAYA</h2>
+        <h1>RINCIAN ANGGARAN BIAYA (RAB)</h1>
+        <h2>ID: ${rab_id}</h2>
         ${printContent.innerHTML}
+        <div class="footer">Dokumen ini digenerate secara otomatis dari sistem ERP</div>
       </body>
     </html>
   `)
@@ -160,28 +147,31 @@ function useDebouncedCommit<T extends (...args: any[]) => void>(fn: T, delay = 6
 export default function RABDetailClient({ rab_id, project_id, initialData }: Props) {
   const [data, setData] = useState<RabResponse>(initialData)
   const [loading, setLoading] = useState(false)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [copyingId, setCopyingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // ===== ENTERPRISE STATES =====
-const [searchTerm, setSearchTerm] = useState("")
-const [expandAll, setExpandAll] = useState(true)
-const [lockMode, setLockMode] = useState<boolean>(data.header?.status === "LOCKED")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [expandAll, setExpandAll] = useState(true)
+  const [lockMode, setLockMode] = useState<boolean>(data.header?.status === "LOCKED" || data.header?.status === "Approved")
 
-// global numbering
-const globalItems = useMemo(() => {
-  return [...data.items].sort((a, b) => {
-    const ta = a.created_at || ""
-    const tb = b.created_at || ""
-    return ta.localeCompare(tb)
-  })
-}, [data.items])
+  // global numbering
+  const globalItems = useMemo(() => {
+    return [...data.items].sort((a, b) => {
+      const ta = a.created_at || ""
+      const tb = b.created_at || ""
+      return ta.localeCompare(tb)
+    })
+  }, [data.items])
 
-const globalIndexMap = useMemo(() => {
-  const map = new Map<string, number>()
-  globalItems.forEach((it, i) => {
-    map.set(it.item_id, i + 1)
-  })
-  return map
-}, [globalItems])
+  const globalIndexMap = useMemo(() => {
+    const map = new Map<string, number>()
+    globalItems.forEach((it, i) => {
+      map.set(it.item_id, i + 1)
+    })
+    return map
+  }, [globalItems])
 
   // profit panel
   const [overheadPct, setOverheadPct] = useState<number>(10)
@@ -189,12 +179,21 @@ const globalIndexMap = useMemo(() => {
 
   async function reload() {
     setLoading(true)
-    const res = await fetch(`/api/estimator/rab?rab_id=${rab_id}`, { cache: "no-store" })
-    if (res.ok) {
-      const json = await res.json()
-      setData(json)
+    try {
+      const res = await fetch(`/api/estimator/rab/${rab_id}`, { cache: "no-store" })
+      if (res.ok) {
+        const json = await res.json()
+        setData(json)
+        setLockMode(json.header?.status === "LOCKED" || json.header?.status === "Approved")
+        toast.success("Data berhasil direfresh")
+      } else {
+        toast.error("Gagal refresh data")
+      }
+    } catch {
+      toast.error("Gagal refresh data")
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   // ✅ realtime sum (front) — tetap ada backend recalculation juga
@@ -219,105 +218,149 @@ const globalIndexMap = useMemo(() => {
   }, [totalValue, overheadPct, profitPct])
 
   const filteredItems = useMemo(() => {
-  if (!searchTerm) return data.items
-  return data.items.filter(
-    (i) =>
-      i.item_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      i.scope.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      i.category.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-}, [data.items, searchTerm])
+    if (!searchTerm) return data.items
+    return data.items.filter(
+      (i) =>
+        i.item_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        i.scope.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        i.category.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }, [data.items, searchTerm])
 
-const grouped = useMemo(() => groupByScope(filteredItems), [filteredItems])
+  const grouped = useMemo(() => groupByScope(filteredItems), [filteredItems])
+  
   function scopeTotal(items: RabItem[]) {
-  return items.reduce((sum, i) => sum + n(i.total_price), 0)
-}
+    return items.reduce((sum, i) => sum + n(i.total_price), 0)
+  }
 
   /* ================= CRUD ================= */
 
   async function updateField(item_id: string, patch: Partial<RabItem>) {
+    if (lockMode) {
+      toast.error("RAB dalam mode terkunci, tidak dapat diubah")
+      return
+    }
+
     // optimistic update
     setData((prev) => ({
       ...prev,
       items: prev.items.map((it) => (it.item_id === item_id ? { ...it, ...patch } : it)),
     }))
 
-    await fetch("/api/estimator/rab/item/update", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        rab_id,
-        item_id,
-        patch,
-      }),
-    })
+    setActionLoading(item_id)
 
-    // refresh to normalize numbers + totals from backend
-    reload()
+    try {
+      const res = await fetch(`/api/estimator/rab/${rab_id}/items/${item_id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      })
+
+      if (!res.ok) {
+        const error = await res.text()
+        toast.error(`Gagal update: ${error}`)
+        reload() // rollback dengan reload
+        return
+      }
+
+      // refresh to normalize numbers + totals from backend
+      reload()
+    } catch (error) {
+      toast.error("Terjadi kesalahan")
+      reload()
+    } finally {
+      setActionLoading(null)
+    }
   }
 
   const debouncedUpdate = useDebouncedCommit(updateField, 650)
 
   async function copyItem(item: RabItem) {
-    setLoading(true)
-    const res = await fetch("/api/estimator/rab/item/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        rab_id,
-        project_id,
-        scope: item.scope,
-        item_name: `${item.item_name} (Copy)`,
-        category: item.category,
-        qty: item.qty,
-        unit: item.unit,
-        material_price: item.material_price,
-        labour_price: item.labour_price,
-        created_by: "Estimator",
-      }),
-    })
-    setLoading(false)
-    if (!res.ok) {
-      alert("Gagal copy item")
+    if (lockMode) {
+      toast.error("RAB dalam mode terkunci, tidak dapat menyalin")
       return
     }
-    reload()
+
+    setCopyingId(item.item_id)
+    try {
+      const res = await fetch(`/api/estimator/rab/${rab_id}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_id,
+          scope: item.scope,
+          item_name: `${item.item_name} (Copy)`,
+          category: item.category,
+          qty: item.qty,
+          unit: item.unit,
+          material_price: item.material_price,
+          labour_price: item.labour_price,
+          created_by: "Estimator",
+        }),
+      })
+
+      if (!res.ok) {
+        const error = await res.text()
+        toast.error(`Gagal copy: ${error}`)
+        return
+      }
+
+      toast.success("Item berhasil disalin")
+      reload()
+    } catch {
+      toast.error("Gagal menyalin item")
+    } finally {
+      setCopyingId(null)
+    }
   }
 
   async function deleteItem(item: RabItem) {
-    const ok = confirm(`Hapus item?\n\n${item.item_name}`)
-    if (!ok) return
-
-    setLoading(true)
-    const res = await fetch("/api/estimator/rab/item/delete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rab_id, item_id: item.item_id }),
-    })
-    setLoading(false)
-
-    if (!res.ok) {
-      alert("Gagal hapus item")
+    if (lockMode) {
+      toast.error("RAB dalam mode terkunci, tidak dapat menghapus")
       return
     }
-    reload()
+
+    if (!confirm(`Yakin ingin menghapus item "${item.item_name}"?`)) return
+
+    setDeletingId(item.item_id)
+    try {
+      const res = await fetch(`/api/estimator/rab/${rab_id}/items/${item.item_id}`, {
+        method: "DELETE",
+      })
+
+      if (!res.ok) {
+        const error = await res.text()
+        toast.error(`Gagal hapus: ${error}`)
+        return
+      }
+
+      toast.success("Item berhasil dihapus")
+      reload()
+    } catch {
+      toast.error("Gagal menghapus item")
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   /* ================= Bulk Upload Excel ================= */
 
   const onDrop = async (acceptedFiles: File[]) => {
+    if (lockMode) {
+      toast.error("RAB dalam mode terkunci, tidak dapat upload")
+      return
+    }
+
     const file = acceptedFiles?.[0]
     if (!file) return
 
+    setLoading(true)
     try {
-      setLoading(true)
       const buf = await file.arrayBuffer()
       const wb = XLSX.read(buf, { type: "array" })
       const ws = wb.Sheets[wb.SheetNames[0]]
       const rows = XLSX.utils.sheet_to_json<any>(ws, { defval: "" })
 
-      // Expect columns (header) in Excel:
-      // scope, item_name, category, qty, unit, material_price, labour_price
       const payloadItems = rows
         .map((r: any) => ({
           scope: String(r.scope || r.Scope || "").trim(),
@@ -331,34 +374,33 @@ const grouped = useMemo(() => groupByScope(filteredItems), [filteredItems])
         .filter((x: any) => x.item_name)
 
       if (payloadItems.length === 0) {
-        alert("File kosong / header tidak sesuai. Minimal ada kolom item_name.")
+        toast.error("File kosong / header tidak sesuai")
         setLoading(false)
         return
       }
 
-      const res = await fetch("/api/estimator/rab/item/bulk-create", {
+      const res = await fetch(`/api/estimator/rab/${rab_id}/items/bulk`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          rab_id,
           project_id,
           created_by: "Estimator",
           items: payloadItems,
         }),
       })
 
-      setLoading(false)
-
       if (!res.ok) {
-        const t = await res.text()
-        alert("Gagal bulk upload: " + t)
+        const error = await res.text()
+        toast.error(`Gagal upload: ${error}`)
         return
       }
 
+      toast.success(`${payloadItems.length} item berhasil diupload`)
       reload()
     } catch (e: any) {
+      toast.error(`Gagal baca Excel: ${e?.message || "unknown error"}`)
+    } finally {
       setLoading(false)
-      alert("Gagal baca Excel: " + (e?.message || "unknown error"))
     }
   }
 
@@ -369,337 +411,450 @@ const grouped = useMemo(() => groupByScope(filteredItems), [filteredItems])
       "application/vnd.ms-excel": [".xls"],
     },
     multiple: false,
+    disabled: lockMode,
   })
 
   /* ================= UI ================= */
 
   return (
-    <div className="p-6 space-y-6">
-      {/* HEADER */}
-      <div className="flex justify-between items-start gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">RAB Project – Estimator</h1>
-          <p className="text-xs text-gray-500">RAB ID: {rab_id}</p>
-          <p className="text-xs text-gray-500">Project ID: {project_id || "-"}</p>
-        </div>
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
-        <div className="flex items-center gap-3">
-  <button
-    onClick={reload}
-    className="text-xs px-3 py-2 border rounded hover:bg-gray-50"
-    disabled={loading}
-  >
-    {loading ? "Refreshing..." : "Refresh"}
-  </button>
-
-  <button
-    onClick={handlePrint}
-    className="text-xs px-3 py-2 border rounded hover:bg-gray-50"
-  >
-    Print
-  </button>
-
-  <Link href="/admin/estimator/rab" className="text-xs text-gray-600">
-    ← Kembali
-  </Link>
-</div>
-      </div>
-
-      {/* ADD ITEM */}
-      <AddItemForm
-        rab_id={rab_id}
-        project_id={project_id}
-        onCreated={(newItem) => {
-          // optimistic append
-          setData((prev) => ({ ...prev, items: [...prev.items, newItem] }))
-        }}
-        onSuccess={reload}
-      />
-
-      {/* BULK UPLOAD */}
-      <div className="space-y-2">
-        <div className="text-sm font-semibold flex items-center gap-2">
-          <Upload size={16} /> Bulk Upload Excel
-        </div>
-
-        <div
-          {...getRootProps()}
-          className={`border rounded-lg p-4 text-sm cursor-pointer bg-white ${
-            isDragActive ? "border-blue-500" : "border-gray-200"
-          }`}
-        >
-          <input {...getInputProps()} />
-          {isDragActive ? (
-            <div>Drop file Excel di sini…</div>
-          ) : (
-            <div className="text-gray-600">
-              Drag & drop file <b>.xlsx</b> atau klik untuk pilih file. <br />
-              Header Excel yang disarankan: <code>scope, item_name, category, qty, unit, material_price, labour_price</code>
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-slate-100 rounded-xl">
+              <FileText size={24} className="text-slate-600" />
             </div>
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-light tracking-tight text-slate-800">
+                RAB Project
+              </h1>
+              <p className="text-slate-500 text-xs mt-1">
+                RAB ID: {rab_id} • Project ID: {project_id || "-"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {lockMode ? (
+              <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs">
+                <Lock size={14} />
+                <span>Terkunci</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 px-3 py-1.5 bg-emerald-100 text-emerald-600 rounded-lg text-xs">
+                <Unlock size={14} />
+                <span>Dapat Diedit</span>
+              </div>
+            )}
+
+            <button
+              onClick={reload}
+              disabled={loading}
+              className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition disabled:opacity-50"
+              title="Refresh"
+            >
+              <RefreshCw size={16} className={`text-slate-500 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+
+            <button
+              onClick={handlePrint}
+              className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition"
+              title="Print"
+            >
+              <Printer size={16} className="text-slate-500" />
+            </button>
+
+            <Link
+              href="/admin/estimator/rab"
+              className="flex items-center gap-1 px-3 py-2 border border-slate-200 rounded-lg text-sm hover:bg-slate-50 transition"
+            >
+              <ArrowLeft size={14} />
+              Kembali
+            </Link>
+          </div>
+        </div>
+
+        {/* ADD ITEM (hanya jika tidak lock) */}
+        {!lockMode && (
+          <AddItemForm
+            rab_id={rab_id}
+            project_id={project_id}
+            onCreated={(newItem) => {
+              setData((prev) => ({ ...prev, items: [...prev.items, newItem] }))
+              toast.success("Item berhasil ditambahkan")
+            }}
+            onSuccess={reload}
+          />
+        )}
+
+        {/* BULK UPLOAD (hanya jika tidak lock) */}
+        {!lockMode && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+              <Upload size={16} />
+              Bulk Upload Excel
+            </div>
+
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-xl p-6 text-sm cursor-pointer transition ${
+                isDragActive
+                  ? 'border-slate-500 bg-slate-50'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
+              }`}
+            >
+              <input {...getInputProps()} />
+              <div className="text-center">
+                <Upload className="mx-auto h-8 w-8 text-slate-400 mb-2" />
+                {isDragActive ? (
+                  <p className="text-slate-600">Drop file di sini...</p>
+                ) : (
+                  <>
+                    <p className="text-slate-600">
+                      Drag & drop file <span className="font-semibold">.xlsx</span> atau klik untuk pilih
+                    </p>
+                    <p className="text-xs text-slate-400 mt-2">
+                      Format: scope, item_name, category, qty, unit, material_price, labour_price
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SUMMARY + PROFIT PANEL */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <Package size={16} className="text-slate-500" />
+              <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wider">RAB Summary</h3>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Total Item:</span>
+                <span className="font-medium text-slate-800">{data.items.length}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Total Nilai RAB:</span>
+                <span className="font-semibold text-emerald-600">{formatIDR(totalValue)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <Wrench size={16} className="text-slate-500" />
+              <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wider">Cost Breakdown</h3>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Total Material:</span>
+                <span className="font-medium text-slate-800">{formatIDR(totalMaterial)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Total Labour:</span>
+                <span className="font-medium text-slate-800">{formatIDR(totalLabour)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingUp size={16} className="text-slate-500" />
+              <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wider">Profit Panel</h3>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between text-xs text-slate-500 mb-1">
+                  <span>Overhead/Margin</span>
+                  <span>{overheadPct}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={50}
+                  value={overheadPct}
+                  onChange={(e) => setOverheadPct(Number(e.target.value))}
+                  disabled={lockMode}
+                  className="w-full accent-slate-600"
+                />
+              </div>
+              <div>
+                <div className="flex justify-between text-xs text-slate-500 mb-1">
+                  <span>Profit</span>
+                  <span>{profitPct}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={50}
+                  value={profitPct}
+                  onChange={(e) => setProfitPct(Number(e.target.value))}
+                  disabled={lockMode}
+                  className="w-full accent-slate-600"
+                />
+              </div>
+              <div className="flex justify-between text-sm pt-2 border-t border-slate-100">
+                <span className="text-slate-500">Estimasi Harga Jual:</span>
+                <span className="font-semibold text-blue-600">{formatIDR(sellTotal)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ENTERPRISE CONTROL PANEL */}
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 sticky top-0 z-10">
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="relative flex-1 md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input
+                placeholder="Cari item / scope..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
+              />
+            </div>
+
+            <button
+              onClick={() => setExpandAll(!expandAll)}
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm hover:bg-slate-50 transition flex items-center gap-2"
+            >
+              {expandAll ? <EyeOff size={16} /> : <Eye size={16} />}
+              {expandAll ? "Collapse All" : "Expand All"}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-slate-500">GRAND TOTAL:</span>
+            <span className="text-lg font-bold text-emerald-600">{formatIDR(totalValue)}</span>
+          </div>
+        </div>
+
+        {/* ACCORDION BY SCOPE */}
+        <div id="print-area" className="space-y-4">
+          {grouped.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
+              <Package className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+              <p className="text-slate-500">Belum ada item RAB</p>
+              {!lockMode && (
+                <p className="text-sm text-slate-400 mt-2">
+                  Gunakan form di atas untuk menambah item
+                </p>
+              )}
+            </div>
+          ) : (
+            grouped.map((g) => (
+              <details
+                key={g.scope}
+                className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm"
+                open={expandAll}
+              >
+                <summary className="flex items-center justify-between gap-3 p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition">
+                  <div className="font-medium text-slate-800">{g.scope}</div>
+                  <div className="flex items-center gap-3 text-xs text-slate-500">
+                    <span>{g.items.length} item</span>
+                    <ChevronDown size={16} className="transition-transform group-open:rotate-180" />
+                  </div>
+                </summary>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50 border-y border-slate-200">
+                      <tr>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[70px]">No</th>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[320px]">Item</th>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[120px]">Kategori</th>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[90px]">Qty</th>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[90px]">Unit</th>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[140px]">Material</th>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[140px]">Labour</th>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[140px]">Unit Price</th>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[160px]">Total</th>
+                        {!lockMode && (
+                          <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[120px]">Aksi</th>
+                        )}
+                      </tr>
+                    </thead>
+
+                    <tbody className="divide-y divide-slate-100">
+                      {g.items.map((it, idx) => (
+                        <tr key={it.item_id} className="hover:bg-slate-50 transition">
+                          <td className="p-3 text-slate-500 font-mono">
+                            {pad3(globalIndexMap.get(it.item_id) || idx + 1)}
+                          </td>
+
+                          <td className="p-3">
+                            {lockMode ? (
+                              <span className="text-slate-800">{it.item_name}</span>
+                            ) : (
+                              <input
+                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
+                                defaultValue={it.item_name}
+                                onBlur={(e) => updateField(it.item_id, { item_name: e.target.value })}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    ;(e.target as HTMLInputElement).blur()
+                                  }
+                                }}
+                                disabled={actionLoading === it.item_id}
+                              />
+                            )}
+                            <div className="text-[10px] text-slate-400 mt-1 font-mono">{it.item_id.slice(-8)}</div>
+                          </td>
+
+                          <td className="p-3">
+                            {lockMode ? (
+                              <span className="text-slate-600">{it.category}</span>
+                            ) : (
+                              <input
+                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
+                                defaultValue={it.category}
+                                onBlur={(e) => updateField(it.item_id, { category: e.target.value })}
+                                onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+                                disabled={actionLoading === it.item_id}
+                              />
+                            )}
+                          </td>
+
+                          <td className="p-3">
+                            {lockMode ? (
+                              <span className="text-slate-600">{it.qty}</span>
+                            ) : (
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
+                                defaultValue={it.qty}
+                                onChange={(e) => debouncedUpdate(it.item_id, { qty: n(e.target.value) })}
+                                onBlur={(e) => updateField(it.item_id, { qty: n(e.target.value) })}
+                                disabled={actionLoading === it.item_id}
+                              />
+                            )}
+                          </td>
+
+                          <td className="p-3">
+                            {lockMode ? (
+                              <span className="text-slate-600">{it.unit}</span>
+                            ) : (
+                              <input
+                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
+                                defaultValue={it.unit}
+                                onBlur={(e) => updateField(it.item_id, { unit: e.target.value })}
+                                onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+                                disabled={actionLoading === it.item_id}
+                              />
+                            )}
+                          </td>
+
+                          <td className="p-3">
+                            {lockMode ? (
+                              <span className="text-slate-600">{formatIDR(it.material_price)}</span>
+                            ) : (
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
+                                defaultValue={it.material_price}
+                                onChange={(e) => debouncedUpdate(it.item_id, { material_price: n(e.target.value) })}
+                                onBlur={(e) => updateField(it.item_id, { material_price: n(e.target.value) })}
+                                disabled={actionLoading === it.item_id}
+                              />
+                            )}
+                          </td>
+
+                          <td className="p-3">
+                            {lockMode ? (
+                              <span className="text-slate-600">{formatIDR(it.labour_price)}</span>
+                            ) : (
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
+                                defaultValue={it.labour_price}
+                                onChange={(e) => debouncedUpdate(it.item_id, { labour_price: n(e.target.value) })}
+                                onBlur={(e) => updateField(it.item_id, { labour_price: n(e.target.value) })}
+                                disabled={actionLoading === it.item_id}
+                              />
+                            )}
+                          </td>
+
+                          <td className="p-3 font-medium text-slate-700">
+                            {formatIDR(n(it.unit_price))}
+                          </td>
+
+                          <td className="p-3 font-semibold text-emerald-600">
+                            {formatIDR(n(it.total_price))}
+                          </td>
+
+                          {!lockMode && (
+                            <td className="p-3">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  className="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition disabled:opacity-50"
+                                  onClick={() => copyItem(it)}
+                                  disabled={copyingId === it.item_id || actionLoading !== null}
+                                  title="Copy item"
+                                >
+                                  {copyingId === it.item_id ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-400 border-t-transparent" />
+                                  ) : (
+                                    <Copy size={14} className="text-slate-500" />
+                                  )}
+                                </button>
+                                <button
+                                  className="p-1.5 border border-slate-200 rounded-lg hover:bg-rose-50 transition disabled:opacity-50"
+                                  onClick={() => deleteItem(it)}
+                                  disabled={deletingId === it.item_id || actionLoading !== null}
+                                  title="Hapus item"
+                                >
+                                  {deletingId === it.item_id ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-rose-400 border-t-transparent" />
+                                  ) : (
+                                    <Trash2 size={14} className="text-rose-500" />
+                                  )}
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+
+                    <tfoot className="bg-slate-50 border-t border-slate-200">
+                      <tr>
+                        <td colSpan={lockMode ? 9 : 8} className="p-3 text-right font-medium text-slate-600">
+                          SUBTOTAL {g.scope}
+                        </td>
+                        <td className="p-3 font-bold text-emerald-600">
+                          {formatIDR(scopeTotal(g.items))}
+                        </td>
+                        {!lockMode && <td />}
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </details>
+            ))
           )}
         </div>
-      </div>
 
-      {/* SUMMARY + PROFIT PANEL */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="bg-white border rounded-lg p-4 space-y-2">
-          <div className="text-xs text-gray-500 uppercase tracking-wide">RAB Summary</div>
-          <div className="text-sm">
-            Total Item: <b>{data.items.length}</b>
-          </div>
-          <div className="text-sm">
-            Total Nilai RAB: <b className="text-green-700">{formatIDR(totalValue)}</b>
-          </div>
-          <div className="text-xs text-gray-500">
-            (Realtime dari item. Backend juga recalculation biar aman.)
-          </div>
-        </div>
-
-        <div className="bg-white border rounded-lg p-4 space-y-2">
-          <div className="text-xs text-gray-500 uppercase tracking-wide">Cost Breakdown</div>
-          <div className="text-sm">
-            Total Material: <b>{formatIDR(totalMaterial)}</b>
-          </div>
-          <div className="text-sm">
-            Total Labour: <b>{formatIDR(totalLabour)}</b>
-          </div>
-          <div className="text-xs text-gray-500">
-            (Material/Labour dihitung: price × qty)
-          </div>
-        </div>
-
-        <div className="bg-white border rounded-lg p-4 space-y-3">
-          <div className="text-xs text-gray-500 uppercase tracking-wide">Profit Panel</div>
-
-          <div className="space-y-1">
-            <div className="text-xs text-gray-600">Overhead / Margin (%)</div>
-            <input
-              type="range"
-              min={0}
-              max={50}
-              value={overheadPct}
-              onChange={(e) => setOverheadPct(Number(e.target.value))}
-              className="w-full"
-            />
-            <div className="text-xs text-gray-700">{overheadPct}%</div>
-          </div>
-
-          <div className="space-y-1">
-            <div className="text-xs text-gray-600">Profit (%)</div>
-            <input
-              type="range"
-              min={0}
-              max={50}
-              value={profitPct}
-              onChange={(e) => setProfitPct(Number(e.target.value))}
-              className="w-full"
-            />
-            <div className="text-xs text-gray-700">{profitPct}%</div>
-          </div>
-
-          <div className="text-sm">
-            Estimasi Harga Jual:{" "}
-            <b className="text-blue-700">{formatIDR(sellTotal)}</b>
-          </div>
+        {/* FOOTER */}
+        <div className="flex items-center gap-2 p-4 bg-slate-100/50 border border-slate-200 rounded-xl text-xs text-slate-500">
+          <Lock size={14} className="text-slate-400" />
+          <p>
+            <span className="font-medium text-slate-600">Security Note:</span> Modul ini adalah sumber RAB resmi. 
+            {lockMode 
+              ? " RAB dalam mode terkunci (read-only)."
+              : " Perubahan akan langsung tersimpan dan direfleksikan ke sistem."}
+          </p>
         </div>
       </div>
-
-      {/* ENTERPRISE CONTROL PANEL */}
-<div className="bg-white border rounded-lg p-4 flex items-center justify-between gap-4 sticky top-0 z-10">
-  <div className="flex items-center gap-3">
-    <input
-      placeholder="Search item / scope..."
-      value={searchTerm}
-      onChange={(e) => setSearchTerm(e.target.value)}
-      className="border rounded px-3 py-1 text-sm"
-    />
-
-    <button
-      onClick={() => setExpandAll(!expandAll)}
-      className="text-xs px-3 py-1 border rounded"
-    >
-      {expandAll ? "Collapse All" : "Expand All"}
-    </button>
-  </div>
-
-  <div className="text-sm font-semibold">
-    GRAND TOTAL:{" "}
-    <span className="text-green-700">
-      {formatIDR(totalValue)}
-    </span>
-  </div>
-</div>
-      
-      {/* ACCORDION BY SCOPE */}
-<div id="print-area" className="space-y-3">
-        <div className="text-sm font-semibold">Item RAB (Grouped by Scope)</div>
-
-        {grouped.length === 0 ? (
-          <div className="bg-white border rounded-lg p-6 text-center text-sm text-gray-500">
-            Belum ada item RAB
-          </div>
-        ) : (
-          grouped.map((g) => (
-            <details
-  key={g.scope}
-  className="bg-white border rounded-lg overflow-hidden"
-  open={expandAll}
->
-              <summary className="flex items-center justify-between gap-3 p-4 cursor-pointer select-none bg-gray-50">
-                <div className="font-semibold text-sm">{g.scope}</div>
-                <div className="flex items-center gap-3 text-xs text-gray-600">
-                  <span>{g.items.length} item</span>
-                  <ChevronDown size={16} />
-                </div>
-              </summary>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-white">
-                    <tr className="border-b">
-                      <th className="p-3 text-left w-[70px]">No</th>
-                      <th className="p-3 text-left min-w-[320px]">Item</th>
-                      <th className="p-3 text-left w-[120px]">Kategori</th>
-                      <th className="p-3 text-left w-[90px]">Qty</th>
-                      <th className="p-3 text-left w-[90px]">Unit</th>
-                      <th className="p-3 text-left w-[140px]">Material</th>
-                      <th className="p-3 text-left w-[140px]">Labour</th>
-                      <th className="p-3 text-left w-[140px]">Unit Price</th>
-                      <th className="p-3 text-left w-[160px]">Total</th>
-                      <th className="p-3 text-left w-[120px]">Aksi</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {g.items.map((it, idx) => (
-                      <tr key={it.item_id} className="border-b hover:bg-gray-50">
-                        <td className="p-3 text-gray-500">
-  {pad3(globalIndexMap.get(it.item_id) || idx + 1)}
-</td>
-
-                        {/* item_name */}
-                        <td className="p-3">
-                          <input
-                            className="w-full border rounded px-2 py-1"
-                            defaultValue={it.item_name}
-                            onBlur={(e) => updateField(it.item_id, { item_name: e.target.value })}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                ;(e.target as HTMLInputElement).blur()
-                              }
-                            }}
-                          />
-                          <div className="text-[11px] text-gray-500 mt-1">ID: {it.item_id}</div>
-                        </td>
-
-                        {/* category */}
-                        <td className="p-3">
-                          <input
-                            className="w-full border rounded px-2 py-1"
-                            defaultValue={it.category}
-                            onBlur={(e) => updateField(it.item_id, { category: e.target.value })}
-                            onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-                          />
-                        </td>
-
-                        {/* qty */}
-                        <td className="p-3">
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            className="w-full border rounded px-2 py-1"
-                            defaultValue={it.qty}
-                            onChange={(e) => debouncedUpdate(it.item_id, { qty: n(e.target.value) })}
-                            onBlur={(e) => updateField(it.item_id, { qty: n(e.target.value) })}
-                          />
-                        </td>
-
-                        {/* unit */}
-                        <td className="p-3">
-                          <input
-                            className="w-full border rounded px-2 py-1"
-                            defaultValue={it.unit}
-                            onBlur={(e) => updateField(it.item_id, { unit: e.target.value })}
-                            onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-                          />
-                        </td>
-
-                        {/* material_price */}
-                        <td className="p-3">
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            className="w-full border rounded px-2 py-1"
-                            defaultValue={it.material_price}
-                            onChange={(e) => debouncedUpdate(it.item_id, { material_price: n(e.target.value) })}
-                            onBlur={(e) => updateField(it.item_id, { material_price: n(e.target.value) })}
-                          />
-                        </td>
-
-                        {/* labour_price */}
-                        <td className="p-3">
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            className="w-full border rounded px-2 py-1"
-                            defaultValue={it.labour_price}
-                            onChange={(e) => debouncedUpdate(it.item_id, { labour_price: n(e.target.value) })}
-                            onBlur={(e) => updateField(it.item_id, { labour_price: n(e.target.value) })}
-                          />
-                        </td>
-
-                        <td className="p-3">{formatIDR(n(it.unit_price))}</td>
-                        <td className="p-3 font-semibold text-green-700">{formatIDR(n(it.total_price))}</td>
-
-                        <td className="p-3">
-                          <div className="flex items-center gap-2">
-                            <button
-                              className="text-xs px-2 py-1 border rounded hover:bg-gray-50 flex items-center gap-1"
-                              onClick={() => copyItem(it)}
-                              disabled={loading}
-                            >
-                              <Copy size={14} /> Copy
-                            </button>
-                            <button
-                              className="text-xs px-2 py-1 border rounded hover:bg-red-50 text-red-600 flex items-center gap-1"
-                              onClick={() => deleteItem(it)}
-                              disabled={loading}
-                            >
-                              <Trash2 size={14} /> Del
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-
-                  <tfoot>
-  <tr className="bg-gray-100 font-semibold">
-    <td colSpan={8} className="p-3 text-right">
-      SUBTOTAL {g.scope}
-    </td>
-    <td className="p-3 text-green-700">
-      {formatIDR(scopeTotal(g.items))}
-    </td>
-    <td />
-  </tr>
-</tfoot>
-                  
-                </table>
-              </div>
-            </details>
-          ))
-        )}
-      </div>
-
-      
-      
-      <p className="text-xs text-gray-400">
-        🔐 Modul ini adalah sumber RAB resmi. Project Management membaca dari sini.
-      </p>
     </div>
   )
 }

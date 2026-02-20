@@ -174,18 +174,20 @@ export default function CreateInquiryPage() {
         clearTimeout(timeoutId)
 
         if (custRes.ok) {
-          const data = await custRes.json()
-          setCustomers(Array.isArray(data) ? data.filter(isCustomer) : [])
-        } else {
-          console.error("Failed to fetch customers:", custRes.status)
-        }
-        
-        if (empRes.ok) {
-          const data = await empRes.json()
-          setEmployees(Array.isArray(data) ? data.filter(isEmployee) : [])
-        } else {
-          console.error("Failed to fetch employees:", empRes.status)
-        }
+  const result = await custRes.json()
+  const customerArray = Array.isArray(result.data) ? result.data : []
+  setCustomers(customerArray)
+} else {
+  console.error("Failed to fetch customers:", custRes.status)
+}
+
+if (empRes.ok) {
+  const result = await empRes.json()
+  const employeeArray = Array.isArray(result.data) ? result.data : []
+  setEmployees(employeeArray)
+} else {
+  console.error("Failed to fetch employees:", empRes.status)
+}
 
         setFetchError(null)
       } catch (error: any) {

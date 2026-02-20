@@ -178,23 +178,47 @@ export default function RABDetailClient({ rab_id, project_id, initialData }: Pro
   const [profitPct, setProfitPct] = useState<number>(10)
 
   async function reload() {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/estimator/rab/${rab_id}`, { cache: "no-store" })
-      if (res.ok) {
-        const json = await res.json()
-        setData(json)
-        setLockMode(json.header?.status === "LOCKED" || json.header?.status === "Approved")
-        toast.success("Data berhasil direfresh")
-      } else {
-        toast.error("Gagal refresh data")
-      }
-    } catch {
+  setLoading(true)
+  try {
+    const res = await fetch(`/api/estimator/rab/${rab_id}`, { cache: "no-store" })
+
+    if (!res.ok) {
       toast.error("Gagal refresh data")
-    } finally {
-      setLoading(false)
+      return
     }
+
+    const raw = await res.json()
+
+    const normalized: RabResponse = {
+      rab_id: raw.rab_id,
+      project_id: raw.project_id ?? "",
+      header: {
+        status: raw.status,
+        created_by: raw.created_by,
+        created_at: raw.created_at,
+        customer_name: raw.customer_name,
+        project_name: raw.project_name,
+      },
+      summary: {
+        total_items: raw.total_items ?? raw.items?.length ?? 0,
+        total_value: raw.total_value ?? 0,
+      },
+      items: raw.items ?? [],
+    }
+
+    setData(normalized)
+    setLockMode(
+      normalized.header?.status === "LOCKED" ||
+      normalized.header?.status === "Approved"
+    )
+
+    toast.success("Data berhasil direfresh")
+  } catch {
+    toast.error("Gagal refresh data")
+  } finally {
+    setLoading(false)
   }
+}
 
   // ✅ realtime sum (front) — tetap ada backend recalculation juga
   const totalValue = useMemo(

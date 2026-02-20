@@ -613,7 +613,7 @@ const conversionRate = totalClosed > 0
         {viewMode === 'table' && (
           <TableView 
             data={filteredData}
-            onRowClick={(deal) => router.push(`/admin/crm/inquiry/${deal.inquiry_id}`)}
+            onRowClick={(deal) => router.push(`/admin/crm/pipeline/${deal.pipeline_id}`)}
           />
         )}
 
@@ -622,7 +622,7 @@ const conversionRate = totalClosed > 0
             stages={STAGE_CONFIG}
             distribution={stageDistribution}
             data={filteredData}
-            onDealClick={(deal) => router.push(`/admin/crm/inquiry/${deal.inquiry_id}`)}
+            onDealClick={(deal) => router.push(`/admin/crm/pipeline/${deal.pipeline_id}`)}
           />
         )}
 

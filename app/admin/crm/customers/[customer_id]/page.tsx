@@ -106,8 +106,11 @@ const [inqRes, projRes] = await Promise.all([
   fetch(`${baseUrl}/api/projects?customer_id=${customerId}`, { cache: "no-store" }),
 ])
 
-    const inquiries: Inquiry[] = inqRes.ok ? await inqRes.json() : []
-    const projects: Project[] = projRes.ok ? await projRes.json() : []
+    const inqJson = inqRes.ok ? await inqRes.json() : { data: [] }
+const inquiries: Inquiry[] = inqJson.data || []
+
+const projJson = projRes.ok ? await projRes.json() : { data: [] }
+const projects: Project[] = projJson.data || []
 
     const active = projects.filter(p => p.status === "Active" || p.status === "On Going")
     const completed = projects.filter(p => p.status === "Completed" || p.status === "Done")

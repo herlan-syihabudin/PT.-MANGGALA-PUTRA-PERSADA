@@ -142,34 +142,45 @@ export default function InquiryDetailPage() {
 
   // ================= UPDATE INQUIRY =================
   const updateInquiry = async () => {
-    try {
-      setIsUpdating(true)
+  try {
+    setIsUpdating(true)
 
-      const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editedData),
-      })
+    const allowedFields = [
+      "nama_pekerjaan",
+      "layanan",
+      "sumber",
+      "lokasi",
+      "assigned_to",
+      "prioritas",
+      "catatan",
+      "estimasi_nilai",
+      "status",
+    ]
 
-      if (!res.ok) throw new Error()
+    const filteredData = Object.fromEntries(
+      Object.entries(editedData).filter(([key]) =>
+        allowedFields.includes(key)
+      )
+    )
 
-      setData(prev => ({ ...prev!, ...editedData }))
-      setIsEditMode(false)
-      toast.success("Data berhasil diupdate")
-      
-      setActivities(prev => [{
-        id: Date.now().toString(),
-        type: 'note',
-        description: 'Data inquiry diupdate',
-        user: 'Current User',
-        timestamp: new Date().toISOString()
-      }, ...prev])
-    } catch {
-      toast.error("Gagal update data")
-    } finally {
-      setIsUpdating(false)
-    }
+    const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(filteredData),
+    })
+
+    if (!res.ok) throw new Error()
+
+    setData(prev => ({ ...prev!, ...filteredData }))
+    setIsEditMode(false)
+    toast.success("Data berhasil diupdate")
+
+  } catch {
+    toast.error("Gagal update data")
+  } finally {
+    setIsUpdating(false)
   }
+}
 
   // ================= ANALYTICS =================
   const analytics = useMemo(() => {

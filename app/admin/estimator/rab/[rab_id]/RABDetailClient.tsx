@@ -556,4 +556,12 @@ export default function RABDetailClient({ rab_id, project_id, initialData }: Pro
               <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wider">RAB Summary</h3>
             </div>
             <div className="space-y-2">
+                            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  )
+}
              

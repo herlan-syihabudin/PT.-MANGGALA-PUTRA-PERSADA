@@ -6,9 +6,14 @@ export const dynamic = "force-dynamic"
 
 async function fetchRAB(rab_id: string): Promise<RabResponse> {
   try {
-    const res = await fetch(`/api/estimator/rab/${rab_id}`, {
-      cache: "no-store",
-    })
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL ||
+      "http://localhost:3000"
+
+    const res = await fetch(
+      `${baseUrl}/api/estimator/rab/${rab_id}`,
+      { cache: "no-store" }
+    )
 
     if (!res.ok) {
       console.error(`Failed to fetch RAB ${rab_id}: ${res.status}`)
@@ -26,7 +31,6 @@ async function fetchRAB(rab_id: string): Promise<RabResponse> {
       throw new Error("Invalid RAB data")
     }
 
-    // ✅ FIX: Transform API response → format RabResponse
     return {
       rab_id: data.rab_id,
       project_id: data.project_id ?? "",

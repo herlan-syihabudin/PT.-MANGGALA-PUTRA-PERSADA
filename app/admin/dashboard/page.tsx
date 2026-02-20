@@ -69,12 +69,12 @@ const COLORS = {
 }
 
 // ==================== LAZY LOAD COMPONENTS ====================
-const SparklineChart = dynamic(() => import('@/components/charts/Sparkline'), {
+const SparklineChart = dynamic(() => import('@/components/dashboard/charts/Sparkline'), {
   loading: () => <div className="h-12 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />,
   ssr: false
 })
 
-const MiniPieChart = dynamic(() => import('@/components/charts/MiniPie'), {
+const MiniPieChart = dynamic(() => import('@/components/dashboard/charts/MiniPie'), {
   loading: () => <div className="h-20 w-20 rounded-full bg-gray-100 dark:bg-gray-800 animate-pulse" />,
   ssr: false
 })

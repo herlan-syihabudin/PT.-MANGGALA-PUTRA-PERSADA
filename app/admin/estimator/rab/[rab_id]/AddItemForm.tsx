@@ -2,23 +2,33 @@
 
 import { useRef, useState, useEffect } from "react"
 import { toast } from "sonner"
-import { PlusCircle, X, CheckCircle } from "lucide-react"
+import { PlusCircle, CheckCircle } from "lucide-react"
 
-type Item = {
+// ✅ FIX: Type ini harus SAMA dengan RabItem di RABDetailClient
+type RabItem = {
   item_id: string
+  rab_id: string
+  project_id: string
+  scope: string
   item_name: string
+  category: string
   qty: number
   unit: string
   material_price: number
   labour_price: number
+  unit_price: number
   total_price: number
+  status: string
+  created_by?: string
+  created_at?: string
+  updated_at?: string
 }
 
 type Props = {
   rab_id: string
   project_id: string
   onSuccess: () => void
-  onCreated?: (item: Item) => void
+  onCreated?: (item: RabItem) => void  // ✅ FIX: Pakai RabItem, bukan Item
 }
 
 function formatRupiah(value: number) {
@@ -57,7 +67,7 @@ export default function AddItemForm({
   const [labour, setLabour] = useState<number>(0)
   const [loading, setLoading] = useState(false)
   const [successMsg, setSuccessMsg] = useState(false)
-  const [existingItems, setExistingItems] = useState<Item[]>([])
+  const [existingItems, setExistingItems] = useState<RabItem[]>([])
 
   // Fetch existing items untuk cek duplikat
   useEffect(() => {
@@ -98,14 +108,15 @@ export default function AddItemForm({
   async function handleSubmit() {
     if (!isValid || loading) return
 
-    // Cek duplikat
+    // Cek duplikat berdasarkan scope + item_name
     const duplicate = existingItems.find(
-  i =>
-    i.item_name.trim().toLowerCase() === itemName.trim().toLowerCase() &&
-    (i.scope || "").trim().toLowerCase() === scope.trim().toLowerCase()
-)
+      i =>
+        i.item_name.trim().toLowerCase() === itemName.trim().toLowerCase() &&
+        (i.scope || "").trim().toLowerCase() === scope.trim().toLowerCase()
+    )
+    
     if (duplicate) {
-      toast.error(`Item "${itemName}" sudah ada dalam RAB ini`)
+      toast.error(`Item "${itemName}" sudah ada dalam scope "${scope}"`)
       return
     }
 
@@ -134,11 +145,30 @@ export default function AddItemForm({
         throw new Error(data.message || "Gagal menambah item")
       }
 
-      if (data.item) {
-        onCreated?.(data.item)
-        // Update existing items list
-        setExistingItems(prev => [...prev, data.item])
+      // ✅ FIX: Pastikan response dari API sesuai dengan RabItem
+      const newItem: RabItem = {
+        item_id: data.item?.item_id || data.item_id,
+        rab_id,
+        project_id,
+        scope: scope.trim(),
+        item_name: itemName.trim(),
+        category: category.trim(),
+        qty,
+        unit: unit.trim(),
+        material_price: material,
+        labour_price: labour,
+        unit_price: unitPrice,
+        total_price: total,
+        status: "Draft",
+        created_by: "Estimator",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       }
+
+      onCreated?.(newItem)
+      
+      // Update existing items list
+      setExistingItems(prev => [...prev, newItem])
 
       resetForm()
       itemInputRef.current?.focus()

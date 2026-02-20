@@ -487,7 +487,7 @@ function StatCard({ label, value, icon, color }: {
 
 function InsightCard({ title, value, icon, subtitle, trend, color, badge }: {
   title: string;
-  value: string;
+  value: string | number;
   icon: React.ReactNode;
   subtitle?: string;
   trend?: number;

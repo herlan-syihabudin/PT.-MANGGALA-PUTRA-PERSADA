@@ -100,8 +100,10 @@ export default function AddItemForm({
 
     // Cek duplikat
     const duplicate = existingItems.find(
-      i => i.item_name.toLowerCase() === itemName.toLowerCase().trim()
-    )
+  i =>
+    i.item_name.trim().toLowerCase() === itemName.trim().toLowerCase() &&
+    (i.scope || "").trim().toLowerCase() === scope.trim().toLowerCase()
+)
     if (duplicate) {
       toast.error(`Item "${itemName}" sudah ada dalam RAB ini`)
       return

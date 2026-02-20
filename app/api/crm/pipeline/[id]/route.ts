@@ -1,19 +1,48 @@
-// app/api/crm/pipeline/[id]/route.ts - PATCH
-
 import { NextResponse } from "next/server"
 
+/**
+ * SIMPLE IN-MEMORY STORE (DEV ONLY)
+ * Nanti bisa ganti ke DB / Google Sheet / Postgres
+ */
+const mockDeals: Record<string, any> = {}
+
+/**
+ * GET DEAL
+ */
 async function getDeal(id: string) {
-  throw new Error("getDeal not implemented")
+  const deal = mockDeals[id]
+
+  if (!deal) {
+    return null
+  }
+
+  return deal
 }
 
+/**
+ * UPDATE DEAL
+ */
 async function updateDeal(id: string, data: any) {
-  return data
+  mockDeals[id] = {
+    ...(mockDeals[id] || {}),
+    ...data,
+    pipeline_id: id,
+  }
+
+  return mockDeals[id]
 }
 
+/**
+ * LOCK RAB (DEV SIMULATION)
+ */
 async function lockRAB(rabId: string) {
+  console.log("RAB locked:", rabId)
   return true
 }
 
+/**
+ * PATCH - UPDATE STAGE
+ */
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
@@ -21,11 +50,19 @@ export async function PATCH(
   try {
     const body = await req.json()
     const { stage } = body
-    
-    // 1. Get existing deal
+
     const existingDeal = await getDeal(params.id)
-    
-    // 2. VALIDASI STAGE TRANSITION
+
+    if (!existingDeal) {
+      return NextResponse.json(
+        { message: "Deal tidak ditemukan" },
+        { status: 404 }
+      )
+    }
+
+    // ===============================
+    // VALID STAGE TRANSITION
+    // ===============================
     const validTransitions: Record<string, string[]> = {
       "FOLLOW UP": ["PENAWARAN"],
       "PENAWARAN": ["NEGOSIASI"],
@@ -33,49 +70,76 @@ export async function PATCH(
       "DEAL": [],
       "LOST": [],
     }
-    
-    if (stage && !validTransitions[existingDeal.stage]?.includes(stage)) {
+
+    if (
+      stage &&
+      !validTransitions[existingDeal.stage]?.includes(stage)
+    ) {
       return NextResponse.json(
-        { message: `Transisi tidak valid: dari ${existingDeal.stage} ke ${stage}` },
+        {
+          message: `Transisi tidak valid: dari ${existingDeal.stage} ke ${stage}`,
+        },
         { status: 400 }
       )
     }
-    
-    // 3. VALIDASI SYARAT STAGE
+
+    // ===============================
+    // VALIDASI SYARAT
+    // ===============================
     if (stage === "PENAWARAN" && !existingDeal.rab_id) {
       return NextResponse.json(
-        { message: "RAB harus ada sebelum masuk stage PENAWARAN" },
+        { message: "RAB harus ada sebelum masuk PENAWARAN" },
         { status: 400 }
       )
     }
-    
-    if (stage === "NEGOSIASI" && existingDeal.proposal_status !== "sent") {
+
+    if (
+      stage === "NEGOSIASI" &&
+      existingDeal.proposal_status !== "sent"
+    ) {
       return NextResponse.json(
-        { message: "Proposal harus sudah dikirim sebelum negosiasi" },
+        {
+          message:
+            "Proposal harus sudah dikirim sebelum NEGOSIASI",
+        },
         { status: 400 }
       )
     }
-    
-    if (stage === "DEAL" && existingDeal.proposal_status !== "approved") {
+
+    if (
+      stage === "DEAL" &&
+      existingDeal.proposal_status !== "approved"
+    ) {
       return NextResponse.json(
-        { message: "Proposal harus disetujui sebelum DEAL" },
+        {
+          message:
+            "Proposal harus disetujui sebelum DEAL",
+        },
         { status: 400 }
       )
     }
-    
-    // 4. LOCK RAB jika sudah DEAL
+
+    // ===============================
+    // LOCK RAB IF DEAL
+    // ===============================
     if (stage === "DEAL" && existingDeal.rab_id) {
-      await lockRAB(existingDeal.rab_id) // Set read-only
+      await lockRAB(existingDeal.rab_id)
     }
-    
-    // 5. Update dengan validasi
+
+    // ===============================
+    // UPDATE
+    // ===============================
     const updatedDeal = await updateDeal(params.id, {
+      ...existingDeal,
       ...body,
-      last_activity_at: new Date().toISOString(), // Update untuk aging
+      last_activity_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
-    
+
     return NextResponse.json(updatedDeal)
   } catch (error) {
+    console.error("PATCH ERROR:", error)
+
     return NextResponse.json(
       { message: "Gagal update deal" },
       { status: 500 }

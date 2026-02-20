@@ -502,16 +502,19 @@ export default function RABDetailClient({ rab_id, project_id, initialData }: Pro
 
         {/* ADD ITEM (hanya jika tidak lock) */}
         {!lockMode && (
-          <AddItemForm
-            rab_id={rab_id}
-            project_id={project_id}
-            onCreated={(newItem) => {
-              setData((prev) => ({ ...prev, items: [...prev.items, newItem] }))
-              toast.success("Item berhasil ditambahkan")
-            }}
-            onSuccess={reload}
-          />
-        )}
+  <AddItemForm
+    rab_id={rab_id}
+    project_id={project_id}
+    onCreated={(newItem: RabItem) => {  // ✅ FIX: Tambah type explicit
+      setData((prev: RabResponse) => ({ 
+        ...prev, 
+        items: [...prev.items, newItem] 
+      }))
+      toast.success("Item berhasil ditambahkan")
+    }}
+    onSuccess={reload}
+  />
+)}
 
         {/* BULK UPLOAD (hanya jika tidak lock) */}
         {!lockMode && (

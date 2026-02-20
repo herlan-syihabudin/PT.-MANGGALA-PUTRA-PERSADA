@@ -498,7 +498,7 @@ if (empRes.ok) {
                       </option>
                     ))}
                   </select>
-                  <div className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-blue-500 transition-colors">
+                  <div className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-blue-500 transition-colors">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -700,7 +700,7 @@ if (empRes.ok) {
                       </option>
                     ))}
                   </select>
-                  <div className="absolute right-5 top-1/2 -translate-y-1/2 text-blue-400/50 group-hover:text-blue-400 transition-colors">
+                  <div className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-blue-400/50 group-hover:text-blue-400 transition-colors">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>

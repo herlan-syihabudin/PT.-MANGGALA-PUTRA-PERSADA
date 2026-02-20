@@ -119,8 +119,8 @@ export async function GET(req: Request) {
     const search = searchParams.get("search")?.toLowerCase()
     const status = searchParams.get("status")
     const type = searchParams.get("type") // ✅ TAMBAH INI
-    const sortBy = searchParams.get("sortBy") || "company_name" // ✅ TAMBAH INI
-    const sortOrder = searchParams.get("sortOrder") || "asc" // ✅ TAMBAH INI
+    const sortBy = searchParams.get("sortBy") || "company_name" // ✅ TAMBAH 
+    const sortOrder = searchParams.get("sortOrder") || "asc" // ✅ TAMBAH 
 
     const res = await withRetry(() => 
       sheets.spreadsheets.values.get({

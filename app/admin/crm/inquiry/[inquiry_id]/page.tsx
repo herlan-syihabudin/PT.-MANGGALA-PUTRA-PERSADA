@@ -312,25 +312,39 @@ export default function InquiryDetailPage() {
 
             <div className="flex gap-2">
               {data.status?.toLowerCase() === "new" && (
-                <button
-                  onClick={async () => {
-                    await fetch(`/api/crm/inquiry/${inquiry_id}`, {
-                      method: "PATCH",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        status: "estimating",
-                        assigned_to: "Estimator"
-                      }),
-                    })
-                    toast.success("Assigned ke Estimator")
-                    router.refresh()
-                  }}
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                >
-                  <Users size={16} />
-                  Assign ke Estimator
-                </button>
-              )}
+  <button
+    onClick={async () => {
+      try {
+        const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "estimating",
+            assigned_to: "Estimator"
+          }),
+        })
+
+        if (!res.ok) throw new Error()
+
+        toast.success("Assigned ke Estimator")
+
+        // 🔥 UPDATE STATE LANGSUNG
+        setData(prev => prev ? {
+          ...prev,
+          status: "estimating",
+          assigned_to: "Estimator"
+        } : prev)
+
+      } catch {
+        toast.error("Gagal assign estimator")
+      }
+    }}
+    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+  >
+    <Users size={16} />
+    Assign ke Estimator
+  </button>
+)}
               <button
                 onClick={() => setShowFollowUpModal(true)}
                 className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-white/10"

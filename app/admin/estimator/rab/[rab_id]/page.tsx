@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
-import RABDetailClient, { RabResponse } from "./RABDetailClient"
+import RABDetailClient from "./RABDetailClient"
+import { RabResponse } from "./RABDetailClient"
 
 export const dynamic = "force-dynamic"
 
@@ -25,7 +26,7 @@ async function fetchRAB(rab_id: string): Promise<RabResponse> {
       throw new Error("Invalid RAB data")
     }
 
-    // 🔥 Transform API response → format RabResponse
+    // ✅ FIX: Transform API response → format RabResponse
     return {
       rab_id: data.rab_id,
       project_id: data.project_id ?? "",

@@ -79,9 +79,10 @@ type ExtendedSummary = {
 // ================= FETCH CUSTOMER =================
 async function getCustomer(id: string): Promise<Customer | null> {
   try {
-    const res = await fetch(`/api/crm/customers/${id}`, { 
-      cache: "no-store" 
-    })
+    const res = await fetch(
+  `${process.env.NEXT_PUBLIC_BASE_URL}/api/crm/customers/${id}`,
+  { cache: "no-store" }
+)
 
     if (!res.ok) {
       console.error(`Failed to fetch customer ${id}: ${res.status}`)
@@ -98,10 +99,12 @@ async function getCustomer(id: string): Promise<Customer | null> {
 // ================= FETCH SUMMARY =================
 async function getSummary(customerId: string): Promise<ExtendedSummary> {
   try {
-    const [inqRes, projRes] = await Promise.all([
-      fetch(`/api/crm/inquiry?customer_id=${customerId}`, { cache: "no-store" }),
-      fetch(`/api/projects?customer_id=${customerId}`, { cache: "no-store" }),
-    ])
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+
+const [inqRes, projRes] = await Promise.all([
+  fetch(`${baseUrl}/api/crm/inquiry?customer_id=${customerId}`, { cache: "no-store" }),
+  fetch(`${baseUrl}/api/projects?customer_id=${customerId}`, { cache: "no-store" }),
+])
 
     const inquiries: Inquiry[] = inqRes.ok ? await inqRes.json() : []
     const projects: Project[] = projRes.ok ? await projRes.json() : []
@@ -209,9 +212,9 @@ async function getSummary(customerId: string): Promise<ExtendedSummary> {
 
 // ================= PAGE =================
 export default async function CustomerDetailPage(
-  { params }: { params: Promise<{ customer_id: string }> }
+  { params }: { params: { customer_id: string } }
 ) {
-  const { customer_id } = await params
+  const { customer_id } = params
 
   const customer = await getCustomer(customer_id)
   if (!customer) return notFound()

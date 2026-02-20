@@ -423,6 +423,27 @@ if (newStatus === "won" && !finalRabId) {
       })
     )
 
+    if (body.status && body.status !== oldStatus) {
+  await appendActivity({
+    inquiry_id: inquiryId,
+    type: "STATUS_CHANGED",
+    description: `Status berubah ${oldStatus} → ${body.status}`,
+    old_value: oldStatus,
+    new_value: body.status,
+    created_by: existingData.created_by || "System"
+  })
+}
+    if (body.assigned_to && body.assigned_to !== oldAssigned) {
+  await appendActivity({
+    inquiry_id: inquiryId,
+    type: "ASSIGNED",
+    description: `Assigned ke ${body.assigned_to}`,
+    old_value: oldAssigned,
+    new_value: body.assigned_to,
+    created_by: existingData.created_by || "System"
+  })
+}
+    
     logger.info('PATCH Inquiry Success', { inquiryId, updates: Object.keys(body) })
     
     return NextResponse.json({
@@ -449,26 +470,7 @@ if (newStatus === "won" && !finalRabId) {
       )
     }
 
-    if (body.status && body.status !== oldStatus) {
-  await appendActivity({
-    inquiry_id: inquiryId,
-    type: "STATUS_CHANGED",
-    description: `Status berubah ${oldStatus} → ${body.status}`,
-    old_value: oldStatus,
-    new_value: body.status,
-    created_by: existingData.created_by || "System"
-  })
-}
-    if (body.assigned_to && body.assigned_to !== oldAssigned) {
-  await appendActivity({
-    inquiry_id: inquiryId,
-    type: "ASSIGNED",
-    description: `Assigned ke ${body.assigned_to}`,
-    old_value: oldAssigned,
-    new_value: body.assigned_to,
-    created_by: existingData.created_by || "System"
-  })
-}
+    
 
     return NextResponse.json(
       { 

@@ -38,6 +38,39 @@ type CustomerForm = {
   postal_code: string
   status: string
   notes: string
+  created_at?: string
+  created_by?: string
+}
+
+// ================= COMPONENT TYPES =================
+interface InputProps {
+  label: string
+  name: string
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  type?: string
+  icon?: React.ReactNode
+  required?: boolean
+  placeholder?: string
+  maxLength?: number
+}
+
+interface TextareaProps {
+  label: string
+  name: string
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
+  rows?: number
+  placeholder?: string
+}
+
+interface SelectProps {
+  label: string
+  name: string
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void
+  options: string[]
+  icon?: React.ReactNode
 }
 
 export default function EditCustomerPage() {
@@ -71,8 +104,8 @@ export default function EditCustomerPage() {
   useEffect(() => {
     const fetchCustomer = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-        const res = await fetch(`${baseUrl}/api/crm/customers/${id}`, {
+        // ✅ PAKAI RELATIVE URL (Client Component)
+        const res = await fetch(`/api/crm/customers/${id}`, {
           cache: "no-store",
         })
 
@@ -86,8 +119,8 @@ export default function EditCustomerPage() {
         }
 
         const data = await res.json()
-setForm(data)
-setOriginalData(data)
+        setForm(data)
+        setOriginalData(data)
       } catch {
         setError("Gagal mengambil data customer")
       } finally {
@@ -159,13 +192,13 @@ setOriginalData(data)
   }
 
   const getChanges = () => {
-  if (!originalData) return []
+    if (!originalData) return []
 
-  return Object.keys(form).filter((key) => {
-    return form[key as keyof CustomerForm] !==
-           originalData[key as keyof CustomerForm]
-  })
-}
+    return Object.keys(form).filter((key) => {
+      return form[key as keyof CustomerForm] !==
+             originalData[key as keyof CustomerForm]
+    })
+  }
   
   /* ================= SUBMIT ================= */
   const handleSubmit = async () => {
@@ -187,8 +220,8 @@ setOriginalData(data)
     setLoading(true)
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-      const res = await fetch(`${baseUrl}/api/crm/customers/${id}`, {
+      // ✅ PAKAI RELATIVE URL (Client Component)
+      const res = await fetch(`/api/crm/customers/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(cleanedForm),
@@ -274,34 +307,34 @@ setOriginalData(data)
       </div>
 
       {/* Form Content */}
-<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-  {/* ================= AUDIT BEFORE ================= */}
-  {originalData && (
-    <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm">
-      <div className="font-semibold text-amber-700 mb-2">
-        Data Saat Ini (Before Edit)
-      </div>
+        {/* ================= AUDIT BEFORE ================= */}
+        {originalData && (
+          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm">
+            <div className="font-semibold text-amber-700 mb-2">
+              Data Saat Ini (Before Edit)
+            </div>
 
-      <div className="grid md:grid-cols-3 gap-3 text-xs text-amber-700">
-        <div>
-          <div className="font-medium">Perusahaan</div>
-          <div>{originalData.company_name}</div>
-        </div>
-        <div>
-          <div className="font-medium">PIC</div>
-          <div>{originalData.pic_name}</div>
-        </div>
-        <div>
-          <div className="font-medium">Telepon</div>
-          <div>{originalData.phone}</div>
-        </div>
-      </div>
-    </div>
-  )}
+            <div className="grid md:grid-cols-3 gap-3 text-xs text-amber-700">
+              <div>
+                <div className="font-medium">Perusahaan</div>
+                <div>{originalData.company_name}</div>
+              </div>
+              <div>
+                <div className="font-medium">PIC</div>
+                <div>{originalData.pic_name}</div>
+              </div>
+              <div>
+                <div className="font-medium">Telepon</div>
+                <div>{originalData.phone}</div>
+              </div>
+            </div>
+          </div>
+        )}
 
-  {/* ================= FORM CARD ================= */}
-  <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+        {/* ================= FORM CARD ================= */}
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
           
           {/* GRID 2 KOLOM */}
           <div className="grid md:grid-cols-2 gap-6">
@@ -440,30 +473,30 @@ setOriginalData(data)
             </div>
           )}
 
-    {/* ================= AUDIT CHANGES ================= */}
-{originalData && getChanges().length > 0 && (
-  <div className="mt-8 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-    <div className="font-semibold text-emerald-700 mb-3 text-sm">
-      Perubahan Yang Akan Disimpan
-    </div>
+          {/* ================= AUDIT CHANGES ================= */}
+          {originalData && getChanges().length > 0 && (
+            <div className="mt-8 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+              <div className="font-semibold text-emerald-700 mb-3 text-sm">
+                Perubahan Yang Akan Disimpan
+              </div>
 
-    <div className="space-y-2 text-xs">
-      {getChanges().map((field) => (
-        <div key={field} className="grid grid-cols-3 gap-2">
-          <div className="text-slate-600 capitalize">
-            {field.replace("_", " ")}
-          </div>
-          <div className="text-rose-500 line-through">
-            {originalData[field as keyof CustomerForm] || "-"}
-          </div>
-          <div className="text-emerald-600 font-medium">
-            {form[field as keyof CustomerForm] || "-"}
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+              <div className="space-y-2 text-xs">
+                {getChanges().map((field) => (
+                  <div key={field} className="grid grid-cols-3 gap-2">
+                    <div className="text-slate-600 capitalize">
+                      {field.replace("_", " ")}
+                    </div>
+                    <div className="text-rose-500 line-through">
+                      {originalData[field as keyof CustomerForm] || "-"}
+                    </div>
+                    <div className="text-emerald-600 font-medium">
+                      {form[field as keyof CustomerForm] || "-"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
     
           {/* ACTION BUTTONS */}
           <div className="flex gap-3 pt-6 border-t mt-6">
@@ -501,7 +534,6 @@ setOriginalData(data)
 }
 
 /* ================= COMPONENTS ================= */
-
 function Input({ 
   label, 
   name, 
@@ -512,7 +544,7 @@ function Input({
   required = false,
   placeholder,
   maxLength
-}: any) {
+}: InputProps) {
   return (
     <div>
       <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -542,7 +574,7 @@ function Input({
   )
 }
 
-function Textarea({ label, name, value, onChange, rows = 3, placeholder }: any) {
+function Textarea({ label, name, value, onChange, rows = 3, placeholder }: TextareaProps) {
   return (
     <div>
       <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -560,7 +592,7 @@ function Textarea({ label, name, value, onChange, rows = 3, placeholder }: any) 
   )
 }
 
-function Select({ label, name, value, onChange, options, icon }: any) {
+function Select({ label, name, value, onChange, options, icon }: SelectProps) {
   return (
     <div>
       <label className="block text-sm font-medium text-slate-700 mb-1">

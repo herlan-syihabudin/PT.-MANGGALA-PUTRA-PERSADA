@@ -77,6 +77,13 @@ const COLUMN_MAP: Record<string, string> = {
   estimasi_nilai: "G",
   stage: "R",
   converted_proposal_id: "S",
+
+  // 🔥 TAMBAHAN INI
+  nama_pekerjaan: "E",
+  layanan: "F",
+  sumber: "H",
+  customer_name: "D",
+  customer_id: "C",
 }
 
 const HEADER_ROWS = 1

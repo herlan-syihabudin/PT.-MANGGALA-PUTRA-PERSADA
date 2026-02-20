@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { google } from "googleapis"
+import { appendActivity } from "@/lib/crm/activity"
 
 export const dynamic = "force-dynamic"
 
@@ -341,7 +342,10 @@ export async function PATCH(
     }
 
     const existingRow = rows[rowIndex]
-    const existingData = mapRowToInquiry(existingRow)
+const existingData = mapRowToInquiry(existingRow)
+
+const oldStatus = existingData.status
+const oldAssigned = existingData.assigned_to
 
     // Lock rules
     if (existingData.converted_project_id) {
@@ -444,6 +448,27 @@ if (newStatus === "won" && !finalRabId) {
         { status: errorResponse.status }
       )
     }
+
+    if (body.status && body.status !== oldStatus) {
+  await appendActivity({
+    inquiry_id: inquiryId,
+    type: "STATUS_CHANGED",
+    description: `Status berubah ${oldStatus} → ${body.status}`,
+    old_value: oldStatus,
+    new_value: body.status,
+    created_by: existingData.created_by || "System"
+  })
+}
+    if (body.assigned_to && body.assigned_to !== oldAssigned) {
+  await appendActivity({
+    inquiry_id: inquiryId,
+    type: "ASSIGNED",
+    description: `Assigned ke ${body.assigned_to}`,
+    old_value: oldAssigned,
+    new_value: body.assigned_to,
+    created_by: existingData.created_by || "System"
+  })
+}
 
     return NextResponse.json(
       { 

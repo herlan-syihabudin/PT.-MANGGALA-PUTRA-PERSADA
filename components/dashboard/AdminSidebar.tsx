@@ -221,22 +221,26 @@ function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(false)
 
   useEffect(() => {
-    const media = window.matchMedia(query)
-    if (media.matches !== matches) {
-      setMatches(media.matches)
-    }
-    
-    const listener = (e: MediaQueryListEvent) => setMatches(e.matches)
-    media.addEventListener('change', listener)
-    
-    return () => media.removeEventListener('change', listener)
-  }, [matches, query])
+  const media = window.matchMedia(query)
 
+  const listener = (e: MediaQueryListEvent) => {
+    setMatches(e.matches)
+  }
+
+  setMatches(media.matches)
+
+  media.addEventListener("change", listener)
+  return () => media.removeEventListener("change", listener)
+}, [query])
   return matches
 }
 
 /* ========= COMPONENT: SIDEBAR ========= */
-export default function AdminSidebar() {
+interface AdminSidebarProps {
+  onMobileClose?: () => void
+}
+
+export default function AdminSidebar({ onMobileClose }: AdminSidebarProps) {
   useRealtimeListener()
   const pathname = usePathname()
   const isMobile = useMediaQuery('(max-width: 768px)')
@@ -351,6 +355,12 @@ export default function AdminSidebar() {
     }
   }, [])
 
+  const handleLinkClick = () => {
+  if (onMobileClose) {
+    onMobileClose()
+  }
+}
+
   // Class names
   const sidebarWidth = collapsed ? "w-[80px]" : "w-[280px]"
   const padX = collapsed ? "px-3" : "px-6"
@@ -422,6 +432,7 @@ export default function AdminSidebar() {
       {/* Desktop Content */}
       <DesktopSidebarContent
         collapsed={collapsed}
+        onLinkClick={handleLinkClick}
         padX={padX}
         totalNotif={totalNotif}
         estimator_inquiry={estimator_inquiry}
@@ -463,6 +474,7 @@ const DesktopSidebarContent = React.memo(function DesktopSidebarContent({
   user,
   isActive,
   onToggle,
+  onLinkClick,
   onNotifToggle,
   notifOpen,
   notifBtnRef,
@@ -632,6 +644,8 @@ const DesktopSidebarContent = React.memo(function DesktopSidebarContent({
                       key={item.href}
                       href={item.href}
                       label={item.name}
+        
+                      onClick={onLinkClick}
                       active={active}
                       collapsed={collapsed}
                       badgeCount={badgeCount}
@@ -899,6 +913,7 @@ const SidebarItem = React.memo(function SidebarItem({
   collapsed,
   badgeCount,
   children,
+  onClick,
 }: {
   href: string
   label: string
@@ -906,9 +921,10 @@ const SidebarItem = React.memo(function SidebarItem({
   collapsed: boolean
   badgeCount?: number
   children: React.ReactNode
+  onClick?: () => void
 }) {
   return (
-    <Link href={href} className="block">
+    <Link href={href} onClick={onClick} className="block">
       <div
         className={`relative flex items-center gap-3 rounded-xl transition-all duration-300 group
         ${collapsed ? "px-3 py-3 justify-center" : "px-4 py-2.5"}

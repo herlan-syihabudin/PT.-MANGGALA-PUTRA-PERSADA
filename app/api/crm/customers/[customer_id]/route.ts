@@ -276,8 +276,8 @@ export async function PUT(
       body.city ?? existingRow[9],
       body.province ?? existingRow[10],
       body.postal_code ?? existingRow[11],
-      body.status ?? existingRow[12] || "Active",
-      body.notes ?? existingRow[13] || "",
+      body.status ?? (existingRow[12] || "Active"),
+body.notes ?? (existingRow[13] || ""),
       existingRow[14], // keep created_at
       existingRow[15], // keep created_by
     ]

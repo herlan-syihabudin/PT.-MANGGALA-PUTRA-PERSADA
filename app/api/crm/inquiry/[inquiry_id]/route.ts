@@ -426,7 +426,7 @@ if (newStatus === "won" && !finalRabId) {
     if (body.status && body.status !== oldStatus) {
   await appendActivity({
     inquiry_id: inquiryId,
-    type: "STATUS_CHANGED",
+    type: "STATUS_CHANGE",
     description: `Status berubah ${oldStatus} → ${body.status}`,
     old_value: oldStatus,
     new_value: body.status,
@@ -436,7 +436,7 @@ if (newStatus === "won" && !finalRabId) {
     if (body.assigned_to && body.assigned_to !== oldAssigned) {
   await appendActivity({
     inquiry_id: inquiryId,
-    type: "ASSIGNED",
+    type: "ASSIGNMENT_CHANGE",
     description: `Assigned ke ${body.assigned_to}`,
     old_value: oldAssigned,
     new_value: body.assigned_to,

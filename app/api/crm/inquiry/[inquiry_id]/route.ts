@@ -77,8 +77,6 @@ const COLUMN_MAP: Record<string, string> = {
   estimasi_nilai: "G",
   stage: "R",
   converted_proposal_id: "S",
-
-  // 🔥 TAMBAHAN INI
   nama_pekerjaan: "E",
   layanan: "F",
   sumber: "H",
@@ -349,10 +347,10 @@ export async function PATCH(
     }
 
     const existingRow = rows[rowIndex]
-const existingData = mapRowToInquiry(existingRow)
+    const existingData = mapRowToInquiry(existingRow)
 
-const oldStatus = existingData.status
-const oldAssigned = existingData.assigned_to
+    const oldStatus = existingData.status
+    const oldAssigned = existingData.assigned_to
 
     // Lock rules
     if (existingData.converted_project_id) {
@@ -387,15 +385,15 @@ const oldAssigned = existingData.assigned_to
     }
 
     // Convert validation
-   const newStatus = body.status ? safeStatus(body.status) : currentStatus
-const finalRabId = body.converted_rab_id || existingData.converted_rab_id
+    const newStatus = body.status ? safeStatus(body.status) : currentStatus
+    const finalRabId = body.converted_rab_id || existingData.converted_rab_id
 
-if (newStatus === "won" && !finalRabId) {
-  return NextResponse.json(
-    { message: "Inquiry hanya bisa WON jika RAB sudah disetujui" },
-    { status: 400 }
-  )
-}
+    if (newStatus === "won" && !finalRabId) {
+      return NextResponse.json(
+        { message: "Inquiry hanya bisa WON jika RAB sudah disetujui" },
+        { status: 400 }
+      )
+    }
 
     const actualRowNumber = rowIndex + ROW_OFFSET
 
@@ -403,21 +401,21 @@ if (newStatus === "won" && !finalRabId) {
     const mergedData = { ...existingData }
     
     for (const [key, value] of Object.entries(body)) {
-  if (key === "estimasi_nilai") {
-    mergedData.estimasi_nilai = value
-      ? Number(String(value).replace(/[^\d]/g, ""))
-      : null
+      if (key === "estimasi_nilai") {
+        mergedData.estimasi_nilai = value
+          ? Number(String(value).replace(/[^\d]/g, ""))
+          : null
 
-  } else if (key === "status") {
-    mergedData.status = safeStatus(value as string)
+      } else if (key === "status") {
+        mergedData.status = safeStatus(value as string)
 
-  } else if (key === "converted_project_id") {
-    mergedData.converted_project_id = value as string
+      } else if (key === "converted_project_id") {
+        mergedData.converted_project_id = value as string
 
-  } else if (key in mergedData) {
-    (mergedData as any)[key] = value
-  }
-}
+      } else if (key in mergedData) {
+        (mergedData as any)[key] = value
+      }
+    }
 
     const updatedRow = rowFromInquiry(mergedData)
 
@@ -431,25 +429,25 @@ if (newStatus === "won" && !finalRabId) {
     )
 
     if (body.status && body.status !== oldStatus) {
-  await appendActivity({
-    inquiry_id: inquiryId,
-    type: "STATUS_CHANGE",
-    description: `Status berubah ${oldStatus} → ${body.status}`,
-    old_value: oldStatus,
-    new_value: body.status,
-    created_by: existingData.created_by || "System"
-  })
-}
+      await appendActivity({
+        inquiry_id: inquiryId,
+        type: "STATUS_CHANGE",
+        description: `Status berubah ${oldStatus} → ${body.status}`,
+        old_value: oldStatus,
+        new_value: body.status,
+        created_by: existingData.created_by || "System"
+      })
+    }
     if (body.assigned_to && body.assigned_to !== oldAssigned) {
-  await appendActivity({
-    inquiry_id: inquiryId,
-    type: "ASSIGNMENT_CHANGE",
-    description: `Assigned ke ${body.assigned_to}`,
-    old_value: oldAssigned,
-    new_value: body.assigned_to,
-    created_by: existingData.created_by || "System"
-  })
-}
+      await appendActivity({
+        inquiry_id: inquiryId,
+        type: "ASSIGNMENT_CHANGE",
+        description: `Assigned ke ${body.assigned_to}`,
+        old_value: oldAssigned,
+        new_value: body.assigned_to,
+        created_by: existingData.created_by || "System"
+      })
+    }
     
     logger.info('PATCH Inquiry Success', { inquiryId, updates: Object.keys(body) })
     
@@ -476,8 +474,6 @@ if (newStatus === "won" && !finalRabId) {
         { status: errorResponse.status }
       )
     }
-
-    
 
     return NextResponse.json(
       { 

@@ -118,6 +118,9 @@ export async function GET(req: Request) {
     const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit") || 50)))
     const search = searchParams.get("search")?.toLowerCase()
     const status = searchParams.get("status")
+    const type = searchParams.get("type") // ✅ TAMBAH INI
+    const sortBy = searchParams.get("sortBy") || "company_name" // ✅ TAMBAH INI
+    const sortOrder = searchParams.get("sortOrder") || "asc" // ✅ TAMBAH INI
 
     const res = await withRetry(() => 
       sheets.spreadsheets.values.get({
@@ -162,11 +165,23 @@ export async function GET(req: Request) {
       customers = customers.filter(c => c.status === status)
     }
 
+    if (type && type !== "all") { // ✅ TAMBAH FILTER TYPE
+      customers = customers.filter(c => c.customer_type === type)
+    }
+
     // Sort
     customers.sort((a, b) => {
-      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
-      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
-      return dateB - dateA
+      let aVal = a[sortBy as keyof Customer] || "" // ✅ PAKE SORTBY
+      let bVal = b[sortBy as keyof Customer] || ""
+      
+      if (sortBy === "created_at") {
+        return sortOrder === "asc"
+          ? new Date(aVal).getTime() - new Date(bVal).getTime()
+          : new Date(bVal).getTime() - new Date(aVal).getTime()
+      }
+      
+      const comparison = String(aVal).localeCompare(String(bVal))
+      return sortOrder === "asc" ? comparison : -comparison
     })
 
     // Pagination

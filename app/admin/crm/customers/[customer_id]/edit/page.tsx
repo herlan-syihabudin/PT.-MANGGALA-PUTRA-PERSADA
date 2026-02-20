@@ -17,7 +17,8 @@ import {
   Globe, 
   Hash,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  XCircle 
 } from "lucide-react"
 import { toast } from "sonner"
 

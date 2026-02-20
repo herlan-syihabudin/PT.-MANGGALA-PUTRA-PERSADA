@@ -182,13 +182,14 @@ export default function InquiryDetailPage() {
       : Math.floor((now - tanggalMasuk) / (1000 * 60 * 60 * 24))
 
     const probabilityMap: Record<string, number> = {
-      new: 20,
-      survey: 40,
-      estimating: 65,
-      sent: 80,
-      won: 100,
-      lost: 0,
-    }
+      new: 15,
+  survey: 30,
+  estimating: 55,
+  proposal: 75,
+  negotiation: 85,
+  won: 100,
+  lost: 0,
+}
 
     let probability = probabilityMap[data.status?.toLowerCase()] ?? 10
 
@@ -238,7 +239,7 @@ export default function InquiryDetailPage() {
     else if (needsFollowUp)
       recommendation = "Segera lakukan follow up"
     else if (data.status?.toLowerCase() === "estimating")
-      recommendation = "Push ke proposal dan kirim penawaran"
+      recommendation = "Selesaikan RAB terlebih dahulu"
     else if (probability > 75)
       recommendation = "High chance deal – prioritaskan closing"
 
@@ -311,58 +312,97 @@ export default function InquiryDetailPage() {
             </div>
 
             <div className="flex gap-2">
-              {data.status?.toLowerCase() === "new" && (
+
+  {/* ================= STEP 1: NEW → SURVEY ================= */}
+  {data.status?.toLowerCase() === "new" && (
+    <button
+      onClick={async () => {
+        try {
+          const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              status: "survey",
+            }),
+          })
+
+          if (!res.ok) throw new Error()
+
+          toast.success("Inquiry masuk tahap SURVEY")
+
+          setData(prev =>
+            prev
+              ? { ...prev, status: "survey" }
+              : prev
+          )
+        } catch {
+          toast.error("Gagal ubah ke SURVEY")
+        }
+      }}
+      className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+    >
+      <Users size={16} />
+      Mulai Survey
+    </button>
+  )}
+
+  {/* ================= STEP 2: SURVEY → ESTIMATING ================= */}
+  {data.status?.toLowerCase() === "survey" && (
+    <button
+      onClick={async () => {
+        try {
+          const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              status: "estimating",
+              assigned_to: "Estimator",
+            }),
+          })
+
+          if (!res.ok) throw new Error()
+
+          toast.success("Survey selesai, dikirim ke Estimator")
+
+          setData(prev =>
+            prev
+              ? {
+                  ...prev,
+                  status: "estimating",
+                  assigned_to: "Estimator",
+                }
+              : prev
+          )
+        } catch {
+          toast.error("Gagal assign ke Estimator")
+        }
+      }}
+      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+    >
+      <CheckCircle size={16} />
+      Survey Selesai
+    </button>
+  )}
+
+  {/* ================= FOLLOW UP ================= */}
   <button
-    onClick={async () => {
-      try {
-        const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status: "estimating",
-            assigned_to: "Estimator"
-          }),
-        })
-
-        if (!res.ok) throw new Error()
-
-        toast.success("Assigned ke Estimator")
-
-        // 🔥 UPDATE STATE LANGSUNG
-        setData(prev => prev ? {
-          ...prev,
-          status: "estimating",
-          assigned_to: "Estimator"
-        } : prev)
-
-      } catch {
-        toast.error("Gagal assign estimator")
-      }
-    }}
-    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+    onClick={() => setShowFollowUpModal(true)}
+    className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-white/10"
   >
-    <Users size={16} />
-    Assign ke Estimator
+    <Phone size={16} />
+    Follow Up
   </button>
-)}
-              <button
-                onClick={() => setShowFollowUpModal(true)}
-                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-white/10"
-              >
-                <Phone size={16} />
-                Follow Up
-              </button>
-              <button
-                onClick={() => setIsEditMode(!isEditMode)}
-                className="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-              >
-                <Edit size={16} />
-                {isEditMode ? 'Cancel' : 'Edit'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+
+  {/* ================= EDIT ================= */}
+  <button
+    onClick={() => setIsEditMode(!isEditMode)}
+    className="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+  >
+    <Edit size={16} />
+    {isEditMode ? "Cancel" : "Edit"}
+  </button>
+
+</div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6">
@@ -520,7 +560,11 @@ export default function InquiryDetailPage() {
             ) : (
               <button
                 onClick={convertToRAB}
-                disabled={data.status?.toLowerCase() !== "estimating" || isUpdating}
+                disabled={
+  data.status?.toLowerCase() !== "estimating" ||
+  !data.assigned_to ||
+  isUpdating
+}
                 className="w-full sm:w-auto px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               >
                 {isUpdating ? (

@@ -128,6 +128,30 @@ async function checkRABStatus(rab_id: string): Promise<string | null> {
   return headerRow[RAB_HEADER_COLUMNS.STATUS] || "Draft"
 }
 
+async function getItemsByRABId(rab_id: string) {
+  const itemRes = await withRetry(() =>
+    sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${RAB_ITEM}!A2:P`,
+    })
+  )
+  
+  const rows = itemRes.data.values || []
+  
+  return rows
+    .filter(r => r[RAB_ITEM_COLUMNS.RAB_ID] === rab_id)
+    .filter(r => r[RAB_ITEM_COLUMNS.STATUS] !== "Deleted")
+    .map(r => ({
+      item_id: r[RAB_ITEM_COLUMNS.ITEM_ID] || "",
+      item_name: r[RAB_ITEM_COLUMNS.ITEM_NAME] || "",
+      qty: n(r[RAB_ITEM_COLUMNS.QTY]),
+      unit: r[RAB_ITEM_COLUMNS.UNIT] || "",
+      material_price: n(r[RAB_ITEM_COLUMNS.MATERIAL_PRICE]),
+      labour_price: n(r[RAB_ITEM_COLUMNS.LABOUR_PRICE]),
+      total_price: n(r[RAB_ITEM_COLUMNS.TOTAL_PRICE]),
+    }))
+}
+
 async function recalcHeader(rab_id: string) {
   const itemRes = await withRetry(() =>
     sheets.spreadsheets.values.get({
@@ -294,13 +318,14 @@ export async function POST(
     }
 
     // Cek duplikat
-    const existingItems = await GET_ITEMS(rab_id) // perlu implementasi
+    const existingItems = await getItemsByRABId(rab_id)
     const duplicate = existingItems.find(
       i => i.item_name.toLowerCase() === item_name.toLowerCase()
     )
+    
     if (duplicate) {
       return NextResponse.json(
-        { message: `Item "${item_name}" sudah ada` },
+        { message: `Item "${item_name}" sudah ada di RAB ini` },
         { status: 409 }
       )
     }

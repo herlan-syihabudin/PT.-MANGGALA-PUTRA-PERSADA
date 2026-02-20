@@ -106,7 +106,7 @@ const isEmployee = (data: any): data is Employee => {
 
 // Sanitize input
 const sanitizeInput = (input: string): string => {
-  return input.replace(/[<>{}]/g, '').trim()
+  return input.replace(/[<>{}]/g, '')
 }
 
 export default function CreateInquiryPage() {

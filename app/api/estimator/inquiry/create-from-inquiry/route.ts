@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { google } from "googleapis"
+import { appendActivity } from "@/lib/crm/activity"
 
 export const dynamic = "force-dynamic"
 
@@ -141,9 +142,9 @@ export async function POST(req: Request) {
     /* ============================
    3️⃣ VALIDASI STATUS
 ============================ */
-const currentStatus = (inquiryRow[INQUIRY_COLUMNS.STATUS] || "").toString().toUpperCase()
+const currentStatus = (inquiryRow[INQUIRY_COLUMNS.STATUS] || "").toString().toLowerCase()
 
-if (currentStatus !== "TO_ESTIMATE") {
+if (currentStatus !== "estimating") {
   return NextResponse.json(
     { error: `Inquiry dengan status ${currentStatus} tidak bisa dibuat RAB` },
     { status: 400 }
@@ -201,7 +202,7 @@ if (currentStatus !== "TO_ESTIMATE") {
       range: `CRM_INQUIRY!J${actualRow}`, // Kolom STATUS
       valueInputOption: "USER_ENTERED",
       requestBody: {
-        values: [["IN_PROGRESS"]],
+        values: [["estimating"]],
       },
     })
 
@@ -221,6 +222,15 @@ if (currentStatus !== "TO_ESTIMATE") {
       estimasi_nilai: estimasiNilai 
     })
 
+    await appendActivity({
+  inquiry_id,
+  type: "CONVERT_RAB",
+  description: `Convert ke RAB ${rabId}`,
+  old_value: "",
+  new_value: rabId,
+  created_by: "Estimator"
+})
+    
     return NextResponse.json({
       success: true,
       rab_id: rabId,

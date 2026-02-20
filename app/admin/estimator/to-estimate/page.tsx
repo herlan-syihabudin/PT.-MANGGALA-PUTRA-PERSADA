@@ -14,27 +14,37 @@ type Inquiry = {
 
 async function fetchPending(): Promise<Inquiry[]> {
   try {
-    // Server Component bisa pake relative URL
-    const res = await fetch(`/api/estimator/inquiry/pending`, {
-      cache: "no-store"
-    })
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL ||
+      "http://localhost:3000"
+
+    const res = await fetch(
+      `${baseUrl}/api/estimator/inquiry/pending`,
+      {
+        cache: "no-store",
+      }
+    )
 
     if (!res.ok) {
-      console.error(`Failed to fetch pending inquiries: ${res.status}`)
-      
+      console.error(
+        `Failed to fetch pending inquiries: ${res.status}`
+      )
+
       if (res.status === 404) {
-        notFound() // Trigger 404 page
+        notFound()
       }
-      
+
       throw new Error(`Failed to fetch: ${res.status}`)
     }
 
-    const data = await res.json()
-    return data
+    return res.json()
 
   } catch (error) {
-    console.error("Error fetching pending inquiries:", error)
-    throw error // Akan ditangkap oleh error.tsx
+    console.error(
+      "Error fetching pending inquiries:",
+      error
+    )
+    throw error
   }
 }
 

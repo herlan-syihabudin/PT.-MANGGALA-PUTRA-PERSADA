@@ -556,12 +556,329 @@ export default function RABDetailClient({ rab_id, project_id, initialData }: Pro
               <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wider">RAB Summary</h3>
             </div>
             <div className="space-y-2">
-                            </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Total Item:</span>
+                <span className="font-medium text-slate-800">{data.items.length}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Total Nilai RAB:</span>
+                <span className="font-semibold text-emerald-600">{formatIDR(totalValue)}</span>
+              </div>
+            </div>
           </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <Wrench size={16} className="text-slate-500" />
+              <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wider">Cost Breakdown</h3>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Total Material:</span>
+                <span className="font-medium text-slate-800">{formatIDR(totalMaterial)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Total Labour:</span>
+                <span className="font-medium text-slate-800">{formatIDR(totalLabour)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingUp size={16} className="text-slate-500" />
+              <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wider">Profit Panel</h3>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between text-xs text-slate-500 mb-1">
+                  <span>Overhead/Margin</span>
+                  <span>{overheadPct}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={50}
+                  value={overheadPct}
+                  onChange={(e) => setOverheadPct(Number(e.target.value))}
+                  disabled={lockMode}
+                  className="w-full accent-slate-600"
+                />
+              </div>
+              <div>
+                <div className="flex justify-between text-xs text-slate-500 mb-1">
+                  <span>Profit</span>
+                  <span>{profitPct}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={50}
+                  value={profitPct}
+                  onChange={(e) => setProfitPct(Number(e.target.value))}
+                  disabled={lockMode}
+                  className="w-full accent-slate-600"
+                />
+              </div>
+              <div className="flex justify-between text-sm pt-2 border-t border-slate-100">
+                <span className="text-slate-500">Estimasi Harga Jual:</span>
+                <span className="font-semibold text-blue-600">{formatIDR(sellTotal)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ENTERPRISE CONTROL PANEL */}
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 sticky top-0 z-10">
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="relative flex-1 md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input
+                placeholder="Cari item / scope..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
+              />
+            </div>
+
+            <button
+              onClick={() => setExpandAll(!expandAll)}
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm hover:bg-slate-50 transition flex items-center gap-2"
+            >
+              {expandAll ? <EyeOff size={16} /> : <Eye size={16} />}
+              {expandAll ? "Collapse All" : "Expand All"}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-slate-500">GRAND TOTAL:</span>
+            <span className="text-lg font-bold text-emerald-600">{formatIDR(totalValue)}</span>
+          </div>
+        </div>
+
+        {/* ACCORDION BY SCOPE */}
+        <div id="print-area" className="space-y-4">
+          {grouped.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
+              <Package className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+              <p className="text-slate-500">Belum ada item RAB</p>
+              {!lockMode && (
+                <p className="text-sm text-slate-400 mt-2">
+                  Gunakan form di atas untuk menambah item
+                </p>
+              )}
+            </div>
+          ) : (
+            grouped.map((g) => (
+              <details
+                key={g.scope}
+                className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm"
+                open={expandAll}
+              >
+                <summary className="flex items-center justify-between gap-3 p-4 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 transition">
+                  <div className="font-medium text-slate-800">{g.scope}</div>
+                  <div className="flex items-center gap-3 text-xs text-slate-500">
+                    <span>{g.items.length} item</span>
+                    <ChevronDown size={16} />
+                  </div>
+                </summary>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50 border-y border-slate-200">
+                      <tr>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[70px]">No</th>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[320px]">Item</th>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[120px]">Kategori</th>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[90px]">Qty</th>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[90px]">Unit</th>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[140px]">Material</th>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[140px]">Labour</th>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[140px]">Unit Price</th>
+                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[160px]">Total</th>
+                        {!lockMode && (
+                          <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[120px]">Aksi</th>
+                        )}
+                      </tr>
+                    </thead>
+
+                    <tbody className="divide-y divide-slate-100">
+                      {g.items.map((it, idx) => (
+                        <tr key={it.item_id} className="hover:bg-slate-50 transition">
+                          <td className="p-3 text-slate-500 font-mono">
+                            {pad3(globalIndexMap.get(it.item_id) || idx + 1)}
+                          </td>
+
+                          <td className="p-3">
+                            {lockMode ? (
+                              <span className="text-slate-800">{it.item_name}</span>
+                            ) : (
+                              <input
+                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
+                                defaultValue={it.item_name}
+                                onBlur={(e) => updateField(it.item_id, { item_name: e.target.value })}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    (e.target as HTMLInputElement).blur()
+                                  }
+                                }}
+                                disabled={actionLoading === it.item_id}
+                              />
+                            )}
+                            <div className="text-[10px] text-slate-400 mt-1 font-mono">{it.item_id.slice(-8)}</div>
+                          </td>
+
+                          <td className="p-3">
+                            {lockMode ? (
+                              <span className="text-slate-600">{it.category}</span>
+                            ) : (
+                              <input
+                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
+                                defaultValue={it.category}
+                                onBlur={(e) => updateField(it.item_id, { category: e.target.value })}
+                                onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+                                disabled={actionLoading === it.item_id}
+                              />
+                            )}
+                          </td>
+
+                          <td className="p-3">
+                            {lockMode ? (
+                              <span className="text-slate-600">{it.qty}</span>
+                            ) : (
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
+                                defaultValue={it.qty}
+                                onChange={(e) => debouncedUpdate(it.item_id, { qty: n(e.target.value) })}
+                                onBlur={(e) => updateField(it.item_id, { qty: n(e.target.value) })}
+                                disabled={actionLoading === it.item_id}
+                              />
+                            )}
+                          </td>
+
+                          <td className="p-3">
+                            {lockMode ? (
+                              <span className="text-slate-600">{it.unit}</span>
+                            ) : (
+                              <input
+                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
+                                defaultValue={it.unit}
+                                onBlur={(e) => updateField(it.item_id, { unit: e.target.value })}
+                                onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+                                disabled={actionLoading === it.item_id}
+                              />
+                            )}
+                          </td>
+
+                          <td className="p-3">
+                            {lockMode ? (
+                              <span className="text-slate-600">{formatIDR(it.material_price)}</span>
+                            ) : (
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
+                                defaultValue={it.material_price}
+                                onChange={(e) => debouncedUpdate(it.item_id, { material_price: n(e.target.value) })}
+                                onBlur={(e) => updateField(it.item_id, { material_price: n(e.target.value) })}
+                                disabled={actionLoading === it.item_id}
+                              />
+                            )}
+                          </td>
+
+                          <td className="p-3">
+                            {lockMode ? (
+                              <span className="text-slate-600">{formatIDR(it.labour_price)}</span>
+                            ) : (
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
+                                defaultValue={it.labour_price}
+                                onChange={(e) => debouncedUpdate(it.item_id, { labour_price: n(e.target.value) })}
+                                onBlur={(e) => updateField(it.item_id, { labour_price: n(e.target.value) })}
+                                disabled={actionLoading === it.item_id}
+                              />
+                            )}
+                          </td>
+
+                          <td className="p-3 font-medium text-slate-700">
+                            {formatIDR(n(it.unit_price))}
+                          </td>
+
+                          <td className="p-3 font-semibold text-emerald-600">
+                            {formatIDR(n(it.total_price))}
+                          </td>
+
+                          {!lockMode && (
+                            <td className="p-3">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  className="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition disabled:opacity-50"
+                                  onClick={() => copyItem(it)}
+                                  disabled={copyingId === it.item_id || actionLoading !== null}
+                                  title="Copy item"
+                                >
+                                  {copyingId === it.item_id ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-400 border-t-transparent" />
+                                  ) : (
+                                    <Copy size={14} className="text-slate-500" />
+                                  )}
+                                </button>
+                                <button
+                                  className="p-1.5 border border-slate-200 rounded-lg hover:bg-rose-50 transition disabled:opacity-50"
+                                  onClick={() => deleteItem(it)}
+                                  disabled={deletingId === it.item_id || actionLoading !== null}
+                                  title="Hapus item"
+                                >
+                                  {deletingId === it.item_id ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-rose-400 border-t-transparent" />
+                                  ) : (
+                                    <Trash2 size={14} className="text-rose-500" />
+                                  )}
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+
+                    <tfoot className="bg-slate-50 border-t border-slate-200">
+                      <tr>
+                        <td colSpan={lockMode ? 9 : 8} className="p-3 text-right font-medium text-slate-600">
+                          SUBTOTAL {g.scope}
+                        </td>
+                        <td className="p-3 font-bold text-emerald-600">
+                          {formatIDR(scopeTotal(g.items))}
+                        </td>
+                        {!lockMode && <td />}
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </details>
+            ))
+          )}
+        </div>
+
+        {/* FOOTER */}
+        <div className="flex items-center gap-2 p-4 bg-slate-100/50 border border-slate-200 rounded-xl text-xs text-slate-500">
+          <Lock size={14} className="text-slate-400" />
+          <p>
+            <span className="font-medium text-slate-600">Security Note:</span> Modul ini adalah sumber RAB resmi. 
+            {lockMode 
+              ? " RAB dalam mode terkunci (read-only)."
+              : " Perubahan akan langsung tersimpan dan direfleksikan ke sistem."}
+          </p>
         </div>
 
       </div>
     </div>
   )
 }
-             

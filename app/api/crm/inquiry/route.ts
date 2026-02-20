@@ -478,7 +478,7 @@ export async function PUT(req: Request) {
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A${rowIndex}:S${rowIndex}`,
-      valueInputOption: "RAW", // FIXED
+      valueInputOption: "RAW",
       requestBody: { values },
     })
 

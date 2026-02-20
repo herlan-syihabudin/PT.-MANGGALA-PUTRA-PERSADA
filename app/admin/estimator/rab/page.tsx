@@ -212,13 +212,13 @@ export default async function RABPage() {
             color="purple"
           />
           <InsightCard
-            title="Pending Estimate"
-            value={pending.length}
-            subtitle="Inquiry siap diproses"
-            icon={<Bell size={18} />}
-            color="amber"
-            badge={pending.length > 0}
-          />
+  title="Pending Estimate"
+  value={pending.length}  // ✅ Langsung number, aman
+  subtitle="Inquiry siap diproses"
+  icon={<Bell size={18} />}
+  color="amber"
+  badge={pending.length > 0}
+/>
         </div>
 
         {/* Search & Filter Bar */}
@@ -485,9 +485,10 @@ function StatCard({ label, value, icon, color }: {
   )
 }
 
+// ================= INSIGHT CARD COMPONENT =================
 function InsightCard({ title, value, icon, subtitle, trend, color, badge }: {
   title: string;
-  value: string | number;
+  value: string | number;  // ✅ Terima string atau number
   icon: React.ReactNode;
   subtitle?: string;
   trend?: number;
@@ -499,6 +500,11 @@ function InsightCard({ title, value, icon, subtitle, trend, color, badge }: {
     purple: "border-purple-200 bg-purple-50/50",
     amber: "border-amber-200 bg-amber-50/50",
   }
+
+  // Format number jika perlu
+  const displayValue = typeof value === 'number' 
+    ? value.toLocaleString('id-ID')
+    : value
 
   return (
     <div className={`bg-white border ${colors[color as keyof typeof colors]} rounded-xl p-5 shadow-sm relative`}>
@@ -518,7 +524,7 @@ function InsightCard({ title, value, icon, subtitle, trend, color, badge }: {
         )}
       </div>
       <p className="text-sm font-medium text-slate-500">{title}</p>
-      <p className="text-xl font-bold text-slate-800 mt-1">{value}</p>
+      <p className="text-xl font-bold text-slate-800 mt-1">{displayValue}</p>
       {subtitle && <p className="text-xs text-slate-400 mt-1 truncate">{subtitle}</p>}
     </div>
   )

@@ -3,17 +3,24 @@ import { persist } from "zustand/middleware"
 
 interface ThemeState {
   dark: boolean
-  toggle: () => void
+  toggleTheme: () => void
+  setDark: (value: boolean) => void
 }
 
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
       dark: false,
-      toggle: () =>
+
+      toggleTheme: () =>
         set((s) => ({
           dark: !s.dark,
         })),
+
+      setDark: (value) =>
+        set({
+          dark: value,
+        }),
     }),
     {
       name: "mpp-theme",

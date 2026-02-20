@@ -224,7 +224,7 @@ if (currentStatus !== "estimating") {
 
     await appendActivity({
   inquiry_id,
-  type: "CONVERT_RAB",
+  type: "RAB_CREATED",
   description: `Convert ke RAB ${rabId}`,
   old_value: "",
   new_value: rabId,

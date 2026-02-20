@@ -94,7 +94,7 @@ function groupByScope(items: RabItem[]) {
   }))
 }
 
-function handlePrint() {
+function handlePrint(rab_id: string) {
   const printContent = document.getElementById("print-area")
   if (!printContent) return
 
@@ -459,7 +459,7 @@ export default function RABDetailClient({ rab_id, project_id, initialData }: Pro
             </button>
 
             <button
-              onClick={handlePrint}
+               onClick={() => handlePrint(rab_id)}
               className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition"
               title="Print"
             >

@@ -97,7 +97,7 @@ export default function CreateMaterialPage() {
   }
 
   // Debounced code check
-  const codeTimer = useRef<NodeJS.Timeout | null>(null)
+  const codeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 const handleCodeChange = (code: string) => {
   setForm({ ...form, material_code: code })

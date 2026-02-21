@@ -19,6 +19,9 @@ import {
   Info
 } from 'lucide-react'
 
+// Hapus import Money yang tidak digunakan
+// import Money from '@/components/dashboard/procurement/Money'
+
 export default function CreateMaterialPage() {
   const router = useRouter()
 
@@ -30,14 +33,14 @@ export default function CreateMaterialPage() {
   const [form, setForm] = useState({
     material_code: '',
     material_name: '',
-    spesifikasi: '',           // field baru
+    spesifikasi: '',
     category: '',
-    material_type: '',         // field baru
+    material_type: '',
     unit: '',
     default_price: '',
     min_stock: '',
     location: '',
-    keterangan: '',            // field baru
+    keterangan: '',
     status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE',
   })
 
@@ -85,7 +88,7 @@ export default function CreateMaterialPage() {
       
       if (data.success) {
         const exists = data.data.some(
-          (m: any) => m.material_code.toLowerCase() === code.toLowerCase()
+          (m: any) => m.material_code?.toLowerCase() === code.toLowerCase()
         )
         setCodeExists(exists)
       }
@@ -99,18 +102,18 @@ export default function CreateMaterialPage() {
   // Debounced code check
   const codeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-const handleCodeChange = (code: string) => {
-  setForm({ ...form, material_code: code })
-  setTouched({ ...touched, material_code: true })
+  const handleCodeChange = (code: string) => {
+    setForm({ ...form, material_code: code })
+    setTouched({ ...touched, material_code: true })
 
-  if (codeTimer.current) {
-    clearTimeout(codeTimer.current)
+    if (codeTimer.current) {
+      clearTimeout(codeTimer.current)
+    }
+
+    codeTimer.current = setTimeout(() => {
+      checkMaterialCode(code)
+    }, 500)
   }
-
-  codeTimer.current = setTimeout(() => {
-    checkMaterialCode(code)
-  }, 500)
-}
 
   // Form validation
   const errors = {
@@ -155,11 +158,11 @@ const handleCodeChange = (code: string) => {
         material_type: form.material_type || undefined,
         unit: form.unit,
         default_price: form.default_price !== '' ? Number(form.default_price) : undefined,
-min_stock: form.min_stock !== '' ? Number(form.min_stock) : undefined,
+        min_stock: form.min_stock !== '' ? Number(form.min_stock) : undefined,
         location: form.location || undefined,
         keterangan: form.keterangan || undefined,
         status: form.status,
-        created_by: 'SYSTEM', // atau ambil dari session/user
+        created_by: 'SYSTEM',
       }
 
       const res = await fetch('/api/procurement/materials', {
@@ -315,7 +318,7 @@ min_stock: form.min_stock !== '' ? Number(form.min_stock) : undefined,
                 )}
               </div>
 
-              {/* Spesifikasi - NEW */}
+              {/* Spesifikasi */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium mb-1">
                   <FileText size={14} className="inline mr-1 text-gray-400" />
@@ -347,7 +350,7 @@ min_stock: form.min_stock !== '' ? Number(form.min_stock) : undefined,
                 />
               </div>
 
-              {/* Material Type - NEW */}
+              {/* Material Type */}
               <div>
                 <label className="block text-sm font-medium mb-1">
                   <Type size={14} className="inline mr-1 text-gray-400" />
@@ -364,72 +367,74 @@ min_stock: form.min_stock !== '' ? Number(form.min_stock) : undefined,
               </div>
 
               {/* Unit */}
-<div>
-  <label className="block text-sm font-medium mb-1">
-    Unit <span className="text-red-500">*</span>
-  </label>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-1">
+                  Unit <span className="text-red-500">*</span>
+                </label>
 
-  <div className="relative">
-    <select
-      value={form.unit}
-      onChange={(e) => setForm({ ...form, unit: e.target.value })}
-      onBlur={() => handleBlur('unit')}
-      className={`
-        w-full px-4 py-2 border rounded-lg bg-white appearance-none
-        focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-        ${touched.unit && errors.unit ? 'border-red-500 bg-red-50' : ''}
-        ${touched.unit && !errors.unit && form.unit ? 'border-green-500 bg-green-50' : ''}
-      `}
-      disabled={loading || success}
-    >
-      <option value="">Select Unit</option>
-      <option value="kg">Kilogram (kg)</option>
-      <option value="pcs">Pieces (pcs)</option>
-      <option value="m">Meter (m)</option>
-      <option value="m2">Meter Persegi (m²)</option>
-      <option value="m3">Meter Kubik (m³)</option>
-      <option value="liter">Liter (liter)</option>
-      <option value="roll">Roll (roll)</option>
-      <option value="sak">Sak (sak)</option>
-      <option value="set">Set (set)</option>
-      <option value="box">Box (box)</option>
-      <option value="unit">Unit (unit)</option>
-      <option value="buah">Buah (buah)</option>
-      <option value="lembar">Lembar (lembar)</option>
-      <option value="batang">Batang (batang)</option>
-      <option value="dus">Dus (dus)</option>
-    </select>
+                <div className="relative">
+                  <select
+                    value={form.unit}
+                    onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                    onBlur={() => handleBlur('unit')}
+                    className={`
+                      w-full px-4 py-2 border rounded-lg bg-white appearance-none
+                      focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                      ${touched.unit && errors.unit ? 'border-red-500 bg-red-50' : ''}
+                      ${touched.unit && !errors.unit && form.unit ? 'border-green-500 bg-green-50' : ''}
+                    `}
+                    disabled={loading || success}
+                  >
+                    <option value="">Select Unit</option>
+                    <option value="kg">Kilogram (kg)</option>
+                    <option value="pcs">Pieces (pcs)</option>
+                    <option value="m">Meter (m)</option>
+                    <option value="m2">Meter Persegi (m²)</option>
+                    <option value="m3">Meter Kubik (m³)</option>
+                    <option value="liter">Liter (liter)</option>
+                    <option value="roll">Roll (roll)</option>
+                    <option value="sak">Sak (sak)</option>
+                    <option value="set">Set (set)</option>
+                    <option value="box">Box (box)</option>
+                    <option value="unit">Unit (unit)</option>
+                    <option value="buah">Buah (buah)</option>
+                    <option value="lembar">Lembar (lembar)</option>
+                    <option value="batang">Batang (batang)</option>
+                    <option value="dus">Dus (dus)</option>
+                  </select>
 
-    {/* Ikon validasi */}
-    {touched.unit && !errors.unit && form.unit && (
-      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-        <CheckCircle size={16} className="text-green-500" />
-      </div>
-    )}
-    
-    {/* Ikon error */}
-    {touched.unit && errors.unit && (
-      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-        <XCircle size={16} className="text-red-500" />
-      </div>
-    )}
+                  {/* Ikon validasi */}
+                  {touched.unit && !errors.unit && form.unit && (
+                    <div className="absolute right-8 top-1/2 -translate-y-1/2">
+                      <CheckCircle size={16} className="text-green-500" />
+                    </div>
+                  )}
+                  
+                  {/* Ikon error */}
+                  {touched.unit && errors.unit && (
+                    <div className="absolute right-8 top-1/2 -translate-y-1/2">
+                      <XCircle size={16} className="text-red-500" />
+                    </div>
+                  )}
 
-    {/* Arrow dropdown */}
-    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-      <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    </div>
-  </div>
+                  {/* Arrow dropdown */}
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
 
-  {touched.unit && errors.unit && (
-    <p className="text-xs text-red-600 mt-1">{errors.unit}</p>
-  )}
-  
-  {touched.unit && !errors.unit && form.unit && (
-    <p className="text-xs text-green-600 mt-1">✓ Unit selected</p>
-  )}
-</div>
+                {touched.unit && errors.unit && (
+                  <p className="text-xs text-red-600 mt-1">{errors.unit}</p>
+                )}
+                
+                {touched.unit && !errors.unit && form.unit && (
+                  <p className="text-xs text-green-600 mt-1">✓ Unit selected</p>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* Pricing & Stock */}
           <div className="p-6 border-b">
@@ -514,7 +519,7 @@ min_stock: form.min_stock !== '' ? Number(form.min_stock) : undefined,
               Additional Information
             </h2>
 
-            {/* Keterangan - NEW */}
+            {/* Keterangan */}
             <div>
               <label className="block text-sm font-medium mb-1">Keterangan</label>
               <textarea

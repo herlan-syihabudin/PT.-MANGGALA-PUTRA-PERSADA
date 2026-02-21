@@ -58,6 +58,7 @@ type Props = {
   rab_id: string
   project_id: string
   initialData: RabResponse
+  mode?: "view" | "edit"
 }
 
 /* ================= helpers ================= */
@@ -140,7 +141,12 @@ function useDebouncedCommit<T extends (...args: any[]) => void>(fn: T, delay = 6
   }
 }
 
-export default function RABDetailClient({ rab_id, project_id, initialData }: Props) {
+export default function RABDetailClient({ 
+  rab_id, 
+  project_id, 
+  initialData,
+  mode = "edit"
+}: Props)
   const [data, setData] = useState<RabResponse>(initialData)
   const [loading, setLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -150,7 +156,13 @@ export default function RABDetailClient({ rab_id, project_id, initialData }: Pro
   // ===== ENTERPRISE STATES =====
   const [searchTerm, setSearchTerm] = useState("")
   const [expandAll, setExpandAll] = useState(true)
-  const [lockMode, setLockMode] = useState<boolean>(data.header?.status === "LOCKED" || data.header?.status === "Approved")
+  const isViewMode = mode === "view"
+
+const [lockMode, setLockMode] = useState<boolean>(
+  isViewMode ||
+  data.header?.status === "LOCKED" ||
+  data.header?.status === "Approved"
+)
 
   // global numbering
   const globalItems = useMemo(() => {

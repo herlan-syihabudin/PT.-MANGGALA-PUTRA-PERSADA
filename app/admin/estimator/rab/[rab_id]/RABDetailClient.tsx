@@ -697,24 +697,53 @@ const [lockMode, setLockMode] = useState<boolean>(
                   </div>
                 </summary>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="w-full">
+                  <table className="w-full text-sm table-fixed">
                     <thead className="bg-slate-50 border-y border-slate-200">
-                      <tr>
-                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[70px]">No</th>
-                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[320px]">Item</th>
-                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[120px]">Kategori</th>
-                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[90px]">Qty</th>
-                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[90px]">Unit</th>
-                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[140px]">Material</th>
-                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[140px]">Labour</th>
-                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[140px]">Unit Price</th>
-                        <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[160px]">Total</th>
-                        {!lockMode && (
-                          <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[120px]">Aksi</th>
-                        )}
-                      </tr>
-                    </thead>
+  <tr>
+    <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[60px]">
+      No
+    </th>
+
+    <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[25%]">
+      Item
+    </th>
+
+    <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[120px]">
+      Kategori
+    </th>
+
+    <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[80px]">
+      Qty
+    </th>
+
+    <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[80px]">
+      Unit
+    </th>
+
+    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider w-[120px]">
+      Material
+    </th>
+
+    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider w-[120px]">
+      Labour
+    </th>
+
+    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider w-[120px]">
+      Unit Price
+    </th>
+
+    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider w-[140px]">
+      Total
+    </th>
+
+    {!lockMode && (
+      <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider w-[110px]">
+        Aksi
+      </th>
+    )}
+  </tr>
+</thead>
 
                     <tbody className="divide-y divide-slate-100">
                       {g.items.map((it, idx) => (
@@ -723,7 +752,7 @@ const [lockMode, setLockMode] = useState<boolean>(
                             {pad3(globalIndexMap.get(it.item_id) || idx + 1)}
                           </td>
 
-                          <td className="p-3">
+                          <td className="p-3 break-words whitespace-normal">
                             {lockMode ? (
                               <span className="text-slate-800">{it.item_name}</span>
                             ) : (

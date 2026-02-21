@@ -87,16 +87,20 @@ export const ERP_MENU = [
 },
 
   {
-    section: "ESTIMATOR",
-    icon: Calculator,
-    items: [
-      { name: "RAB Project", href: "/admin/estimator/rab", icon: FileSpreadsheet },
-      { name: "BOQ", href: "/admin/estimator/boq", icon: Table2 },
-      { name: "Analisa Harga", href: "/admin/estimator/price-analysis", icon: LineChart },
-      { name: "Value Engineering", href: "/admin/estimator/value-engineering", icon: Settings2 },
-      { name: "Approval RAB", href: "/admin/estimator/approval", icon: CheckSquare },
-    ],
-  },
+  section: "ESTIMATOR",
+  icon: Calculator,
+  items: [
+    { name: "RAB Project", href: "/admin/estimator/rab", icon: FileSpreadsheet },
+    { name: "BOQ", href: "/admin/estimator/boq", icon: Table2 },
+    { name: "Analisa Harga", href: "/admin/estimator/price-analysis", icon: LineChart },
+
+    // 🔥 TAMBAHAN BARU
+    { name: "Work Library", href: "/admin/estimator/library", icon: Boxes },
+
+    { name: "Value Engineering", href: "/admin/estimator/value-engineering", icon: Settings2 },
+    { name: "Approval RAB", href: "/admin/estimator/approval", icon: CheckSquare },
+  ],
+},
 
   {
     section: "ENGINEERING",

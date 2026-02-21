@@ -13,10 +13,11 @@ import {
   MapPin,
   AlertCircle,
   CheckCircle,
-  XCircle
+  XCircle,
+  FileText,
+  Type,
+  Info
 } from 'lucide-react'
-
-import Money from '@/components/dashboard/procurement/Money'
 
 export default function CreateMaterialPage() {
   const router = useRouter()
@@ -25,14 +26,18 @@ export default function CreateMaterialPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
+  // Sesuaikan state form dengan API
   const [form, setForm] = useState({
     material_code: '',
     material_name: '',
+    spesifikasi: '',           // field baru
     category: '',
+    material_type: '',         // field baru
     unit: '',
     default_price: '',
     min_stock: '',
     location: '',
+    keterangan: '',            // field baru
     status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE',
   })
 
@@ -92,16 +97,20 @@ export default function CreateMaterialPage() {
   }
 
   // Debounced code check
-  const handleCodeChange = (code: string) => {
-    setForm({ ...form, material_code: code })
-    setTouched({ ...touched, material_code: true })
-    
-    const timer = setTimeout(() => {
-      checkMaterialCode(code)
-    }, 500)
+  const codeTimer = useRef<NodeJS.Timeout | null>(null)
 
-    return () => clearTimeout(timer)
+const handleCodeChange = (code: string) => {
+  setForm({ ...form, material_code: code })
+  setTouched({ ...touched, material_code: true })
+
+  if (codeTimer.current) {
+    clearTimeout(codeTimer.current)
   }
+
+  codeTimer.current = setTimeout(() => {
+    checkMaterialCode(code)
+  }, 500)
+}
 
   // Form validation
   const errors = {
@@ -137,10 +146,20 @@ export default function CreateMaterialPage() {
     setError(null)
 
     try {
+      // Kirim semua field termasuk yang baru
       const payload = {
-        ...form,
-        default_price: form.default_price ? Number(form.default_price) : undefined,
-        min_stock: form.min_stock ? Number(form.min_stock) : undefined,
+        material_code: form.material_code,
+        material_name: form.material_name,
+        spesifikasi: form.spesifikasi || undefined,
+        category: form.category || undefined,
+        material_type: form.material_type || undefined,
+        unit: form.unit,
+        default_price: form.default_price !== '' ? Number(form.default_price) : undefined,
+min_stock: form.min_stock !== '' ? Number(form.min_stock) : undefined,
+        location: form.location || undefined,
+        keterangan: form.keterangan || undefined,
+        status: form.status,
+        created_by: 'SYSTEM', // atau ambil dari session/user
       }
 
       const res = await fetch('/api/procurement/materials', {
@@ -174,7 +193,7 @@ export default function CreateMaterialPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-3xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-6">
         
         {/* Header */}
         <div className="mb-6">
@@ -296,6 +315,22 @@ export default function CreateMaterialPage() {
                 )}
               </div>
 
+              {/* Spesifikasi - NEW */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-1">
+                  <FileText size={14} className="inline mr-1 text-gray-400" />
+                  Spesifikasi
+                </label>
+                <textarea
+                  value={form.spesifikasi}
+                  onChange={(e) => setForm({ ...form, spesifikasi: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Technical specifications, dimensions, etc."
+                  disabled={loading || success}
+                />
+              </div>
+
               {/* Category */}
               <div>
                 <label className="block text-sm font-medium mb-1">
@@ -312,30 +347,89 @@ export default function CreateMaterialPage() {
                 />
               </div>
 
-              {/* Unit */}
+              {/* Material Type - NEW */}
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Unit <span className="text-red-500">*</span>
+                  <Type size={14} className="inline mr-1 text-gray-400" />
+                  Material Type
                 </label>
                 <input
                   type="text"
-                  value={form.unit}
-                  onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                  onBlur={() => handleBlur('unit')}
-                  className={`
-                    w-full px-4 py-2 border rounded-lg
-                    focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                    ${touched.unit && errors.unit ? 'border-red-500 bg-red-50' : ''}
-                  `}
-                  placeholder="kg, pcs, m3"
+                  value={form.material_type}
+                  onChange={(e) => setForm({ ...form, material_type: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Raw Material, Finished Good, etc."
                   disabled={loading || success}
                 />
-                {touched.unit && errors.unit && (
-                  <p className="text-xs text-red-600 mt-1">{errors.unit}</p>
-                )}
               </div>
-            </div>
-          </div>
+
+              {/* Unit */}
+<div>
+  <label className="block text-sm font-medium mb-1">
+    Unit <span className="text-red-500">*</span>
+  </label>
+
+  <div className="relative">
+    <select
+      value={form.unit}
+      onChange={(e) => setForm({ ...form, unit: e.target.value })}
+      onBlur={() => handleBlur('unit')}
+      className={`
+        w-full px-4 py-2 border rounded-lg bg-white appearance-none
+        focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+        ${touched.unit && errors.unit ? 'border-red-500 bg-red-50' : ''}
+        ${touched.unit && !errors.unit && form.unit ? 'border-green-500 bg-green-50' : ''}
+      `}
+      disabled={loading || success}
+    >
+      <option value="">Select Unit</option>
+      <option value="kg">Kilogram (kg)</option>
+      <option value="pcs">Pieces (pcs)</option>
+      <option value="m">Meter (m)</option>
+      <option value="m2">Meter Persegi (m²)</option>
+      <option value="m3">Meter Kubik (m³)</option>
+      <option value="liter">Liter (liter)</option>
+      <option value="roll">Roll (roll)</option>
+      <option value="sak">Sak (sak)</option>
+      <option value="set">Set (set)</option>
+      <option value="box">Box (box)</option>
+      <option value="unit">Unit (unit)</option>
+      <option value="buah">Buah (buah)</option>
+      <option value="lembar">Lembar (lembar)</option>
+      <option value="batang">Batang (batang)</option>
+      <option value="dus">Dus (dus)</option>
+    </select>
+
+    {/* Ikon validasi */}
+    {touched.unit && !errors.unit && form.unit && (
+      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+        <CheckCircle size={16} className="text-green-500" />
+      </div>
+    )}
+    
+    {/* Ikon error */}
+    {touched.unit && errors.unit && (
+      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+        <XCircle size={16} className="text-red-500" />
+      </div>
+    )}
+
+    {/* Arrow dropdown */}
+    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+      <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    </div>
+  </div>
+
+  {touched.unit && errors.unit && (
+    <p className="text-xs text-red-600 mt-1">{errors.unit}</p>
+  )}
+  
+  {touched.unit && !errors.unit && form.unit && (
+    <p className="text-xs text-green-600 mt-1">✓ Unit selected</p>
+  )}
+</div>
 
           {/* Pricing & Stock */}
           <div className="p-6 border-b">
@@ -413,8 +507,29 @@ export default function CreateMaterialPage() {
             </div>
           </div>
 
+          {/* Additional Info */}
+          <div className="p-6 border-b">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Info size={18} className="text-blue-600" />
+              Additional Information
+            </h2>
+
+            {/* Keterangan - NEW */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Keterangan</label>
+              <textarea
+                value={form.keterangan}
+                onChange={(e) => setForm({ ...form, keterangan: e.target.value })}
+                rows={3}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Additional notes or remarks"
+                disabled={loading || success}
+              />
+            </div>
+          </div>
+
           {/* Status */}
-          <div className="p-6">
+          <div className="p-6 border-b">
             <h2 className="text-lg font-semibold mb-4">Status</h2>
             
             <div className="flex items-center gap-4">

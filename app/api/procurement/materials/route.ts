@@ -21,7 +21,9 @@ type Material = {
   material_id: string
   material_code: string
   material_name: string
+  spesifikasi?: string
   category?: string
+  material_type?: string
   unit: string
   default_price?: number
   last_price?: number
@@ -34,6 +36,7 @@ type Material = {
   created_at: string
   updated_at: string
   deleted_at?: string | null
+  keterangan?: string
 }
 
 // ================= HELPERS =================
@@ -61,34 +64,39 @@ export async function GET(req: Request) {
     const status = searchParams.get("status")
     const includeDeleted = searchParams.get("include_deleted") === "true"
 
+    // Sesuaikan range dengan 20 kolom (A sampai T)
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${MATERIAL_SHEET}!A2:Q`,
+      range: `${MATERIAL_SHEET}!A2:S`,
     })
 
     let rows = res.data.values || []
 
     if (!includeDeleted) {
-      rows = rows.filter(r => !r[16])
+      // Kolom deleted_at ada di index 18 (kolom S)
+      rows = rows.filter(r => !r[17])
     }
 
     let materials: Material[] = rows.map(r => ({
       material_id: r[0] || "",
       material_code: r[1] || "",
       material_name: r[2] || "",
-      category: r[3] || undefined,
-      unit: r[4] || "",
-      default_price: n(r[5]),
-      last_price: n(r[6]),
-      min_stock: n(r[7]),
-      location: r[8] || undefined,
-      status: r[9] === "INACTIVE" ? "INACTIVE" : "ACTIVE",
-      created_by: r[10] || undefined,
-      updated_by: r[11] || undefined,
-      deleted_by: r[12] || undefined,
-      created_at: r[13] || "",
-      updated_at: r[14] || "",
-      deleted_at: r[15] || null,
+      spesifikasi: r[3] || undefined,
+      category: r[4] || undefined,
+      material_type: r[5] || undefined,
+      unit: r[6] || "",
+      default_price: n(r[7]),
+      last_price: n(r[8]),
+      min_stock: n(r[9]),
+      location: r[10] || undefined,
+      status: r[11] === "INACTIVE" ? "INACTIVE" : "ACTIVE",
+      created_by: r[12] || undefined,
+      updated_by: r[13] || undefined,
+      deleted_by: r[14] || undefined,
+      created_at: r[15] || "",
+      updated_at: r[16] || "",
+      deleted_at: r[17] || null,
+      keterangan: r[18] || undefined,
     }))
 
     if (status === "ACTIVE" || status === "INACTIVE") {
@@ -99,7 +107,9 @@ export async function GET(req: Request) {
       const s = search.toLowerCase()
       materials = materials.filter(m =>
         m.material_name?.toLowerCase().includes(s) ||
-        m.material_code?.toLowerCase().includes(s)
+        m.material_code?.toLowerCase().includes(s) ||
+        m.spesifikasi?.toLowerCase().includes(s) ||
+        m.keterangan?.toLowerCase().includes(s)
       )
     }
 
@@ -146,14 +156,16 @@ export async function POST(req: Request) {
 
     const checkRes = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${MATERIAL_SHEET}!A2:B`,
+      range: `${MATERIAL_SHEET}!A:S`,
     })
 
     const rows = checkRes.data.values || []
 
+    // Cek unique berdasarkan material_code dan tidak terhapus (deleted_at)
     const exists = rows.some(r =>
-      normalize(r[1]) === normalize(material_code) && !r[15]
-    )
+  normalize(r[1]) === normalize(material_code) &&
+  (!r[17] || r[17] === "")
+)
 
     if (exists)
       return NextResponse.json({ success: false, error: "material_code must be unique" }, { status: 400 })
@@ -165,10 +177,12 @@ export async function POST(req: Request) {
       material_id,
       material_code,
       material_name,
+      spesifikasi: sanitize(body.spesifikasi),
       category: sanitize(body.category),
+      material_type: sanitize(body.material_type),
       unit,
       default_price: n(body.default_price),
-      last_price: n(body.default_price),
+      last_price: n(body.default_price), // Default sama dengan default_price
       min_stock: n(body.min_stock),
       location: sanitize(body.location),
       status: body.status === "INACTIVE" ? "INACTIVE" : "ACTIVE",
@@ -177,31 +191,36 @@ export async function POST(req: Request) {
       created_at: now,
       updated_at: now,
       deleted_at: null,
+      keterangan: sanitize(body.keterangan),
     }
 
+    // Append dengan 20 kolom
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${MATERIAL_SHEET}!A:Q`,
+      range: `${MATERIAL_SHEET}!A:S`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          newMaterial.material_id,
-          newMaterial.material_code,
-          newMaterial.material_name,
-          newMaterial.category || "",
-          newMaterial.unit,
-          newMaterial.default_price || 0,
-          newMaterial.last_price || 0,
-          newMaterial.min_stock || 0,
-          newMaterial.location || "",
-          newMaterial.status,
-          newMaterial.created_by,
-          newMaterial.updated_by,
-          "",
-          now,
-          now,
-          "",
-        ]]
+  newMaterial.material_id,      // A
+  newMaterial.material_code,    // B
+  newMaterial.material_name,    // C
+  newMaterial.spesifikasi || "",// D
+  newMaterial.category || "",   // E
+  newMaterial.material_type || "", // F
+  newMaterial.unit,             // G
+  newMaterial.default_price || 0,// H
+  newMaterial.last_price || 0,  // I
+  newMaterial.min_stock || 0,   // J
+  newMaterial.location || "",   // K
+  newMaterial.status,           // L
+  newMaterial.created_by,       // M
+  newMaterial.updated_by,       // N
+  "",                           // O deleted_by
+  now,                          // P created_at
+  now,                          // Q updated_at
+  "",                           // R deleted_at
+  newMaterial.keterangan || "", // S keterangan
+]]
       }
     })
 

@@ -1,4 +1,4 @@
-import RABDetailClient from "../../RABDetailClient"
+import RABDetailClient from "../RABDetailClient"
 
 async function getRAB(rab_id: string) {
   const res = await fetch(

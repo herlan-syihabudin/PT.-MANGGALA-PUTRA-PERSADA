@@ -146,7 +146,8 @@ export default function RABDetailClient({
   project_id, 
   initialData,
   mode = "edit"
-}: Props)
+}: Props) {
+  
   const [data, setData] = useState<RabResponse>(initialData)
   const [loading, setLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -216,9 +217,10 @@ const [lockMode, setLockMode] = useState<boolean>(
 
       setData(normalized)
       setLockMode(
-        normalized.header?.status === "LOCKED" ||
-        normalized.header?.status === "Approved"
-      )
+  mode === "view" ||
+  normalized.header?.status === "LOCKED" ||
+  normalized.header?.status === "Approved"
+)
 
       toast.success("Data berhasil direfresh")
     } catch {

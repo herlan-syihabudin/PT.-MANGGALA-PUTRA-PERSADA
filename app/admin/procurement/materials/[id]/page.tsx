@@ -16,18 +16,24 @@ import {
   Building2,
   RefreshCcw,
   AlertCircle,
-  Trash2
+  Trash2,
+  FileText,
+  Type,
+  Info
 } from 'lucide-react'
 
 import StatusBadge from '@/components/dashboard/procurement/StatusBadge'
 import Money from '@/components/dashboard/procurement/Money'
 import DateText from '@/components/dashboard/procurement/DateText'
 
+// Sesuaikan interface dengan API response
 interface Material {
   material_id: string
   material_code: string
   material_name: string
+  spesifikasi?: string
   category?: string
+  material_type?: string
   unit: string
   default_price?: number
   last_price?: number
@@ -40,6 +46,7 @@ interface Material {
   created_at: string
   updated_at: string
   deleted_at?: string | null
+  keterangan?: string
 }
 
 export default function MaterialDetailPage() {
@@ -142,7 +149,7 @@ export default function MaterialDetailPage() {
               <StatusBadge status={material.status} type="vendor" />
             </div>
             <p className="text-sm text-gray-500">
-              Code: {material.material_code}
+              Code: {material.material_code} • ID: {material.material_id}
             </p>
           </div>
         </div>
@@ -205,6 +212,23 @@ export default function MaterialDetailPage() {
                 label="Location"
                 value={material.location || '-'}
               />
+              <DetailItem
+                icon={FileText}
+                label="Spesifikasi"
+                value={material.spesifikasi || '-'}
+                colSpan={2}
+              />
+              <DetailItem
+                icon={Type}
+                label="Material Type"
+                value={material.material_type || '-'}
+              />
+              <DetailItem
+                icon={Info}
+                label="Keterangan"
+                value={material.keterangan || '-'}
+                colSpan={2}
+              />
             </div>
           </div>
 
@@ -215,7 +239,7 @@ export default function MaterialDetailPage() {
               Pricing Information
             </h2>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-3 gap-6">
               <div>
                 <p className="text-xs text-gray-500">Default Price</p>
                 <p className="text-xl font-bold text-blue-600">
@@ -253,6 +277,10 @@ export default function MaterialDetailPage() {
               <div className="flex justify-between items-center py-2 border-b">
                 <span className="text-gray-600">Category</span>
                 <span className="font-medium">{material.category || '-'}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="text-gray-600">Material Type</span>
+                <span className="font-medium">{material.material_type || '-'}</span>
               </div>
               <div className="flex justify-between items-center py-2">
                 <span className="text-gray-600">Unit</span>
@@ -316,11 +344,11 @@ export default function MaterialDetailPage() {
 }
 
 // Helper Components
-function DetailItem({ icon: Icon, label, value }: any) {
+function DetailItem({ icon: Icon, label, value, colSpan = 1 }: any) {
   return (
-    <div className="flex items-start gap-3">
+    <div className={`flex items-start gap-3 ${colSpan === 2 ? 'col-span-2' : ''}`}>
       <Icon size={18} className="text-gray-400 mt-0.5 flex-shrink-0" />
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="text-xs text-gray-500">{label}</p>
         <p className="font-medium break-words">{value}</p>
       </div>

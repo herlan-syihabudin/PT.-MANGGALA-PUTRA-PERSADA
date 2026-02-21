@@ -12,27 +12,39 @@ import {
   ArrowUpDown,
   Package,
   AlertCircle,
-  X
+  X,
+  FileText,
+  Type,
+  Info
 } from 'lucide-react'
 
 import StatusBadge from '@/components/dashboard/procurement/StatusBadge'
 import Money from '@/components/dashboard/procurement/Money'
 
+// Sesuaikan interface dengan API response
 interface Material {
   material_id: string
   material_code: string
   material_name: string
+  spesifikasi?: string
   category?: string
+  material_type?: string
   unit: string
   default_price?: number
   last_price?: number
   min_stock?: number
   location?: string
   status: 'ACTIVE' | 'INACTIVE'
+  created_by?: string
+  updated_by?: string
+  deleted_by?: string
   created_at: string
+  updated_at: string
+  deleted_at?: string | null
+  keterangan?: string
 }
 
-type SortKey = 'material_code' | 'material_name' | 'category' | 'unit' | 'status' | 'created_at'
+type SortKey = 'material_code' | 'material_name' | 'category' | 'material_type' | 'unit' | 'status' | 'default_price' | 'min_stock' | 'created_at'
 type SortDir = 'asc' | 'desc'
 
 function cn(...classes: Array<string | false | null | undefined>) {
@@ -60,6 +72,12 @@ function compare(a: any, b: any) {
   return 0
 }
 
+function compareNumber(a: number | undefined, b: number | undefined) {
+  const A = a || 0
+  const B = b || 0
+  return A - B
+}
+
 export default function MaterialsPage() {
   const router = useRouter()
 
@@ -71,6 +89,7 @@ export default function MaterialsPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [categoryFilter, setCategoryFilter] = useState<string>('')
+  const [typeFilter, setTypeFilter] = useState<string>('')
 
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -79,6 +98,7 @@ export default function MaterialsPage() {
   const [pageSize, setPageSize] = useState(15)
 
   const [categories, setCategories] = useState<string[]>([])
+  const [types, setTypes] = useState<string[]>([])
 
   const debouncedSearch = useDebouncedValue(search, 350)
   const abortRef = useRef<AbortController | null>(null)
@@ -119,6 +139,12 @@ export default function MaterialsPage() {
       ) as string[]
       setCategories(uniqueCategories)
 
+      // Extract unique material types for filter
+      const uniqueTypes = Array.from(
+        new Set(materialsData.map((m: Material) => m.material_type).filter(Boolean))
+      ) as string[]
+      setTypes(uniqueTypes)
+
     } catch (err: any) {
       if (err?.name === 'AbortError') return
       console.error('Fetch error:', err)
@@ -142,8 +168,12 @@ export default function MaterialsPage() {
       filtered = filtered.filter(m => m.category === categoryFilter)
     }
     
+    if (typeFilter) {
+      filtered = filtered.filter(m => m.material_type === typeFilter)
+    }
+    
     return filtered
-  }, [materials, categoryFilter])
+  }, [materials, categoryFilter, typeFilter])
 
   const sortedMaterials = useMemo(() => {
     const arr = [...filteredMaterials]
@@ -159,11 +189,20 @@ export default function MaterialsPage() {
         case 'category':
           c = compare(x.category, y.category)
           break
+        case 'material_type':
+          c = compare(x.material_type, y.material_type)
+          break
         case 'unit':
           c = compare(x.unit, y.unit)
           break
         case 'status':
           c = compare(x.status, y.status)
+          break
+        case 'default_price':
+          c = compareNumber(x.default_price, y.default_price)
+          break
+        case 'min_stock':
+          c = compareNumber(x.min_stock, y.min_stock)
           break
         case 'created_at':
         default:
@@ -198,11 +237,20 @@ export default function MaterialsPage() {
     setSearch('')
     setStatusFilter('')
     setCategoryFilter('')
+    setTypeFilter('')
     setPage(1)
   }
 
-  const hasActiveFilters = search || statusFilter || categoryFilter
+  const hasActiveFilters = search || statusFilter || categoryFilter || typeFilter
   const isEmpty = !loading && !error && totalRows === 0
+
+  // Get sort indicator
+  const getSortIndicator = (key: SortKey) => {
+    if (sortKey !== key) return <ArrowUpDown size={14} className="text-gray-400" />
+    return sortDir === 'asc' 
+      ? <span className="text-blue-600">↑</span>
+      : <span className="text-blue-600">↓</span>
+  }
 
   if (loading) {
     return (
@@ -289,12 +337,12 @@ export default function MaterialsPage() {
 
       {/* Filters */}
       <div className="bg-white border rounded-xl p-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative flex-1 max-w-xl">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
-              placeholder="Search by name or code..."
+              placeholder="Search by name, code, or specifications..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -310,6 +358,17 @@ export default function MaterialsPage() {
               <option value="">All Categories</option>
               {categories.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="px-4 py-2 border rounded-lg bg-white min-w-[150px]"
+            >
+              <option value="">All Types</option>
+              {types.map(type => (
+                <option key={type} value={type}>{type}</option>
               ))}
             </select>
 
@@ -398,59 +457,84 @@ export default function MaterialsPage() {
           {/* Table */}
           <div className="bg-white border rounded-xl overflow-hidden">
             <div className="overflow-auto max-h-[70vh]">
-              <table className="w-full min-w-[1000px]">
+              <table className="w-full min-w-[1200px]">
                 <thead className="bg-gray-50 border-b sticky top-0 z-10">
                   <tr>
-                    <th className="p-4 text-left text-sm font-medium text-gray-600">
+                    <th className="p-3 text-left text-sm font-medium text-gray-600">
                       <button
                         type="button"
                         className="inline-flex items-center gap-1 hover:text-gray-900"
                         onClick={() => toggleSort('material_code')}
                       >
-                        Code <ArrowUpDown size={14} />
+                        Code {getSortIndicator('material_code')}
                       </button>
                     </th>
-                    <th className="p-4 text-left text-sm font-medium text-gray-600">
+                    <th className="p-3 text-left text-sm font-medium text-gray-600">
                       <button
                         type="button"
                         className="inline-flex items-center gap-1 hover:text-gray-900"
                         onClick={() => toggleSort('material_name')}
                       >
-                        Name <ArrowUpDown size={14} />
+                        Name {getSortIndicator('material_name')}
                       </button>
                     </th>
-                    <th className="p-4 text-left text-sm font-medium text-gray-600">
+                    <th className="p-3 text-left text-sm font-medium text-gray-600">
                       <button
                         type="button"
                         className="inline-flex items-center gap-1 hover:text-gray-900"
                         onClick={() => toggleSort('category')}
                       >
-                        Category <ArrowUpDown size={14} />
+                        Category {getSortIndicator('category')}
                       </button>
                     </th>
-                    <th className="p-4 text-left text-sm font-medium text-gray-600">
+                    <th className="p-3 text-left text-sm font-medium text-gray-600">
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 hover:text-gray-900"
+                        onClick={() => toggleSort('material_type')}
+                      >
+                        Type {getSortIndicator('material_type')}
+                      </button>
+                    </th>
+                    <th className="p-3 text-left text-sm font-medium text-gray-600">
                       <button
                         type="button"
                         className="inline-flex items-center gap-1 hover:text-gray-900"
                         onClick={() => toggleSort('unit')}
                       >
-                        Unit <ArrowUpDown size={14} />
+                        Unit {getSortIndicator('unit')}
                       </button>
                     </th>
-                    <th className="p-4 text-right text-sm font-medium text-gray-600">Default Price</th>
-                    <th className="p-4 text-right text-sm font-medium text-gray-600">Last Price</th>
-                    <th className="p-4 text-right text-sm font-medium text-gray-600">Min Stock</th>
-                    <th className="p-4 text-left text-sm font-medium text-gray-600">Location</th>
-                    <th className="p-4 text-left text-sm font-medium text-gray-600">
+                    <th className="p-3 text-right text-sm font-medium text-gray-600">
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 hover:text-gray-900"
+                        onClick={() => toggleSort('default_price')}
+                      >
+                        Price {getSortIndicator('default_price')}
+                      </button>
+                    </th>
+                    <th className="p-3 text-right text-sm font-medium text-gray-600">Last Price</th>
+                    <th className="p-3 text-right text-sm font-medium text-gray-600">
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 hover:text-gray-900"
+                        onClick={() => toggleSort('min_stock')}
+                      >
+                        Min Stock {getSortIndicator('min_stock')}
+                      </button>
+                    </th>
+                    <th className="p-3 text-left text-sm font-medium text-gray-600">Location</th>
+                    <th className="p-3 text-left text-sm font-medium text-gray-600">
                       <button
                         type="button"
                         className="inline-flex items-center gap-1 hover:text-gray-900"
                         onClick={() => toggleSort('status')}
                       >
-                        Status <ArrowUpDown size={14} />
+                        Status {getSortIndicator('status')}
                       </button>
                     </th>
-                    <th className="p-4 text-center text-sm font-medium text-gray-600">Actions</th>
+                    <th className="p-3 text-center text-sm font-medium text-gray-600">Actions</th>
                   </tr>
                 </thead>
 
@@ -461,23 +545,33 @@ export default function MaterialsPage() {
                       className="border-b hover:bg-gray-50 cursor-pointer transition-colors"
                       onClick={() => router.push(`/admin/procurement/materials/${material.material_id}`)}
                     >
-                      <td className="p-4 font-mono text-sm whitespace-nowrap">{material.material_code}</td>
-                      <td className="p-4 font-medium">{material.material_name}</td>
-                      <td className="p-4">{material.category || '-'}</td>
-                      <td className="p-4">{material.unit}</td>
-                      <td className="p-4 text-right font-medium">
+                      <td className="p-3 font-mono text-sm whitespace-nowrap">{material.material_code}</td>
+                      <td className="p-3 font-medium">
+                        <div className="flex flex-col">
+                          <span>{material.material_name}</span>
+                          {material.spesifikasi && (
+                            <span className="text-xs text-gray-500 truncate max-w-[200px]">
+                              {material.spesifikasi}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-3">{material.category || '-'}</td>
+                      <td className="p-3">{material.material_type || '-'}</td>
+                      <td className="p-3">{material.unit}</td>
+                      <td className="p-3 text-right font-medium">
                         {material.default_price ? <Money value={material.default_price} /> : '-'}
                       </td>
-                      <td className="p-4 text-right">
+                      <td className="p-3 text-right">
                         {material.last_price ? <Money value={material.last_price} /> : '-'}
                       </td>
-                      <td className="p-4 text-right">{material.min_stock || '-'}</td>
-                      <td className="p-4">{material.location || '-'}</td>
-                      <td className="p-4">
+                      <td className="p-3 text-right">{material.min_stock || '-'}</td>
+                      <td className="p-3">{material.location || '-'}</td>
+                      <td className="p-3">
                         <StatusBadge status={material.status} type="vendor" />
                       </td>
-                      <td className="p-4">
-                        <div className="flex justify-center gap-2">
+                      <td className="p-3">
+                        <div className="flex justify-center gap-1">
                           <Link
                             href={`/admin/procurement/materials/${material.material_id}`}
                             className="p-2 hover:bg-gray-100 rounded transition-colors"

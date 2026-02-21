@@ -29,6 +29,7 @@ import {
   Users,
   Settings,
   HelpCircle,
+   Boxes, 
 } from "lucide-react"
 import { ERP_MENU } from "@/core/erpMenuConfig"
 
@@ -331,6 +332,12 @@ export default function AdminSidebar({ onMobileClose }: AdminSidebarProps) {
         icon: LayoutDashboard,
       },
       {
+  label: "New Library",
+  desc: "Tambah work template",
+  href: "/admin/estimator/library/new",
+  icon: Boxes,
+},
+      {
         label: "New PO",
         desc: "Purchase Order",
         href: "/admin/purchasing/po/new",
@@ -631,13 +638,15 @@ const DesktopSidebarContent = React.memo(function DesktopSidebarContent({
                   const active = isActive(item.href)
 
                   const badgeCount =
-                    item.href === "/admin/estimator/rab"
-                      ? estimator_inquiry
-                      : item.href === "/admin/finance/approval"
-                      ? finance_approval
-                      : item.href === "/admin/purchasing/request"
-                      ? purchasing_request
-                      : 0
+  item.href === "/admin/estimator/rab"
+    ? estimator_inquiry
+    : item.href === "/admin/finance/approval"
+    ? finance_approval
+    : item.href === "/admin/purchasing/request"
+    ? purchasing_request
+    : item.href === "/admin/estimator/library"
+    ? 0 // 🔥 nanti bisa diganti library_draft_count
+    : 0
 
                   return (
                     <SidebarItem
@@ -742,13 +751,15 @@ const MobileSidebarContent = React.memo(function MobileSidebarContent({
                 const active = isActive(item.href)
                 
                 const badgeCount =
-                  item.href === "/admin/estimator/rab"
-                    ? estimator_inquiry
-                    : item.href === "/admin/finance/approval"
-                    ? finance_approval
-                    : item.href === "/admin/purchasing/request"
-                    ? purchasing_request
-                    : 0
+  item.href === "/admin/estimator/rab"
+    ? estimator_inquiry
+    : item.href === "/admin/finance/approval"
+    ? finance_approval
+    : item.href === "/admin/purchasing/request"
+    ? purchasing_request
+    : item.href === "/admin/estimator/library"
+    ? 0
+    : 0
 
                 return (
                   <Link

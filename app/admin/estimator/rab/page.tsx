@@ -354,33 +354,39 @@ export default async function RABPage() {
                       <StatusBadge status={p.status || "Draft"} />
                     </td>
 
-                    {/* Actions */}
-                    <td className="p-4">
-                      <div className="flex items-center justify-center gap-2">
-                        <Link
-                          href={`/admin/estimator/rab/${p.rab_id}`}
-                          className="p-2 hover:bg-slate-100 rounded-lg transition group"
-                          title="Lihat Detail"
-                        >
-                          <Eye size={16} className="text-slate-400 group-hover:text-blue-600" />
-                        </Link>
-                        {p.status?.toLowerCase() === 'draft' && (
-                          <Link
-                            href={`/admin/estimator/rab/${p.rab_id}/edit`}
-                            className="p-2 hover:bg-slate-100 rounded-lg transition group"
-                            title="Edit"
-                          >
-                            <Edit size={16} className="text-slate-400 group-hover:text-emerald-600" />
-                          </Link>
-                        )}
-                        {p.status?.toLowerCase() === 'approved' && (
-                          <Link
-                            href={`/admin/estimator/proposal/create?rab_id=${p.rab_id}`}
-                            className="p-2 hover:bg-slate-100 rounded-lg transition group"
-                            title="Buat Proposal"
-                          >
-                            <FileText size={16} className="text-slate-400 group-hover:text-purple-600" />
-                          </Link>
+                    /* Actions */}
+<td className="p-4">
+  <div className="flex items-center justify-center gap-2">
+
+    {/* VIEW */}
+    <Link
+      href={`/admin/estimator/rab/${p.rab_id}/detail`}
+      className="p-2 hover:bg-slate-100 rounded-lg transition group"
+      title="Lihat Detail"
+    >
+      <Eye size={16} className="text-slate-400 group-hover:text-blue-600" />
+    </Link>
+
+    {/* EDIT (hanya Draft) */}
+    {p.status?.toLowerCase() === "draft" && (
+      <Link
+        href={`/admin/estimator/rab/${p.rab_id}`}
+        className="p-2 hover:bg-slate-100 rounded-lg transition group"
+        title="Edit"
+      >
+        <Edit size={16} className="text-slate-400 group-hover:text-emerald-600" />
+      </Link>
+    )}
+
+    {/* BUAT PROPOSAL (Approved) */}
+    {p.status?.toLowerCase() === "approved" && (
+      <Link
+        href={`/admin/estimator/proposal/create?rab_id=${p.rab_id}`}
+        className="p-2 hover:bg-slate-100 rounded-lg transition group"
+        title="Buat Proposal"
+      >
+        <FileText size={16} className="text-slate-400 group-hover:text-purple-600" />
+      </Link>
                         )}
                       </div>
                     </td>

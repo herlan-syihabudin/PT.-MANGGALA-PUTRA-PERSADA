@@ -257,16 +257,17 @@ export default function NewPackagePage() {
                       Package Name <span className="text-red-500">*</span>
                     </label>
                     <input
-  type="number"
-  step="0.01"
-  min="0"
-  value={item.coefficient}
-  onChange={(e) => {
-    const val = e.target.value
-    if (val === '') return
-    updateCoefficient(item.id, Number(val))
-  }}
-  className="w-24 px-2 py-1 border rounded text-sm"
+  type="text"
+  value={form.name}
+  onChange={(e) => setForm({ ...form, name: e.target.value })}
+  onBlur={() => handleBlur('name')}
+  className={`
+    w-full px-4 py-2 border rounded-lg
+    focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+    ${touched.name && errors.name ? 'border-red-500 bg-red-50' : ''}
+  `}
+  placeholder="e.g. Paket Dinding Standard Rumah Tipe 36"
+  disabled={saving || success}
 />
                     {touched.name && errors.name && (
                       <p className="text-xs text-red-600 mt-1">{errors.name}</p>

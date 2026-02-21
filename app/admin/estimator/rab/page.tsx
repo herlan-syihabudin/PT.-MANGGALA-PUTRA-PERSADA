@@ -354,7 +354,7 @@ export default async function RABPage() {
                       <StatusBadge status={p.status || "Draft"} />
                     </td>
 
-                    /* Actions */}
+                   {/* Actions */}
 <td className="p-4">
   <div className="flex items-center justify-center gap-2">
 

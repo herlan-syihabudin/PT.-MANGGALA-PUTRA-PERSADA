@@ -285,7 +285,7 @@ const [lockMode, setLockMode] = useState<boolean>(
 
     try {
       const res = await fetch(`/api/estimator/rab/${rab_id}/items/${item_id}`, {
-        method: "PUT",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(patch),
       })

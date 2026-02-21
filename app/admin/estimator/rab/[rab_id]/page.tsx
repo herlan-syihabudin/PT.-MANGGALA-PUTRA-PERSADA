@@ -63,8 +63,8 @@ export default async function Page({
 
   return (
     <RABDetailClient
-  rab_id={rab_id}
-  project_id={project_id}
+  rab_id={params.rab_id}
+  project_id={data.project_id}
   initialData={data}
   mode="edit"
 />

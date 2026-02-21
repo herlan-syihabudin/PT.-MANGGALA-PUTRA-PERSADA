@@ -701,44 +701,44 @@ const [lockMode, setLockMode] = useState<boolean>(
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 border-y border-slate-200">
   <tr>
-    <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider w-[60px]">
+    <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase w-[5%]">
       No
     </th>
 
-    <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[40%]">
+    <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase w-[35%]">
       Item
     </th>
 
-    <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[120px]">
+    <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase w-[12%]">
       Kategori
     </th>
 
-    <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider w-[80px]">
+    <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase w-[6%]">
       Qty
     </th>
 
-    <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider w-[80px]">
+    <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase w-[6%]">
       Unit
     </th>
 
-    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider w-[110px]">
+    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase w-[10%]">
       Material
     </th>
 
-    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider w-[110px]">
+    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase w-[10%]">
       Labour
     </th>
 
-    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider w-[110px]">
+    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase w-[8%]">
       Unit Price
     </th>
 
-    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider w-[130px]">
+    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase w-[8%]">
       Total
     </th>
 
     {!lockMode && (
-      <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider w-[100px]">
+      <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase w-[8%]">
         Aksi
       </th>
     )}
@@ -893,16 +893,21 @@ const [lockMode, setLockMode] = useState<boolean>(
                     </tbody>
 
                     <tfoot className="bg-slate-50 border-t border-slate-200">
-                      <tr>
-                        <td colSpan={lockMode ? 9 : 8} className="p-3 text-right font-medium text-slate-600">
-                          SUBTOTAL {g.scope}
-                        </td>
-                        <td className="p-3 font-bold text-emerald-600">
-                          {formatIDR(scopeTotal(g.items))}
-                        </td>
-                        {!lockMode && <td />}
-                      </tr>
-                    </tfoot>
+  <tr>
+    <td
+      colSpan={lockMode ? 8 : 9}
+      className="p-3 text-right font-medium text-slate-600"
+    >
+      SUBTOTAL {g.scope}
+    </td>
+
+    <td className="p-3 text-right font-bold text-emerald-600">
+      {formatIDR(scopeTotal(g.items))}
+    </td>
+
+    {!lockMode && <td />}
+  </tr>
+</tfoot>
                   </table>
                 </div>
               </details>

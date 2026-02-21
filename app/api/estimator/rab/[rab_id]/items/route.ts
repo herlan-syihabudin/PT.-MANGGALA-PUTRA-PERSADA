@@ -296,12 +296,7 @@ export async function POST(
       created_by = "System"
     } = body
 
-    if (!project_id) {
-      return NextResponse.json(
-        { message: "project_id wajib" },
-        { status: 400 }
-      )
-    }
+  
 
     if (!item_name?.trim()) {
       return NextResponse.json(
@@ -345,7 +340,7 @@ export async function POST(
           values: [[
             item_id,
             rab_id,
-            project_id,
+            project_id || "",
             scope,
             item_name,
             category,
@@ -440,13 +435,6 @@ export async function PUT(
       )
     }
 
-    if (!project_id) {
-      return NextResponse.json(
-        { message: "project_id wajib" },
-        { status: 400 }
-      )
-    }
-
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
         { message: "items wajib array" },
@@ -477,7 +465,7 @@ export async function PUT(
         return [
           "ITEM-" + nanoid(8).toUpperCase(),
           rab_id,
-          project_id,
+          project_id || "",
           scope,
           item_name,
           category,

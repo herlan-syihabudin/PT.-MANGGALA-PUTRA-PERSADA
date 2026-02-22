@@ -1,5 +1,5 @@
-import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+// app/admin/estimator/rab/[rab_id]/ve/page.tsx
+
 import VEClient from "./VEClient"
 
 export const dynamic = "force-dynamic"
@@ -9,7 +9,5 @@ export default function Page({
 }: {
   params: { rab_id: string }
 }) {
-  return (
-    <VEClient rab_id={params.rab_id} />
-  )
+  return <VEClient rab_id={params.rab_id} />
 }

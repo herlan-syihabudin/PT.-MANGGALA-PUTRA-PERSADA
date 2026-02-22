@@ -37,7 +37,9 @@ async function fetchPending(): Promise<Inquiry[]> {
       throw new Error(`Failed to fetch: ${res.status}`)
     }
 
-    return res.json()
+    const json = await res.json()
+
+    return json.data || []   // 🔥 INI FIXNYA
 
   } catch (error) {
     console.error(

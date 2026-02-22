@@ -214,19 +214,24 @@ export default function RABDetailClient({
   const [expandAll, setExpandAll] = useState(true)
   const isViewMode = mode === "view"
 
-  const [lockMode, setLockMode] = useState<boolean>(
-    isViewMode ||
-      data.header?.status === "LOCKED" ||
-      data.header?.status === "Approved"
-  )
+  const rabStatus = data.header?.status || "DRAFT"
 
-  useEffect(() => {
-    setLockMode(
-      mode === "view" ||
-        data.header?.status === "LOCKED" ||
-        data.header?.status === "Approved"
-    )
-  }, [mode, data.header?.status])
+const [lockMode, setLockMode] = useState<boolean>(
+  mode === "view" || 
+  rabStatus === "LOCKED" || 
+  rabStatus === "Approved" || 
+  rabStatus === "APPROVED"
+)
+
+useEffect(() => {
+  const currentStatus = data.header?.status || "DRAFT"
+  setLockMode(
+    mode === "view" || 
+    currentStatus === "LOCKED" || 
+    currentStatus === "Approved" || 
+    currentStatus === "APPROVED"
+  )
+}, [mode, data.header?.status])
 
   const globalItems = useMemo(() => {
     return [...data.items].sort((a, b) => {

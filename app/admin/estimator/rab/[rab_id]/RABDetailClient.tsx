@@ -778,47 +778,47 @@ useEffect(() => {
                 </summary>
 
                 <div className="w-full">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm table-auto">
                     <thead className="bg-slate-50 border-y border-slate-200">
   <tr>
-    <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase w-[5%]">
+    <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase">
       No
     </th>
 
-    <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase w-[35%]">
+    <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase">
       Item
     </th>
 
-    <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase w-[12%]">
+    <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase">
       Kategori
     </th>
 
-    <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase w-[6%]">
+    <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase">
       Qty
     </th>
 
-    <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase w-[6%]">
+    <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase">
       Unit
     </th>
 
-    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase w-[10%]">
+    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase">
       Material
     </th>
 
-    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase w-[10%]">
+    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase">
       Labour
     </th>
 
-    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase w-[8%]">
+    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase">
       Unit Price
     </th>
 
-    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase w-[8%]">
+    <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase">
       Total
     </th>
 
     {!lockMode && (
-      <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase w-[8%]">
+      <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase">
         Aksi
       </th>
     )}
@@ -960,7 +960,7 @@ useEffect(() => {
                     <tfoot className="bg-slate-50 border-t border-slate-200">
   <tr>
     <td
-      colSpan={lockMode ? 9 : 10}
+      colSpan={lockMode ? 8 : 9}
       className="p-3 text-right font-medium text-slate-600"
     >
       SUBTOTAL {g.scope}

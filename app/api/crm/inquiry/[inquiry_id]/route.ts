@@ -32,14 +32,25 @@ const SHEET_NAME = "CRM_INQUIRY"
 
 /* ================= CONSTANTS ================= */
 
-const VALID_STATUS = ["new", "survey", "estimating", "sent", "won", "lost"] as const
+const VALID_STATUS = [
+  "new",
+  "survey",
+  "estimating",
+  "boq_created",
+  "proposal",
+  "negotiation",
+  "won",
+  "lost"
+] as const
 type InquiryStatus = typeof VALID_STATUS[number]
 
 const STATUS_TRANSITIONS: Record<InquiryStatus, InquiryStatus[]> = {
-  new: ["survey"],
+   new: ["survey"],
   survey: ["estimating"],
-  estimating: ["sent"],
-  sent: ["won", "lost"],
+  estimating: ["boq_created"],
+  boq_created: ["proposal"],
+  proposal: ["negotiation"],
+  negotiation: ["won", "lost"],
   won: [],
   lost: [],
 }
@@ -368,32 +379,54 @@ export async function PATCH(
     }
 
     const currentStatus = safeStatus(existingData.status)
-    let finalStatus = currentStatus
 
-    // Status transition validation
-    if (body.status) {
-      const newStatus = safeStatus(body.status)
-      const allowedTransitions = STATUS_TRANSITIONS[currentStatus]
-      
-      if (!allowedTransitions.includes(newStatus)) {
-        return NextResponse.json(
-          { message: `Status tidak sesuai alur: dari ${currentStatus} hanya bisa ke ${allowedTransitions.join(", ")}` },
-          { status: 400 }
-        )
-      }
-      finalStatus = newStatus
-    }
+let newStatus: InquiryStatus = currentStatus
 
-    // Convert validation
-    const newStatus = body.status ? safeStatus(body.status) : currentStatus
-    const finalRabId = body.converted_rab_id || existingData.converted_rab_id
+// Status transition validation
+if (body.status) {
+  const requestedStatus = safeStatus(body.status)
+  const allowedTransitions = STATUS_TRANSITIONS[currentStatus]
 
-    if (newStatus === "won" && !finalRabId) {
-      return NextResponse.json(
-        { message: "Inquiry hanya bisa WON jika RAB sudah disetujui" },
-        { status: 400 }
-      )
-    }
+  if (!allowedTransitions.includes(requestedStatus)) {
+    return NextResponse.json(
+      { message: `Status tidak sesuai alur: dari ${currentStatus} hanya bisa ke ${allowedTransitions.join(", ")}` },
+      { status: 400 }
+    )
+  }
+
+  newStatus = requestedStatus
+}
+
+// Convert validation
+const finalBoqId =
+  body.converted_rab_id || existingData.converted_rab_id
+
+const finalProposalId =
+  body.converted_proposal_id || existingData.converted_proposal_id
+
+// 1️⃣ BOQ validation
+if (newStatus === "boq_created" && !finalBoqId) {
+  return NextResponse.json(
+    { message: "Status hanya bisa BOQ_CREATED jika BOQ sudah dibuat" },
+    { status: 400 }
+  )
+}
+
+// 2️⃣ Proposal validation
+if (newStatus === "proposal" && !finalProposalId) {
+  return NextResponse.json(
+    { message: "Status hanya bisa PROPOSAL jika proposal sudah dibuat" },
+    { status: 400 }
+  )
+}
+
+// 3️⃣ WON validation
+if (newStatus === "won" && !finalProposalId) {
+  return NextResponse.json(
+    { message: "Inquiry hanya bisa WON jika Proposal sudah dibuat" },
+    { status: 400 }
+  )
+}
 
     const actualRowNumber = rowIndex + ROW_OFFSET
 

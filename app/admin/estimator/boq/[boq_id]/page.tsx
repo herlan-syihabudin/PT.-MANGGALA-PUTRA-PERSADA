@@ -8,7 +8,7 @@ import {
   Edit3,
   FileText,
   Lock,
-  LockOpen,
+Unlock,
   Plus,
   RefreshCw,
   Save,
@@ -399,7 +399,7 @@ export default function BoqDetailPage() {
                 </>
               ) : (
                 <>
-                  <LockOpen size={14} /> Lock BOQ
+                  <Unlock size={14} /> Lock BOQ
                 </>
               )}
             </button>

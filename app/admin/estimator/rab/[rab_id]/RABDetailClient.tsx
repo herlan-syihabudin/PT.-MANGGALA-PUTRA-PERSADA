@@ -29,14 +29,22 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
-export default function VEPage({
-  params,
-}: {
-  params: { rab_id: string }
-}) {
-  const { rab_id } = params
+export default async function Page({ params }: { params: { rab_id: string } }) {
+  const rab_id = params.rab_id
 
-  return <VEClient rab_id={rab_id} />
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/estimator/rab/${rab_id}`, {
+    cache: "no-store",
+  })
+  const data: RabResponse = await res.json()
+
+  return (
+    <RABDetailClient
+      rab_id={rab_id}
+      project_id={data.project_id}
+      initialData={data}
+      mode="edit"
+    />
+  )
 }
 
 // ✅ FIX: Export type biar bisa dipake di page.tsx

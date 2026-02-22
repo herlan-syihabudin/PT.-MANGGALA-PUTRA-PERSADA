@@ -216,13 +216,13 @@ export async function POST(req: Request) {
        7️⃣ UPDATE INQUIRY
     ============================ */
 
-    // Update status → boq_created
+    // Update status → rab_created
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range: `CRM_INQUIRY!J${actualRow}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
-        values: [["boq_created"]],
+        values: [["rab_created"]],
       },
     })
 

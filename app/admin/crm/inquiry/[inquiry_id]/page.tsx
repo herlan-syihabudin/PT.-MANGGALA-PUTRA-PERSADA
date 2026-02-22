@@ -165,7 +165,6 @@ export default function InquiryDetailPage() {
         "prioritas",
         "catatan",
         "estimasi_nilai",
-        "status",
       ]
 
       const filteredData = Object.fromEntries(

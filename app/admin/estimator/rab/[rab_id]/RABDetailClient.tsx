@@ -7,6 +7,7 @@ import { formatIDR } from "@/lib/format"
 import AddItemForm from "./AddItemForm"
 import { useDropzone } from "react-dropzone"
 import WorkLibraryButton from "./WorkLibraryButton"
+import VEClient from "./VEClient"
 import * as XLSX from "xlsx"
 import { 
   Copy, 
@@ -27,6 +28,16 @@ import {
   Unlock
 } from "lucide-react"
 import { toast } from "sonner"
+
+export default function VEPage({
+  params,
+}: {
+  params: { rab_id: string }
+}) {
+  const { rab_id } = params
+
+  return <VEClient rab_id={rab_id} />
+}
 
 // ✅ FIX: Export type biar bisa dipake di page.tsx
 export type RabItem = {
@@ -552,43 +563,55 @@ useEffect(() => {
           </div>
 
           <div className="flex items-center gap-2">
-            {lockMode ? (
-              <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs">
-                <Lock size={14} />
-                <span>Terkunci</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 px-3 py-1.5 bg-emerald-100 text-emerald-600 rounded-lg text-xs">
-                <Unlock size={14} />
-                <span>Dapat Diedit</span>
-              </div>
-            )}
+  {lockMode ? (
+    <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs">
+      <Lock size={14} />
+      <span>Terkunci</span>
+    </div>
+  ) : (
+    <div className="flex items-center gap-1 px-3 py-1.5 bg-emerald-100 text-emerald-600 rounded-lg text-xs">
+      <Unlock size={14} />
+      <span>Dapat Diedit</span>
+    </div>
+  )}
 
-            <button
-              onClick={reload}
-              disabled={loading}
-              className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition disabled:opacity-50"
-              title="Refresh"
-            >
-              <RefreshCw size={16} className={`text-slate-500 ${loading ? 'animate-spin' : ''}`} />
-            </button>
+  <button
+    onClick={reload}
+    disabled={loading}
+    className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition disabled:opacity-50"
+    title="Refresh"
+  >
+    <RefreshCw
+      size={16}
+      className={`text-slate-500 ${loading ? "animate-spin" : ""}`}
+    />
+  </button>
 
-            <button
-               onClick={() => handlePrint(rab_id)}
-              className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition"
-              title="Print"
-            >
-              <Printer size={16} className="text-slate-500" />
-            </button>
+  <button
+    onClick={() => handlePrint(rab_id)}
+    className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition"
+    title="Print"
+  >
+    <Printer size={16} className="text-slate-500" />
+  </button>
 
-            <Link
-              href="/admin/estimator/rab"
-              className="flex items-center gap-1 px-3 py-2 border border-slate-200 rounded-lg text-sm hover:bg-slate-50 transition"
-            >
-              <ArrowLeft size={14} />
-              Kembali
-            </Link>
-          </div>
+  {/* 🔥 Tombol ke Value Engineering */}
+  <Link
+    href={`/admin/estimator/rab/${rab_id}/ve`}
+    className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm bg-slate-900 text-white hover:bg-slate-800 transition"
+  >
+    <TrendingUp size={14} />
+    VE Options
+  </Link>
+
+  <Link
+    href="/admin/estimator/rab"
+    className="flex items-center gap-1 px-3 py-2 border border-slate-200 rounded-lg text-sm hover:bg-slate-50 transition"
+  >
+    <ArrowLeft size={14} />
+    Kembali
+  </Link>
+</div>
         </div>
 
         {/* TOOLBAR INPUT (Manual + Library) */}

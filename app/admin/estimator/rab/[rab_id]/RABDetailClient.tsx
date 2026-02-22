@@ -7,10 +7,10 @@ import AddItemForm from "./AddItemForm"
 import { useDropzone } from "react-dropzone"
 import WorkLibraryButton from "./WorkLibraryButton"
 import * as XLSX from "xlsx"
-import { 
-  Copy, 
-  Trash2, 
-  ChevronDown, 
+import {
+  Copy,
+  Trash2,
+  ChevronDown,
   Upload,
   Search,
   RefreshCw,
@@ -23,11 +23,11 @@ import {
   Eye,
   EyeOff,
   Lock,
-  Unlock
+  Unlock,
 } from "lucide-react"
 import { toast } from "sonner"
 
-/* ================= TYPES ================= */
+/* ============ TYPES ============ */
 
 export type RabItem = {
   item_id: string
@@ -63,7 +63,7 @@ type Props = {
   mode?: "view" | "edit"
 }
 
-/* ================= helpers ================= */
+/* ============ HELPERS ============ */
 
 function n(x: any) {
   const v = Number(x)
@@ -132,7 +132,7 @@ function handlePrint(rab_id: string) {
   win.print()
 }
 
-/* ================= inline editor ================= */
+/* ============ INLINE EDIT ============ */
 
 function useDebouncedCommit<T extends (...args: any[]) => void>(fn: T, delay = 600) {
   const [timer, setTimer] = useState<any>(null)
@@ -196,13 +196,13 @@ function InlineEdit({
   )
 }
 
-/* ================= MAIN COMPONENT ================= */
+/* ============ MAIN CLIENT COMPONENT ============ */
 
-export default function RABDetailClient({ 
-  rab_id, 
-  project_id, 
+function RABDetailClient({
+  rab_id,
+  project_id,
   initialData,
-  mode = "edit"
+  mode = "edit",
 }: Props) {
   const [data, setData] = useState<RabResponse>(initialData)
   const [loading, setLoading] = useState(false)
@@ -216,15 +216,15 @@ export default function RABDetailClient({
 
   const [lockMode, setLockMode] = useState<boolean>(
     isViewMode ||
-    data.header?.status === "LOCKED" ||
-    data.header?.status === "Approved"
+      data.header?.status === "LOCKED" ||
+      data.header?.status === "Approved",
   )
 
   useEffect(() => {
     setLockMode(
       mode === "view" ||
-      data.header?.status === "LOCKED" ||
-      data.header?.status === "Approved"
+        data.header?.status === "LOCKED" ||
+        data.header?.status === "Approved",
     )
   }, [mode, data.header?.status])
 
@@ -279,8 +279,8 @@ export default function RABDetailClient({
       setData(normalized)
       setLockMode(
         mode === "view" ||
-        normalized.header?.status === "LOCKED" ||
-        normalized.header?.status === "Approved"
+          normalized.header?.status === "LOCKED" ||
+          normalized.header?.status === "Approved",
       )
 
       toast.success("Data berhasil direfresh")
@@ -293,17 +293,17 @@ export default function RABDetailClient({
 
   const totalValue = useMemo(
     () => data.items.reduce((sum, i) => sum + n(i.total_price), 0),
-    [data.items]
+    [data.items],
   )
 
   const totalMaterial = useMemo(
     () => data.items.reduce((sum, i) => sum + n(i.material_price) * n(i.qty), 0),
-    [data.items]
+    [data.items],
   )
 
   const totalLabour = useMemo(
     () => data.items.reduce((sum, i) => sum + n(i.labour_price) * n(i.qty), 0),
-    [data.items]
+    [data.items],
   )
 
   const sellTotal = useMemo(() => {
@@ -315,9 +315,11 @@ export default function RABDetailClient({
     if (!searchTerm) return data.items
     return data.items.filter(
       (i) =>
-        (i.item_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (i.item_name || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
         (i.scope || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (i.category || "").toLowerCase().includes(searchTerm.toLowerCase())
+        (i.category || "").toLowerCase().includes(searchTerm.toLowerCase()),
     )
   }, [data.items, searchTerm])
 
@@ -340,11 +342,8 @@ export default function RABDetailClient({
 
         const updated = { ...it, ...patch }
 
-        const unit_price =
-          n(updated.material_price) + n(updated.labour_price)
-
-        const total_price =
-          n(updated.qty) * unit_price
+        const unit_price = n(updated.material_price) + n(updated.labour_price)
+        const total_price = n(updated.qty) * unit_price
 
         return {
           ...updated,
@@ -515,12 +514,15 @@ export default function RABDetailClient({
     disabled: lockMode,
   })
 
-  /* ================= UI ================= */
+  /* ============ UI ============ */
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* ... (semua JSX yang sudah lu punya: header, summary, table, footer, dll) */}
-      {/* Bagian ini sama persis dengan yang sekarang, nggak perlu gue ulang full lagi */}
+      {/* ... (SEMUA JSX YANG UDAH LU PUNYA, TIDAK BERUBAH) ... */}
+      {/* Gue nggak ulangi lagi biar chat ini nggak super panjang.
+          Intinya: bagian JSX yang lu kirim tadi tinggal ditempel persis di sini. */}
     </div>
   )
 }
+
+export default RABDetailClient

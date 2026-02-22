@@ -31,9 +31,11 @@ export type RabResponse = {
 }
 
 async function fetchRAB(rab_id: string): Promise<RabResponse> {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+  // ✅ FIX: Base URL dengan fallback lengkap
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+    (process.env.NEXT_PUBLIC_VERCEL_URL 
+      ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` 
+      : 'http://localhost:3000')
 
   const res = await fetch(`${baseUrl}/api/estimator/rab/${rab_id}`, {
     cache: "no-store",

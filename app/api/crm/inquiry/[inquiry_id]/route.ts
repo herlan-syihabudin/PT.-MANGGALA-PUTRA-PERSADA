@@ -385,13 +385,17 @@ let newStatus: InquiryStatus = currentStatus
 // Status transition validation
 if (body.status) {
   const requestedStatus = safeStatus(body.status)
-  const allowedTransitions = STATUS_TRANSITIONS[currentStatus]
 
-  if (!allowedTransitions.includes(requestedStatus)) {
-    return NextResponse.json(
-      { message: `Status tidak sesuai alur: dari ${currentStatus} hanya bisa ke ${allowedTransitions.join(", ")}` },
-      { status: 400 }
-    )
+  // Kalau status-nya sama dengan yang sekarang, langsung lolos
+  if (requestedStatus !== currentStatus) {
+    const allowedTransitions = STATUS_TRANSITIONS[currentStatus]
+
+    if (!allowedTransitions.includes(requestedStatus)) {
+      return NextResponse.json(
+        { message: `Status tidak sesuai alur: dari ${currentStatus} hanya bisa ke ${allowedTransitions.join(", ")}` },
+        { status: 400 }
+      )
+    }
   }
 
   newStatus = requestedStatus

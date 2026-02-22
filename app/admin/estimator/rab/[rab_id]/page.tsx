@@ -1,3 +1,4 @@
+// app/admin/estimator/rab/[rab_id]/page.tsx
 import { notFound } from "next/navigation"
 import RABDetailClient from "./RABDetailClient"
 import { RabResponse } from "./RABDetailClient"
@@ -31,22 +32,24 @@ async function fetchRAB(rab_id: string): Promise<RabResponse> {
       throw new Error("Invalid RAB data")
     }
 
-    return {
+    const normalized: RabResponse = {
       rab_id: data.rab_id,
       project_id: data.project_id ?? "",
       header: {
-        status: data.status,
-        created_by: data.created_by,
-        created_at: data.created_at,
-        customer_name: data.customer_name,
-        project_name: data.project_name,
+        status: data.status || "DRAFT",
+        created_by: data.created_by || "System",
+        created_at: data.created_at || new Date().toISOString(),
+        customer_name: data.customer_name || "-",
+        project_name: data.project_name || "Untitled",
       },
       summary: {
         total_items: data.total_items ?? data.items?.length ?? 0,
         total_value: data.total_value ?? 0,
       },
-      items: data.items ?? [],
+      items: Array.isArray(data.items) ? data.items : [],
     }
+
+    return normalized
 
   } catch (error) {
     console.error(`Error fetching RAB ${rab_id}:`, error)
@@ -61,12 +64,16 @@ export default async function Page({
 }) {
   const data = await fetchRAB(params.rab_id)
 
+  // Mode tergantung status
+  const status = data.header.status?.toUpperCase()
+  const mode = status === "DRAFT" ? "edit" : "view"
+
   return (
     <RABDetailClient
-  rab_id={params.rab_id}
-  project_id={data.project_id}
-  initialData={data}
-  mode="edit"
-/>
+      rab_id={params.rab_id}
+      project_id={data.project_id}
+      initialData={data}
+      mode={mode}
+    />
   )
 }

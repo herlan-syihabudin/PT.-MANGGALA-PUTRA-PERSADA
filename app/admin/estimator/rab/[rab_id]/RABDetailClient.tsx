@@ -888,7 +888,7 @@ useEffect(() => {
       </td>
 
       {/* MATERIAL */}
-      <td className="p-3 text-right">
+      <td className="p-3 text-right whitespace-nowrap tabular-nums">
         <InlineEdit
           value={it.material_price}
           type="number"
@@ -900,7 +900,7 @@ useEffect(() => {
       </td>
 
       {/* LABOUR */}
-      <td className="p-3 text-right">
+      <td className="p-3 text-right whitespace-nowrap tabular-nums">
         <InlineEdit
           value={it.labour_price}
           type="number"
@@ -912,12 +912,12 @@ useEffect(() => {
       </td>
 
       {/* UNIT PRICE (readonly) */}
-      <td className="p-3 font-medium text-slate-700 text-right">
+      <td className="p-3 font-medium text-slate-700 text-right whitespace-nowrap tabular-nums">
         {formatIDR(n(it.unit_price))}
       </td>
 
       {/* TOTAL (readonly) */}
-      <td className="p-3 font-semibold text-emerald-600 text-right">
+      <td className="p-3 font-semibold text-emerald-600 text-right whitespace-nowrap tabular-nums">
         {formatIDR(n(it.total_price))}
       </td>
 
@@ -960,7 +960,7 @@ useEffect(() => {
                     <tfoot className="bg-slate-50 border-t border-slate-200">
   <tr>
     <td
-      colSpan={lockMode ? 8 : 9}
+      colSpan={lockMode ? 9 : 10}
       className="p-3 text-right font-medium text-slate-600"
     >
       SUBTOTAL {g.scope}

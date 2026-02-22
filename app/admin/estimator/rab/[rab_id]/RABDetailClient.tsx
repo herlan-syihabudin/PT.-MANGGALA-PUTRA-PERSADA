@@ -6,6 +6,7 @@ import Link from "next/link"
 import { formatIDR } from "@/lib/format"
 import AddItemForm from "./AddItemForm"
 import { useDropzone } from "react-dropzone"
+import WorkLibraryButton from "./WorkLibraryButton"
 import * as XLSX from "xlsx"
 import { 
   Copy, 
@@ -590,21 +591,43 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* ADD ITEM (hanya jika tidak lock) */}
-        {!lockMode && (
-          <AddItemForm
-            rab_id={rab_id}
-            project_id={project_id}
-            onCreated={(newItem: RabItem) => {
-              setData((prev) => ({ 
-                ...prev, 
-                items: [...prev.items, newItem] 
-              }))
-              toast.success("Item berhasil ditambahkan")
-            }}
-            onSuccess={reload}
-          />
-        )}
+        {/* TOOLBAR INPUT (Manual + Library) */}
+{!lockMode && (
+  <div className="flex flex-col lg:flex-row gap-4 items-start">
+    
+    {/* FORM MANUAL */}
+    <div className="flex-1 w-full">
+      <AddItemForm
+        rab_id={rab_id}
+        project_id={project_id}
+        onCreated={(newItem: RabItem) => {
+          setData((prev) => ({ 
+            ...prev, 
+            items: [...prev.items, newItem] 
+          }))
+          toast.success("Item berhasil ditambahkan")
+        }}
+        onSuccess={reload}
+      />
+    </div>
+
+    {/* WORK LIBRARY BUTTON */}
+    <div className="w-full lg:w-[260px] flex flex-col gap-2">
+      <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">
+        Work Library
+      </p>
+      <WorkLibraryButton
+        rab_id={rab_id}
+        project_id={project_id}
+        onSuccess={reload}
+      />
+      <p className="text-[10px] text-slate-400">
+        Tarik pekerjaan standar supaya tidak input manual.
+      </p>
+    </div>
+
+  </div>
+)}
 
         {/* BULK UPLOAD (hanya jika tidak lock) */}
         {!lockMode && (

@@ -6,11 +6,11 @@ export const dynamic = "force-dynamic"
 
 /* ================= ENVIRONMENT VALIDATION ================= */
 function validateEnvironment() {
-  const required = ['GOOGLE_CLIENT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'GSHEET_CRM_ID'] as const
-  const missing = required.filter(key => !process.env[key])
-  
+  const required = ["GOOGLE_CLIENT_EMAIL", "GOOGLE_PRIVATE_KEY", "GSHEET_CRM_ID"] as const
+  const missing = required.filter((key) => !process.env[key])
+
   if (missing.length > 0) {
-    throw new Error(`Missing environment variables: ${missing.join(', ')}`)
+    throw new Error(`Missing environment variables: ${missing.join(", ")}`)
   }
 }
 
@@ -51,46 +51,50 @@ const INQUIRY_COLUMNS = {
 } as const
 
 const RAB_COLUMNS = {
-  RAB_ID: 0,           // A
-  INQUIRY_ID: 1,       // B
-  PROJECT_NAME: 2,      // C
-  CUSTOMER_ID: 3,       // D
-  CUSTOMER_NAME: 4,     // E
-  TOTAL_ITEMS: 5,       // F
-  TOTAL_VALUE: 6,       // G
-  STATUS: 7,            // H
-  MARGIN: 8,            // I
-  PPN: 9,               // J
-  NOTES: 10,            // K
-  CREATED_BY: 11,       // L
-  CREATED_AT: 12,       // M
-  APPROVED_BY: 13,      // N
-  APPROVED_AT: 14,      // O
+  RAB_ID: 0, // A
+  INQUIRY_ID: 1, // B
+  PROJECT_NAME: 2, // C
+  CUSTOMER_ID: 3, // D
+  CUSTOMER_NAME: 4, // E
+  TOTAL_ITEMS: 5, // F
+  TOTAL_VALUE: 6, // G
+  STATUS: 7, // H
+  MARGIN: 8, // I
+  PPN: 9, // J
+  NOTES: 10, // K
+  CREATED_BY: 11, // L
+  CREATED_AT: 12, // M
+  APPROVED_BY: 13, // N
+  APPROVED_AT: 14, // O
 } as const
 
 /* ================= LOGGER ================= */
 const logger = {
   error: (context: string, error: any, metadata: any = {}) => {
-    console.error(JSON.stringify({
-      timestamp: new Date().toISOString(),
-      level: 'error',
-      context,
-      error: {
-        message: error?.message,
-        stack: error?.stack,
-        code: error?.code
-      },
-      ...metadata
-    }))
+    console.error(
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "error",
+        context,
+        error: {
+          message: error?.message,
+          stack: error?.stack,
+          code: error?.code,
+        },
+        ...metadata,
+      })
+    )
   },
   info: (context: string, metadata: any = {}) => {
-    console.log(JSON.stringify({
-      timestamp: new Date().toISOString(),
-      level: 'info',
-      context,
-      ...metadata
-    }))
-  }
+    console.log(
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "info",
+        context,
+        ...metadata,
+      })
+    )
+  },
 }
 
 /* ================= CREATE RAB ================= */
@@ -100,13 +104,10 @@ export async function POST(req: Request) {
     const { inquiry_id } = body
 
     if (!inquiry_id) {
-      return NextResponse.json(
-        { error: "inquiry_id wajib diisi" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "inquiry_id wajib diisi" }, { status: 400 })
     }
 
-    logger.info('Create RAB requested', { inquiry_id })
+    logger.info("Create RAB requested", { inquiry_id })
 
     /* ============================
        1️⃣ AMBIL DATA INQUIRY
@@ -117,120 +118,139 @@ export async function POST(req: Request) {
     })
 
     const rows = inquiryRes.data.values || []
-    const inquiryRow = rows.find(r => r[INQUIRY_COLUMNS.ID] === inquiry_id)
 
-    if (!inquiryRow) {
-      return NextResponse.json(
-        { error: "Inquiry tidak ditemukan" },
-        { status: 404 }
-      )
+    // Cari rowIndex dulu (supaya bisa dipakai berkali-kali)
+    const rowIndex = rows.findIndex((r) => r[INQUIRY_COLUMNS.ID] === inquiry_id)
+
+    if (rowIndex === -1) {
+      return NextResponse.json({ error: "Inquiry tidak ditemukan" }, { status: 404 })
     }
 
+    const inquiryRow = rows[rowIndex]
+
     /* ============================
-       2️⃣ CEK DUPLIKAT RAB
+       2️⃣ CEK DUPLIKAT RAB (view awal)
     ============================ */
     if (inquiryRow[INQUIRY_COLUMNS.CONVERTED_RAB_ID]) {
       return NextResponse.json(
-        { 
+        {
           error: "Inquiry sudah memiliki RAB",
-          rab_id: inquiryRow[INQUIRY_COLUMNS.CONVERTED_RAB_ID]
+          rab_id: inquiryRow[INQUIRY_COLUMNS.CONVERTED_RAB_ID],
         },
         { status: 409 }
       )
     }
 
     /* ============================
-   3️⃣ VALIDASI STATUS
-============================ */
-const currentStatus = (inquiryRow[INQUIRY_COLUMNS.STATUS] || "").toString().toLowerCase()
+       3️⃣ VALIDASI STATUS
+    ============================ */
+    const currentStatus = (inquiryRow[INQUIRY_COLUMNS.STATUS] || "")
+      .toString()
+      .toLowerCase()
 
-if (currentStatus !== "estimating") {
-  return NextResponse.json(
-    { error: `Inquiry dengan status ${currentStatus} tidak bisa dibuat RAB` },
-    { status: 400 }
-  )
-}
+    if (!["estimating"].includes(currentStatus)) {
+      return NextResponse.json(
+        { error: `Inquiry dengan status ${currentStatus} tidak bisa dibuat RAB` },
+        { status: 400 }
+      )
+    }
 
     /* ============================
        4️⃣ GENERATE RAB ID
     ============================ */
-    const rabId = `RAB-${Date.now()}`
+    const rabId = `RAB-${Date.now()}-${Math.floor(Math.random() * 1000)}`
     const now = new Date().toISOString()
-    
-    // Extract data dari inquiry
+
     const estimasiNilai = Number(
       String(inquiryRow[INQUIRY_COLUMNS.ESTIMASI_NILAI] || 0).replace(/[^\d]/g, "")
     )
 
     /* ============================
-       5️⃣ INSERT KE RAB_PROJECT
+       5️⃣ DOUBLE-CHECK SEBELUM CREATE (ANTI RACE CONDITION)
+    ============================ */
+    const actualRow = rowIndex + 2 // +2 karena header + index 0-based
+
+    const latestCheck = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `CRM_INQUIRY!N${actualRow}`,
+    })
+
+    if (latestCheck.data.values?.[0]?.[0]) {
+      return NextResponse.json(
+        { error: "Inquiry sudah memiliki RAB" },
+        { status: 409 }
+      )
+    }
+
+    /* ============================
+       6️⃣ INSERT KE RAB_PROJECT
     ============================ */
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: `RAB_PROJECT!A:O`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
-        values: [[
-          rabId,
-          inquiry_id,
-          inquiryRow[INQUIRY_COLUMNS.NAMA_PEKERJAAN] || "Untitled Project",
-          inquiryRow[INQUIRY_COLUMNS.CUSTOMER_ID] || "",
-          inquiryRow[INQUIRY_COLUMNS.CUSTOMER_NAME] || "-",
-          0,                    // total_items (akan diisi nanti)
-          estimasiNilai,        // total_value dari inquiry
-          "draft",              // status
-          "",                   // margin
-          "",                   // ppn
-          "",                   // notes
-          "Estimator",          // created_by
-          now,
-          "",                   // approved_by
-          "",                   // approved_at
-        ]],
+        values: [
+          [
+            rabId,
+            inquiry_id,
+            inquiryRow[INQUIRY_COLUMNS.NAMA_PEKERJAAN] || "Untitled Project",
+            inquiryRow[INQUIRY_COLUMNS.CUSTOMER_ID] || "",
+            inquiryRow[INQUIRY_COLUMNS.CUSTOMER_NAME] || "-",
+            0, // total_items (akan diisi nanti)
+            estimasiNilai, // total_value dari inquiry
+            "draft", // status
+            "", // margin
+            "", // ppn
+            "", // notes
+            "Estimator", // created_by
+            now,
+            "", // approved_by
+            "", // approved_at
+          ],
+        ],
       },
     })
 
     /* ============================
-       6️⃣ UPDATE INQUIRY
+       7️⃣ UPDATE INQUIRY
     ============================ */
-    const rowIndex = rows.findIndex(r => r[INQUIRY_COLUMNS.ID] === inquiry_id)
-    const actualRow = rowIndex + 2 // +2 karena header dan index mulai 0
 
-    // Update status ke "estimating"
+    // Update status → boq_created
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `CRM_INQUIRY!J${actualRow}`, // Kolom STATUS
+      range: `CRM_INQUIRY!J${actualRow}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
-        values: [["estimating"]],
+        values: [["boq_created"]],
       },
     })
 
     // Update converted_rab_id
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `CRM_INQUIRY!N${actualRow}`, // Kolom CONVERTED_RAB_ID
+      range: `CRM_INQUIRY!N${actualRow}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[rabId]],
       },
     })
 
-    logger.info('RAB created successfully', { 
-      rab_id: rabId, 
+    logger.info("RAB created successfully", {
+      rab_id: rabId,
       inquiry_id,
-      estimasi_nilai: estimasiNilai 
+      estimasi_nilai: estimasiNilai,
     })
 
     await appendActivity({
-  inquiry_id,
-  type: "RAB_CREATED",
-  description: `Convert ke RAB ${rabId}`,
-  old_value: "",
-  new_value: rabId,
-  created_by: "Estimator"
-})
-    
+      inquiry_id,
+      type: "RAB_CREATED",
+      description: `Convert ke RAB ${rabId}`,
+      old_value: "",
+      new_value: rabId,
+      created_by: "Estimator",
+    })
+
     return NextResponse.json({
       success: true,
       rab_id: rabId,
@@ -241,18 +261,13 @@ if (currentStatus !== "estimating") {
         project_name: inquiryRow[INQUIRY_COLUMNS.NAMA_PEKERJAAN],
         customer_name: inquiryRow[INQUIRY_COLUMNS.CUSTOMER_NAME],
         estimasi_nilai: estimasiNilai,
-      }
+      },
     })
-
   } catch (error: any) {
-    logger.error('Create RAB Error', error)
+    logger.error("Create RAB Error", error)
 
-    // Map error codes
     if (error.code === 404) {
-      return NextResponse.json(
-        { error: "Sheet tidak ditemukan" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Sheet tidak ditemukan" }, { status: 404 })
     }
 
     if (error.code === 403) {
@@ -262,9 +277,6 @@ if (currentStatus !== "estimating") {
       )
     }
 
-    return NextResponse.json(
-      { error: "Gagal membuat RAB" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Gagal membuat RAB" }, { status: 500 })
   }
 }

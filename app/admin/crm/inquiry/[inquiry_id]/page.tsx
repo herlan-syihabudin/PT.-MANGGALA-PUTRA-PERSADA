@@ -49,7 +49,7 @@ interface InquiryData {
   prioritas: string
   lokasi: string
   catatan: string
-  converted_rab_id?: string
+  converted_boq_id?: string
   converted_project_id?: string
   created_at: string
   created_by: string
@@ -117,28 +117,39 @@ export default function InquiryDetailPage() {
     load()
   }, [inquiry_id])
 
-  // ================= CONVERT TO RAB =================
-  const convertToRAB = async () => {
-    try {
-      setIsUpdating(true)
+  // ================= CONVERT TO BOQ =================
+  const createBOQ = async () => {
+  try {
+    setIsUpdating(true)
 
-      const res = await fetch("/api/estimator/rab/from-inquiry", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inquiry_id }),
-      })
+    const res = await fetch("/api/estimator/boq/from-inquiry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ inquiry_id }),
+    })
 
-      const result = await res.json()
-      if (!res.ok) throw new Error()
+    const result = await res.json()
+    if (!res.ok) throw new Error()
 
-      toast.success("Berhasil convert ke RAB")
-      router.push(`/admin/estimator/rab/${result.rab_id}`)
-    } catch {
-      toast.error("Gagal convert ke RAB")
-    } finally {
-      setIsUpdating(false)
-    }
+    toast.success("Berhasil buat BOQ")
+    setData(prev =>
+  prev
+    ? {
+        ...prev,
+        converted_boq_id: result.boq_id,
+        status: "boq_created",
+      }
+    : prev
+)
+
+
+    router.push(`/admin/estimator/boq/${result.boq_id}`)
+  } catch {
+    toast.error("Gagal buat BOQ")
+  } finally {
+    setIsUpdating(false)
   }
+}
 
   // ================= UPDATE INQUIRY =================
   const updateInquiry = async () => {
@@ -171,7 +182,9 @@ export default function InquiryDetailPage() {
 
       if (!res.ok) throw new Error()
 
-      setData(prev => ({ ...prev!, ...filteredData }))
+      setData(prev =>
+  prev ? { ...prev, ...filteredData } : prev
+)
       setIsEditMode(false)
       toast.success("Data berhasil diupdate")
 
@@ -193,14 +206,15 @@ export default function InquiryDetailPage() {
       : Math.floor((now - tanggalMasuk) / (1000 * 60 * 60 * 24))
 
     const probabilityMap: Record<string, number> = {
-      new: 15,
-      survey: 30,
-      estimating: 55,
-      proposal: 75,
-      negotiation: 85,
-      won: 100,
-      lost: 0,
-    }
+  new: 15,
+  survey: 30,
+  estimating: 55,
+  boq_created: 65,
+  proposal: 75,
+  negotiation: 85,
+  won: 100,
+  lost: 0,
+}
 
     let probability = probabilityMap[data.status?.toLowerCase()] ?? 10
 
@@ -250,7 +264,7 @@ export default function InquiryDetailPage() {
     else if (needsFollowUp)
       recommendation = "Segera lakukan follow up"
     else if (data.status?.toLowerCase() === "estimating")
-      recommendation = "Selesaikan RAB terlebih dahulu"
+      recommendation = "Buat BOQ terlebih dahulu"
     else if (probability > 75)
       recommendation = "High chance deal – prioritaskan closing"
 
@@ -405,12 +419,13 @@ export default function InquiryDetailPage() {
 
               {/* ================= EDIT ================= */}
               <button
-                onClick={() => setIsEditMode(!isEditMode)}
-                className="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-              >
-                <Edit size={16} />
-                {isEditMode ? "Cancel" : "Edit"}
-              </button>
+  onClick={() => setIsEditMode(!isEditMode)}
+  disabled={!!data.converted_boq_id}
+  className="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  <Edit size={16} />
+  {isEditMode ? "Cancel" : "Edit"}
+</button>
             </div>
           </div>
         </div>
@@ -553,25 +568,27 @@ export default function InquiryDetailPage() {
               <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Status Pipeline</p>
               <p className="font-semibold text-lg text-slate-800 flex items-center gap-2">
                 {data.status}
-                {data.status === 'estimating' && (
+                {data.status?.toLowerCase() === 'estimating' && (
                   <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium">
-                    Siap convert
+                    Siap buat BOQ
                   </span>
                 )}
               </p>
             </div>
 
-            {data.converted_rab_id ? (
+            {data.converted_boq_id ? (
+  <button
+    onClick={() =>
+      router.push(`/admin/estimator/boq/${data.converted_boq_id}`)
+    }
+    className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
+  >
+    <CheckCircle size={18} />
+    View BOQ
+  </button>
+) : (
               <button
-                onClick={() => router.push(`/admin/estimator/rab/${data.converted_rab_id}`)}
-                className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
-              >
-                <CheckCircle size={18} />
-                View RAB Project
-              </button>
-            ) : (
-              <button
-                onClick={convertToRAB}
+                onClick={createBOQ}
                 disabled={
                   data.status?.toLowerCase() !== "estimating" ||
                   !data.assigned_to ||
@@ -587,7 +604,7 @@ export default function InquiryDetailPage() {
                 ) : (
                   <>
                     <Zap size={18} />
-                    Convert ke RAB
+                    Buat BOQ
                   </>
                 )}
               </button>

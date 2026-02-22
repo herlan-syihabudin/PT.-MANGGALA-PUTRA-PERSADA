@@ -99,19 +99,7 @@ export default function BoqDetailPage() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [hasUnsaved])
 
-  // ================= KEYBOARD SHORTCUTS =================
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault()
-        if (!lockMode && hasUnsaved) {
-          handleSave()
-        }
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [lockMode, hasUnsaved, handleSave])
+  
 
   // ================= LOAD DATA =================
   async function loadData() {
@@ -233,6 +221,20 @@ export default function BoqDetailPage() {
     }
   }, [header, items, totals])
 
+  // ================= KEYBOARD SHORTCUTS =================
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault()
+        if (!lockMode && hasUnsaved) {
+          handleSave()
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [lockMode, hasUnsaved, handleSave])
+  
   // ================= LOCK =================
   const handleToggleLock = useCallback(async () => {
     if (!header) return

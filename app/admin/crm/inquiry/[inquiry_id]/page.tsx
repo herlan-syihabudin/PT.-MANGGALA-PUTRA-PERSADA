@@ -309,6 +309,10 @@ export default function InquiryDetailPage() {
     )
   }
 
+  const isLocked =
+  data.status?.toLowerCase() === "won" ||
+  data.status?.toLowerCase() === "lost"
+
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       {/* Header dengan Industrial Gradient */}
@@ -418,10 +422,9 @@ export default function InquiryDetailPage() {
               </button>
 
               {/* ================= EDIT ================= */}
-              <button
+<button
   onClick={() => setIsEditMode(!isEditMode)}
-  disabled={!!data.converted_rab_id}
-  className="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+  className="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
 >
   <Edit size={16} />
   {isEditMode ? "Cancel" : "Edit"}

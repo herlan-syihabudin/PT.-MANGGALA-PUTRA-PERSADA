@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useEffect } from "react"
 import Link from "next/link"
 import { formatIDR } from "@/lib/format"
 import AddItemForm from "./AddItemForm"
@@ -141,6 +142,62 @@ function useDebouncedCommit<T extends (...args: any[]) => void>(fn: T, delay = 6
   }
 }
 
+function InlineEdit({
+  value,
+  type = "text",
+  onSave,
+  disabled,
+}: {
+  value: string | number
+  type?: "text" | "number"
+  onSave: (val: string) => void
+  disabled?: boolean
+}) {
+  const [editing, setEditing] = useState(false)
+  const [temp, setTemp] = useState(String(value))
+
+  // ✅ WAJIB supaya sync dengan backend reload
+  useEffect(() => {
+    setTemp(String(value))
+  }, [value])
+
+  const handleSave = () => {
+    setEditing(false)
+    if (temp !== String(value)) {
+      onSave(temp)
+    }
+  }
+
+  if (disabled) {
+    return <span>{value}</span>
+  }
+
+  if (!editing) {
+    return (
+      <div
+        onClick={() => setEditing(true)}
+        className="cursor-pointer px-2 py-1 rounded hover:bg-slate-100 transition"
+      >
+        {value || "-"}
+      </div>
+    )
+  }
+
+  return (
+    <input
+      autoFocus
+      type={type}
+      value={temp}
+      onChange={(e) => setTemp(e.target.value)}
+      onBlur={handleSave}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") handleSave()
+      }}
+      className="border border-slate-300 focus:border-slate-500 focus:ring-1 focus:ring-slate-400 rounded px-2 py-1 w-full text-sm outline-none"
+    />
+  )
+}
+
 export default function RABDetailClient({ 
   rab_id, 
   project_id, 
@@ -155,15 +212,24 @@ export default function RABDetailClient({
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // ===== ENTERPRISE STATES =====
-  const [searchTerm, setSearchTerm] = useState("")
-  const [expandAll, setExpandAll] = useState(true)
-  const isViewMode = mode === "view"
+const [searchTerm, setSearchTerm] = useState("")
+const [expandAll, setExpandAll] = useState(true)
+const isViewMode = mode === "view"
 
 const [lockMode, setLockMode] = useState<boolean>(
   isViewMode ||
   data.header?.status === "LOCKED" ||
   data.header?.status === "Approved"
 )
+
+// ✅ baru useEffect di bawahnya
+useEffect(() => {
+  setLockMode(
+    mode === "view" ||
+    data.header?.status === "LOCKED" ||
+    data.header?.status === "Approved"
+  )
+}, [mode, data.header?.status])
 
   // global numbering
   const globalItems = useMemo(() => {
@@ -252,14 +318,14 @@ const [lockMode, setLockMode] = useState<boolean>(
   }, [totalValue, overheadPct, profitPct])
 
   const filteredItems = useMemo(() => {
-    if (!searchTerm) return data.items
-    return data.items.filter(
-      (i) =>
-        i.item_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        i.scope.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        i.category.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  }, [data.items, searchTerm])
+  if (!searchTerm) return data.items
+  return data.items.filter(
+    (i) =>
+      (i.item_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (i.scope || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (i.category || "").toLowerCase().includes(searchTerm.toLowerCase())
+  )
+}, [data.items, searchTerm])
 
   const grouped = useMemo(() => groupByScope(filteredItems), [filteredItems])
   
@@ -270,42 +336,56 @@ const [lockMode, setLockMode] = useState<boolean>(
   /* ================= CRUD ================= */
 
   async function updateField(item_id: string, patch: Partial<RabItem>) {
-    if (lockMode) {
-      toast.error("RAB dalam mode terkunci, tidak dapat diubah")
+  if (lockMode) {
+    toast.error("RAB dalam mode terkunci")
+    return
+  }
+
+  // optimistic update
+  setData((prev) => ({
+  ...prev,
+  items: prev.items.map((it) => {
+    if (it.item_id !== item_id) return it
+
+    const updated = { ...it, ...patch }
+
+    const unit_price =
+      n(updated.material_price) + n(updated.labour_price)
+
+    const total_price =
+      n(updated.qty) * unit_price
+
+    return {
+      ...updated,
+      unit_price,
+      total_price,
+    }
+  }),
+}))
+
+  setActionLoading(item_id)
+
+  try {
+    const res = await fetch(`/api/estimator/rab/${rab_id}/items/${item_id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    })
+
+    if (!res.ok) {
+      toast.error("Gagal update, rollback")
+      reload()
       return
     }
 
-    // optimistic update
-    setData((prev) => ({
-      ...prev,
-      items: prev.items.map((it) => (it.item_id === item_id ? { ...it, ...patch } : it)),
-    }))
-
-    setActionLoading(item_id)
-
-    try {
-      const res = await fetch(`/api/estimator/rab/${rab_id}/items/${item_id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(patch),
-      })
-
-      if (!res.ok) {
-        const error = await res.text()
-        toast.error(`Gagal update: ${error}`)
-        reload() // rollback dengan reload
-        return
-      }
-
-      // refresh to normalize numbers + totals from backend
-      reload()
-    } catch (error) {
-      toast.error("Terjadi kesalahan")
-      reload()
-    } finally {
-      setActionLoading(null)
-    }
+    // ✅ TIDAK reload lagi
+  } catch {
+    toast.error("Error update, rollback")
+    reload()
+  } finally {
+    setActionLoading(null)
   }
+}
 
   const debouncedUpdate = useDebouncedCommit(updateField, 650)
 
@@ -746,151 +826,136 @@ const [lockMode, setLockMode] = useState<boolean>(
 </thead>
 
                     <tbody className="divide-y divide-slate-100">
-                      {g.items.map((it, idx) => (
-                        <tr key={it.item_id} className="hover:bg-slate-50 transition">
-                          <td className="p-3 text-slate-500 font-mono">
-                            {pad3(globalIndexMap.get(it.item_id) || idx + 1)}
-                          </td>
+  {g.items.map((it, idx) => (
+    <tr key={it.item_id} className="hover:bg-slate-50 transition">
+      
+      {/* NO */}
+      <td className="p-3 text-slate-500 font-mono text-center">
+        {pad3(globalIndexMap.get(it.item_id) || idx + 1)}
+      </td>
 
-                          <td className="p-3 whitespace-normal">
-                            {lockMode ? (
-                              <span className="text-slate-800">{it.item_name}</span>
-                            ) : (
-                              <input
-                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
-                                defaultValue={it.item_name}
-                                onBlur={(e) => updateField(it.item_id, { item_name: e.target.value })}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    (e.target as HTMLInputElement).blur()
-                                  }
-                                }}
-                                disabled={actionLoading === it.item_id}
-                              />
-                            )}
-                            <div className="text-[10px] text-slate-400 mt-1 font-mono">{it.item_id.slice(-8)}</div>
-                          </td>
+      {/* ITEM */}
+      <td className="p-3 whitespace-normal">
+        <InlineEdit
+  value={it.item_name}
+  disabled={lockMode || actionLoading === it.item_id}
+  onSave={(val) =>
+    updateField(it.item_id, { item_name: val })
+  }
+/>
+        <div className="text-[10px] text-slate-400 mt-1 font-mono">
+          {it.item_id.slice(-8)}
+        </div>
+      </td>
 
-                          <td className="p-3">
-                            {lockMode ? (
-                              <span className="text-slate-600">{it.category}</span>
-                            ) : (
-                              <input
-                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
-                                defaultValue={it.category}
-                                onBlur={(e) => updateField(it.item_id, { category: e.target.value })}
-                                onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-                                disabled={actionLoading === it.item_id}
-                              />
-                            )}
-                          </td>
+      {/* CATEGORY */}
+      <td className="p-3">
+        <InlineEdit
+          value={it.category}
+          disabled={lockMode || actionLoading === it.item_id}
+          onSave={(val) =>
+            updateField(it.item_id, { category: val })
+          }
+        />
+      </td>
 
-                          <td className="p-3">
-                            {lockMode ? (
-                              <span className="text-slate-600">{it.qty}</span>
-                            ) : (
-                              <input
-                                type="number"
-                                min="0"
-                                step="any"
-                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
-                                defaultValue={it.qty}
-                                onChange={(e) => debouncedUpdate(it.item_id, { qty: n(e.target.value) })}
-                                onBlur={(e) => updateField(it.item_id, { qty: n(e.target.value) })}
-                                disabled={actionLoading === it.item_id}
-                              />
-                            )}
-                          </td>
+      {/* QTY */}
+      <td className="p-3 text-center">
+        <InlineEdit
+  value={it.qty}
+  type="number"
+  disabled={lockMode || actionLoading === it.item_id}
+  onSave={(val) => {
+    const parsed = n(val)
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+  toast.error("Qty harus lebih dari 0")
+  return
+}
+    updateField(it.item_id, { qty: parsed })
+  }}
+/>
+      </td>
 
-                          <td className="p-3">
-                            {lockMode ? (
-                              <span className="text-slate-600">{it.unit}</span>
-                            ) : (
-                              <input
-                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
-                                defaultValue={it.unit}
-                                onBlur={(e) => updateField(it.item_id, { unit: e.target.value })}
-                                onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-                                disabled={actionLoading === it.item_id}
-                              />
-                            )}
-                          </td>
+      {/* UNIT */}
+      <td className="p-3 text-center">
+        <InlineEdit
+          value={it.unit}
+          disabled={lockMode || actionLoading === it.item_id}
+          onSave={(val) =>
+            updateField(it.item_id, { unit: val })
+          }
+        />
+      </td>
 
-                          <td className="p-3">
-                            {lockMode ? (
-                              <span className="text-slate-600">{formatIDR(it.material_price)}</span>
-                            ) : (
-                              <input
-                                type="number"
-                                min="0"
-                                step="any"
-                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
-                                defaultValue={it.material_price}
-                                onChange={(e) => debouncedUpdate(it.item_id, { material_price: n(e.target.value) })}
-                                onBlur={(e) => updateField(it.item_id, { material_price: n(e.target.value) })}
-                                disabled={actionLoading === it.item_id}
-                              />
-                            )}
-                          </td>
+      {/* MATERIAL */}
+      <td className="p-3 text-right">
+        <InlineEdit
+          value={it.material_price}
+          type="number"
+          disabled={lockMode || actionLoading === it.item_id}
+          onSave={(val) =>
+            updateField(it.item_id, { material_price: n(val) })
+          }
+        />
+      </td>
 
-                          <td className="p-3">
-                            {lockMode ? (
-                              <span className="text-slate-600">{formatIDR(it.labour_price)}</span>
-                            ) : (
-                              <input
-                                type="number"
-                                min="0"
-                                step="any"
-                                className="w-full border border-slate-200 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
-                                defaultValue={it.labour_price}
-                                onChange={(e) => debouncedUpdate(it.item_id, { labour_price: n(e.target.value) })}
-                                onBlur={(e) => updateField(it.item_id, { labour_price: n(e.target.value) })}
-                                disabled={actionLoading === it.item_id}
-                              />
-                            )}
-                          </td>
+      {/* LABOUR */}
+      <td className="p-3 text-right">
+        <InlineEdit
+          value={it.labour_price}
+          type="number"
+          disabled={lockMode || actionLoading === it.item_id}
+          onSave={(val) =>
+            updateField(it.item_id, { labour_price: n(val) })
+          }
+        />
+      </td>
 
-                          <td className="p-3 font-medium text-slate-700">
-                            {formatIDR(n(it.unit_price))}
-                          </td>
+      {/* UNIT PRICE (readonly) */}
+      <td className="p-3 font-medium text-slate-700 text-right">
+        {formatIDR(n(it.unit_price))}
+      </td>
 
-                          <td className="p-3 font-semibold text-emerald-600">
-                            {formatIDR(n(it.total_price))}
-                          </td>
+      {/* TOTAL (readonly) */}
+      <td className="p-3 font-semibold text-emerald-600 text-right">
+        {formatIDR(n(it.total_price))}
+      </td>
 
-                          {!lockMode && (
-                            <td className="p-3">
-                              <div className="flex items-center gap-2">
-                                <button
-                                  className="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition disabled:opacity-50"
-                                  onClick={() => copyItem(it)}
-                                  disabled={copyingId === it.item_id || actionLoading !== null}
-                                  title="Copy item"
-                                >
-                                  {copyingId === it.item_id ? (
-                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-400 border-t-transparent" />
-                                  ) : (
-                                    <Copy size={14} className="text-slate-500" />
-                                  )}
-                                </button>
-                                <button
-                                  className="p-1.5 border border-slate-200 rounded-lg hover:bg-rose-50 transition disabled:opacity-50"
-                                  onClick={() => deleteItem(it)}
-                                  disabled={deletingId === it.item_id || actionLoading !== null}
-                                  title="Hapus item"
-                                >
-                                  {deletingId === it.item_id ? (
-                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-rose-400 border-t-transparent" />
-                                  ) : (
-                                    <Trash2 size={14} className="text-rose-500" />
-                                  )}
-                                </button>
-                              </div>
-                            </td>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
+      {/* AKSI */}
+      {!lockMode && (
+        <td className="p-3">
+          <div className="flex items-center justify-center gap-2">
+            <button
+              className="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition disabled:opacity-50"
+              onClick={() => copyItem(it)}
+              disabled={copyingId === it.item_id || actionLoading !== null}
+              title="Copy item"
+            >
+              {copyingId === it.item_id ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-400 border-t-transparent" />
+              ) : (
+                <Copy size={14} className="text-slate-500" />
+              )}
+            </button>
+
+            <button
+              className="p-1.5 border border-slate-200 rounded-lg hover:bg-rose-50 transition disabled:opacity-50"
+              onClick={() => deleteItem(it)}
+              disabled={deletingId === it.item_id || actionLoading !== null}
+              title="Hapus item"
+            >
+              {deletingId === it.item_id ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-rose-400 border-t-transparent" />
+              ) : (
+                <Trash2 size={14} className="text-rose-500" />
+              )}
+            </button>
+          </div>
+        </td>
+      )}
+    </tr>
+  ))}
+</tbody>
 
                     <tfoot className="bg-slate-50 border-t border-slate-200">
   <tr>

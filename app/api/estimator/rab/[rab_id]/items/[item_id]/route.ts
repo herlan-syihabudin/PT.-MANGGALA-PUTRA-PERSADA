@@ -137,7 +137,11 @@ async function recalcHeader(rab_id: string) {
   )
   
   const rows = itemRes.data.values || []
-  const items = rows.filter((r) => r[RAB_ITEM_COLUMNS.RAB_ID] === rab_id)
+  const items = rows.filter(
+  (r) =>
+    r[RAB_ITEM_COLUMNS.RAB_ID] === rab_id &&
+    (r[RAB_ITEM_COLUMNS.STATUS] || "").trim() !== "Deleted"
+)
 
   const total_items = items.length
   const total_value = items.reduce((s, r) => s + n(r[RAB_ITEM_COLUMNS.TOTAL_PRICE]), 0)
@@ -184,9 +188,11 @@ export async function GET(
     
     const rows = itemRes.data.values || []
     const row = rows.find(
-      (r) => r[RAB_ITEM_COLUMNS.ITEM_ID] === item_id && 
-            r[RAB_ITEM_COLUMNS.RAB_ID] === rab_id
-    )
+  (r) =>
+    r[RAB_ITEM_COLUMNS.ITEM_ID] === item_id &&
+    r[RAB_ITEM_COLUMNS.RAB_ID] === rab_id &&
+    r[RAB_ITEM_COLUMNS.STATUS] !== "Deleted"
+)
 
     if (!row) {
       return NextResponse.json(
@@ -248,6 +254,21 @@ export async function PATCH(
   try {
     const { rab_id, item_id } = params
     const patch = await req.json()
+    const allowedFields = [
+  "scope",
+  "item_name",
+  "category",
+  "qty",
+  "unit",
+  "material_price",
+  "labour_price"
+]
+
+Object.keys(patch).forEach((key) => {
+  if (!allowedFields.includes(key)) {
+    delete patch[key]
+  }
+})
 
     // Cek status RAB
     const status = await checkRABStatus(rab_id)
@@ -258,7 +279,7 @@ export async function PATCH(
       )
     }
 
-    if (status !== "Draft") {
+    if ((status || "").toLowerCase().trim() !== "draft") {
       return NextResponse.json(
         { message: `Tidak bisa update item karena RAB status ${status}` },
         { status: 403 }
@@ -274,10 +295,12 @@ export async function PATCH(
     )
     
     const rows = itemRes.data.values || []
-    const idx = rows.findIndex(
-      (r) => r[RAB_ITEM_COLUMNS.ITEM_ID] === item_id && 
-            r[RAB_ITEM_COLUMNS.RAB_ID] === rab_id
-    )
+   const idx = rows.findIndex(
+  (r) =>
+    r[RAB_ITEM_COLUMNS.ITEM_ID] === item_id &&
+    r[RAB_ITEM_COLUMNS.RAB_ID] === rab_id &&
+    r[RAB_ITEM_COLUMNS.STATUS] !== "Deleted"
+)
 
     if (idx === -1) {
       return NextResponse.json(
@@ -381,7 +404,7 @@ export async function DELETE(
       )
     }
 
-    if (status !== "Draft") {
+    if ((status || "").toLowerCase().trim() !== "draft") {
       return NextResponse.json(
         { message: `Tidak bisa hapus item karena RAB status ${status}` },
         { status: 403 }

@@ -1,73 +1,127 @@
+import Link from "next/link"
+import { ChevronRight, HardHat, TrendingDown, Shield } from "lucide-react"
+
 export function WhyChooseUs() {
   return (
-    <section className="relative py-28 bg-gray-50 overflow-hidden">
-      
-      {/* BACKGROUND ACCENT */}
+    <section
+      id="why-choose-us"
+      aria-labelledby="why-choose-heading"
+      className="relative py-28 bg-gray-50 overflow-hidden"
+    >
+      {/* BACKGROUND ACCENTS */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute -top-32 -right-32 w-[420px] h-[420px] bg-gold/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 -left-32 w-[360px] h-[360px] bg-black/5 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-grid-light opacity-40" />
       </div>
 
       <div className="relative max-w-7xl mx-auto px-6">
         
         {/* HEADER */}
         <div className="max-w-3xl mb-20">
-          <span className="inline-block mb-4 text-sm font-semibold text-gold">
+          <span className="inline-block mb-4 text-sm font-semibold text-gold tracking-wider uppercase">
             Why Choose Us
           </span>
 
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
-            Structured, Engineering-Led Project Execution
+          <h2
+            id="why-choose-heading"
+            className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900"
+          >
+            Proyek Terstruktur, Hasil Pasti:
+            <span className="block text-gold">Engineering-Led Execution</span>
           </h2>
 
-          {/* GOLD DIVIDER */}
-          <div className="mt-5 h-[3px] w-16 bg-gold rounded-full" />
+          {/* Divider */}
+          <div className="relative mt-5">
+            <div className="h-[3px] w-16 bg-gold rounded-full" />
+            <div className="h-[3px] w-8 bg-gold/30 rounded-full mt-1" />
+          </div>
 
-          <p className="mt-6 text-lg text-gray-700 leading-relaxed">
-            PT Manggala Putra Persada delivers construction projects through
-            disciplined engineering coordination, structured planning, and
-            accountable project governance to ensure predictable outcomes in
-            cost, quality, and schedule.
+          <p className="mt-6 text-lg text-gray-700 leading-relaxed max-w-2xl">
+            Banyak proyek konstruksi gagal bukan karena eksekusi, tetapi karena
+            perencanaan yang lemah dan koordinasi engineering yang tidak disiplin.
+            <br /><br />
+            Di MPP, setiap proyek dikendalikan sejak tahap awal dengan pendekatan
+            <span className="font-semibold text-gray-900"> engineering-led</span>
+            {" "}untuk memastikan biaya, waktu, dan kualitas tetap terkontrol
+            secara terstruktur.
           </p>
         </div>
 
         {/* TRUST CARDS */}
         <div className="grid md:grid-cols-3 gap-8">
           
-          <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-soft hover:shadow-lg transition">
-            <h3 className="font-bold text-gray-900 mb-3">
+          {/* CARD 1 */}
+          <div className="group bg-white border border-gray-200 rounded-2xl p-8 shadow-soft hover:shadow-xl transition-all hover:-translate-y-1">
+            <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gold/20 transition-colors">
+              <HardHat size={24} className="text-gold" />
+            </div>
+
+            <h3 className="font-bold text-gray-900 mb-3 text-lg">
               Engineering-Led Execution
             </h3>
-            <p className="text-gray-700">
-              All works are executed based on approved drawings, coordinated
-              engineering reviews, and continuous technical supervision to
-              minimize execution risk and rework.
+
+            <p className="text-gray-600 leading-relaxed">
+              Setiap pekerjaan dijalankan berdasarkan gambar approved, review engineering terkoordinasi,
+              dan supervisi teknis berkelanjutan untuk menekan risiko kesalahan lapangan serta meminimalkan rework.
             </p>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-soft hover:shadow-lg transition border-t-4 border-gold">
-            <h3 className="font-bold text-gray-900 mb-3">
-              Cost & Schedule Discipline
-            </h3>
-            <p className="text-gray-700">
-              Structured planning, progress monitoring, and transparent
-              reporting are applied to maintain control over project budget,
-              cash flow, and delivery milestones.
-            </p>
+          {/* CARD 2 (HIGHLIGHT) */}
+          <div className="group bg-white border border-gray-200 rounded-2xl p-8 shadow-soft hover:shadow-xl transition-all hover:-translate-y-1 border-t-4 border-gold relative before:absolute before:inset-0 before:bg-gold/5 before:rounded-2xl before:pointer-events-none">
+            <div className="relative">
+              <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gold/20 transition-colors">
+                <TrendingDown size={24} className="text-gold" />
+              </div>
+
+              <h3 className="font-bold text-gray-900 mb-3 text-lg">
+                Cost & Schedule Discipline
+              </h3>
+
+              <p className="text-gray-600 leading-relaxed">
+                Perencanaan terstruktur, monitoring progres, dan pelaporan transparan
+                membantu mencegah pembengkakan biaya serta keterlambatan yang sering
+                terjadi pada proyek tanpa kontrol sistematis.
+              </p>
+            </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-soft hover:shadow-lg transition">
-            <h3 className="font-bold text-gray-900 mb-3">
+          {/* CARD 3 */}
+          <div className="group bg-white border border-gray-200 rounded-2xl p-8 shadow-soft hover:shadow-xl transition-all hover:-translate-y-1">
+            <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gold/20 transition-colors">
+              <Shield size={24} className="text-gold" />
+            </div>
+
+            <h3 className="font-bold text-gray-900 mb-3 text-lg">
               Quality & HSE Control
             </h3>
-            <p className="text-gray-700">
-              Quality assurance systems and health & safety procedures are
-              implemented consistently throughout the project lifecycle to
-              protect people, assets, and long-term performance.
+
+            <p className="text-gray-600 leading-relaxed">
+              Sistem jaminan kualitas dan prosedur K3 diterapkan konsisten sepanjang
+              siklus proyek untuk memastikan proyek tidak hanya selesai,
+              tetapi juga aman dan siap beroperasi dalam jangka panjang.
             </p>
           </div>
-
         </div>
+
+        {/* BOTTOM CTA */}
+        <div className="mt-16 text-center">
+          <Link
+            href="/tentang-kami"
+            className="inline-flex items-center gap-2 text-gold font-semibold hover:gap-3 transition-all group"
+          >
+            <span>Pelajari Pendekatan Engineering Kami</span>
+            <ChevronRight
+              size={18}
+              className="group-hover:translate-x-1 transition-transform"
+            />
+          </Link>
+
+          <p className="text-sm text-gray-500 mt-4">
+            ✦ 14+ tahun pengalaman ✦ 100+ proyek industri ✦ ISO 9001:2015 ✦
+          </p>
+        </div>
+
       </div>
     </section>
   )

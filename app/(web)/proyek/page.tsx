@@ -109,9 +109,9 @@ export default function ProyekPage() {
               "itemListElement": projects.map((project, index) => ({
                 "@type": "ListItem",
                 "position": index + 1,
-                "url": `https://mpp-engineering.com/proyek/${project.slug}`,
+                "url": `https://mppindo.com/proyek/${project.slug}`,
                 "name": project.title,
-                "image": project.image,
+                "image": project.images[0],
               }))
             })
           }}

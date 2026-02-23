@@ -12,6 +12,7 @@ export type Project = {
   duration?: string
   scope?: string[]
   featured?: boolean
+  pdfUrl?: string   // ⬅ TAMBAH INI
 }
 
 export const projects: Project[] = [

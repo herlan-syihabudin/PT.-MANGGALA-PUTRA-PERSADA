@@ -185,10 +185,10 @@ export function ProjectOutcome() {
 
 // Data
 const stats = [
-  { value: "100%", label: "On-Time Delivery", description: "For completed projects" },
-  { value: "0", label: "Safety Incidents", description: "LTI-free track record" },
-  { value: "15+", label: "Years Experience", description: "Since company founding" },
-  { value: "50+", label: "Happy Clients", description: "Industrial partners" },
+  { value: "98%", label: "On-Time Delivery", description: "Across completed projects" },
+  { value: "0", label: "Lost Time Incidents", description: "LTI-free projects" },
+  { value: "15+", label: "Years Experience", description: "Engineering background" },
+  { value: "50+", label: "Industrial Clients", description: "Across sectors" },
 ]
 
 const outcomes = [

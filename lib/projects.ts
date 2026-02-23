@@ -123,3 +123,10 @@ export const projects: Project[] = [
     ],
   },
 ]
+
+// ================= GET UNIQUE CATEGORIES =================
+
+export function getCategories(): string[] {
+  const categories = projects.map((project) => project.category)
+  return Array.from(new Set(categories))
+}

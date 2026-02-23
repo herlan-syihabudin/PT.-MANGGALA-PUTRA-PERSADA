@@ -16,7 +16,7 @@ export default function Hero() {
   return (
     <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-50">
       
-      {/* Background */}
+      {/* Background (sama) */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-20 left-10 w-64 h-64 border border-red-200/30 rounded-full blur-3xl" />
         <div className="absolute -bottom-32 -right-32 w-[600px] h-[600px] bg-gradient-to-tr from-red-600/5 to-yellow-600/5 rounded-full blur-3xl" />
@@ -26,8 +26,11 @@ export default function Hero() {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-0">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
 
-          {/* LEFT */}
-          <div className="relative z-10">
+          {/* LEFT - TAMBAHIN ANIMASI */}
+          <div 
+            className="relative z-10 animate-fade-slide" 
+            style={{ animationFillMode: 'both' }}
+          >
 
             <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-red-50 border border-red-200 rounded-full">
               <HardHat size={16} className="text-red-600" />
@@ -51,25 +54,28 @@ export default function Hero() {
               </span>
             </p>
 
-            {/* Trust */}
+            {/* Trust - TAMBAHIN HOVER EFFECT */}
             <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-4">
               {trustItems.map((item, index) => (
-                <div key={index} className="flex items-start gap-2">
-                  <div className="p-1.5 bg-red-50 rounded-lg">
-                    <item.icon size={16} className="text-red-600" />
+                <div key={index} className="flex items-start gap-2 group cursor-default">
+                  <div className="p-1.5 bg-red-50 rounded-lg group-hover:bg-red-100 group-hover:scale-110 transition-all duration-300">
+                    <item.icon size={16} className="text-red-600 group-hover:rotate-3 transition-transform" />
                   </div>
                   <div>
-                    <p className="font-bold text-sm text-gray-900">{item.value}</p>
+                    <p className="font-bold text-sm text-gray-900 group-hover:text-red-700 transition-colors">
+                      {item.value}
+                    </p>
                     <p className="text-xs text-gray-500">{item.label}</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* CTA */}
+            {/* CTA - TAMBAHIN PREFETCH */}
             <div className="mt-10 flex flex-col sm:flex-row gap-4">
               <Link
                 href="/kontak"
+                prefetch={true}
                 className="group inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-4 rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all shadow-lg shadow-red-600/20 hover:shadow-xl hover:-translate-y-0.5"
               >
                 <Phone size={18} />
@@ -101,9 +107,28 @@ export default function Hero() {
               </div>
             </div>
 
+            {/* TAMBAHIN STATISTIK UNTUK MOBILE */}
+            <div className="mt-6 lg:hidden border-t border-gray-200 pt-6">
+              <p className="text-sm font-semibold text-gray-900 mb-3">Trusted by 50+ Industrial Partners</p>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <p className="text-xl font-bold text-red-600">100+</p>
+                  <p className="text-xs text-gray-500">Proyek</p>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-red-600">14+</p>
+                  <p className="text-xs text-gray-500">Tahun</p>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-red-600">100%</p>
+                  <p className="text-xs text-gray-500">Safety</p>
+                </div>
+              </div>
+            </div>
+
           </div>
 
-          {/* RIGHT IMAGE */}
+          {/* RIGHT IMAGE - TAMBAHIN QUALITY & PLACEHOLDER */}
           <div className="hidden lg:block relative">
             <div className="relative rounded-2xl overflow-hidden shadow-2xl">
               <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent z-10" />
@@ -114,6 +139,9 @@ export default function Hero() {
                 width={800}
                 height={1000}
                 priority
+                quality={85}
+                placeholder="blur"
+                blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRg..." // Ganti dengan punya lu
                 sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover w-full h-[600px]"
               />

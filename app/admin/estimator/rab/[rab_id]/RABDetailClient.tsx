@@ -216,22 +216,11 @@ export default function RABDetailClient({
 
   const rabStatus = data.header?.status || "DRAFT"
 
-const [lockMode, setLockMode] = useState<boolean>(
-  mode === "view" || 
-  rabStatus === "LOCKED" || 
-  rabStatus === "Approved" || 
-  rabStatus === "APPROVED"
-)
-
-useEffect(() => {
-  const currentStatus = data.header?.status || "DRAFT"
-  setLockMode(
-    mode === "view" || 
-    currentStatus === "LOCKED" || 
-    currentStatus === "Approved" || 
-    currentStatus === "APPROVED"
-  )
-}, [mode, data.header?.status])
+const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
+  const lockMode =
+  mode === "view" ||
+  statusNormalized === "LOCKED" ||
+  statusNormalized === "APPROVED"
 
   const globalItems = useMemo(() => {
     return [...data.items].sort((a, b) => {
@@ -282,11 +271,7 @@ useEffect(() => {
       }
 
       setData(normalized)
-      setLockMode(
-        mode === "view" ||
-          normalized.header?.status === "LOCKED" ||
-          normalized.header?.status === "Approved"
-      )
+    
 
       toast.success("Data berhasil direfresh")
     } catch {

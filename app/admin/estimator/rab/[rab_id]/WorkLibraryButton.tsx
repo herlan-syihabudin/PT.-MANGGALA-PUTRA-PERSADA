@@ -4,15 +4,23 @@ import { useEffect, useState, useRef } from "react"
 import { toast } from "sonner"
 import { Library, Search, PlusCircle, X, Loader2, Check } from "lucide-react"
 
+// ============ TYPES SESUAI API BARU ============
 type WorkLibraryItem = {
-  job_id: string
-  job_code: string
-  job_name: string
+  package_id: string
+  package_name: string
+  category: string
   scope: string
-  kategori: string
+  job_name: string
   unit: string
   material_price: number
   labour_price: number
+}
+
+type WorkLibraryPackage = {
+  package_id: string
+  package_name: string
+  category: string
+  items: WorkLibraryItem[]
 }
 
 type Props = {
@@ -25,9 +33,11 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [addingId, setAddingId] = useState<string | null>(null)
-  const [items, setItems] = useState<WorkLibraryItem[]>([])
+  const [packages, setPackages] = useState<WorkLibraryPackage[]>([])
+  const [selectedPackage, setSelectedPackage] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [existingItems, setExistingItems] = useState<Set<string>>(new Set())
+  const [expandedPackages, setExpandedPackages] = useState<Set<string>>(new Set())
   
   const abortRef = useRef<AbortController | null>(null)
 
@@ -77,8 +87,17 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
         }
 
         const json = await res.json()
-        const data = Array.isArray(json.data) ? json.data : json
-        setItems(data)
+        
+        // API returns { success: true, data: packages[] }
+        if (json.success && Array.isArray(json.data)) {
+          setPackages(json.data)
+          // Auto expand first package
+          if (json.data.length > 0) {
+            setExpandedPackages(new Set([json.data[0].package_id]))
+          }
+        } else {
+          throw new Error("Format data tidak sesuai")
+        }
       } catch (e: any) {
         if (e.name === 'AbortError') return
         console.error(e)
@@ -95,28 +114,105 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
     }
   }, [open])
 
-  const filtered = items.filter((it) => {
-    if (!search.trim()) return true
-    const q = search.toLowerCase()
-    return (
-      it.job_name.toLowerCase().includes(q) ||
-      (it.job_code || "").toLowerCase().includes(q) ||
-      (it.scope || "").toLowerCase().includes(q) ||
-      (it.kategori || "").toLowerCase().includes(q)
-    )
-  })
+  // Filter items berdasarkan search
+  const getFilteredItems = () => {
+    if (!search.trim()) {
+      // Kalau no search, return semua items
+      return packages.flatMap(pkg => pkg.items)
+    }
 
-  const isItemExists = (item: WorkLibraryItem) => {
-    return existingItems.has(item.job_name.toLowerCase())
+    const q = search.toLowerCase()
+    const allItems = packages.flatMap(pkg => pkg.items)
+    
+    return allItems.filter((it) => 
+      it.job_name.toLowerCase().includes(q) ||
+      it.package_name.toLowerCase().includes(q) ||
+      it.category.toLowerCase().includes(q) ||
+      (it.scope || "").toLowerCase().includes(q)
+    )
   }
 
-  async function handleUse(item: WorkLibraryItem) {
-    if (isItemExists(item)) {
+  const filteredItems = getFilteredItems()
+  const isSearchActive = search.trim().length > 0
+
+  // Toggle package expand
+  const togglePackage = (packageId: string) => {
+    const newExpanded = new Set(expandedPackages)
+    if (newExpanded.has(packageId)) {
+      newExpanded.delete(packageId)
+    } else {
+      newExpanded.add(packageId)
+    }
+    setExpandedPackages(newExpanded)
+  }
+
+  const isItemExists = (jobName: string) => {
+    return existingItems.has(jobName.toLowerCase())
+  }
+
+  async function addPackageItems(pkg: WorkLibraryPackage) {
+    // Filter items yang belum ada di RAB
+    const itemsToAdd = pkg.items.filter(item => !isItemExists(item.job_name))
+    
+    if (itemsToAdd.length === 0) {
+      toast.info(`Semua item dari "${pkg.package_name}" sudah ada di RAB`)
+      return
+    }
+
+    setAddingId(pkg.package_id)
+    
+    try {
+      let successCount = 0
+      
+      // Add items one by one
+      for (const item of itemsToAdd) {
+        const res = await fetch(`/api/estimator/rab/${rab_id}/items`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            project_id,
+            scope: item.scope || "",
+            item_name: item.job_name,
+            category: item.category || "",
+            qty: 1,
+            unit: item.unit || "",
+            material_price: item.material_price ?? 0,
+            labour_price: item.labour_price ?? 0,
+            created_by: "Estimator",
+          }),
+        })
+
+        if (res.ok) {
+          successCount++
+          // Add to existing items
+          setExistingItems(prev => new Set(prev).add(item.job_name.toLowerCase()))
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`${successCount} item dari "${pkg.package_name}" ditambahkan`)
+        onSuccess()
+      }
+
+      // Auto close if all items added
+      if (successCount === pkg.items.length) {
+        setTimeout(() => setOpen(false), 1000)
+      }
+    } catch (e: any) {
+      console.error(e)
+      toast.error(e.message || "Gagal menambah package")
+    } finally {
+      setAddingId(null)
+    }
+  }
+
+  async function addSingleItem(item: WorkLibraryItem) {
+    if (isItemExists(item.job_name)) {
       toast.info(`"${item.job_name}" sudah ada di RAB`)
       return
     }
 
-    setAddingId(item.job_id)
+    setAddingId(`${item.package_id}-${item.job_name}`)
     try {
       const res = await fetch(`/api/estimator/rab/${rab_id}/items`, {
         method: "POST",
@@ -125,7 +221,7 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
           project_id,
           scope: item.scope || "",
           item_name: item.job_name,
-          category: item.kategori || "",
+          category: item.category || "",
           qty: 1,
           unit: item.unit || "",
           material_price: item.material_price ?? 0,
@@ -145,8 +241,6 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
       toast.success(`"${item.job_name}" ditambahkan ke RAB`)
       onSuccess()
       
-      // Auto close setelah sukses (opsional)
-      setTimeout(() => setOpen(false), 500)
     } catch (e: any) {
       console.error(e)
       toast.error(e.message || "Gagal ambil dari Work Library")
@@ -171,7 +265,7 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[80vh] flex flex-col">
+          <div className="bg-white rounded-2xl shadow-xl max-w-5xl w-full max-h-[85vh] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <div>
@@ -180,7 +274,7 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
                   Work Library
                 </h2>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Pilih pekerjaan standar untuk dimasukkan ke RAB
+                  Pilih package atau item standar untuk dimasukkan ke RAB
                 </p>
               </div>
               <button
@@ -198,107 +292,192 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Cari job name / code / scope / kategori..."
+                  placeholder="Cari package / item / kategori..."
                   className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
                   autoFocus
                 />
               </div>
-              <div className="text-xs text-slate-400 mt-2">
-                {filtered.length} item ditemukan
+              <div className="text-xs text-slate-400 mt-2 flex items-center justify-between">
+                <span>{packages.length} packages • {packages.reduce((acc, pkg) => acc + pkg.items.length, 0)} total items</span>
+                {isSearchActive && <span>{filteredItems.length} item ditemukan</span>}
               </div>
             </div>
 
-            {/* List */}
-            <div className="flex-1 overflow-auto">
-              {loading && items.length === 0 ? (
+            {/* Content */}
+            <div className="flex-1 overflow-auto p-5">
+              {loading && packages.length === 0 ? (
                 <div className="flex items-center justify-center h-40 text-slate-400 text-sm">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Memuat library...
                 </div>
-              ) : filtered.length === 0 ? (
-                <div className="flex items-center justify-center h-40 text-slate-400 text-sm">
-                  {search ? "Tidak ada item yang cocok" : "Work Library kosong"}
-                </div>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-50 border-b border-slate-100 sticky top-0">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Code</th>
-                      <th className="px-4 py-3 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Job Name</th>
-                      <th className="px-4 py-3 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Scope</th>
-                      <th className="px-4 py-3 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Kategori</th>
-                      <th className="px-4 py-3 text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Unit</th>
-                      <th className="px-4 py-3 text-right text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Material</th>
-                      <th className="px-4 py-3 text-right text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Labour</th>
-                      <th className="px-4 py-3 text-center text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filtered.map((it) => {
-                      const exists = isItemExists(it)
-                      const isAdding = addingId === it.job_id
+              ) : isSearchActive ? (
+                // Search Results - Flat List
+                <div className="space-y-2">
+                  {filteredItems.length === 0 ? (
+                    <div className="text-center py-10 text-slate-400">
+                      Tidak ada item yang cocok dengan pencarian
+                    </div>
+                  ) : (
+                    filteredItems.map((item, idx) => {
+                      const exists = isItemExists(item.job_name)
+                      const isAdding = addingId === `${item.package_id}-${item.job_name}`
 
                       return (
-                        <tr key={it.job_id} className="hover:bg-slate-50/80 transition">
-                          <td className="px-4 py-3 font-mono text-xs text-slate-500">
-                            {it.job_code}
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="text-sm font-medium text-slate-800">{it.job_name}</div>
-                          </td>
-                          <td className="px-4 py-3 text-xs text-slate-600">
-                            {it.scope || "-"}
-                          </td>
-                          <td className="px-4 py-3 text-xs text-slate-600">
-                            {it.kategori || "-"}
-                          </td>
-                          <td className="px-4 py-3 text-center text-xs text-slate-600">
-                            {it.unit || "-"}
-                          </td>
-                          <td className="px-4 py-3 text-right text-xs tabular-nums text-slate-700">
-                            {it.material_price?.toLocaleString("id-ID") || "0"}
-                          </td>
-                          <td className="px-4 py-3 text-right text-xs tabular-nums text-slate-700">
-                            {it.labour_price?.toLocaleString("id-ID") || "0"}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            {exists ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-xs">
-                                <Check size={12} />
-                                Sudah Ada
-                              </span>
-                            ) : (
-                              <button
-                                type="button"
-                                disabled={isAdding}
-                                onClick={() => handleUse(it)}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white disabled:opacity-50 disabled:cursor-not-allowed transition"
-                              >
-                                {isAdding ? (
-                                  <>
+                        <div key={idx} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-lg hover:bg-slate-50">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-slate-800">{item.job_name}</span>
+                              <span className="text-xs text-slate-400">{item.package_name}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                              <span>{item.category}</span>
+                              <span>•</span>
+                              <span>{item.scope}</span>
+                              <span>•</span>
+                              <span>{item.unit}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <div className="text-xs text-slate-500">Material</div>
+                              <div className="text-sm font-medium">{item.material_price.toLocaleString('id-ID')}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-xs text-slate-500">Labour</div>
+                              <div className="text-sm font-medium">{item.labour_price.toLocaleString('id-ID')}</div>
+                            </div>
+                            <div className="w-20 text-center">
+                              {exists ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-xs">
+                                  <Check size={12} />
+                                  Ada
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  disabled={isAdding}
+                                  onClick={() => addSingleItem(item)}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white disabled:opacity-50"
+                                >
+                                  {isAdding ? (
                                     <Loader2 className="h-3 w-3 animate-spin" />
-                                    Menambah...
-                                  </>
-                                ) : (
-                                  <>
+                                  ) : (
                                     <PlusCircle size={12} />
-                                    Pakai
-                                  </>
-                                )}
-                              </button>
-                            )}
-                          </td>
-                        </tr>
+                                  )}
+                                  Tambah
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       )
-                    })}
-                  </tbody>
-                </table>
+                    })
+                  )}
+                </div>
+              ) : (
+                // Package View
+                <div className="space-y-4">
+                  {packages.map((pkg) => {
+                    const isExpanded = expandedPackages.has(pkg.package_id)
+                    const packageItems = pkg.items
+                    const existingCount = packageItems.filter(item => isItemExists(item.job_name)).length
+                    const isAdding = addingId === pkg.package_id
+
+                    return (
+                      <div key={pkg.package_id} className="border border-slate-200 rounded-xl overflow-hidden">
+                        {/* Package Header */}
+                        <div 
+                          className="flex items-center justify-between p-4 bg-slate-50 cursor-pointer hover:bg-slate-100 transition"
+                          onClick={() => togglePackage(pkg.package_id)}
+                        >
+                          <div>
+                            <h3 className="font-semibold text-slate-800">{pkg.package_name}</h3>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {pkg.category} • {packageItems.length} item
+                              {existingCount > 0 && (
+                                <span className="ml-2 text-emerald-600">
+                                  ({existingCount} sudah ada)
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                addPackageItems(pkg)
+                              }}
+                              disabled={isAdding || existingCount === packageItems.length}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white disabled:opacity-50"
+                            >
+                              {isAdding ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <PlusCircle size={12} />
+                              )}
+                              Tambah Package
+                            </button>
+                            <button className="p-1">
+                              {isExpanded ? '▼' : '▶'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Package Items */}
+                        {isExpanded && (
+                          <div className="p-4 space-y-2 bg-white">
+                            {packageItems.map((item, idx) => {
+                              const exists = isItemExists(item.job_name)
+                              
+                              return (
+                                <div key={idx} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+                                  <div className="flex-1">
+                                    <span className="text-sm text-slate-700">{item.job_name}</span>
+                                    <div className="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
+                                      <span>{item.scope}</span>
+                                      <span>•</span>
+                                      <span>{item.unit}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-4">
+                                    <div className="text-right">
+                                      <div className="text-xs text-slate-400">Material</div>
+                                      <div className="text-sm">{item.material_price.toLocaleString('id-ID')}</div>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className="text-xs text-slate-400">Labour</div>
+                                      <div className="text-sm">{item.labour_price.toLocaleString('id-ID')}</div>
+                                    </div>
+                                    <div className="w-16 text-center">
+                                      {exists ? (
+                                        <span className="text-emerald-600 text-xs">✓ Ada</span>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => addSingleItem(item)}
+                                          className="text-slate-400 hover:text-slate-600"
+                                        >
+                                          <PlusCircle size={16} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               )}
             </div>
 
             {/* Footer */}
             <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 text-xs text-slate-400">
-              Klik "Pakai" untuk menambahkan item ke RAB dengan quantity = 1 (bisa diedit nanti)
+              Klik "Tambah Package" untuk menambahkan semua item sekaligus • Quantity default = 1 (bisa diedit nanti)
             </div>
           </div>
         </div>

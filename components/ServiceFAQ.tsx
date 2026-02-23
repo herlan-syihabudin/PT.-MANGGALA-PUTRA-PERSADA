@@ -1,16 +1,20 @@
 import { FAQItem } from "@/lib/faq-layanan"
 
 type ServiceFAQProps = {
+  title?: string
   items: FAQItem[]
 }
 
-export default function ServiceFAQ({ items }: ServiceFAQProps) {
+export default function ServiceFAQ({ title, items }: ServiceFAQProps) {
   return (
     <section className="py-20 bg-gray-50">
       <div className="max-w-5xl mx-auto px-6">
-        <h2 className="text-3xl font-extrabold mb-10 text-gray-900">
-          Pertanyaan yang Sering Diajukan
-        </h2>
+
+        {title && (
+          <h2 className="text-3xl font-extrabold mb-10 text-gray-900">
+            {title}
+          </h2>
+        )}
 
         <div className="space-y-6">
           {items.map((item, i) => (
@@ -27,6 +31,7 @@ export default function ServiceFAQ({ items }: ServiceFAQProps) {
             </div>
           ))}
         </div>
+
       </div>
     </section>
   )

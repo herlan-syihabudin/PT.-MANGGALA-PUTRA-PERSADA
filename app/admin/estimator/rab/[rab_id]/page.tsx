@@ -75,10 +75,9 @@ export default async function Page({
 
   return (
     <RABDetailClient
-      rab_id={params.rab_id}
-      project_id={data.project_id}
-      initialData={data}
-      mode={data.header?.status === "DRAFT" ? "edit" : "view"}
-    />
+  rab_id={params.rab_id}
+  project_id={data.project_id}
+  initialData={data}
+/>
   )
 }

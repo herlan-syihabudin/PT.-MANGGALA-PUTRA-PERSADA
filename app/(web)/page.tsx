@@ -23,24 +23,15 @@ export default function Home() {
       {/* HERO (HARUS ADA H1 DI DALAMNYA) */}
       <Hero />
 
-      {/* SERVICES */}
-      <Services />
+<WhyChooseUs />
+<ProjectOutcome />
 
-      {/* AUTHORITY & TRUST */}
-      <WhyChooseUs />
-      <ProjectOutcome />
+<Services />
 
-      {/* PORTFOLIO */}
-      <Projects />
-
-      {/* PARTNERS */}
-      <Partners />
-
-      {/* FAQ */}
-      <FAQ />
-
-      {/* CTA */}
-      <CTA />
+<Projects />
+<Partners />
+<FAQ />
+<CTA />
     </main>
   )
 }

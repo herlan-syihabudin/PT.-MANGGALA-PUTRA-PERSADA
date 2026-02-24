@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { ChevronRight, Mountain, Layers, Hammer, Building2, Warehouse } from "lucide-react"
+import { ChevronRight, Mountain, Layers, Hammer, Building2, Warehouse, Home } from "lucide-react"
 import type { Metadata } from "next"
 
 import ServiceFAQ from "@/components/ServiceFAQ"

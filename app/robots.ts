@@ -2,25 +2,12 @@ import { MetadataRoute } from "next"
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: [
-      {
-        userAgent: "*",
-        allow: "/",
-      },
-      {
-        userAgent: "Googlebot",
-        allow: "/",
-      },
-      {
-        userAgent: "Bingbot",
-        allow: "/",
-      },
-      {
-        userAgent: "Yandex",
-        allow: "/",
-      },
-    ],
-    sitemap: "https://pt-manggala-putra-persada.vercel.app/sitemap.xml",
-    host: "https://pt-manggala-putra-persada.vercel.app",
+    rules: {
+      userAgent: "*",
+      allow: "/",
+      disallow: ["/api/", "/dashboard/"],
+    },
+    sitemap: "https://mppindo.com/sitemap.xml",
+    host: "https://mppindo.com",
   }
 }

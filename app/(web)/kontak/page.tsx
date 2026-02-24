@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import KontakForm from "@/components/KontakForm"
+import { Building2, Mail, Clock, Shield } from "lucide-react"
 
 export const metadata: Metadata = {
   title: "Kontak Kami | Konsultasi Proyek Konstruksi | MPP Engineering",

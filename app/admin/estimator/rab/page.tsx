@@ -360,12 +360,12 @@ export default async function RABPage() {
 
     {/* VIEW */}
     <Link
-      href={`/admin/estimator/rab/${p.rab_id}/detail`}
-      className="p-2 hover:bg-slate-100 rounded-lg transition group"
-      title="Lihat Detail"
-    >
-      <Eye size={16} className="text-slate-400 group-hover:text-blue-600" />
-    </Link>
+  href={`/admin/estimator/rab/${p.rab_id}`}
+  className="p-2 hover:bg-slate-100 rounded-lg transition group"
+  title="Lihat Detail"
+>
+  <Eye size={16} className="text-slate-400 group-hover:text-blue-600" />
+</Link>
 
     {/* EDIT (hanya Draft) */}
     {p.status?.toLowerCase() === "draft" && (

@@ -1,4 +1,4 @@
-import { RABPreview, RABData } from "@/components/dashboard/RABPreview"
+import { RABPreview, RABData } from "@/components/dashboard/rab-Preview"
 
 export default function PreviewTestPage() {
   const dummyData: RABData = {

@@ -100,10 +100,28 @@ export default function ProposalPreviewPage() {
 
       {/* Pages Container */}
       <div className="max-w-5xl mx-auto bg-white shadow-2xl print:shadow-none">
-        {currentPage === 1 && <CoverPage data={sampleData} />}
-        {currentPage === 2 && <SummaryPage data={sampleData} />}
-        {currentPage === 3 && <BreakdownPage data={sampleData} />}
-      </div>
+  
+  {/* View Mode (Browser) */}
+  <div className="print:hidden">
+    {currentPage === 1 && <CoverPage data={sampleData} />}
+    {currentPage === 2 && <SummaryPage data={sampleData} />}
+    {currentPage === 3 && <BreakdownPage data={sampleData} />}
+  </div>
+
+  {/* Print Mode (Render Semua Halaman) */}
+  <div className="hidden print:block">
+    <div className="page-break">
+      <CoverPage data={sampleData} />
+    </div>
+    <div className="page-break">
+      <SummaryPage data={sampleData} />
+    </div>
+    <div>
+      <BreakdownPage data={sampleData} />
+    </div>
+  </div>
+
+</div>
 
       <style jsx global>{`
         @media print {

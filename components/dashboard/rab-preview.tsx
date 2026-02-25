@@ -238,7 +238,7 @@ export function RABPreview({ data }: { data: RABData }) {
         {/* ===== FOOTER ===== */}
         <div className="mt-8 pt-4 border-t border-gray-300 text-center text-xs text-gray-500">
           <p>PT Manggala Putra Persada - Engineering-Led Construction Contractor</p>
-          <p class></p>
+          <p></p>
           <p>Bekasi, Jawa Barat - Indonesia | Telp: (021) 1234-5678 | Email: info@mpp-engineering.com</p>
         </div>
       </div>

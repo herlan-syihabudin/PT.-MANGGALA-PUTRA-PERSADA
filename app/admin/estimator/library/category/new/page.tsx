@@ -88,6 +88,11 @@ export default function NewCategoryPage() {
   const [codeExists, setCodeExists] = useState(false)
   const [checkingCode, setCheckingCode] = useState(false)
 
+  // ✅ TARUH DI SINI
+  const handleBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }))
+  }
+
   // ============ FETCH PARENT CATEGORIES ============
   useEffect(() => {
     const fetchParents = async () => {
@@ -698,9 +703,4 @@ export default function NewCategoryPage() {
       </div>
     </div>
   )
-}
-
-// Helper functions untuk handleBlur
-const handleBlur = (field: string) => {
-  setTouched(prev => ({ ...prev, [field]: true }))
 }

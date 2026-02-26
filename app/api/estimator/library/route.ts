@@ -142,7 +142,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
     const categoryId = searchParams.get('category_id')
-    const status = searchParams.get('status') || 'active'
+    const requestedStatus = (searchParams.get('status') || 'active').toLowerCase()
 
     logger.info('Fetching work library data', { categoryId, status })
 
@@ -171,12 +171,13 @@ export async function GET(req: Request) {
       if (row.length < REQUIRED_COLUMNS) continue
 
       const packageId = row[COLUMNS.PACKAGE_ID]?.trim()
-      const itemStatus = row[COLUMNS.STATUS]?.trim() || 'active'
+      const itemStatus =
+  row[COLUMNS.STATUS]?.toString().trim().toLowerCase() || 'active'
       
       if (!packageId) continue
 
       // Filter by status
-      if (status !== 'all' && itemStatus !== status) continue
+      if (requestedStatus !== 'all' && itemStatus !== requestedStatus) continue
 
       // Filter by category
       if (categoryId && row[COLUMNS.CATEGORY_ID]?.trim() !== categoryId) continue

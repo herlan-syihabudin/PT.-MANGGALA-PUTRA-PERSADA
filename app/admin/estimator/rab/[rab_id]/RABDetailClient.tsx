@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useEffect } from "react"
+import { useMemo, useState, useEffect, useRef, useCallback } from "react"
 import Link from "next/link"
 import { formatIDR } from "@/lib/format"
 import AddItemForm from "./AddItemForm"
@@ -24,6 +24,7 @@ import {
   EyeOff,
   Lock,
   Unlock,
+  AlertTriangle,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -63,11 +64,11 @@ type Props = {
   mode?: "view" | "edit"
 }
 
-/* ============ HELPERS ============ */
-
-function n(x: any) {
+/* ============ SAFE NUMBER HELPER ============ */
+function safeNumber(x: any): number {
+  if (x === null || x === undefined || x === "") return 0
   const v = Number(x)
-  return Number.isFinite(v) ? v : 0
+  return Number.isFinite(v) && v >= 0 ? v : 0
 }
 
 function pad3(i: number) {
@@ -132,37 +133,57 @@ function handlePrint(rab_id: string) {
   win.print()
 }
 
-/* ============ INLINE EDIT ============ */
-
+/* ============ IMPROVED DEBOUNCE HOOK ============ */
 function useDebouncedCommit<T extends (...args: any[]) => void>(fn: T, delay = 600) {
-  const [timer, setTimer] = useState<any>(null)
-  return (...args: Parameters<T>) => {
-    if (timer) clearTimeout(timer)
-    const t = setTimeout(() => fn(...args), delay)
-    setTimer(t)
-  }
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [])
+  
+  return useCallback((...args: Parameters<T>) => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => fn(...args), delay)
+  }, [fn, delay])
 }
+
+/* ============ INLINE EDIT ============ */
 
 function InlineEdit({
   value,
   type = "text",
   onSave,
   disabled,
+  validate,
 }: {
   value: string | number
   type?: "text" | "number"
   onSave: (val: string) => void
   disabled?: boolean
+  validate?: (val: any) => boolean | string
 }) {
   const [editing, setEditing] = useState(false)
   const [temp, setTemp] = useState(String(value))
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     setTemp(String(value))
+    setError(null)
   }, [value])
 
   const handleSave = () => {
+    if (validate) {
+      const result = validate(temp)
+      if (result !== true) {
+        setError(typeof result === "string" ? result : "Validasi gagal")
+        return
+      }
+    }
+    
     setEditing(false)
+    setError(null)
     if (temp !== String(value)) {
       onSave(temp)
     }
@@ -182,17 +203,32 @@ function InlineEdit({
   }
 
   return (
-    <input
-      autoFocus
-      type={type}
-      value={temp}
-      onChange={(e) => setTemp(e.target.value)}
-      onBlur={handleSave}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") handleSave()
-      }}
-      className="border border-slate-300 focus:border-slate-500 focus:ring-1 focus:ring-slate-400 rounded px-2 py-1 w-full text-sm outline-none"
-    />
+    <div className="relative">
+      <input
+        autoFocus
+        type={type}
+        value={temp}
+        onChange={(e) => {
+          setTemp(e.target.value)
+          setError(null)
+        }}
+        onBlur={handleSave}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") handleSave()
+          if (e.key === "Escape") {
+            setTemp(String(value))
+            setEditing(false)
+            setError(null)
+          }
+        }}
+        className={`border ${error ? 'border-red-500' : 'border-slate-300'} focus:border-slate-500 focus:ring-1 focus:ring-slate-400 rounded px-2 py-1 w-full text-sm outline-none`}
+      />
+      {error && (
+        <div className="absolute -bottom-5 left-0 text-xs text-red-500 whitespace-nowrap">
+          {error}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -206,21 +242,20 @@ export default function RABDetailClient({
 }: Props) {
   const [data, setData] = useState<RabResponse>(initialData)
   const [loading, setLoading] = useState(false)
+  const [bulkLoading, setBulkLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [copyingId, setCopyingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const [searchTerm, setSearchTerm] = useState("")
   const [expandAll, setExpandAll] = useState(true)
-  const isViewMode = mode === "view"
 
   const rabStatus = data.header?.status || "DRAFT"
-
-const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
+  const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
   const lockMode =
-  mode === "view" ||
-  statusNormalized === "LOCKED" ||
-  statusNormalized === "APPROVED"
+    mode === "view" ||
+    statusNormalized === "LOCKED" ||
+    statusNormalized === "APPROVED"
 
   const globalItems = useMemo(() => {
     return [...data.items].sort((a, b) => {
@@ -230,9 +265,15 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
     })
   }, [data.items])
 
+  // Improved: item numbers are stable based on created_at
   const globalIndexMap = useMemo(() => {
     const map = new Map<string, number>()
-    globalItems.forEach((it, i) => {
+    const sorted = [...globalItems].sort((a, b) => {
+      const ta = a.created_at || ""
+      const tb = b.created_at || ""
+      return ta.localeCompare(tb)
+    })
+    sorted.forEach((it, i) => {
       map.set(it.item_id, i + 1)
     })
     return map
@@ -240,6 +281,7 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
 
   const [overheadPct, setOverheadPct] = useState<number>(10)
   const [profitPct, setProfitPct] = useState<number>(10)
+  const [openAdd, setOpenAdd] = useState(false)
 
   async function reload() {
     setLoading(true)
@@ -271,8 +313,6 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
       }
 
       setData(normalized)
-    
-
       toast.success("Data berhasil direfresh")
     } catch {
       toast.error("Gagal refresh data")
@@ -282,17 +322,17 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
   }
 
   const totalValue = useMemo(
-    () => data.items.reduce((sum, i) => sum + n(i.total_price), 0),
+    () => data.items.reduce((sum, i) => sum + safeNumber(i.total_price), 0),
     [data.items]
   )
 
   const totalMaterial = useMemo(
-    () => data.items.reduce((sum, i) => sum + n(i.material_price) * n(i.qty), 0),
+    () => data.items.reduce((sum, i) => sum + safeNumber(i.material_price) * safeNumber(i.qty), 0),
     [data.items]
   )
 
   const totalLabour = useMemo(
-    () => data.items.reduce((sum, i) => sum + n(i.labour_price) * n(i.qty), 0),
+    () => data.items.reduce((sum, i) => sum + safeNumber(i.labour_price) * safeNumber(i.qty), 0),
     [data.items]
   )
 
@@ -316,7 +356,7 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
   const grouped = useMemo(() => groupByScope(filteredItems), [filteredItems])
 
   function scopeTotal(items: RabItem[]) {
-    return items.reduce((sum, i) => sum + n(i.total_price), 0)
+    return items.reduce((sum, i) => sum + safeNumber(i.total_price), 0)
   }
 
   async function updateField(item_id: string, patch: Partial<RabItem>) {
@@ -332,8 +372,8 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
 
         const updated = { ...it, ...patch }
 
-        const unit_price = n(updated.material_price) + n(updated.labour_price)
-        const total_price = n(updated.qty) * unit_price
+        const unit_price = safeNumber(updated.material_price) + safeNumber(updated.labour_price)
+        const total_price = safeNumber(updated.qty) * unit_price
 
         return {
           ...updated,
@@ -435,6 +475,32 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
     }
   }
 
+  // Enhanced Excel validation
+  const validateExcelRow = (row: any, index: number): { valid: boolean; errors: string[] } => {
+    const errors: string[] = []
+    
+    if (!row.item_name && !row["item name"] && !row.Item) {
+      errors.push(`Baris ${index + 1}: Nama item wajib diisi`)
+    }
+    
+    const qty = Number(row.qty || row.Qty || row.volume || 0)
+    if (qty <= 0) {
+      errors.push(`Baris ${index + 1}: Quantity harus lebih dari 0`)
+    }
+    
+    const material = Number(row.material_price || row.Material || 0)
+    if (material < 0) {
+      errors.push(`Baris ${index + 1}: Harga material tidak boleh negatif`)
+    }
+    
+    const labour = Number(row.labour_price || row.Labour || 0)
+    if (labour < 0) {
+      errors.push(`Baris ${index + 1}: Harga upah tidak boleh negatif`)
+    }
+    
+    return { valid: errors.length === 0, errors }
+  }
+
   const onDrop = async (acceptedFiles: File[]) => {
     if (lockMode) {
       toast.error("RAB dalam mode terkunci, tidak dapat upload")
@@ -444,28 +510,49 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
     const file = acceptedFiles?.[0]
     if (!file) return
 
-    setLoading(true)
+    setBulkLoading(true)
     try {
       const buf = await file.arrayBuffer()
       const wb = XLSX.read(buf, { type: "array" })
       const ws = wb.Sheets[wb.SheetNames[0]]
       const rows = XLSX.utils.sheet_to_json<any>(ws, { defval: "" })
 
+      // Validate all rows first
+      const validationErrors: string[] = []
+      rows.forEach((row, idx) => {
+        const { valid, errors } = validateExcelRow(row, idx)
+        if (!valid) {
+          validationErrors.push(...errors)
+        }
+      })
+
+      if (validationErrors.length > 0) {
+        toast.error(`Validasi gagal:\n${validationErrors.slice(0, 3).join('\n')}${validationErrors.length > 3 ? `\n...dan ${validationErrors.length - 3} error lainnya` : ''}`)
+        return
+      }
+
       const payloadItems = rows
-        .map((r: any) => ({
-          scope: String(r.scope || r.Scope || "").trim(),
-          item_name: String(r.item_name || r["item name"] || r.Item || "").trim(),
-          category: String(r.category || r.Kategori || "").trim(),
-          qty: n(r.qty || r.Qty || r.volume || 0),
-          unit: String(r.unit || r.Unit || "").trim(),
-          material_price: n(r.material_price || r.Material || 0),
-          labour_price: n(r.labour_price || r.Labour || 0),
-        }))
-        .filter((x: any) => x.item_name)
+        .map((r: any) => {
+          const item_name = String(r.item_name || r["item name"] || r.Item || "").trim()
+          if (!item_name) return null
+
+          const qty = Math.max(1, Number(r.qty || r.Qty || r.volume || 1))
+          
+          return {
+            scope: String(r.scope || r.Scope || "").trim() || "Umum",
+            item_name,
+            category: String(r.category || r.Kategori || "").trim() || "Umum",
+            qty: qty,
+            unit: String(r.unit || r.Unit || "").trim() || "Unit",
+            material_price: Math.max(0, Number(r.material_price || r.Material || 0)),
+            labour_price: Math.max(0, Number(r.labour_price || r.Labour || 0)),
+          }
+        })
+        .filter((x): x is NonNullable<typeof x> => x !== null)
 
       if (payloadItems.length === 0) {
-        toast.error("File kosong / header tidak sesuai")
-        setLoading(false)
+        toast.error("Tidak ada data valid untuk diupload")
+        setBulkLoading(false)
         return
       }
 
@@ -490,7 +577,7 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
     } catch (e: any) {
       toast.error(`Gagal baca Excel: ${e?.message || "unknown error"}`)
     } finally {
-      setLoading(false)
+      setBulkLoading(false)
     }
   }
 
@@ -501,9 +588,18 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
       "application/vnd.ms-excel": [".xls"],
     },
     multiple: false,
-    disabled: lockMode,
+    disabled: lockMode || bulkLoading,
   })
 
+  // ESC key handler for modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpenAdd(false)
+    }
+    window.addEventListener("keydown", handleEsc)
+    return () => window.removeEventListener("keydown", handleEsc)
+  }, [])
+  
   /* ============ UI ============ */
 
   return (
@@ -573,39 +669,21 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
           </div>
         </div>
 
-        {/* TOOLBAR INPUT (Manual + Library) */}
+        {/* TOOLBAR ACTION */}
         {!lockMode && (
-          <div className="flex flex-col lg:flex-row gap-4 items-start">
-            {/* FORM MANUAL */}
-            <div className="flex-1 w-full">
-              <AddItemForm
-                rab_id={rab_id}
-                project_id={project_id}
-                onCreated={(newItem: RabItem) => {
-                  setData((prev) => ({
-                    ...prev,
-                    items: [...prev.items, newItem],
-                  }))
-                  toast.success("Item berhasil ditambahkan")
-                }}
-                onSuccess={reload}
-              />
-            </div>
+          <div className="flex justify-between items-center">
+            <button
+              onClick={() => setOpenAdd(true)}
+              className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 transition"
+            >
+              + Tambah Item
+            </button>
 
-            {/* WORK LIBRARY BUTTON */}
-            <div className="w-full lg:w-[260px] flex flex-col gap-2">
-              <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">
-                Work Library
-              </p>
-              <WorkLibraryButton
-                rab_id={rab_id}
-                project_id={project_id}
-                onSuccess={reload}
-              />
-              <p className="text-[10px] text-slate-400">
-                Tarik pekerjaan standar supaya tidak input manual.
-              </p>
-            </div>
+            <WorkLibraryButton
+              rab_id={rab_id}
+              project_id={project_id}
+              onSuccess={reload}
+            />
           </div>
         )}
 
@@ -620,6 +698,8 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
             <div
               {...getRootProps()}
               className={`border-2 border-dashed rounded-xl p-6 text-sm cursor-pointer transition ${
+                bulkLoading ? "opacity-50 pointer-events-none" : ""
+              } ${
                 isDragActive
                   ? "border-slate-500 bg-slate-50"
                   : "border-slate-200 hover:border-slate-300 bg-white"
@@ -627,17 +707,26 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
             >
               <input {...getInputProps()} />
               <div className="text-center">
-                <Upload className="mx-auto h-8 w-8 text-slate-400 mb-2" />
-                {isDragActive ? (
-                  <p className="text-slate-600">Drop file di sini...</p>
+                {bulkLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-400 border-t-transparent mx-auto mb-2" />
+                    <p className="text-slate-600">Memproses file...</p>
+                  </>
                 ) : (
                   <>
-                    <p className="text-slate-600">
-                      Drag & drop file <span className="font-semibold">.xlsx</span> atau klik untuk pilih
-                    </p>
-                    <p className="text-xs text-slate-400 mt-2">
-                      Format: scope, item_name, category, qty, unit, material_price, labour_price
-                    </p>
+                    <Upload className="mx-auto h-8 w-8 text-slate-400 mb-2" />
+                    {isDragActive ? (
+                      <p className="text-slate-600">Drop file di sini...</p>
+                    ) : (
+                      <>
+                        <p className="text-slate-600">
+                          Drag & drop file <span className="font-semibold">.xlsx</span> atau klik untuk pilih
+                        </p>
+                        <p className="text-xs text-slate-400 mt-2">
+                          Format: scope, item_name, category, qty, unit, material_price, labour_price
+                        </p>
+                      </>
+                    )}
                   </>
                 )}
               </div>
@@ -690,14 +779,23 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
               <div>
                 <div className="flex justify-between text-xs text-slate-500 mb-1">
                   <span>Overhead/Margin</span>
-                  <span>{overheadPct}%</span>
+                  <span className={overheadPct === 0 ? "text-amber-600 font-medium" : ""}>
+                    {overheadPct}%
+                    {overheadPct === 0 && <AlertTriangle size={12} className="inline ml-1" />}
+                  </span>
                 </div>
                 <input
                   type="range"
                   min={0}
                   max={50}
                   value={overheadPct}
-                  onChange={(e) => setOverheadPct(Number(e.target.value))}
+                  onChange={(e) => {
+                    const val = Number(e.target.value)
+                    setOverheadPct(val)
+                    if (val === 0) {
+                      toast.warning("Overhead 0%? Yakin?")
+                    }
+                  }}
                   disabled={lockMode}
                   className="w-full accent-slate-600"
                 />
@@ -705,14 +803,23 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
               <div>
                 <div className="flex justify-between text-xs text-slate-500 mb-1">
                   <span>Profit</span>
-                  <span>{profitPct}%</span>
+                  <span className={profitPct === 0 ? "text-amber-600 font-medium" : ""}>
+                    {profitPct}%
+                    {profitPct === 0 && <AlertTriangle size={12} className="inline ml-1" />}
+                  </span>
                 </div>
                 <input
                   type="range"
                   min={0}
                   max={50}
                   value={profitPct}
-                  onChange={(e) => setProfitPct(Number(e.target.value))}
+                  onChange={(e) => {
+                    const val = Number(e.target.value)
+                    setProfitPct(val)
+                    if (val === 0) {
+                      toast.warning("Profit 0%? Yakin?")
+                    }
+                  }}
                   disabled={lockMode}
                   className="w-full accent-slate-600"
                 />
@@ -833,6 +940,12 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
                               value={it.item_name}
                               disabled={lockMode || actionLoading === it.item_id}
                               onSave={(val) => updateField(it.item_id, { item_name: val })}
+                              validate={(val) => {
+                                if (!val || String(val).trim() === "") {
+                                  return "Nama item wajib diisi"
+                                }
+                                return true
+                              }}
                             />
                             <div className="text-[10px] text-slate-400 mt-1 font-mono">
                               {it.item_id.slice(-8)}
@@ -855,12 +968,17 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
                               type="number"
                               disabled={lockMode || actionLoading === it.item_id}
                               onSave={(val) => {
-                                const parsed = n(val)
-                                if (!Number.isFinite(parsed) || parsed <= 0) {
+                                const parsed = safeNumber(val)
+                                if (parsed <= 0) {
                                   toast.error("Qty harus lebih dari 0")
                                   return
                                 }
                                 updateField(it.item_id, { qty: parsed })
+                              }}
+                              validate={(val) => {
+                                const num = Number(val)
+                                if (num <= 0) return "Qty harus > 0"
+                                return true
                               }}
                             />
                           </td>
@@ -871,6 +989,12 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
                               value={it.unit}
                               disabled={lockMode || actionLoading === it.item_id}
                               onSave={(val) => updateField(it.item_id, { unit: val })}
+                              validate={(val) => {
+                                if (!val || String(val).trim() === "") {
+                                  return "Unit wajib diisi"
+                                }
+                                return true
+                              }}
                             />
                           </td>
 
@@ -880,7 +1004,12 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
                               value={it.material_price}
                               type="number"
                               disabled={lockMode || actionLoading === it.item_id}
-                              onSave={(val) => updateField(it.item_id, { material_price: n(val) })}
+                              onSave={(val) => updateField(it.item_id, { material_price: safeNumber(val) })}
+                              validate={(val) => {
+                                const num = Number(val)
+                                if (num < 0) return "Harga tidak boleh negatif"
+                                return true
+                              }}
                             />
                           </td>
 
@@ -890,18 +1019,23 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
                               value={it.labour_price}
                               type="number"
                               disabled={lockMode || actionLoading === it.item_id}
-                              onSave={(val) => updateField(it.item_id, { labour_price: n(val) })}
+                              onSave={(val) => updateField(it.item_id, { labour_price: safeNumber(val) })}
+                              validate={(val) => {
+                                const num = Number(val)
+                                if (num < 0) return "Harga tidak boleh negatif"
+                                return true
+                              }}
                             />
                           </td>
 
                           {/* UNIT PRICE (readonly) */}
                           <td className="p-3 font-medium text-slate-700 text-right whitespace-nowrap tabular-nums">
-                            {formatIDR(n(it.unit_price))}
+                            {formatIDR(safeNumber(it.unit_price))}
                           </td>
 
                           {/* TOTAL (readonly) */}
                           <td className="p-3 font-semibold text-emerald-600 text-right whitespace-nowrap tabular-nums">
-                            {formatIDR(n(it.total_price))}
+                            {formatIDR(safeNumber(it.total_price))}
                           </td>
 
                           {/* AKSI */}
@@ -961,6 +1095,51 @@ const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
           )}
         </div>
 
+        {/* ADD ITEM SLIDE PANEL */}
+        {openAdd && (
+          <div className="fixed inset-0 z-50 flex">
+            {/* Backdrop */}
+            <div
+              className="flex-1 bg-black/40"
+              onClick={() => setOpenAdd(false)}
+            />
+
+            {/* Panel */}
+            <div className="w-[520px] bg-white shadow-2xl h-full p-6 overflow-y-auto transform transition-transform duration-300 ease-in-out translate-x-0">
+              
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg font-semibold text-slate-800">
+                  Tambah Item RAB
+                </h2>
+                <button
+                  onClick={() => setOpenAdd(false)}
+                  className="text-slate-500 hover:text-slate-800"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <AddItemForm
+                rab_id={rab_id}
+                project_id={project_id}
+                onCreated={(newItem: RabItem) => {
+                  setData((prev) => ({
+                    ...prev,
+                    items: [...prev.items, newItem],
+                  }))
+                  setOpenAdd(false)
+                  toast.success("Item berhasil ditambahkan")
+                }}
+                onSuccess={() => {
+                  reload()
+                  setOpenAdd(false)
+                }}
+              />
+
+            </div>
+          </div>
+        )}
+        
         {/* FOOTER */}
         <div className="flex items-center gap-2 p-4 bg-slate-100/50 border border-slate-200 rounded-xl text-xs text-slate-500">
           <Lock size={14} className="text-slate-400" />

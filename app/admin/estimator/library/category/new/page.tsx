@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { 
@@ -13,23 +13,70 @@ import {
   CheckCircle,
   ChevronRight,
   Plus,
-  X
+  X,
+  Hash,
+  GitBranch
 } from 'lucide-react'
+import { toast } from 'sonner'
 
+// ============ TYPES ============
+type Category = {
+  category_id: string
+  name: string
+  code: string
+  description: string | null
+  parent_id: string | null
+  level: number
+  path: string
+  color: string
+  icon: string
+  status: 'active' | 'inactive'
+  notes: string | null
+  created_at: string
+}
+
+type ParentCategory = {
+  category_id: string
+  name: string
+  level: number
+  path: string
+}
+
+// ============ HELPERS ============
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+function generateCode(name: string): string {
+  return name
+    .toUpperCase()
+    .trim()
+    .replace(/[^A-Z0-9]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
+}
+
+// ============ MAIN COMPONENT ============
 export default function NewCategoryPage() {
   const router = useRouter()
 
-
+  // States
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [parentCategories, setParentCategories] = useState<ParentCategory[]>([])
+  const [loadingParents, setLoadingParents] = useState(true)
 
   // Form state
   const [form, setForm] = useState({
     name: '',
     code: '',
     description: '',
-    parentCategory: '',
+    parent_id: '',
     color: 'blue',
     icon: 'folder',
     status: 'active' as 'active' | 'inactive',
@@ -38,45 +85,53 @@ export default function NewCategoryPage() {
 
   // Validation
   const [touched, setTouched] = useState<Record<string, boolean>>({})
+  const [codeExists, setCodeExists] = useState(false)
+  const [checkingCode, setCheckingCode] = useState(false)
 
-  // Available parent categories (mock data)
-  const parentCategories = [
-    { id: '1', name: 'Struktur', level: 0 },
-    { id: '2', name: 'Finishing', level: 0 },
-    { id: '3', name: 'MEP', level: 0 },
-    { id: '4', name: 'Struktur > Pondasi', level: 1 },
-    { id: '5', name: 'Struktur > Kolom & Balok', level: 1 },
-    { id: '6', name: 'Finishing > Dinding', level: 1 },
-    { id: '7', name: 'Finishing > Lantai', level: 1 },
-    { id: '8', name: 'Finishing > Plafon', level: 1 },
-    { id: '9', name: 'MEP > Elektrikal', level: 1 },
-    { id: '10', name: 'MEP > Plumbing', level: 1 }
-  ]
+  // ============ FETCH PARENT CATEGORIES ============
+  useEffect(() => {
+    const fetchParents = async () => {
+      try {
+        const res = await fetch('/api/estimator/library/categories?parentOnly=true&status=active')
+        if (!res.ok) throw new Error('Failed to fetch parent categories')
+        const data = await res.json()
+        setParentCategories(data.categories || [])
+      } catch (err) {
+        console.error('Error fetching parents:', err)
+        toast.error('Gagal memuat daftar kategori induk')
+      } finally {
+        setLoadingParents(false)
+      }
+    }
 
-  // Color options
-  const colorOptions = [
-    { value: 'blue', label: 'Blue', bg: 'bg-blue-500', light: 'bg-blue-100 text-blue-700' },
-    { value: 'green', label: 'Green', bg: 'bg-green-500', light: 'bg-green-100 text-green-700' },
-    { value: 'purple', label: 'Purple', bg: 'bg-purple-500', light: 'bg-purple-100 text-purple-700' },
-    { value: 'amber', label: 'Amber', bg: 'bg-amber-500', light: 'bg-amber-100 text-amber-700' },
-    { value: 'red', label: 'Red', bg: 'bg-red-500', light: 'bg-red-100 text-red-700' },
-    { value: 'indigo', label: 'Indigo', bg: 'bg-indigo-500', light: 'bg-indigo-100 text-indigo-700' },
-    { value: 'pink', label: 'Pink', bg: 'bg-pink-500', light: 'bg-pink-100 text-pink-700' },
-    { value: 'cyan', label: 'Cyan', bg: 'bg-cyan-500', light: 'bg-cyan-100 text-cyan-700' }
-  ]
+    fetchParents()
+  }, [])
 
-  // Icon options
-  const iconOptions = [
-    { value: 'folder', label: 'Folder', icon: '📁' },
-    { value: 'layers', label: 'Layers', icon: '📚' },
-    { value: 'box', label: 'Box', icon: '📦' },
-    { value: 'grid', label: 'Grid', icon: '🔲' },
-    { value: 'tag', label: 'Tag', icon: '🏷️' },
-    { value: 'star', label: 'Star', icon: '⭐' },
-    { value: 'heart', label: 'Heart', icon: '❤️' },
-    { value: 'flag', label: 'Flag', icon: '🚩' }
-  ]
+  // ============ CHECK CODE EXISTENCE ============
+  useEffect(() => {
+    const checkCode = async () => {
+      if (!form.code || form.code.length < 2) {
+        setCodeExists(false)
+        return
+      }
 
+      setCheckingCode(true)
+      try {
+        const res = await fetch(`/api/estimator/library/categories/check-code?code=${encodeURIComponent(form.code)}`)
+        const data = await res.json()
+        setCodeExists(data.exists)
+      } catch (err) {
+        console.error('Error checking code:', err)
+      } finally {
+        setCheckingCode(false)
+      }
+    }
+
+    const timeout = setTimeout(checkCode, 500)
+    return () => clearTimeout(timeout)
+  }, [form.code])
+
+  // ============ VALIDATION ============
   const validateField = (name: string, value: string): string | null => {
     switch (name) {
       case 'name':
@@ -85,9 +140,13 @@ export default function NewCategoryPage() {
         if (value.length > 50) return 'Maximum 50 characters'
         return null
       case 'code':
-        if (value && !/^[A-Z0-9_-]+$/.test(value)) {
+        if (!value) return null // Code is optional
+        if (value.length < 2) return 'Minimal 2 characters'
+        if (value.length > 20) return 'Maximum 20 characters'
+        if (!/^[A-Z0-9_-]+$/.test(value)) {
           return 'Code must be uppercase letters, numbers, underscore or hyphen'
         }
+        if (codeExists) return 'Code already exists'
         return null
       default:
         return null
@@ -100,34 +159,39 @@ export default function NewCategoryPage() {
   }
 
   const isValid = Boolean(
-  form.name &&
-  !errors.name &&
-  !errors.code
-)
+    form.name &&
+    !errors.name &&
+    !errors.code &&
+    !codeExists
+  )
 
-  // Auto-generate code from name
-  const generateCode = () => {
-  if (!form.name) return
-  
-  const code = form.name
-    .toUpperCase()
-    .trim()
-    .replace(/[^A-Z0-9]/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_|_$/g, '')
+  // ============ AUTO GENERATE SLUG & CODE ============
+  useEffect(() => {
+    if (form.name && !touched.code) {
+      setForm(prev => ({
+        ...prev,
+        code: generateCode(form.name)
+      }))
+    }
+  }, [form.name, touched.code])
 
-  if (code.length === 0) return
+  // ============ HANDLE GENERATE CODE ============
+  const handleGenerateCode = () => {
+    if (!form.name) {
+      toast.error('Please enter category name first')
+      return
+    }
+    const newCode = generateCode(form.name)
+    setForm(prev => ({ ...prev, code: newCode }))
+    setTouched(prev => ({ ...prev, code: true }))
+  }
 
-  setForm(prev => ({ ...prev, code }))
-  setTouched(prev => ({ ...prev, code: true }))
-}
-
-
+  // ============ HANDLE SUBMIT ============
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!isValid) {
-      setTouched(prev => ({ ...prev, name: true }))
+      setTouched(prev => ({ ...prev, name: true, code: true }))
       return
     }
 
@@ -135,36 +199,89 @@ export default function NewCategoryPage() {
     setError(null)
 
     try {
-  const payload = {
-    name: form.name,
-    code: form.code || null,
-    description: form.description || null,
-    parent_id: form.parentCategory || null,
-    color: form.color,
-    icon: form.icon,
-    status: form.status,
-    notes: form.notes || null
-  }
-
-  console.log(payload)
-
-  await new Promise(resolve => setTimeout(resolve, 1500))
+      // Hitung level dan path berdasarkan parent_id
+      let level = 0
+      let path = ''
       
+      if (form.parent_id) {
+        const parent = parentCategories.find(p => p.category_id === form.parent_id)
+        if (parent) {
+          level = parent.level + 1
+          path = parent.path ? `${parent.path}/${form.code || generateSlug(form.name)}` : form.code || generateSlug(form.name)
+        }
+      } else {
+        path = form.code || generateSlug(form.name)
+      }
+
+      const payload = {
+        name: form.name,
+        code: form.code || generateCode(form.name),
+        slug: generateSlug(form.name),
+        description: form.description || null,
+        parent_id: form.parent_id || null,
+        level,
+        path,
+        color: form.color,
+        icon: form.icon,
+        status: form.status,
+        notes: form.notes || null
+      }
+
+      console.log('Submitting category:', payload)
+
+      const res = await fetch('/api/estimator/library/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.message || 'Failed to create category')
+      }
+
+      const result = await res.json()
+      
+      toast.success('Category created successfully!')
       setSuccess(true)
+      
       setTimeout(() => {
         router.push('/admin/estimator/library/category')
+        router.refresh()
       }, 1500)
 
     } catch (err: any) {
       setError(err.message)
+      toast.error(err.message)
     } finally {
       setSaving(false)
     }
   }
 
-  const handleBlur = (field: string) => {
-    setTouched(prev => ({ ...prev, [field]: true }))
-  }
+  // ============ UI ============
+  const colorOptions = [
+    { value: 'blue', label: 'Blue', bg: 'bg-blue-500', light: 'bg-blue-100 text-blue-700' },
+    { value: 'green', label: 'Green', bg: 'bg-green-500', light: 'bg-green-100 text-green-700' },
+    { value: 'purple', label: 'Purple', bg: 'bg-purple-500', light: 'bg-purple-100 text-purple-700' },
+    { value: 'amber', label: 'Amber', bg: 'bg-amber-500', light: 'bg-amber-100 text-amber-700' },
+    { value: 'red', label: 'Red', bg: 'bg-red-500', light: 'bg-red-100 text-red-700' },
+    { value: 'indigo', label: 'Indigo', bg: 'bg-indigo-500', light: 'bg-indigo-100 text-indigo-700' },
+    { value: 'pink', label: 'Pink', bg: 'bg-pink-500', light: 'bg-pink-100 text-pink-700' },
+    { value: 'cyan', label: 'Cyan', bg: 'bg-cyan-500', light: 'bg-cyan-100 text-cyan-700' }
+  ]
+
+  const iconOptions = [
+    { value: 'folder', label: 'Folder', icon: '📁' },
+    { value: 'layers', label: 'Layers', icon: '📚' },
+    { value: 'box', label: 'Box', icon: '📦' },
+    { value: 'grid', label: 'Grid', icon: '🔲' },
+    { value: 'tag', label: 'Tag', icon: '🏷️' },
+    { value: 'star', label: 'Star', icon: '⭐' },
+    { value: 'heart', label: 'Heart', icon: '❤️' },
+    { value: 'flag', label: 'Flag', icon: '🚩' }
+  ]
+
+  const selectedParent = parentCategories.find(p => p.category_id === form.parent_id)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -249,9 +366,9 @@ export default function NewCategoryPage() {
                   {touched.name && errors.name && (
                     <p className="text-xs text-red-600 mt-1">{errors.name}</p>
                   )}
-                  {touched.name && !errors.name && form.name && (
-                    <p className="text-xs text-green-600 mt-1">✓ Category name available</p>
-                  )}
+                  <p className="text-xs text-gray-400 mt-1">
+                    Slug: <span className="font-mono">{generateSlug(form.name) || '-'}</span>
+                  </p>
                 </div>
 
                 {/* Category Code */}
@@ -261,24 +378,40 @@ export default function NewCategoryPage() {
                     <span className="text-xs text-gray-400 ml-2">(optional)</span>
                   </label>
                   <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={form.code}
-                      onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
-                      onBlur={() => handleBlur('code')}
-                      className={`
-                        flex-1 px-4 py-2 border rounded-lg
-                        focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                        ${touched.code && errors.code ? 'border-red-500 bg-red-50' : ''}
-                        ${touched.code && !errors.code && form.code ? 'border-green-500 bg-green-50' : ''}
-                      `}
-                      placeholder="DINDING_01"
-                      maxLength={20}
-                      disabled={saving || success}
-                    />
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={form.code}
+                        onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+                        onBlur={() => handleBlur('code')}
+                        className={`
+                          w-full px-4 py-2 border rounded-lg pr-10
+                          focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                          ${touched.code && (errors.code || codeExists) ? 'border-red-500 bg-red-50' : ''}
+                          ${touched.code && !errors.code && !codeExists && form.code ? 'border-green-500 bg-green-50' : ''}
+                        `}
+                        placeholder="DINDING_01"
+                        maxLength={20}
+                        disabled={saving || success}
+                      />
+                      {checkingCode && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent" />
+                        </div>
+                      )}
+                      {!checkingCode && form.code && touched.code && !errors.code && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          {codeExists ? (
+                            <X size={16} className="text-red-500" />
+                          ) : (
+                            <CheckCircle size={16} className="text-green-500" />
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <button
                       type="button"
-                      onClick={generateCode}
+                      onClick={handleGenerateCode}
                       className="px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm whitespace-nowrap"
                       disabled={!form.name || saving || success}
                     >
@@ -287,6 +420,9 @@ export default function NewCategoryPage() {
                   </div>
                   {touched.code && errors.code && (
                     <p className="text-xs text-red-600 mt-1">{errors.code}</p>
+                  )}
+                  {touched.code && !errors.code && codeExists && (
+                    <p className="text-xs text-red-600 mt-1">Code already exists, please use another</p>
                   )}
                   <p className="text-xs text-gray-400 mt-1">
                     Use uppercase letters, numbers, underscore (_) or hyphen (-)
@@ -317,27 +453,58 @@ export default function NewCategoryPage() {
                 Category Hierarchy
               </h2>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Parent Category
-                  <span className="text-xs text-gray-400 ml-2">(optional)</span>
-                </label>
-                <select
-                  value={form.parentCategory}
-                  onChange={(e) => setForm({ ...form, parentCategory: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  disabled={saving || success}
-                >
-                  <option value="">None (Root Category)</option>
-                  {parentCategories.map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                      {'  '.repeat(cat.level)}{cat.level > 0 && '└ '}{cat.name}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-400 mt-1">
-                  Leave empty to create a top-level category
-                </p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Parent Category
+                    <span className="text-xs text-gray-400 ml-2">(optional)</span>
+                  </label>
+                  {loadingParents ? (
+                    <div className="flex items-center gap-2 p-4 border rounded-lg bg-gray-50">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent" />
+                      <span className="text-sm text-gray-500">Loading parent categories...</span>
+                    </div>
+                  ) : (
+                    <select
+                      value={form.parent_id}
+                      onChange={(e) => setForm({ ...form, parent_id: e.target.value })}
+                      className="w-full px-4 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      disabled={saving || success}
+                    >
+                      <option value="">None (Root Category)</option>
+                      {parentCategories.map(cat => (
+                        <option key={cat.category_id} value={cat.category_id}>
+                          {'  '.repeat(cat.level)}{cat.level > 0 && '└ '}{cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <p className="text-xs text-gray-400 mt-1">
+                    Leave empty to create a top-level category
+                  </p>
+                </div>
+
+                {/* Hierarchy Preview */}
+                {selectedParent && (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="text-xs font-medium text-blue-700 mb-2 flex items-center gap-1">
+                      <GitBranch size={12} />
+                      Hierarchy Preview
+                    </h4>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="text-blue-600">Level:</span>
+                        <span className="font-mono">{selectedParent.level + 1}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-blue-600">Path:</span>
+                        <span className="font-mono text-xs">
+                          {selectedParent.path ? `${selectedParent.path}/` : ''}{form.code || generateSlug(form.name) || '[slug]'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -507,7 +674,8 @@ export default function NewCategoryPage() {
               <ul className="text-xs text-red-600 list-disc list-inside">
                 {!form.name && <li>Category name is required</li>}
                 {form.name && errors.name && <li>{errors.name}</li>}
-                {form.code && errors.code && <li>{errors.code}</li>}
+                {errors.code && <li>{errors.code}</li>}
+                {!errors.code && codeExists && <li>Code already exists, please use another</li>}
               </ul>
             </div>
           )}
@@ -530,4 +698,9 @@ export default function NewCategoryPage() {
       </div>
     </div>
   )
+}
+
+// Helper functions untuk handleBlur
+const handleBlur = (field: string) => {
+  setTouched(prev => ({ ...prev, [field]: true }))
 }

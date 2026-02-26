@@ -50,7 +50,7 @@ const COLUMNS = {
   NOTES: 17,
 } as const
 
-const RETRYABLE_CODES = [408, 429, 502, 503] as const
+const RETRYABLE_CODES: number[] = [408, 429, 502, 503]
 const REQUIRED_COLUMNS = Object.keys(COLUMNS).length
 
 /* ================= TYPES ================= */

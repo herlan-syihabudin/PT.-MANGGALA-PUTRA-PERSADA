@@ -660,14 +660,6 @@ export default function RABDetailClient({
             </Link>
 
             <Link
-              href="/admin/estimator/rab"
-              className="flex items-center gap-1 px-3 py-2 border border-slate-200 rounded-lg text-sm hover:bg-slate-50 transition"
-            >
-              <ArrowLeft size={14} />
-              Kembali
-            </Link>
-
-            <Link
   href={`/admin/estimator/rab/${rab_id}/proposal`}
   className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 transition"
 >

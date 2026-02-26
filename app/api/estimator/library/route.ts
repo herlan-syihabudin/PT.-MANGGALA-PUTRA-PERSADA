@@ -144,7 +144,10 @@ export async function GET(req: Request) {
     const categoryId = searchParams.get('category_id')
     const requestedStatus = (searchParams.get('status') || 'active').toLowerCase()
 
-    logger.info('Fetching work library data', { categoryId, status })
+    logger.info('Fetching work library data', { 
+      categoryId, 
+      status: requestedStatus  // ✅ FIXED
+    })
 
     const res = await withRetry(() =>
       sheets.spreadsheets.values.get({
@@ -167,12 +170,10 @@ export async function GET(req: Request) {
     let totalItems = 0
 
     for (const row of rows) {
-      // Skip incomplete rows
       if (row.length < REQUIRED_COLUMNS) continue
 
       const packageId = row[COLUMNS.PACKAGE_ID]?.trim()
-      const itemStatus =
-  row[COLUMNS.STATUS]?.toString().trim().toLowerCase() || 'active'
+      const itemStatus = row[COLUMNS.STATUS]?.toString().trim().toLowerCase() || 'active'
       
       if (!packageId) continue
 
@@ -226,7 +227,10 @@ export async function GET(req: Request) {
     logger.info('Work library fetched successfully', { 
       total_packages: packages.length,
       total_items: totalItems,
-      filters: { categoryId, status }
+      filters: { 
+        categoryId, 
+        status: requestedStatus  // ✅ FIXED
+      }
     })
 
     return NextResponse.json({

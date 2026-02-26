@@ -666,6 +666,14 @@ export default function RABDetailClient({
               <ArrowLeft size={14} />
               Kembali
             </Link>
+
+            <Link
+  href={`/admin/estimator/rab/${rab_id}/proposal`}
+  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 transition"
+>
+  <FileText size={16} />
+  Generate Proposal
+</Link>
           </div>
         </div>
 

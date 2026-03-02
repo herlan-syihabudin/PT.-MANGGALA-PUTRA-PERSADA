@@ -173,36 +173,44 @@ export default function Footer() {
             </div>
 
             <div className="space-y-4">
+              
               {/* Address */}
-              <div className="flex items-start gap-3">
-                <MapPin size={16} className="text-gold mt-1 flex-shrink-0" />
-                <div>
-                  <p className="text-sm text-gray-400">Bekasi, West Java</p>
-                  <p className="text-xs text-gray-500">Indonesia 17125</p>
-                </div>
-              </div>
+<div className="flex items-start gap-3">
+  <MapPin size={16} className="text-gold mt-1 flex-shrink-0" />
+  <div>
+    <p className="text-sm text-gray-400">
+      Jl. Sirsak, Cijengkol
+    </p>
+    <p className="text-sm text-gray-400">
+      Setu District, Bekasi Regency
+    </p>
+    <p className="text-xs text-gray-500">
+      West Java 17320 – Indonesia
+    </p>
+  </div>
+</div>
 
-              {/* Phone */}
-              <div className="flex items-center gap-3">
-                <Phone size={16} className="text-gold flex-shrink-0" />
-                <a 
-                  href="https://wa.me/6281297396612"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-sm text-gray-400 hover:text-white transition"
-                >
-                  +62 812-9739-6612
-                </a>
-              </div>
+{/* Phone */}
+<div className="flex items-center gap-3">
+  <Phone size={16} className="text-gold flex-shrink-0" />
+  <a 
+    href="https://wa.me/6281229222463?text=Hello%20PT%20Manggala%20Putra%20Persada,%20I%20would%20like%20to%20discuss%20a%20project%20inquiry."
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-sm text-gray-400 hover:text-white transition"
+  >
+    +62 812 2922 2463
+  </a>
+</div>
 
               {/* Email */}
               <div className="flex items-center gap-3">
                 <Mail size={16} className="text-gold flex-shrink-0" />
                 <a 
-                  href="mailto:info@mpp-engineering.com"
+                  href="mailto:info@mppindo.com"
                   className="text-sm text-gray-400 hover:text-white transition"
                 >
-                  info@mpp-engineering.com
+                  info@mppindo.com
                 </a>
               </div>
 

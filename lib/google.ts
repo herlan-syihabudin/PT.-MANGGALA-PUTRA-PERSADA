@@ -1,12 +1,8 @@
 import { google } from "googleapis"
 import { getEnv } from "./env"
 
-export function getSheetsClient() {
-  const {
-    GOOGLE_CLIENT_EMAIL,
-    GOOGLE_PRIVATE_KEY,
-    GOOGLE_SHEET_ID,
-  } = getEnv()
+function createClient(sheetId: string) {
+  const { GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY } = getEnv()
 
   const auth = new google.auth.JWT(
     GOOGLE_CLIENT_EMAIL,
@@ -19,6 +15,28 @@ export function getSheetsClient() {
 
   return {
     sheets,
-    sheetId: GOOGLE_SHEET_ID,
+    sheetId,
   }
+}
+
+/* ===== MODULE CLIENTS ===== */
+
+export function getHRClient() {
+  const { GSHEET_HR_ID } = getEnv()
+  return createClient(GSHEET_HR_ID)
+}
+
+export function getCRMClient() {
+  const { GSHEET_CRM_ID } = getEnv()
+  return createClient(GSHEET_CRM_ID)
+}
+
+export function getEstimatorClient() {
+  const { GSHEET_ESTIMATOR_ID } = getEnv()
+  return createClient(GSHEET_ESTIMATOR_ID)
+}
+
+export function getProcurementClient() {
+  const { GSHEET_PROCUREMENT_ID } = getEnv()
+  return createClient(GSHEET_PROCUREMENT_ID)
 }

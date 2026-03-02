@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getSheetsClient } from "@/lib/google" // pastikan path benar
+import { getHRClient } from "@/lib/google"
 
 export const dynamic = "force-dynamic"
 

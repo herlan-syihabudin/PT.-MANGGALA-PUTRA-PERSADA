@@ -18,6 +18,7 @@ type Employee = {
   nama_lengkap: string
   email: string | null
   department: string | null
+  jabatan?: string // Tambahkan field jabatan
 }
 
 // Map untuk Tailwind classes - CLEAN FLAT COLORS
@@ -144,21 +145,24 @@ export default function CreateInquiryPage() {
         const timeoutId = setTimeout(() => controller.abort(), 10000)
 
         const [custRes, empRes] = await Promise.all([
-  fetch("/api/crm/customers?active=true", { 
-    signal: controller.signal,
-    next: { revalidate: 300 }
-  }),
-  fetch("/api/hr/employees?active_only=true", {  // ✅ FIX
-    signal: controller.signal,
-    next: { revalidate: 300 }
-  }),
-])
+          fetch("/api/crm/customers?active=true", { 
+            signal: controller.signal,
+            next: { revalidate: 300 }
+          }),
+          fetch("/api/hr/employees?active_only=true", {
+            signal: controller.signal,
+            next: { revalidate: 300 }
+          }),
+        ])
 
         clearTimeout(timeoutId)
 
         if (custRes.ok) {
           const result = await custRes.json()
-          const customerArray = Array.isArray(result.data) ? result.data : []
+          // FIX: Handle berbagai format response
+          const customerArray = Array.isArray(result) ? result 
+            : Array.isArray(result.data) ? result.data 
+            : []
           setCustomers(customerArray)
         } else {
           console.error("Failed to fetch customers:", custRes.status)
@@ -166,7 +170,10 @@ export default function CreateInquiryPage() {
 
         if (empRes.ok) {
           const result = await empRes.json()
-          const employeeArray = Array.isArray(result.data) ? result.data : []
+          // FIX: Handle berbagai format response
+          const employeeArray = Array.isArray(result) ? result 
+            : Array.isArray(result.data) ? result.data 
+            : []
           setEmployees(employeeArray)
         } else {
           console.error("Failed to fetch employees:", empRes.status)
@@ -375,6 +382,23 @@ export default function CreateInquiryPage() {
     }
   }, [form, selectedServices, loading, validateForm, router, user])
 
+  /* ========== FILTER ESTIMATOR ========== */
+  const estimatorList = useMemo(() => {
+    return employees.filter((emp) => {
+      const dept = emp.department?.toLowerCase() || ""
+      const jab = (emp as any).jabatan?.toLowerCase() || ""
+
+      return (
+        dept === "engineering" ||
+        jab.includes("estimator") ||
+        jab.includes("estimasi")
+      )
+    })
+  }, [employees])
+  
+  // Get assigned employee name for display
+  const assignedEmployee = estimatorList.find(e => e.employee_id === form.assigned_to)
+
   /* ========== LOADING STATE ========== */
   if (initialLoading) {
     return (
@@ -415,21 +439,6 @@ export default function CreateInquiryPage() {
       </div>
     )
   }
-
-  const estimatorList = useMemo(() => {
-    return employees.filter((emp) => {
-      const dept = emp.department?.toLowerCase() || ""
-      const jab = (emp as any).jabatan?.toLowerCase() || ""
-
-      return (
-        dept === "engineering" ||
-        jab.includes("estimator")
-      )
-    })
-  }, [employees])
-  
-  // Get assigned employee name for display
-  const assignedEmployee = estimatorList.find(e => e.employee_id === form.assigned_to)
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-20">
@@ -536,15 +545,17 @@ export default function CreateInquiryPage() {
                 Prioritas Proyek
               </label>
               <div className="flex gap-2">
-                {PRIORITY_OPTIONS.map(priority => (
+                {PRIORITY_OPTIONS.map((priority) => (
                   <button
                     key={priority.value}
                     type="button"
                     onClick={() => setForm({ ...form, prioritas: priority.value as "normal" | "high" | "urgent" })}
                     className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                       form.prioritas === priority.value
-                        ? `${PRIORITY_COLORS[priority.value]} text-white`
-                        : `${PRIORITY_BG_LIGHT[priority.value]} ${PRIORITY_TEXT[priority.value]} hover:bg-gray-100`
+                        ? `${PRIORITY_COLORS[priority.value as keyof typeof PRIORITY_COLORS]} text-white`
+                        : `${PRIORITY_BG_LIGHT[priority.value as keyof typeof PRIORITY_BG_LIGHT]} ${
+                            PRIORITY_TEXT[priority.value as keyof typeof PRIORITY_TEXT]
+                          } hover:bg-gray-100`
                     }`}
                   >
                     {priority.label}
@@ -560,7 +571,7 @@ export default function CreateInquiryPage() {
               </label>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {SERVICE_OPTIONS.map(service => {
+                {SERVICE_OPTIONS.map((service) => {
                   const active = selectedServices.includes(service.id)
                   const colorKey = service.id as keyof typeof SERVICE_COLORS
                   const bgLightKey = service.id as keyof typeof SERVICE_BG_LIGHT

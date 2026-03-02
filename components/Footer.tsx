@@ -40,9 +40,15 @@ export default function Footer() {
         {/* Top section with logo */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-red-700 rounded-xl flex items-center justify-center">
-              <span className="text-white font-black text-xl">MPP</span>
-            </div>
+            <div className="relative w-14 h-14">
+  <Image
+    src="/images/logo-mpp.png"
+    alt="PT Manggala Putra Persada Logo"
+    fill
+    className="object-contain"
+    priority
+  />
+</div>
             <div>
               <h2 className="text-white font-bold text-xl">PT Manggala Putra Persada</h2>
               <p className="text-sm text-gray-400">Engineering & Construction Contractor</p>
@@ -73,18 +79,24 @@ export default function Footer() {
               and accountable project execution.
             </p>
 
-            {/* Certifications */}
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-gold uppercase tracking-wider">Certifications</p>
-              <div className="flex flex-wrap gap-2">
-                {certifications.map((cert, index) => (
-                  <div key={index} className="flex items-center gap-1 px-2 py-1 bg-gray-800 rounded-md">
-                    <Shield size={10} className="text-gold" />
-                    <span className="text-xs text-gray-300">{cert}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Standards & Commitments */}
+<div className="space-y-2">
+  <p className="text-xs font-semibold text-gold uppercase tracking-wider">
+    Standards & Commitments
+  </p>
+
+  <div className="flex flex-wrap gap-2">
+    {standards.map((item, index) => (
+      <div
+        key={index}
+        className="flex items-center gap-1 px-2 py-1 bg-gray-800 rounded-md"
+      >
+        <Shield size={10} className="text-gold" />
+        <span className="text-xs text-gray-300">{item}</span>
+      </div>
+    ))}
+  </div>
+</div>
 
             {/* Legal Status */}
             <p className="text-xs text-gray-500 flex items-center gap-1">

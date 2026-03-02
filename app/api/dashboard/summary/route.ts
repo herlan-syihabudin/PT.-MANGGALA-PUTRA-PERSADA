@@ -4,8 +4,7 @@ import { Ratelimit } from '@upstash/ratelimit'
 import { z } from 'zod'
 import crypto from 'crypto'
 import winston from 'winston'
-import { prisma } from '@/lib/prisma' // Singleton Prisma
-import { redis } from '@/lib/redis' // Singleton Redis
+import { redis } from '@/lib/redis' // Singleton Redis (optional)
 
 // ======================
 // Logger Singleton
@@ -38,7 +37,6 @@ const RATE_LIMIT_WINDOW = '60 s' // Rate limit window
 // Validation Schema
 const QuerySchema = z.object({
   period: z.enum(['MTD', 'QTD', 'YTD', 'ALL']).default('MTD'),
-  projectId: z.string().optional(),
   includeForecast: z.enum(['true', 'false']).default('false'),
   includeTrends: z.enum(['true', 'false']).default('false'),
   includeAlerts: z.enum(['true', 'false']).default('true'),
@@ -46,14 +44,20 @@ const QuerySchema = z.object({
 })
 
 // ======================
-// Rate Limiter Singleton
+// Rate Limiter (Optional - bisa dihapus kalau ga pake Redis)
 // ======================
 
-const rateLimiter = new Ratelimit({
-  redis: redis,
-  limiter: Ratelimit.slidingWindow(RATE_LIMIT_MAX, RATE_LIMIT_WINDOW),
-  analytics: true,
-})
+let rateLimiter: any = null
+
+// Only initialize rateLimiter if Redis is configured
+if (process.env.UPSTASH_REDIS_REST_URL) {
+  const { Ratelimit } = require('@upstash/ratelimit')
+  rateLimiter = new Ratelimit({
+    redis: redis,
+    limiter: Ratelimit.slidingWindow(RATE_LIMIT_MAX, RATE_LIMIT_WINDOW),
+    analytics: true,
+  })
+}
 
 // ======================
 // Type Definitions
@@ -98,62 +102,406 @@ interface ProjectData {
 }
 
 // ======================
-// Service Layer
+// MOCK DATA GENERATOR
+// ======================
+
+class MockDataGenerator {
+  // Generate random number between min and max
+  private random(min: number, max: number): number {
+    return Math.floor(Math.random() * (max - min + 1)) + min
+  }
+
+  // Generate random percentage
+  private randomPercentage(min: number, max: number): number {
+    return this.random(min * 100, max * 100) / 100
+  }
+
+  // Generate finance data
+  generateFinanceData(period: string): FinanceData {
+    const revenue = this.random(50000000, 150000000) // 50M - 150M
+    const expenses = this.random(30000000, 100000000) // 30M - 100M
+    const profit = revenue - expenses
+    const margin = (profit / revenue) * 100
+
+    // Generate cashflow history
+    const cashflow = []
+    const days = period === 'MTD' ? 30 : period === 'QTD' ? 90 : 365
+    for (let i = 0; i < Math.min(days, 30); i++) {
+      cashflow.push({
+        date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        amount: this.random(1000000, 5000000),
+        type: this.random(0, 1) ? 'INFLOW' : 'OUTFLOW'
+      })
+    }
+
+    return {
+      current: {
+        revenue,
+        expenses,
+        profit,
+        margin,
+        burnRate: expenses / 30,
+        runway: this.calculateRunway(expenses / 30, this.random(50000000, 200000000)),
+        ebitda: profit * 0.8,
+        workingCapital: this.random(20000000, 80000000)
+      },
+      trends: {
+        revenue: {
+          direction: this.random(0, 1) ? 'UP' : 'DOWN',
+          percentage: this.randomPercentage(-15, 25)
+        },
+        expenses: {
+          direction: this.random(0, 1) ? 'UP' : 'DOWN',
+          percentage: this.randomPercentage(-10, 20)
+        },
+        margin: {
+          direction: this.random(0, 1) ? 'UP' : 'DOWN',
+          percentage: this.randomPercentage(-5, 8)
+        },
+        cashflow
+      }
+    }
+  }
+
+  private calculateRunway(burnRate: number, cash: number): string {
+    if (burnRate === 0) return 'Infinite'
+    const days = Math.floor(cash / burnRate)
+    return `${days} days`
+  }
+
+  // Generate project data
+  generateProjectData(): ProjectData {
+    const total = this.random(15, 40)
+    const active = this.random(8, total)
+    const completed = this.random(3, 10)
+    const delayed = this.random(1, Math.floor(active * 0.4))
+    
+    const totalValue = this.random(500000000, 2000000000) // 500M - 2B
+    const actualCost = totalValue * this.randomPercentage(0.7, 0.95)
+    const variance = totalValue - actualCost
+    const variancePercentage = (variance / totalValue) * 100
+
+    const totalProgress = this.random(30, 85)
+    const completionRate = totalProgress / 100
+    const onTimeDelivery = ((completed - this.random(0, 2)) / (completed || 1)) * 100
+
+    return {
+      overview: {
+        total,
+        active,
+        delayed,
+        completed,
+        totalValue,
+        actualCost,
+        variance,
+        variancePercentage
+      },
+      performance: {
+        completionRate,
+        onTimeDelivery,
+        delayImpact: delayed > 5 ? 'HIGH' : delayed > 2 ? 'MEDIUM' : 'LOW',
+        avgDelayDays: delayed * this.random(3, 10)
+      }
+    }
+  }
+
+  // Generate HR data
+  generateHRData() {
+    const total = this.random(150, 250)
+    const present = this.random(Math.floor(total * 0.85), total)
+    const absent = total - present
+    const leave = this.random(2, 8)
+    
+    return {
+      workforce: {
+        total,
+        present,
+        absent,
+        leave,
+        attendanceRate: (present / total) * 100
+      },
+      financial: {
+        totalPayroll: this.random(800000000, 1500000000), // 800M - 1.5B
+        avgSalary: this.random(5000000, 10000000) // 5M - 10M
+      }
+    }
+  }
+
+  // Generate inventory data
+  generateInventoryData(period: string) {
+    const totalItems = this.random(800, 1500)
+    const lowStock = this.random(10, 50)
+    const outOfStock = this.random(2, 15)
+    const totalValue = this.random(2000000000, 5000000000) // 2B - 5B
+
+    // Generate stock movements
+    const movements = []
+    for (let i = 0; i < 30; i++) {
+      movements.push({
+        type: this.random(0, 1) ? 'IN' : 'OUT',
+        quantity: this.random(10, 200),
+        date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      })
+    }
+
+    return {
+      stock: {
+        totalItems,
+        totalValue,
+        lowStock,
+        outOfStock,
+        stockHealth: this.calculateStockHealth(lowStock, totalItems),
+        turnoverRate: this.calculateTurnoverRate(movements, totalValue),
+        daysOfInventory: this.calculateDaysOfInventory(movements, totalValue)
+      },
+      alerts: {
+        needsReorder: lowStock,
+        critical: outOfStock
+      }
+    }
+  }
+
+  private calculateStockHealth(lowStock: number, totalItems: number): string {
+    if (totalItems === 0) return 'HEALTHY'
+    const ratio = lowStock / totalItems
+    if (ratio > 0.2) return 'CRITICAL'
+    if (ratio > 0.1) return 'WARNING'
+    return 'HEALTHY'
+  }
+
+  private calculateTurnoverRate(movements: any[], totalValue: number): number {
+    const totalOut = movements
+      .filter(m => m.type === 'OUT')
+      .reduce((sum, m) => sum + m.quantity, 0)
+    return Number((totalOut / ((totalValue || 1) / 1000000)).toFixed(2))
+  }
+
+  private calculateDaysOfInventory(movements: any[], totalValue: number): number {
+    const totalOut = movements
+      .filter(m => m.type === 'OUT')
+      .reduce((sum, m) => sum + m.quantity, 0)
+    const avgDailyOut = totalOut / 30
+    return avgDailyOut > 0 ? Math.floor(totalValue / avgDailyOut) : 0
+  }
+
+  // Generate pipeline data
+  generatePipelineData() {
+    const stages = ['NEW', 'FOLLOWUP', 'SURVEY', 'OFFER', 'DEAL', 'LOST']
+    const opportunities = []
+    
+    for (let i = 0; i < this.random(30, 60); i++) {
+      const stage = stages[this.random(0, stages.length - 1)]
+      opportunities.push({
+        stage,
+        value: this.random(50000000, 500000000),
+        probability: stage === 'DEAL' ? 100 : stage === 'LOST' ? 0 : this.random(20, 80)
+      })
+    }
+
+    const activeOpportunities = opportunities.filter(o => o.stage !== 'DEAL' && o.stage !== 'LOST')
+    const totalValue = activeOpportunities.reduce((sum, o) => sum + o.value, 0)
+    const weightedValue = activeOpportunities.reduce((sum, o) => sum + (o.value * (o.probability / 100)), 0)
+
+    return {
+      overview: {
+        total: opportunities.length,
+        active: activeOpportunities.length,
+        totalValue,
+        weightedValue,
+        conversionRate: this.calculateConversionRate(opportunities)
+      },
+      stages: stages.reduce((acc, stage) => {
+        const items = opportunities.filter(o => o.stage === stage)
+        return {
+          ...acc,
+          [stage.toLowerCase()]: {
+            count: items.length,
+            value: items.reduce((sum, i) => sum + i.value, 0)
+          }
+        }
+      }, {}),
+      forecast: {
+        expected: this.calculateExpectedRevenue(opportunities),
+        bestCase: this.calculateBestCaseRevenue(opportunities),
+        worstCase: this.calculateWorstCaseRevenue(opportunities),
+        confidence: this.calculateForecastConfidence(opportunities)
+      }
+    }
+  }
+
+  private calculateConversionRate(opportunities: any[]): number {
+    const deals = opportunities.filter(o => o.stage === 'DEAL').length
+    const lost = opportunities.filter(o => o.stage === 'LOST').length
+    const total = deals + lost
+    return total > 0 ? (deals / total) * 100 : 0
+  }
+
+  private calculateExpectedRevenue(opportunities: any[]): number {
+    return opportunities
+      .filter(o => o.stage !== 'LOST')
+      .reduce((sum, o) => sum + (o.value * (o.probability / 100)), 0)
+  }
+
+  private calculateBestCaseRevenue(opportunities: any[]): number {
+    return opportunities
+      .filter(o => o.stage !== 'LOST')
+      .reduce((sum, o) => sum + o.value, 0)
+  }
+
+  private calculateWorstCaseRevenue(opportunities: any[]): number {
+    return opportunities
+      .filter(o => o.stage === 'DEAL')
+      .reduce((sum, o) => sum + o.value, 0)
+  }
+
+  private calculateForecastConfidence(opportunities: any[]): string {
+    const active = opportunities.filter(o => o.stage !== 'LOST')
+    if (active.length === 0) return 'LOW'
+    
+    const avgProb = active.reduce((sum, o) => sum + (o.probability || 0), 0) / active.length
+    if (avgProb > 70) return 'HIGH'
+    if (avgProb > 40) return 'MEDIUM'
+    return 'LOW'
+  }
+
+  // Generate KPI data
+  generateKPIData() {
+    const categories = ['keuangan', 'proyek', 'sdM', 'penjualan', 'operasional']
+    const kpis: any = {}
+
+    categories.forEach(category => {
+      kpis[category] = {
+        [`${category}Target`]: {
+          value: this.random(70, 120),
+          target: 100,
+          achievement: this.random(70, 120),
+          status: this.getKPIStatus(this.random(70, 120)),
+          trend: this.random(0, 1) ? 'UP' : 'DOWN'
+        }
+      }
+    })
+
+    return kpis
+  }
+
+  private getKPIStatus(achievement: number): string {
+    if (achievement >= 100) return 'EXCEEDED'
+    if (achievement >= 80) return 'ON_TRACK'
+    if (achievement >= 60) return 'AT_RISK'
+    return 'CRITICAL'
+  }
+
+  // Generate alerts
+  generateAlerts() {
+    const severities = ['CRITICAL', 'WARNING', 'INFO']
+    const categories = ['FINANCE', 'PROJECT', 'INVENTORY', 'HR', 'SALES']
+    const alerts = []
+
+    const count = this.random(5, 15)
+    for (let i = 0; i < count; i++) {
+      const severity = severities[this.random(0, severities.length - 1)]
+      alerts.push({
+        id: crypto.randomUUID(),
+        title: `${severity} Alert ${i + 1}`,
+        message: `This is a ${severity.toLowerCase()} alert message`,
+        severity,
+        category: categories[this.random(0, categories.length - 1)],
+        createdAt: new Date(Date.now() - this.random(0, 7) * 24 * 60 * 60 * 1000).toISOString()
+      })
+    }
+
+    return {
+      count: alerts.length,
+      critical: alerts.filter(a => a.severity === 'CRITICAL').length,
+      warning: alerts.filter(a => a.severity === 'WARNING').length,
+      info: alerts.filter(a => a.severity === 'INFO').length,
+      items: alerts.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
+    }
+  }
+
+  // Generate trends
+  generateTrends(period: string) {
+    const dataPoints = period === 'MTD' ? 30 : period === 'QTD' ? 90 : 365
+    const history = []
+
+    for (let i = 0; i < Math.min(dataPoints, 30); i++) {
+      history.push({
+        revenue: this.random(40000000, 160000000),
+        profit: this.random(5000000, 30000000),
+        activeProjects: this.random(10, 25),
+        attendance: this.random(85, 98)
+      })
+    }
+
+    const calculateTrend = (values: number[]) => {
+      if (values.length < 2) return 'STABLE'
+      const first = values[0]
+      const last = values[values.length - 1]
+      const change = ((last - first) / (first || 1)) * 100
+      if (change > 5) return 'UP'
+      if (change < -5) return 'DOWN'
+      return 'STABLE'
+    }
+
+    return {
+      revenue: calculateTrend(history.map(h => h.revenue)),
+      profit: calculateTrend(history.map(h => h.profit)),
+      projects: calculateTrend(history.map(h => h.activeProjects)),
+      attendance: calculateTrend(history.map(h => h.attendance))
+    }
+  }
+}
+
+// ======================
+// Dashboard Service (Tanpa Prisma)
 // ======================
 
 class DashboardService {
-  private prisma = prisma
-  private redis = redis
-  private logger = logger
+  private generator: MockDataGenerator
+  private redis: any
+  private logger: any
+
+  constructor() {
+    this.generator = new MockDataGenerator()
+    this.redis = redis
+    this.logger = logger
+  }
 
   async getDashboardData(params: z.infer<typeof QuerySchema>) {
     const cacheKey = this.generateCacheKey(params)
     
-    // Try cache first
-    const cached = await this.getCachedData(cacheKey)
-    if (cached) return cached
+    // Try cache first (optional)
+    if (this.redis) {
+      const cached = await this.getCachedData(cacheKey)
+      if (cached) return cached
+    }
 
-    // Parallel data fetching dengan SELECT minimal
-    const [
-      finance,
-      projects,
-      hr,
-      inventory,
-      pipeline,
-      kpis,
-      alerts,
-      trends
-    ] = await Promise.all([
-      this.getFinanceData(params),
-      this.getProjectData(params),
-      this.getHRData(params),
-      this.getInventoryData(params),
-      this.getPipelineData(params),
-      this.getKPIData(params),
-      params.includeAlerts === 'true' ? this.getAlerts() : Promise.resolve({ count: 0, critical: 0, warning: 0, info: 0, items: [] }),
-      params.includeTrends === 'true' ? this.getTrends(params) : Promise.resolve({})
-    ])
+    // Generate all mock data
+    const finance = this.generator.generateFinanceData(params.period)
+    const projects = this.generator.generateProjectData()
+    const hr = this.generator.generateHRData()
+    const inventory = this.generator.generateInventoryData(params.period)
+    const pipeline = this.generator.generatePipelineData()
+    const kpis = this.generator.generateKPIData()
+    const alerts = params.includeAlerts === 'true' ? this.generator.generateAlerts() : { count: 0, critical: 0, warning: 0, info: 0, items: [] }
+    const trends = params.includeTrends === 'true' ? this.generator.generateTrends(params.period) : {}
 
     // Generate insights
-    const insights = this.generateInsights({
-      finance,
-      projects,
-      hr,
-      inventory,
-      pipeline,
-      kpis
-    })
+    const insights = this.generateInsights({ finance, projects, hr, inventory, pipeline, kpis })
 
-    // Calculate forecasts jika diminta
+    // Generate forecast
     const forecast = params.includeForecast === 'true' 
-      ? await this.generateForecast(finance, projects)
+      ? this.generateForecast(finance, projects)
       : null
 
     const dashboardData = {
       summary: {
         period: params.period,
         timestamp: new Date().toISOString(),
-        dataQuality: this.assessDataQuality({ finance, projects, hr, inventory }),
+        dataQuality: 'HIGH',
+        dataSource: 'MOCK_DATA',
         cache: {
           hit: false,
           ttl: CACHE_TTL
@@ -162,16 +510,7 @@ class DashboardService {
       
       metrics: {
         finance: {
-          current: {
-            revenue: finance.current.revenue,
-            expenses: finance.current.expenses,
-            profit: finance.current.profit,
-            margin: finance.current.margin,
-            burnRate: finance.current.burnRate,
-            runway: finance.current.runway,
-            ebitda: finance.current.ebitda,
-            workingCapital: finance.current.workingCapital
-          },
+          current: finance.current,
           trends: finance.trends,
           insights: insights.finance,
           health: this.calculateFinancialHealth(finance)
@@ -224,654 +563,58 @@ class DashboardService {
       meta: {
         generatedAt: new Date().toISOString(),
         responseTime: 0,
-        version: '4.2.0',
-        engine: 'MPP Quantum Analytics',
+        version: '4.3.0-mock',
+        engine: 'MPP Mock Analytics',
         environment: process.env.NODE_ENV,
-        dataSources: this.getDataSources()
+        dataSources: ['MOCK_DATA']
       }
     }
 
-    // Cache the result
-    await this.cacheData(cacheKey, dashboardData)
+    // Cache the result (optional)
+    if (this.redis) {
+      await this.cacheData(cacheKey, dashboardData)
+    }
 
     return dashboardData
   }
 
   // ======================
-  // Data Fetching Methods
-  // ======================
-
-  private async getFinanceData(params: any): Promise<FinanceData> {
-    const dateRange = this.getDateRange(params.period)
-    
-    const [revenue, expenses, cashflow] = await Promise.all([
-      this.prisma.transaction.aggregate({
-        _sum: { amount: true },
-        where: {
-          type: 'REVENUE',
-          date: dateRange
-        }
-      }),
-      this.prisma.transaction.aggregate({
-        _sum: { amount: true },
-        where: {
-          type: 'EXPENSE',
-          date: dateRange
-        }
-      }),
-      this.prisma.cashflow.findMany({
-        where: { date: dateRange },
-        orderBy: { date: 'asc' },
-        select: { date: true, amount: true, type: true }
-      })
-    ])
-
-    const totalRevenue = revenue._sum.amount || 0
-    const totalExpenses = expenses._sum.amount || 0
-    const profit = totalRevenue - totalExpenses
-    const margin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0
-
-    return {
-      current: {
-        revenue: totalRevenue,
-        expenses: totalExpenses,
-        profit: profit,
-        margin: margin,
-        burnRate: this.calculateBurnRate(totalExpenses),
-        runway: this.calculateRunway(totalExpenses, await this.getCashBalance()),
-        ebitda: this.calculateEBITDA(profit, totalExpenses),
-        workingCapital: await this.calculateWorkingCapital()
-      },
-      
-      trends: {
-        revenue: await this.getRevenueTrend(params.period),
-        expenses: await this.getExpenseTrend(params.period),
-        margin: await this.getMarginTrend(params.period),
-        cashflow: cashflow
-      }
-    }
-  }
-
-  private async getProjectData(params: any): Promise<ProjectData> {
-    const projects = await this.prisma.project.findMany({
-      where: this.getProjectFilter(params),
-      select: {
-        id: true,
-        name: true,
-        status: true,
-        budget: true,
-        actualCost: true,
-        startDate: true,
-        endDate: true,
-        progress: true,
-      }
-    })
-
-    const active = projects.filter(p => p.status === 'ACTIVE')
-    const completed = projects.filter(p => p.status === 'COMPLETED')
-    
-    const now = new Date()
-    const delayed = projects.filter(p => 
-      p.status === 'ACTIVE' && 
-      p.endDate && 
-      p.endDate < now
-    )
-
-    const totalValue = projects.reduce((sum, p) => sum + (p.budget || 0), 0)
-    const actualCost = projects.reduce((sum, p) => sum + (p.actualCost || 0), 0)
-    const variance = totalValue - actualCost
-    const variancePercentage = totalValue > 0 ? (variance / totalValue) * 100 : 0
-
-    const totalProgress = projects.reduce((sum, p) => sum + (p.progress || 0), 0)
-    const completionRate = projects.length > 0 ? totalProgress / projects.length : 0
-    const onTimeDelivery = projects.length > 0 ? (completed.length / projects.length) * 100 : 0
-
-    return {
-      overview: {
-        total: projects.length,
-        active: active.length,
-        delayed: delayed.length,
-        completed: completed.length,
-        totalValue: totalValue,
-        actualCost: actualCost,
-        variance: variance,
-        variancePercentage: variancePercentage
-      },
-      
-      performance: {
-        completionRate: completionRate,
-        onTimeDelivery: onTimeDelivery,
-        delayImpact: this.calculateDelayImpact(delayed),
-        avgDelayDays: this.calculateAvgDelay(delayed)
-      }
-    }
-  }
-
-  private async getHRData(params: any) {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    const [employees, attendance, payroll] = await Promise.all([
-      this.prisma.employee.count(),
-      this.prisma.attendance.findMany({
-        where: { date: today },
-        select: { status: true }
-      }),
-      this.prisma.payroll.aggregate({
-        _sum: { amount: true },
-        where: { 
-          month: today.getMonth() + 1,
-          year: today.getFullYear()
-        }
-      })
-    ])
-
-    const present = attendance.filter(a => a.status === 'PRESENT').length
-    const absent = attendance.filter(a => a.status === 'ABSENT').length
-    const leave = attendance.filter(a => a.status === 'LEAVE').length
-    const attendanceRate = employees > 0 ? (present / employees) * 100 : 0
-
-    return {
-      workforce: {
-        total: employees,
-        present,
-        absent,
-        leave,
-        attendanceRate: attendanceRate
-      },
-      
-      financial: {
-        totalPayroll: payroll._sum.amount || 0,
-        avgSalary: employees > 0 ? (payroll._sum.amount || 0) / employees : 0
-      }
-    }
-  }
-
-  private async getInventoryData(params: any) {
-    const [materials, stockMovements] = await Promise.all([
-      this.prisma.material.findMany({
-        select: {
-          id: true,
-          name: true,
-          minimumStock: true,
-          stock: {
-            select: { quantity: true, unitPrice: true }
-          }
-        }
-      }),
-      this.prisma.stockMovement.findMany({
-        where: { date: this.getDateRange(params.period) },
-        select: { type: true, quantity: true, date: true }
-      })
-    ])
-
-    const totalItems = materials.length
-    const lowStock = materials.filter(m => 
-      (m.stock?.quantity || 0) <= (m.minimumStock || 0)
-    ).length
-    const outOfStock = materials.filter(m => 
-      (m.stock?.quantity || 0) === 0
-    ).length
-    
-    const totalValue = materials.reduce((sum, m) => 
-      sum + ((m.stock?.quantity || 0) * (m.stock?.unitPrice || 0)), 0
-    )
-
-    return {
-      stock: {
-        totalItems,
-        totalValue: totalValue,
-        lowStock,
-        outOfStock,
-        stockHealth: this.calculateStockHealth(lowStock, totalItems),
-        turnoverRate: this.calculateTurnoverRate(stockMovements, totalValue),
-        daysOfInventory: this.calculateDaysOfInventory(stockMovements, totalValue)
-      },
-      
-      alerts: {
-        needsReorder: lowStock,
-        critical: outOfStock
-      }
-    }
-  }
-
-  private async getPipelineData(params: any) {
-    const opportunities = await this.prisma.opportunity.findMany({
-      where: this.getPipelineFilter(params),
-      select: {
-        id: true,
-        name: true,
-        stage: true,
-        value: true,
-        probability: true,
-        customer: {
-          select: { name: true }
-        }
-      }
-    })
-
-    const stages = {
-      new: opportunities.filter(o => o.stage === 'NEW'),
-      followup: opportunities.filter(o => o.stage === 'FOLLOWUP'),
-      survey: opportunities.filter(o => o.stage === 'SURVEY'),
-      offer: opportunities.filter(o => o.stage === 'OFFER'),
-      deal: opportunities.filter(o => o.stage === 'DEAL'),
-      lost: opportunities.filter(o => o.stage === 'LOST')
-    }
-
-    const activeOpportunities = opportunities.filter(o => o.stage !== 'DEAL' && o.stage !== 'LOST')
-    const totalValue = activeOpportunities.reduce((sum, o) => sum + o.value, 0)
-    
-    const weightedValue = activeOpportunities.reduce((sum, o) => 
-      sum + (o.value * (o.probability / 100)), 0
-    )
-
-    return {
-      overview: {
-        total: opportunities.length,
-        active: activeOpportunities.length,
-        totalValue: totalValue,
-        weightedValue: weightedValue,
-        conversionRate: this.calculateConversionRate(opportunities)
-      },
-      
-      stages: Object.entries(stages).reduce((acc, [stage, items]) => ({
-        ...acc,
-        [stage]: {
-          count: items.length,
-          value: items.reduce((sum, i) => sum + i.value, 0)
-        }
-      }), {}),
-      
-      forecast: {
-        expected: this.calculateExpectedRevenue(opportunities),
-        bestCase: this.calculateBestCaseRevenue(opportunities),
-        worstCase: this.calculateWorstCaseRevenue(opportunities),
-        confidence: this.calculateForecastConfidence(opportunities)
-      }
-    }
-  }
-
-  private async getKPIData(params: any) {
-    const kpis = await this.prisma.kPI.findMany({
-      where: { 
-        period: params.period,
-        year: new Date().getFullYear()
-      },
-      select: {
-        id: true,
-        name: true,
-        category: true,
-        value: true,
-        targetId: true,
-        historicalData: true
-      }
-    })
-
-    const targets = await this.prisma.kPITarget.findMany({
-      where: { year: new Date().getFullYear() },
-      select: { id: true, value: true }
-    })
-
-    const targetMap = targets.reduce((acc, t) => ({ ...acc, [t.id]: t.value }), {})
-
-    return kpis.reduce((acc, kpi) => {
-      const target = targetMap[kpi.targetId]
-      const achievement = target ? (kpi.value / target) * 100 : null
-
-      return {
-        ...acc,
-        [kpi.category]: {
-          ...acc[kpi.category],
-          [kpi.name]: {
-            value: kpi.value,
-            target: target,
-            achievement: achievement,
-            status: this.getKPIStatus(achievement),
-            trend: this.calculateTrend(kpi.historicalData || [])
-          }
-        }
-      }
-    }, {})
-  }
-
-  private async getAlerts() {
-    const alerts = await this.prisma.alert.findMany({
-      where: {
-        resolved: false,
-        severity: { in: ['CRITICAL', 'WARNING', 'INFO'] }
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      select: {
-        id: true,
-        title: true,
-        message: true,
-        severity: true,
-        category: true,
-        createdAt: true
-      }
-    })
-
-    return {
-      count: alerts.length,
-      critical: alerts.filter(a => a.severity === 'CRITICAL').length,
-      warning: alerts.filter(a => a.severity === 'WARNING').length,
-      info: alerts.filter(a => a.severity === 'INFO').length,
-      items: alerts
-    }
-  }
-
-  private async getTrends(params: any) {
-    const historicalData = await this.prisma.dailySnapshot.findMany({
-      where: {
-        date: {
-          gte: this.getHistoricalDateRange(params.period)
-        }
-      },
-      orderBy: { date: 'asc' },
-      select: {
-        date: true,
-        revenue: true,
-        profit: true,
-        activeProjects: true,
-        attendance: true
-      }
-    })
-
-    return {
-      revenue: this.calculateTrend(historicalData.map(d => d.revenue || 0)),
-      profit: this.calculateTrend(historicalData.map(d => d.profit || 0)),
-      projects: this.calculateTrend(historicalData.map(d => d.activeProjects || 0)),
-      attendance: this.calculateTrend(historicalData.map(d => d.attendance || 0))
-    }
-  }
-
-  // ======================
-  // Helper Methods
+  // Cache Methods (Optional)
   // ======================
 
   private generateCacheKey(params: any): string {
     const hash = crypto.createHash('md5')
       .update(JSON.stringify(params))
       .digest('hex')
-    return `dashboard:${hash}`
+    return `dashboard:mock:${hash}`
   }
 
   private async getCachedData(key: string) {
-    const cached = await this.redis.get(key)
-    if (cached) {
-      this.logger.info(`Cache hit for ${key}`)
-      const data = typeof cached === 'string' ? JSON.parse(cached) : cached
-      return { ...data, meta: { ...data.meta, cache: { hit: true } } }
+    try {
+      const cached = await this.redis?.get(key)
+      if (cached) {
+        this.logger.info(`Cache hit for ${key}`)
+        const data = typeof cached === 'string' ? JSON.parse(cached) : cached
+        return { ...data, meta: { ...data.meta, cache: { hit: true } } }
+      }
+    } catch (error) {
+      this.logger.warn('Cache read failed', { error })
     }
     return null
   }
 
   private async cacheData(key: string, data: any) {
-    await this.redis.set(key, JSON.stringify(data), { ex: CACHE_TTL })
-    this.logger.info(`Cached data for ${key}`)
-  }
-
-  private getDateRange(period: string) {
-    const now = new Date()
-    const start = new Date(now)
-    
-    switch(period) {
-      case 'MTD':
-        start.setDate(1)
-        break
-      case 'QTD':
-        start.setMonth(Math.floor(now.getMonth() / 3) * 3, 1)
-        break
-      case 'YTD':
-        start.setMonth(0, 1)
-        break
-      case 'ALL':
-        start.setFullYear(2000, 0, 1)
-        break
+    try {
+      await this.redis?.set(key, JSON.stringify(data), { ex: CACHE_TTL })
+      this.logger.info(`Cached data for ${key}`)
+    } catch (error) {
+      this.logger.warn('Cache write failed', { error })
     }
-    
-    return { gte: start, lte: now }
-  }
-
-  private getHistoricalDateRange(period: string) {
-    const now = new Date()
-    const start = new Date(now)
-    
-    switch(period) {
-      case 'MTD':
-        start.setMonth(start.getMonth() - 3)
-        break
-      case 'QTD':
-        start.setMonth(start.getMonth() - 12)
-        break
-      case 'YTD':
-        start.setFullYear(start.getFullYear() - 2)
-        break
-      default:
-        start.setFullYear(start.getFullYear() - 1)
-    }
-    
-    return { gte: start, lte: now }
-  }
-
-  private getProjectFilter(params: any) {
-    if (params.projectId) {
-      return { id: params.projectId }
-    }
-    return {}
-  }
-
-  private getPipelineFilter(params: any) {
-    return this.getDateRange(params.period)
-  }
-
-  private async getCashBalance(): Promise<number> {
-    const cash = await this.prisma.cashflow.aggregate({
-      _sum: { amount: true }
-    })
-    return cash._sum.amount || 0
   }
 
   // ======================
-  // Calculator Methods
+  // Analytics Methods
   // ======================
-
-  private calculateBurnRate(expenses: number): number {
-    return expenses / 30
-  }
-
-  private calculateRunway(expenses: number, cash: number): string {
-    if (expenses === 0) return 'Infinite'
-    const days = Math.floor(cash / (expenses / 30))
-    return `${days} days`
-  }
-
-  private calculateEBITDA(profit: number, expenses: number): number {
-    return profit + (expenses * 0.2)
-  }
-
-  private async calculateWorkingCapital(): Promise<number> {
-    const [assets, liabilities] = await Promise.all([
-      this.prisma.transaction.aggregate({
-        _sum: { amount: true },
-        where: { type: 'ASSET' }
-      }),
-      this.prisma.transaction.aggregate({
-        _sum: { amount: true },
-        where: { type: 'LIABILITY' }
-      })
-    ])
-    return (assets._sum.amount || 0) - (liabilities._sum.amount || 0)
-  }
-
-  private async getRevenueTrend(period: string): Promise<any> {
-    const data = await this.prisma.dailySnapshot.findMany({
-      where: { date: this.getHistoricalDateRange(period) },
-      select: { date: true, revenue: true },
-      orderBy: { date: 'asc' }
-    })
-    
-    if (data.length < 2) {
-      return { direction: 'STABLE', percentage: 0 }
-    }
-    
-    const first = data[0].revenue || 0
-    const last = data[data.length-1].revenue || 0
-    const base = first || 1 // Prevent division by zero
-    const percentage = ((last - first) / base) * 100
-    
-    return {
-      direction: last > first ? 'UP' : last < first ? 'DOWN' : 'STABLE',
-      percentage: percentage
-    }
-  }
-
-  private async getExpenseTrend(period: string): Promise<any> {
-    const data = await this.prisma.dailySnapshot.findMany({
-      where: { date: this.getHistoricalDateRange(period) },
-      select: { date: true, expenses: true },
-      orderBy: { date: 'asc' }
-    })
-    
-    if (data.length < 2) {
-      return { direction: 'STABLE', percentage: 0 }
-    }
-    
-    const first = data[0].expenses || 0
-    const last = data[data.length-1].expenses || 0
-    const base = first || 1
-    const percentage = ((last - first) / base) * 100
-    
-    return {
-      direction: last > first ? 'UP' : last < first ? 'DOWN' : 'STABLE',
-      percentage: percentage
-    }
-  }
-
-  private async getMarginTrend(period: string): Promise<any> {
-    const data = await this.prisma.dailySnapshot.findMany({
-      where: { date: this.getHistoricalDateRange(period) },
-      select: { date: true, margin: true },
-      orderBy: { date: 'asc' }
-    })
-    
-    if (data.length < 2) {
-      return { direction: 'STABLE', percentage: 0 }
-    }
-    
-    const first = data[0].margin || 0
-    const last = data[data.length-1].margin || 0
-    const percentage = last - first
-    
-    return {
-      direction: last > first ? 'UP' : last < first ? 'DOWN' : 'STABLE',
-      percentage: percentage
-    }
-  }
-
-  private calculateDelayImpact(delayed: any[]): string {
-    if (delayed.length > 5) return 'HIGH'
-    if (delayed.length > 2) return 'MEDIUM'
-    return 'LOW'
-  }
-
-  private calculateAvgDelay(delayed: any[]): number {
-    if (delayed.length === 0) return 0
-    return delayed.length * 5
-  }
-
-  private calculateStockHealth(lowStock: number, totalItems: number): string {
-    if (totalItems === 0) return 'HEALTHY'
-    const ratio = lowStock / totalItems
-    if (ratio > 0.2) return 'CRITICAL'
-    if (ratio > 0.1) return 'WARNING'
-    return 'HEALTHY'
-  }
-
-  private calculateTurnoverRate(movements: any[], totalValue: number): number {
-    const totalOut = movements
-      .filter(m => m.type === 'OUT')
-      .reduce((sum, m) => sum + m.quantity, 0)
-    return totalOut / ((totalValue || 1) / 1000000)
-  }
-
-  private calculateDaysOfInventory(movements: any[], totalValue: number): number {
-    const totalOut = movements
-      .filter(m => m.type === 'OUT')
-      .reduce((sum, m) => sum + m.quantity, 0)
-    const avgDailyOut = totalOut / 30
-    return avgDailyOut > 0 ? Math.floor(totalValue / avgDailyOut) : 0
-  }
-
-  private calculateConversionRate(opportunities: any[]): number {
-    const deals = opportunities.filter(o => o.stage === 'DEAL').length
-    const lost = opportunities.filter(o => o.stage === 'LOST').length
-    const total = deals + lost
-    return total > 0 ? (deals / total) * 100 : 0
-  }
-
-  private calculateExpectedRevenue(opportunities: any[]): number {
-    return opportunities
-      .filter(o => o.stage !== 'LOST')
-      .reduce((sum, o) => sum + (o.value * (o.probability / 100)), 0)
-  }
-
-  private calculateBestCaseRevenue(opportunities: any[]): number {
-    return opportunities
-      .filter(o => o.stage !== 'LOST')
-      .reduce((sum, o) => sum + o.value, 0)
-  }
-
-  private calculateWorstCaseRevenue(opportunities: any[]): number {
-    return opportunities
-      .filter(o => o.stage === 'DEAL')
-      .reduce((sum, o) => sum + o.value, 0)
-  }
-
-  private calculateForecastConfidence(opportunities: any[]): string {
-    const active = opportunities.filter(o => o.stage !== 'LOST')
-    if (active.length === 0) return 'LOW'
-    
-    const avgProb = active.reduce((sum, o) => sum + (o.probability || 0), 0) / active.length
-    if (avgProb > 70) return 'HIGH'
-    if (avgProb > 40) return 'MEDIUM'
-    return 'LOW'
-  }
-
-  private calculateTrend(data: number[]): string {
-    if (data.length < 2) return 'STABLE'
-    const last = data[data.length - 1]
-    const first = data[0]
-    const base = first || 1
-    const change = ((last - first) / base) * 100
-    if (change > 5) return 'UP'
-    if (change < -5) return 'DOWN'
-    return 'STABLE'
-  }
-
-  private getKPIStatus(achievement: number | null): string {
-    if (!achievement) return 'NO_TARGET'
-    if (achievement >= 100) return 'EXCEEDED'
-    if (achievement >= 80) return 'ON_TRACK'
-    if (achievement >= 60) return 'AT_RISK'
-    return 'CRITICAL'
-  }
-
-  private async generateForecast(finance: any, projects: any) {
-    return {
-      revenue: {
-        nextMonth: finance.current.revenue * 1.1,
-        nextQuarter: finance.current.revenue * 3.3,
-        confidence: 'MEDIUM'
-      },
-      expenses: {
-        nextMonth: finance.current.expenses * 1.05,
-        trend: 'STABLE'
-      }
-    }
-  }
 
   private generateInsights(data: any) {
     const insights = {
@@ -916,11 +659,28 @@ class DashboardService {
       }
     }
 
-    // Combine all insights
     insights.all = [...insights.finance, ...insights.projects, ...insights.hr, ...insights.inventory, ...insights.pipeline]
       .sort((a, b) => b.priority - a.priority)
 
     return insights
+  }
+
+  private generateForecast(finance: any, projects: any) {
+    return {
+      revenue: {
+        nextMonth: finance.current.revenue * 1.1,
+        nextQuarter: finance.current.revenue * 3.3,
+        confidence: 'MEDIUM'
+      },
+      expenses: {
+        nextMonth: finance.current.expenses * 1.05,
+        trend: 'STABLE'
+      },
+      projects: {
+        nextMonth: Math.floor(projects.overview.active * 1.2),
+        completion: Math.min(100, projects.performance.completionRate + 10)
+      }
+    }
   }
 
   private generateRecommendations(data: any) {
@@ -1042,20 +802,6 @@ class DashboardService {
     
     return count > 0 ? Math.round(total / count) : 0
   }
-
-  private assessDataQuality(data: any): string {
-    const checks = [
-      data.finance?.current?.revenue !== 0,
-      (data.projects?.overview?.total || 0) > 0,
-      (data.hr?.workforce?.total || 0) > 0
-    ]
-    const score = checks.filter(Boolean).length / checks.length
-    return score > 0.8 ? 'HIGH' : score > 0.5 ? 'MEDIUM' : 'LOW'
-  }
-
-  private getDataSources() {
-    return ['PostgreSQL', 'Redis Cache']
-  }
 }
 
 // ======================
@@ -1101,34 +847,37 @@ export async function GET(request: Request) {
   const requestId = crypto.randomUUID()
   
   try {
-    // Rate Limiting
-    const identifier = request.headers.get('x-forwarded-for') || 
-                      request.headers.get('x-real-ip') || 
-                      'anonymous'
+    // Rate Limiting (optional)
+    let rate = { success: true, limit: 100, remaining: 99, reset: Date.now() + 60000 }
     
-    const rate = await rateLimiter.limit(identifier)
-    
-    if (!rate.success) {
-      logger.warn(`Rate limit exceeded for ${identifier}`, { requestId })
+    if (rateLimiter) {
+      const identifier = request.headers.get('x-forwarded-for') || 
+                        request.headers.get('x-real-ip') || 
+                        'anonymous'
+      rate = await rateLimiter.limit(identifier)
       
-      return NextResponse.json(
-        {
-          error: 'Rate limit exceeded',
-          limit: rate.limit,
-          reset: rate.reset,
-          remaining: rate.remaining,
-          requestId
-        },
-        { 
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': rate.limit.toString(),
-            'X-RateLimit-Remaining': rate.remaining.toString(),
-            'X-RateLimit-Reset': rate.reset.toString(),
-            'X-Request-ID': requestId
+      if (!rate.success) {
+        logger.warn(`Rate limit exceeded for ${identifier}`, { requestId })
+        
+        return NextResponse.json(
+          {
+            error: 'Rate limit exceeded',
+            limit: rate.limit,
+            reset: rate.reset,
+            remaining: rate.remaining,
+            requestId
+          },
+          { 
+            status: 429,
+            headers: {
+              'X-RateLimit-Limit': rate.limit.toString(),
+              'X-RateLimit-Remaining': rate.remaining.toString(),
+              'X-RateLimit-Reset': rate.reset.toString(),
+              'X-Request-ID': requestId
+            }
           }
-        }
-      )
+        )
+      }
     }
 
     // Parse and validate query params
@@ -1136,7 +885,6 @@ export async function GET(request: Request) {
     
     const query = QuerySchema.parse({
       period: searchParams.get('period') || 'MTD',
-      projectId: searchParams.get('projectId'),
       includeForecast: searchParams.get('includeForecast') || 'false',
       includeTrends: searchParams.get('includeTrends') || 'false',
       includeAlerts: searchParams.get('includeAlerts') || 'true',
@@ -1146,7 +894,7 @@ export async function GET(request: Request) {
     logger.info('Dashboard API called', { 
       requestId, 
       query,
-      identifier: identifier.substring(0, 10)
+      source: 'MOCK_DATA'
     })
 
     // Fetch dashboard data
@@ -1161,18 +909,17 @@ export async function GET(request: Request) {
     const performance = {
       responseTime: `${responseTime}ms`,
       cached: dashboardData.meta.cache?.hit || false,
-      queryComplexity: calculateQueryComplexity(query) // FIXED: panggil static function
+      queryComplexity: calculateQueryComplexity(query)
     }
 
     // Set response headers
     const headers = new Headers({
       'X-Response-Time': `${responseTime}ms`,
-      'X-RateLimit-Limit': rate.limit.toString(), // FIXED: pake rate.limit
-      'X-RateLimit-Remaining': rate.remaining.toString(), // FIXED: pake rate.remaining
+      'X-RateLimit-Limit': rate.limit.toString(),
+      'X-RateLimit-Remaining': rate.remaining.toString(),
       'X-Request-ID': requestId,
       'Cache-Control': `public, s-maxage=${CACHE_TTL}, stale-while-revalidate=${CACHE_TTL * 2}`,
-      'CDN-Cache-Control': `public, max-age=${CACHE_TTL}`,
-      'Vercel-CDN-Cache-Control': `public, max-age=${CACHE_TTL}`
+      'X-Data-Source': 'MOCK'
     })
 
     // Handle different response formats
@@ -1186,7 +933,8 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ...dashboardData,
-        performance
+        performance,
+        notice: 'This is mock data for development/demo purposes'
       },
       { 
         headers,

@@ -108,27 +108,27 @@ export default function Hero() {
             </div>
 
             {/* TAMBAHIN STATISTIK UNTUK MOBILE */}
-            <p className="text-sm font-semibold text-gray-900 mb-3">
-Engineering-Based Construction Partner
-</p>
+<div className="mt-8 border-t border-gray-200 pt-6 lg:hidden">
+  <p className="text-sm font-semibold text-gray-900 mb-3">
+    Engineering-Based Construction Partner
+  </p>
 
-<div className="grid grid-cols-3 gap-2 text-center">
-  <div>
-    <p className="text-xl font-bold text-red-600">Civil</p>
-    <p className="text-xs text-gray-500">Construction</p>
-  </div>
-  <div>
-    <p className="text-xl font-bold text-red-600">Steel</p>
-    <p className="text-xs text-gray-500">Structure</p>
-  </div>
-  <div>
-    <p className="text-xl font-bold text-red-600">MEP</p>
-    <p className="text-xs text-gray-500">Systems</p>
+  <div className="grid grid-cols-3 gap-2 text-center">
+    <div>
+      <p className="text-xl font-bold text-red-600">Civil</p>
+      <p className="text-xs text-gray-500">Construction</p>
+    </div>
+    <div>
+      <p className="text-xl font-bold text-red-600">Steel</p>
+      <p className="text-xs text-gray-500">Structure</p>
+    </div>
+    <div>
+      <p className="text-xl font-bold text-red-600">MEP</p>
+      <p className="text-xs text-gray-500">Systems</p>
+    </div>
   </div>
 </div>
-            </div>
-
-          </div>
+</div>
 
           {/* RIGHT IMAGE - TAMBAHIN QUALITY & PLACEHOLDER */}
           <div className="hidden lg:block relative">

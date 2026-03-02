@@ -144,15 +144,15 @@ export default function CreateInquiryPage() {
         const timeoutId = setTimeout(() => controller.abort(), 10000)
 
         const [custRes, empRes] = await Promise.all([
-          fetch("/api/crm/customers?active=true", { 
-            signal: controller.signal,
-            next: { revalidate: 300 }
-          }),
-          fetch("/api/hr/employee?active=true", { 
-            signal: controller.signal,
-            next: { revalidate: 300 }
-          }),
-        ])
+  fetch("/api/crm/customers?active=true", { 
+    signal: controller.signal,
+    next: { revalidate: 300 }
+  }),
+  fetch("/api/hr/employees?active_only=true", {  // ✅ FIX
+    signal: controller.signal,
+    next: { revalidate: 300 }
+  }),
+])
 
         clearTimeout(timeoutId)
 

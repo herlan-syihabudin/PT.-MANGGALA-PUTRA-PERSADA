@@ -40,7 +40,7 @@ export default function Footer() {
         {/* Top section with logo */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16">
           <div className="flex items-center gap-3">
-            <div className="relative w-16 h-16 shrink-0">
+            <div className="relative w-18 h-18 shrink-0">
   <Image
     src="/images/logo-mpp.png"
     alt="PT Manggala Putra Persada Logo"

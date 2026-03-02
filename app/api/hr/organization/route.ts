@@ -11,7 +11,7 @@ export async function GET(
   { params }: { params: { employee_id: string } }
 ) {
   try {
-    const { sheets, sheetId } = getSheetsClient()
+    const { sheets, sheetId } = getHRClient()
     const employeeId = params.employee_id
 
     /* ===== LOAD EMPLOYEE MASTER ===== */

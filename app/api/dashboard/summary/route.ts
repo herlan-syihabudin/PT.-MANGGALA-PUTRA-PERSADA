@@ -6,6 +6,7 @@ import crypto from 'crypto'
 import winston from 'winston'
 import { redis } from '@/lib/redis' // Singleton Redis (optional)
 
+export const dynamic = "force-dynamic"
 // ======================
 // Logger Singleton
 // ======================
@@ -27,7 +28,7 @@ const logger = winston.createLogger({
 // Configuration & Constants
 // ======================
 
-export const revalidate = 30 // ISR cache 30 detik
+
 
 // Constants
 const CACHE_TTL = 45 // Cache TTL in seconds

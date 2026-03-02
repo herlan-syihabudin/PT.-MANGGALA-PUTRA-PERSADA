@@ -1,11 +1,15 @@
-import { Redis } from '@upstash/redis'
+import { Redis } from "@upstash/redis"
 
-const globalForRedis = global as unknown as {
-  redis: Redis | undefined
+let redis: Redis | null = null
+
+if (
+  process.env.UPSTASH_REDIS_REST_URL &&
+  process.env.UPSTASH_REDIS_REST_URL.startsWith("https")
+) {
+  redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  })
 }
 
-export const redis =
-  globalForRedis.redis ??
-  Redis.fromEnv()
-
-if (process.env.NODE_ENV !== 'production') globalForRedis.redis = redis
+export { redis }

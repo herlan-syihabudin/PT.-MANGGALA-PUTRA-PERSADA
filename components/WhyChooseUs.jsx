@@ -132,10 +132,11 @@ export function WhyChooseUs() {
   <div className="flex items-center gap-2">
     <Shield size={14} className="text-gold" />
     <span>Quality & HSE Commitment</span>
-  </div>
-            </div>
+            </div> 
+        </div> 
 
-</div>
+      </div> 
+
     </section>
   )
 }

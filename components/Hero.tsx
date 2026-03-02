@@ -108,22 +108,24 @@ export default function Hero() {
             </div>
 
             {/* TAMBAHIN STATISTIK UNTUK MOBILE */}
-            <div className="mt-6 lg:hidden border-t border-gray-200 pt-6">
-              <p className="text-sm font-semibold text-gray-900 mb-3">Trusted by 50+ Industrial Partners</p>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div>
-                  <p className="text-xl font-bold text-red-600">100+</p>
-                  <p className="text-xs text-gray-500">Proyek</p>
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-red-600">14+</p>
-                  <p className="text-xs text-gray-500">Tahun</p>
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-red-600">100%</p>
-                  <p className="text-xs text-gray-500">Safety</p>
-                </div>
-              </div>
+            <p className="text-sm font-semibold text-gray-900 mb-3">
+Engineering-Based Construction Partner
+</p>
+
+<div className="grid grid-cols-3 gap-2 text-center">
+  <div>
+    <p className="text-xl font-bold text-red-600">Civil</p>
+    <p className="text-xs text-gray-500">Construction</p>
+  </div>
+  <div>
+    <p className="text-xl font-bold text-red-600">Steel</p>
+    <p className="text-xs text-gray-500">Structure</p>
+  </div>
+  <div>
+    <p className="text-xl font-bold text-red-600">MEP</p>
+    <p className="text-xs text-gray-500">Systems</p>
+  </div>
+</div>
             </div>
 
           </div>
@@ -149,25 +151,25 @@ export default function Hero() {
               <div className="absolute bottom-0 left-0 right-0 z-20 p-8 text-white">
                 <div className="flex items-center gap-3 mb-3">
                   <Award size={20} className="text-yellow-400" />
-                  <span className="text-sm font-medium">ISO 9001:2015 Certified</span>
+                  <span className="text-sm font-medium">Engineering-Driven Quality Control</span>
                 </div>
 
                 <h3 className="text-2xl font-bold mb-2">Industrial Plant Construction</h3>
 
                 <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/20">
-                  <div>
-                    <p className="text-2xl font-bold">100+</p>
-                    <p className="text-xs text-gray-300">Industrial Projects</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">100%</p>
-                    <p className="text-xs text-gray-300">Safety Record</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">14+</p>
-                    <p className="text-xs text-gray-300">Years Experience</p>
-                  </div>
-                </div>
+  <div>
+    <p className="text-xl font-bold">Engineering</p>
+    <p className="text-xs text-gray-300">Driven Planning</p>
+  </div>
+  <div>
+    <p className="text-xl font-bold">Structured</p>
+    <p className="text-xs text-gray-300">Project Control</p>
+  </div>
+  <div>
+    <p className="text-xl font-bold">Safety</p>
+    <p className="text-xs text-gray-300">First Commitment</p>
+  </div>
+</div>
 
               </div>
             </div>
@@ -180,8 +182,8 @@ export default function Hero() {
 }
 
 const trustItems = [
-  { icon: Award, value: "ISO 9001", label: "Quality Certified" },
-  { icon: Users, value: "50+", label: "Industrial Clients" },
-  { icon: Building2, value: "100+", label: "Projects Done" },
-  { icon: HardHat, value: "14+", label: "Years Experience" },
+  { icon: Shield, value: "Structured Execution", label: "Engineering-Based Approach" },
+  { icon: Users, value: "Professional Team", label: "Experienced Project Personnel" },
+  { icon: Building2, value: "Industrial Focus", label: "Civil, Steel & MEP" },
+  { icon: HardHat, value: "Safety Commitment", label: "Zero Tolerance Policy" },
 ]

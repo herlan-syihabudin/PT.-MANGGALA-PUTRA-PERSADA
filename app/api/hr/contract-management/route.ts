@@ -8,7 +8,7 @@ function getSheetsClient() {
   if (
     !process.env.GOOGLE_CLIENT_EMAIL ||
     !process.env.GOOGLE_PRIVATE_KEY ||
-    !process.env.GOOGLE_SHEET_ID
+    !process.env.GSHEET_HR_ID
   ) {
     throw new Error("Missing Google ENV variables")
   }
@@ -22,7 +22,7 @@ function getSheetsClient() {
 
   return {
     sheets: google.sheets({ version: "v4", auth }),
-    sheetId: process.env.GOOGLE_SHEET_ID,
+    sheetId: process.env.GSHEET_HR_ID,
   }
 }
 

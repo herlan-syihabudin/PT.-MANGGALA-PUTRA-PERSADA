@@ -11,7 +11,7 @@ const auth = new google.auth.JWT(
 )
 
 const sheets = google.sheets({ version: "v4", auth })
-const SHEET_ID = process.env.GOOGLE_SHEET_ID!
+const SHEET_ID = process.env.GSHEET_HR_ID!
 
 async function getSheet(name: string) {
   const res = await sheets.spreadsheets.values.get({

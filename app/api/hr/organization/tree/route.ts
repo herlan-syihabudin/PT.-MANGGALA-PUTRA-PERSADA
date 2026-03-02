@@ -1,35 +1,13 @@
 import { NextResponse } from "next/server"
-import { google } from "googleapis"
+import { getHRClient } from "@/lib/google"
 
 export const dynamic = "force-dynamic"
-
-function getSheetsClient() {
-  if (
-    !process.env.GOOGLE_CLIENT_EMAIL ||
-    !process.env.GOOGLE_PRIVATE_KEY ||
-    !process.env.GOOGLE_SHEET_ID
-  ) {
-    throw new Error("Missing Google ENV variables")
-  }
-
-  const auth = new google.auth.JWT(
-    process.env.GOOGLE_CLIENT_EMAIL,
-    undefined,
-    process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-    ["https://www.googleapis.com/auth/spreadsheets"]
-  )
-
-  return {
-    sheets: google.sheets({ version: "v4", auth }),
-    sheetId: process.env.GOOGLE_SHEET_ID,
-  }
-}
 
 const ORG_SHEET = "ORGANIZATION"
 
 export async function GET() {
   try {
-    const { sheets, sheetId } = getSheetsClient()
+    const { sheets, sheetId } = getHRClient()
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,

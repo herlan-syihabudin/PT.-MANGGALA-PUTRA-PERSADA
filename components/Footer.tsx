@@ -178,15 +178,19 @@ export default function Footer() {
 <div className="flex items-start gap-3">
   <MapPin size={16} className="text-gold mt-1 flex-shrink-0" />
   <div>
-    <p className="text-sm text-gray-400">
-      Jl. Sirsak, Cijengkol
-    </p>
-    <p className="text-sm text-gray-400">
-      Setu District, Bekasi Regency
-    </p>
-    <p className="text-xs text-gray-500">
-      West Java 17320 – Indonesia
-    </p>
+    <a 
+  href="https://www.google.com/maps/search/?api=1&query=Setu+Bekasi+West+Java+17320"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="group transition"
+>
+  <p className="text-sm text-gray-400 group-hover:text-white transition">
+    Setu, Bekasi Regency
+  </p>
+  <p className="text-xs text-gray-500 group-hover:text-gray-300 transition">
+    West Java 17320 – Indonesia
+  </p>
+</a>
   </div>
 </div>
 

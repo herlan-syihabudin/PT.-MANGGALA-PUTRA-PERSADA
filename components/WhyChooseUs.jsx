@@ -42,8 +42,8 @@ export function WhyChooseUs() {
             perencanaan yang lemah dan koordinasi engineering yang tidak disiplin.
             <br /><br />
             Di MPP, setiap proyek dikendalikan sejak tahap awal dengan pendekatan
-            <span className="font-semibold text-gray-900"> engineering-led</span>
-            {" "}untuk memastikan biaya, waktu, dan kualitas tetap terkontrol
+            <span className="font-semibold text-gray-900"> engineering-led </span>
+untuk memastikan biaya, waktu, dan kualitas tetap terkontrol
             secara terstruktur.
           </p>
         </div>

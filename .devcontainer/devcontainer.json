@@ -1,7 +1,7 @@
 {
   "name": "mpp-erp",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
-  "postCreateCommand": "npm install",
+  "postCreateCommand": "",
   "forwardPorts": [3000],
   "customizations": {
     "vscode": {

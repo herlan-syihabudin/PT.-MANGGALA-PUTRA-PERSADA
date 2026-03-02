@@ -98,7 +98,7 @@ export function WhyChooseUs({
         <div className="grid md:grid-cols-3 gap-8">
           {CARDS.map((card) => {
             const Icon = card.icon
-            const isHighlighted = card.highlighted
+            const isHighlighted = 'highlighted' in card && card.highlighted
             
             return (
               <div

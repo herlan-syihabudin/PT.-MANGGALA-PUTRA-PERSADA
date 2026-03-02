@@ -211,7 +211,7 @@ export default function Footer() {
               <div className="flex items-center gap-3">
                 <Mail size={16} className="text-gold flex-shrink-0" />
                 <a 
-                  href="mailto:info@mppindo.com"
+                  href="mailto:info@mppindo.com?subject=Project Inquiry - PT MPP"
                   className="text-sm text-gray-400 hover:text-white transition"
                 >
                   info@mppindo.com
@@ -279,8 +279,10 @@ export default function Footer() {
 }
 
 // Data
-const certifications = [
-  "ISO 9001:2015", "ISO 14001:2015", "ISO 45001:2018"
+const standards = [
+  "Quality Management Approach",
+  "Safety-First Policy",
+  "Environmental Responsibility"
 ]
 
 const services = [

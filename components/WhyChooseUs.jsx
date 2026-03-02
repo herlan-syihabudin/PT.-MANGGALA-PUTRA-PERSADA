@@ -6,7 +6,7 @@ export function WhyChooseUs() {
     <section
       id="why-choose-us"
       aria-labelledby="why-choose-heading"
-      className="relative py-28 bg-gray-50 overflow-hidden"
+      className="relative py-16 md:py-20 bg-gray-50 overflow-hidden"
     >
       {/* BACKGROUND ACCENTS */}
       <div className="absolute inset-0 pointer-events-none">
@@ -18,7 +18,7 @@ export function WhyChooseUs() {
       <div className="relative max-w-7xl mx-auto px-6">
         
         {/* HEADER */}
-        <div className="max-w-3xl mb-20">
+        <div className="max-w-3xl mb-14">
           <span className="inline-block mb-4 text-sm font-semibold text-gold tracking-wider uppercase">
             Why Choose Us
           </span>
@@ -105,7 +105,7 @@ export function WhyChooseUs() {
         </div>
 
         {/* BOTTOM CTA */}
-        <div className="mt-16 text-center">
+        <div className="mt-12 text-center">
           <Link
             href="/tentang-kami"
             className="inline-flex items-center gap-2 text-gold font-semibold hover:gap-3 transition-all group"
@@ -117,12 +117,25 @@ export function WhyChooseUs() {
             />
           </Link>
 
-          <p className="text-sm text-gray-500 mt-4">
-            ✦ 14+ tahun pengalaman ✦ 100+ proyek industri ✦ ISO 9001:2015 ✦
-          </p>
-        </div>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-600">
 
-      </div>
+  <div className="flex items-center gap-2">
+    <Shield size={14} className="text-gold" />
+    <span>Engineering-Led Execution</span>
+  </div>
+
+  <div className="flex items-center gap-2">
+    <Shield size={14} className="text-gold" />
+    <span>Structured Project Control</span>
+  </div>
+
+  <div className="flex items-center gap-2">
+    <Shield size={14} className="text-gold" />
+    <span>Quality & HSE Commitment</span>
+  </div>
+            </div>
+
+</div>
     </section>
   )
 }

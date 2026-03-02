@@ -240,6 +240,29 @@ export async function GET(
   try {
     const inquiryId = params.inquiry_id
 
+        /* ================= ESTIMATOR LIST ================= */
+
+    if (inquiryId === "estimators") {
+      const res = await sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: `EMPLOYEE_MASTER!A2:R`,
+      })
+
+      const rows = res.data.values || []
+
+      const estimators = rows
+        .filter(r =>
+          r[11] === "Estimator" &&   // kolom jabatan
+          r[17] === "1"              // kolom is_active
+        )
+        .map(r => ({
+          employee_id: r[0],
+          nama_lengkap: r[1]
+        }))
+
+      return NextResponse.json(estimators)
+    }
+
     if (!inquiryId) {
       return NextResponse.json(
         { message: "inquiry_id wajib" },
@@ -269,6 +292,27 @@ export async function GET(
 
     const row = rows[rowIndex]
     const data = mapRowToInquiry(row)
+
+    /* ================= JOIN EMPLOYEE MASTER ================= */
+
+if (data.assigned_to) {
+  const hrRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID!, // 🔥 HR DATABASE
+    range: `EMPLOYEE_MASTER!A2:R`,
+  })
+
+  const hrRows = hrRes.data.values || []
+
+  const employee = hrRows.find(r =>
+    normalize(r[0]) === normalize(data.assigned_to)
+  )
+
+  if (employee) {
+    ;(data as any).assigned_name = employee[1]      // nama_lengkap
+    ;(data as any).assigned_divisi = employee[10]  // divisi
+    ;(data as any).assigned_jabatan = employee[11] // jabatan
+  }
+}
 
     if (data.stage === "DELETED") {
       return NextResponse.json(

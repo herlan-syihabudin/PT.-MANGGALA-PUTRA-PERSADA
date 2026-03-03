@@ -34,7 +34,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
-// ================= TYPES (sesuai API) =================
+// ================= TYPES =================
 interface InquiryData {
   inquiry_id: string
   tanggal_masuk: string
@@ -45,7 +45,7 @@ interface InquiryData {
   estimasi_nilai: number | null
   sumber: string
   assigned_to: string
-  assigned_name?: string  // Dari JOIN employee master
+  assigned_name?: string
   assigned_divisi?: string
   assigned_jabatan?: string
   status: string
@@ -89,7 +89,11 @@ export default function InquiryDetailPage() {
   const [editedData, setEditedData] = useState<Partial<InquiryData>>({})
   const [activities, setActivities] = useState<ActivityLog[]>([])
   const [showFollowUpModal, setShowFollowUpModal] = useState(false)
+  
+  // ✅ FIX: Estimator state
   const [estimators, setEstimators] = useState<Estimator[]>([])
+  const [loadingEstimators, setLoadingEstimators] = useState(false)
+  const [estimatorsLoaded, setEstimatorsLoaded] = useState(false)
 
   // ================= LOAD DATA =================
   useEffect(() => {
@@ -127,25 +131,30 @@ export default function InquiryDetailPage() {
   }, [inquiry_id])
 
   // ================= LOAD ESTIMATORS =================
+  // ✅ FIX: Load estimators sekali saja, tidak tergantung isEditMode
   useEffect(() => {
     const loadEstimators = async () => {
+      if (estimatorsLoaded) return // Skip kalau sudah pernah load
+      
+      setLoadingEstimators(true)
       try {
-        // ✅ FIX: Path yang benar sesuai API
         const res = await fetch("/api/crm/inquiry?inquiry_id=estimators")
         if (!res.ok) throw new Error()
         const json = await res.json()
         setEstimators(Array.isArray(json) ? json : [])
+        setEstimatorsLoaded(true)
       } catch (error) {
         console.error("Failed to load estimators:", error)
         toast.error("Gagal memuat daftar estimator")
+      } finally {
+        setLoadingEstimators(false)
       }
     }
 
-    if (isEditMode) {
-      loadEstimators()
-    }
-  }, [isEditMode])
-  
+    // ✅ Load estimators di awal, siap untuk ketika edit mode
+    loadEstimators()
+  }, [estimatorsLoaded]) // Hanya sekali
+
   // ================= CONVERT TO RAB =================
   const createRAB = async () => {
     try {
@@ -166,7 +175,7 @@ export default function InquiryDetailPage() {
           ? {
               ...prev,
               converted_rab_id: result.rab_id,
-              status: "boq_created", // ✅ Sesuai dengan valid status
+              status: "boq_created",
             }
           : prev
       )
@@ -187,7 +196,7 @@ export default function InquiryDetailPage() {
       const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }), // ✅ FIX: Body ditambahkan
+        body: JSON.stringify({ status: newStatus }),
       })
 
       if (!res.ok) throw new Error()
@@ -364,7 +373,7 @@ export default function InquiryDetailPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
-      {/* Header dengan Industrial Gradient */}
+      {/* Header */}
       <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 text-white border-b border-slate-600/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -390,7 +399,7 @@ export default function InquiryDetailPage() {
             </div>
 
             <div className="flex gap-2">
-              {/* ================= STEP 1: NEW → SURVEY ================= */}
+              {/* Status buttons */}
               {data.status?.toLowerCase() === "new" && (
                 <button
                   onClick={() => updateStatus("survey")}
@@ -401,7 +410,6 @@ export default function InquiryDetailPage() {
                 </button>
               )}
 
-              {/* ================= STEP 2: SURVEY → ESTIMATING ================= */}
               {data.status?.toLowerCase() === "survey" && (
                 <button
                   onClick={() => updateStatus("estimating")}
@@ -412,7 +420,6 @@ export default function InquiryDetailPage() {
                 </button>
               )}
 
-              {/* ================= STEP 3: ESTIMATING → BOQ_CREATED ================= */}
               {data.status?.toLowerCase() === "estimating" && (
                 <button
                   onClick={createRAB}
@@ -424,7 +431,6 @@ export default function InquiryDetailPage() {
                 </button>
               )}
 
-              {/* ================= STEP 4: BOQ_CREATED → PROPOSAL ================= */}
               {data.status?.toLowerCase() === "boq_created" && (
                 <button
                   onClick={() => updateStatus("proposal")}
@@ -435,7 +441,6 @@ export default function InquiryDetailPage() {
                 </button>
               )}
 
-              {/* ================= STEP 5: PROPOSAL → NEGOTIATION ================= */}
               {data.status?.toLowerCase() === "proposal" && (
                 <button
                   onClick={() => updateStatus("negotiation")}
@@ -446,7 +451,6 @@ export default function InquiryDetailPage() {
                 </button>
               )}
 
-              {/* ================= STEP 6: NEGOTIATION → WON/LOST ================= */}
               {data.status?.toLowerCase() === "negotiation" && (
                 <>
                   <button
@@ -466,7 +470,6 @@ export default function InquiryDetailPage() {
                 </>
               )}
 
-              {/* ================= FOLLOW UP ================= */}
               <button
                 onClick={() => setShowFollowUpModal(true)}
                 className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-white/10"
@@ -475,7 +478,6 @@ export default function InquiryDetailPage() {
                 Follow Up
               </button>
 
-              {/* ================= EDIT ================= */}
               <button
                 onClick={() => setIsEditMode(!isEditMode)}
                 className="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
@@ -602,7 +604,8 @@ export default function InquiryDetailPage() {
                 setEditedData={setEditedData}
                 onSave={updateInquiry}
                 isUpdating={isUpdating}
-                estimators={estimators}  // ✅ Pass estimators ke component
+                estimators={estimators}
+                loadingEstimators={loadingEstimators}  // ✅ Tambah loading state
               />
             )}
 
@@ -692,7 +695,17 @@ export default function InquiryDetailPage() {
 
 // ================= TAB COMPONENTS =================
 
-function OverviewTab({ data, isEditMode, editedData, setEditedData, onSave, isUpdating, estimators }: any) {
+function OverviewTab({ 
+  data, 
+  isEditMode, 
+  editedData, 
+  setEditedData, 
+  onSave, 
+  isUpdating, 
+  estimators,
+  loadingEstimators  // ✅ Tambah prop
+}: any) {
+  
   // Cari nama estimator yang dipilih
   const selectedEstimator = estimators.find(
     (e: Estimator) => e.employee_id === editedData.assigned_to
@@ -744,7 +757,7 @@ function OverviewTab({ data, isEditMode, editedData, setEditedData, onSave, isUp
                   onChange={(e) => setEditedData({ ...editedData, lokasi: e.target.value })}
                 />
                 
-                {/* ✅ FIX: Assigned To pakai SELECT dropdown */}
+                {/* ✅ FIX: Assigned To pakai SELECT dropdown dengan loading state */}
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">Assigned To</label>
                   <select
@@ -752,9 +765,12 @@ function OverviewTab({ data, isEditMode, editedData, setEditedData, onSave, isUp
                     onChange={(e) =>
                       setEditedData({ ...editedData, assigned_to: e.target.value })
                     }
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-400 focus:border-transparent"
+                    disabled={loadingEstimators}
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-400 focus:border-transparent disabled:bg-slate-100 disabled:cursor-wait"
                   >
-                    <option value="">-- Pilih Estimator --</option>
+                    <option value="">
+                      {loadingEstimators ? "Loading estimators..." : "-- Pilih Estimator --"}
+                    </option>
                     {estimators.map((estimator: Estimator) => (
                       <option key={estimator.employee_id} value={estimator.employee_id}>
                         {estimator.nama_lengkap}
@@ -764,6 +780,12 @@ function OverviewTab({ data, isEditMode, editedData, setEditedData, onSave, isUp
                   {selectedEstimator && (
                     <p className="text-xs text-emerald-600 mt-1">
                       ✓ {selectedEstimator.nama_lengkap}
+                    </p>
+                  )}
+                  {loadingEstimators && (
+                    <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                      <RefreshCw size={12} className="animate-spin" />
+                      Memuat daftar estimator...
                     </p>
                   )}
                 </div>
@@ -788,7 +810,6 @@ function OverviewTab({ data, isEditMode, editedData, setEditedData, onSave, isUp
                 <InfoField label="Sumber Lead" value={data.sumber || '-'} />
                 <InfoField label="Lokasi" value={data.lokasi || '-'} />
                 
-                {/* ✅ FIX: Tampilkan nama estimator, bukan ID */}
                 <InfoField 
                   label="Assigned To" 
                   value={data.assigned_name || data.assigned_to || '-'}

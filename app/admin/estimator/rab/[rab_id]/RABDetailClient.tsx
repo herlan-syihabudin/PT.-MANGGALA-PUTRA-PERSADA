@@ -5,6 +5,7 @@ import Link from "next/link"
 import { formatIDR } from "@/lib/format"
 import AddItemForm from "./AddItemForm"
 import { useDropzone } from "react-dropzone"
+import { useRouter } from "next/navigation"
 import WorkLibraryButton from "./WorkLibraryButton"
 import * as XLSX from "xlsx"
 import {
@@ -475,6 +476,35 @@ export default function RABDetailClient({
     }
   }
 
+  const router = useRouter()
+
+async function handleGenerateProposal() {
+  try {
+    const res = await fetch("/api/crm/proposal/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pipeline_id: project_id, // ⚠️ pastikan ini benar pipeline_id, bukan project_id kalau beda
+        rab_id: rab_id,
+        total_value: sellTotal,
+      }),
+    })
+
+    const result = await res.json()
+
+    if (!res.ok) {
+      toast.error(result.message || "Gagal membuat proposal")
+      return
+    }
+
+    toast.success("Proposal berhasil dibuat")
+
+    router.push(`/admin/crm/proposal/${result.proposal_id}`)
+  } catch (err) {
+    toast.error("Terjadi kesalahan saat generate proposal")
+  }
+}
+
   // Enhanced Excel validation
   const validateExcelRow = (row: any, index: number): { valid: boolean; errors: string[] } => {
     const errors: string[] = []
@@ -659,13 +689,13 @@ export default function RABDetailClient({
               VE Options
             </Link>
 
-            <Link
-  href={`/admin/estimator/rab/${rab_id}/proposal`}
+            <button
+  onClick={handleGenerateProposal}
   className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 transition"
 >
   <FileText size={16} />
   Generate Proposal
-</Link>
+</button>
           </div>
         </div>
 

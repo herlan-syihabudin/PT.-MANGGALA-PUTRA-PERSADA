@@ -297,7 +297,7 @@ export async function GET(
 
 if (data.assigned_to) {
   const hrRes = await sheets.spreadsheets.values.get({
-    spreadsheetId: process.env.GOOGLE_SHEET_ID!, // 🔥 HR DATABASE
+    spreadsheetId: process.env.GSHEET_HR_ID!, // 🔥 HR DATABASE
     range: `EMPLOYEE_MASTER!A2:R`,
   })
 

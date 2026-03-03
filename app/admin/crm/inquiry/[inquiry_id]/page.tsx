@@ -131,30 +131,48 @@ export default function InquiryDetailPage() {
   }, [inquiry_id])
 
   // ================= LOAD ESTIMATORS =================
-  // ✅ FIX: Load estimators sekali saja, tidak tergantung isEditMode
-  useEffect(() => {
-    const loadEstimators = async () => {
-      if (estimatorsLoaded) return // Skip kalau sudah pernah load
-      
-      setLoadingEstimators(true)
-      try {
-        const res = await fetch("/api/crm/inquiry?inquiry_id=estimators")
-        if (!res.ok) throw new Error()
-        const json = await res.json()
-        setEstimators(Array.isArray(json) ? json : [])
-        setEstimatorsLoaded(true)
-      } catch (error) {
-        console.error("Failed to load estimators:", error)
-        toast.error("Gagal memuat daftar estimator")
-      } finally {
-        setLoadingEstimators(false)
-      }
+  // ✅ Load estimators sekali saja (konsisten dengan Create Inquiry)
+useEffect(() => {
+  if (estimatorsLoaded) return
+
+  const loadEstimators = async () => {
+    setLoadingEstimators(true)
+
+    try {
+      const res = await fetch("/api/hr/employees?active_only=true")
+      if (!res.ok) throw new Error()
+
+      const result = await res.json()
+
+      const employeeArray = Array.isArray(result)
+        ? result
+        : Array.isArray(result.data)
+          ? result.data
+          : []
+
+      const filtered = employeeArray.filter((emp: any) => {
+        const dept = emp.department?.toLowerCase() || ""
+        const jab = emp.jabatan?.toLowerCase() || ""
+
+        return (
+          dept === "engineering" ||
+          jab.includes("estimator") ||
+          jab.includes("estimasi")
+        )
+      })
+
+      setEstimators(filtered)
+      setEstimatorsLoaded(true)
+    } catch (error) {
+      console.error("Failed to load estimators:", error)
+      toast.error("Gagal memuat daftar estimator")
+    } finally {
+      setLoadingEstimators(false)
     }
+  }
 
-    // ✅ Load estimators di awal, siap untuk ketika edit mode
-    loadEstimators()
-  }, [estimatorsLoaded]) // Hanya sekali
-
+  loadEstimators()
+}, [estimatorsLoaded])
   // ================= CONVERT TO RAB =================
   const createRAB = async () => {
     try {

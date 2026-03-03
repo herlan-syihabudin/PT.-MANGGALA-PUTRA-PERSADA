@@ -45,6 +45,9 @@ interface InquiryData {
   estimasi_nilai: number | null
   sumber: string
   assigned_to: string
+  assigned_name?: string  // Dari JOIN employee master
+  assigned_divisi?: string
+  assigned_jabatan?: string
   status: string
   prioritas: string
   lokasi: string
@@ -53,6 +56,11 @@ interface InquiryData {
   converted_project_id?: string
   created_at: string
   created_by: string
+}
+
+interface Estimator {
+  employee_id: string
+  nama_lengkap: string
 }
 
 interface ActivityLog {
@@ -81,6 +89,7 @@ export default function InquiryDetailPage() {
   const [editedData, setEditedData] = useState<Partial<InquiryData>>({})
   const [activities, setActivities] = useState<ActivityLog[]>([])
   const [showFollowUpModal, setShowFollowUpModal] = useState(false)
+  const [estimators, setEstimators] = useState<Estimator[]>([])
 
   // ================= LOAD DATA =================
   useEffect(() => {
@@ -117,39 +126,80 @@ export default function InquiryDetailPage() {
     load()
   }, [inquiry_id])
 
+  // ================= LOAD ESTIMATORS =================
+  useEffect(() => {
+    const loadEstimators = async () => {
+      try {
+        // ✅ FIX: Path yang benar sesuai API
+        const res = await fetch("/api/crm/inquiry?inquiry_id=estimators")
+        if (!res.ok) throw new Error()
+        const json = await res.json()
+        setEstimators(Array.isArray(json) ? json : [])
+      } catch (error) {
+        console.error("Failed to load estimators:", error)
+        toast.error("Gagal memuat daftar estimator")
+      }
+    }
+
+    if (isEditMode) {
+      loadEstimators()
+    }
+  }, [isEditMode])
+  
   // ================= CONVERT TO RAB =================
   const createRAB = async () => {
-  try {
-    setIsUpdating(true)
+    try {
+      setIsUpdating(true)
 
-    const res = await fetch("/api/estimator/rab/from-inquiry", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ inquiry_id }),
-    })
+      const res = await fetch("/api/estimator/rab/from-inquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inquiry_id }),
+      })
 
-    const result = await res.json()
-    if (!res.ok) throw new Error()
+      const result = await res.json()
+      if (!res.ok) throw new Error()
 
-    toast.success("Berhasil buat RAB")
-    setData(prev =>
-  prev
-    ? {
-        ...prev,
-        converted_rab_id: result.rab_id,
-        status: "rab_created",
-      }
-    : prev
-)
+      toast.success("Berhasil buat RAB")
+      setData(prev =>
+        prev
+          ? {
+              ...prev,
+              converted_rab_id: result.rab_id,
+              status: "boq_created", // ✅ Sesuai dengan valid status
+            }
+          : prev
+      )
 
-
-    router.push(`/admin/estimator/rab/${result.rab_id}`)
-  } catch {
-    toast.error("Gagal buat RAB")
-  } finally {
-    setIsUpdating(false)
+      router.push(`/admin/estimator/rab/${result.rab_id}`)
+    } catch {
+      toast.error("Gagal buat RAB")
+    } finally {
+      setIsUpdating(false)
+    }
   }
-}
+
+  // ================= UPDATE STATUS =================
+  const updateStatus = async (newStatus: string) => {
+    try {
+      setIsUpdating(true)
+
+      const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }), // ✅ FIX: Body ditambahkan
+      })
+
+      if (!res.ok) throw new Error()
+
+      toast.success(`Status berhasil diubah ke ${newStatus}`)
+      setData(prev => (prev ? { ...prev, status: newStatus } : prev))
+    } catch {
+      toast.error("Gagal ubah status")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
 
   // ================= UPDATE INQUIRY =================
   const updateInquiry = async () => {
@@ -182,8 +232,8 @@ export default function InquiryDetailPage() {
       if (!res.ok) throw new Error()
 
       setData(prev =>
-  prev ? { ...prev, ...filteredData } : prev
-)
+        prev ? { ...prev, ...filteredData } : prev
+      )
       setIsEditMode(false)
       toast.success("Data berhasil diupdate")
 
@@ -205,15 +255,15 @@ export default function InquiryDetailPage() {
       : Math.floor((now - tanggalMasuk) / (1000 * 60 * 60 * 24))
 
     const probabilityMap: Record<string, number> = {
-  new: 15,
-  survey: 30,
-  estimating: 55,
-  rab_created: 65,
-  proposal: 75,
-  negotiation: 85,
-  won: 100,
-  lost: 0,
-}
+      new: 15,
+      survey: 30,
+      estimating: 55,
+      boq_created: 65,
+      proposal: 75,
+      negotiation: 85,
+      won: 100,
+      lost: 0,
+    }
 
     let probability = probabilityMap[data.status?.toLowerCase()] ?? 10
 
@@ -309,8 +359,8 @@ export default function InquiryDetailPage() {
   }
 
   const isLocked =
-  data.status?.toLowerCase() === "won" ||
-  data.status?.toLowerCase() === "lost"
+    data.status?.toLowerCase() === "won" ||
+    data.status?.toLowerCase() === "lost"
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
@@ -343,29 +393,7 @@ export default function InquiryDetailPage() {
               {/* ================= STEP 1: NEW → SURVEY ================= */}
               {data.status?.toLowerCase() === "new" && (
                 <button
-                  onClick={async () => {
-                    try {
-                      const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          status: "survey",
-                        }),
-                      })
-
-                      if (!res.ok) throw new Error()
-
-                      toast.success("Inquiry masuk tahap SURVEY")
-
-                      setData(prev =>
-                        prev
-                          ? { ...prev, status: "survey" }
-                          : prev
-                      )
-                    } catch {
-                      toast.error("Gagal ubah ke SURVEY")
-                    }
-                  }}
+                  onClick={() => updateStatus("survey")}
                   className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 >
                   <Users size={16} />
@@ -376,39 +404,66 @@ export default function InquiryDetailPage() {
               {/* ================= STEP 2: SURVEY → ESTIMATING ================= */}
               {data.status?.toLowerCase() === "survey" && (
                 <button
-                  onClick={async () => {
-                    try {
-                      const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          status: "estimating",
-                          assigned_to: "Estimator",
-                        }),
-                      })
-
-                      if (!res.ok) throw new Error()
-
-                      toast.success("Survey selesai, dikirim ke Estimator")
-
-                      setData(prev =>
-                        prev
-                          ? {
-                              ...prev,
-                              status: "estimating",
-                              assigned_to: "Estimator",
-                            }
-                          : prev
-                      )
-                    } catch {
-                      toast.error("Gagal assign ke Estimator")
-                    }
-                  }}
+                  onClick={() => updateStatus("estimating")}
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 >
                   <CheckCircle size={16} />
                   Survey Selesai
                 </button>
+              )}
+
+              {/* ================= STEP 3: ESTIMATING → BOQ_CREATED ================= */}
+              {data.status?.toLowerCase() === "estimating" && (
+                <button
+                  onClick={createRAB}
+                  disabled={!data.assigned_to || isUpdating}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  <FileText size={16} />
+                  Buat RAB
+                </button>
+              )}
+
+              {/* ================= STEP 4: BOQ_CREATED → PROPOSAL ================= */}
+              {data.status?.toLowerCase() === "boq_created" && (
+                <button
+                  onClick={() => updateStatus("proposal")}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <FileText size={16} />
+                  Buat Proposal
+                </button>
+              )}
+
+              {/* ================= STEP 5: PROPOSAL → NEGOTIATION ================= */}
+              {data.status?.toLowerCase() === "proposal" && (
+                <button
+                  onClick={() => updateStatus("negotiation")}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <TrendingUp size={16} />
+                  Mulai Negosiasi
+                </button>
+              )}
+
+              {/* ================= STEP 6: NEGOTIATION → WON/LOST ================= */}
+              {data.status?.toLowerCase() === "negotiation" && (
+                <>
+                  <button
+                    onClick={() => updateStatus("won")}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                  >
+                    <CheckCircle size={16} />
+                    Won
+                  </button>
+                  <button
+                    onClick={() => updateStatus("lost")}
+                    className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                  >
+                    <X size={16} />
+                    Lost
+                  </button>
+                </>
               )}
 
               {/* ================= FOLLOW UP ================= */}
@@ -421,13 +476,13 @@ export default function InquiryDetailPage() {
               </button>
 
               {/* ================= EDIT ================= */}
-<button
-  onClick={() => setIsEditMode(!isEditMode)}
-  className="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
->
-  <Edit size={16} />
-  {isEditMode ? "Cancel" : "Edit"}
-</button>
+              <button
+                onClick={() => setIsEditMode(!isEditMode)}
+                className="px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              >
+                <Edit size={16} />
+                {isEditMode ? "Cancel" : "Edit"}
+              </button>
             </div>
           </div>
         </div>
@@ -435,7 +490,7 @@ export default function InquiryDetailPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6">
-        {/* Analytics Cards - Premium Subtle */}
+        {/* Analytics Cards */}
         {analytics && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
             <AnalyticCard
@@ -471,7 +526,7 @@ export default function InquiryDetailPage() {
           </div>
         )}
 
-        {/* AI Recommendation - Premium Card */}
+        {/* AI Recommendation */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 mb-8 shadow-sm">
           <div className="flex items-start gap-3">
             <div className="p-2 bg-slate-100 rounded-lg">
@@ -486,7 +541,7 @@ export default function InquiryDetailPage() {
           </div>
         </div>
         
-        {/* Warning Banner - Premium Warning */}
+        {/* Warning Banner */}
         {analytics?.isStale && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -504,7 +559,7 @@ export default function InquiryDetailPage() {
           </motion.div>
         )}
 
-        {/* Tabs Navigation - Premium */}
+        {/* Tabs Navigation */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
           <div className="flex overflow-x-auto">
             {[
@@ -547,6 +602,7 @@ export default function InquiryDetailPage() {
                 setEditedData={setEditedData}
                 onSave={updateInquiry}
                 isUpdating={isUpdating}
+                estimators={estimators}  // ✅ Pass estimators ke component
               />
             )}
 
@@ -563,7 +619,7 @@ export default function InquiryDetailPage() {
           </motion.div>
         </AnimatePresence>
 
-        {/* Convert Section - Premium Sticky */}
+        {/* Convert Section */}
         <div className="mt-8 bg-white border border-slate-200 rounded-xl p-6 sticky bottom-4 shadow-lg backdrop-blur-sm bg-white/90">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
@@ -572,30 +628,26 @@ export default function InquiryDetailPage() {
                 {data.status}
                 {data.status?.toLowerCase() === 'estimating' && (
                   <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium">
-                    Siap buat RAB
+                    {data.assigned_to ? 'Siap buat RAB' : 'Assign estimator dulu'}
                   </span>
                 )}
               </p>
             </div>
 
             {data.converted_rab_id ? (
-  <button
-    onClick={() =>
-      router.push(`/admin/estimator/rab/${data.converted_rab_id}`)
-    }
-    className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
-  >
-    <CheckCircle size={18} />
-    View RAB
-  </button>
-) : (
+              <button
+                onClick={() =>
+                  router.push(`/admin/estimator/rab/${data.converted_rab_id}`)
+                }
+                className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
+              >
+                <CheckCircle size={18} />
+                View RAB
+              </button>
+            ) : data.status?.toLowerCase() === "estimating" ? (
               <button
                 onClick={createRAB}
-                disabled={
-                  data.status?.toLowerCase() !== "estimating" ||
-                  !data.assigned_to ||
-                  isUpdating
-                }
+                disabled={!data.assigned_to || isUpdating}
                 className="w-full sm:w-auto px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               >
                 {isUpdating ? (
@@ -606,16 +658,16 @@ export default function InquiryDetailPage() {
                 ) : (
                   <>
                     <Zap size={18} />
-                    Buat RAB
+                    {data.assigned_to ? 'Buat RAB' : 'Assign Estimator Dulu'}
                   </>
                 )}
               </button>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
 
-      {/* Follow Up Modal - Premium */}
+      {/* Follow Up Modal */}
       <AnimatePresence>
         {showFollowUpModal && (
           <FollowUpModal
@@ -640,7 +692,12 @@ export default function InquiryDetailPage() {
 
 // ================= TAB COMPONENTS =================
 
-function OverviewTab({ data, isEditMode, editedData, setEditedData, onSave, isUpdating }: any) {
+function OverviewTab({ data, isEditMode, editedData, setEditedData, onSave, isUpdating, estimators }: any) {
+  // Cari nama estimator yang dipilih
+  const selectedEstimator = estimators.find(
+    (e: Estimator) => e.employee_id === editedData.assigned_to
+  )
+
   return (
     <div className="grid lg:grid-cols-3 gap-6">
       {/* Left Column - Customer & Project */}
@@ -686,12 +743,31 @@ function OverviewTab({ data, isEditMode, editedData, setEditedData, onSave, isUp
                   value={editedData.lokasi}
                   onChange={(e) => setEditedData({ ...editedData, lokasi: e.target.value })}
                 />
-                <EditField
-                  label="Assigned To"
-                  name="assigned_to"
-                  value={editedData.assigned_to}
-                  onChange={(e) => setEditedData({ ...editedData, assigned_to: e.target.value })}
-                />
+                
+                {/* ✅ FIX: Assigned To pakai SELECT dropdown */}
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Assigned To</label>
+                  <select
+                    value={editedData.assigned_to || ''}
+                    onChange={(e) =>
+                      setEditedData({ ...editedData, assigned_to: e.target.value })
+                    }
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-400 focus:border-transparent"
+                  >
+                    <option value="">-- Pilih Estimator --</option>
+                    {estimators.map((estimator: Estimator) => (
+                      <option key={estimator.employee_id} value={estimator.employee_id}>
+                        {estimator.nama_lengkap}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedEstimator && (
+                    <p className="text-xs text-emerald-600 mt-1">
+                      ✓ {selectedEstimator.nama_lengkap}
+                    </p>
+                  )}
+                </div>
+
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">Prioritas</label>
                   <select
@@ -711,7 +787,17 @@ function OverviewTab({ data, isEditMode, editedData, setEditedData, onSave, isUp
                 <InfoField label="Layanan" value={data.layanan || '-'} />
                 <InfoField label="Sumber Lead" value={data.sumber || '-'} />
                 <InfoField label="Lokasi" value={data.lokasi || '-'} />
-                <InfoField label="Assigned To" value={data.assigned_to || '-'} />
+                
+                {/* ✅ FIX: Tampilkan nama estimator, bukan ID */}
+                <InfoField 
+                  label="Assigned To" 
+                  value={data.assigned_name || data.assigned_to || '-'}
+                >
+                  {data.assigned_divisi && (
+                    <p className="text-xs text-slate-400 mt-1">{data.assigned_divisi} • {data.assigned_jabatan}</p>
+                  )}
+                </InfoField>
+
                 <InfoField label="Prioritas" value={data.prioritas || '-'}>
                   {data.prioritas && (
                     <PriorityBadge priority={data.prioritas} />

@@ -32,26 +32,20 @@ const SHEET_NAME = "WORK_LIBRARY"
 const COLUMNS = {
   PACKAGE_ID: 0,
   PACKAGE_NAME: 1,
-  CATEGORY_ID: 2,
+  SCOPE: 2,
   CATEGORY: 3,
-  SCOPE_ID: 4,
-  SCOPE: 5,
-  JOB_NAME_ID: 6,
-  JOB_NAME: 7,
-  UNIT: 8,
-  MATERIAL_PRICE: 9,
-  LABOUR_PRICE: 10,
-  TOTAL_PRICE: 11,
-  STATUS: 12,
-  CREATED_AT: 13,
-  CREATED_BY: 14,
-  UPDATED_AT: 15,
-  UPDATED_BY: 16,
-  NOTES: 17,
+  JOB_NAME: 4,
+  UNIT: 5,
+  STATUS: 6,
+  CREATED_AT: 7,
+  CREATED_BY: 8,
+  UPDATED_AT: 9,
+  UPDATED_BY: 10,
+  NOTES: 11,
 } as const
 
 const RETRYABLE_CODES: number[] = [408, 429, 502, 503]
-const REQUIRED_COLUMNS = 9
+const REQUIRED_COLUMNS = 6
 const VALID_STATUS = ['active', 'inactive', 'archived', 'all'] as const
 type StatusType = typeof VALID_STATUS[number]
 
@@ -171,7 +165,7 @@ export async function GET(req: Request) {
     const res = await withRetry(() =>
       sheets.spreadsheets.values.get({
         spreadsheetId: SHEET_ID,
-        range: `${SHEET_NAME}!A2:R`,
+        range: `${SHEET_NAME}!A2:L`,
       })
     )
 
@@ -223,15 +217,15 @@ export async function GET(req: Request) {
 
       const item: WorkLibraryItem = {
   package_id: packageId,
-  package_name: row[COLUMNS.PACKAGE_NAME]?.trim() || '',
-  scope: row[COLUMNS.SCOPE]?.trim() || '',
-  category: row[COLUMNS.CATEGORY]?.trim() || '',
-  job_name: row[COLUMNS.JOB_NAME]?.trim() || '',
-  unit: row[COLUMNS.UNIT]?.trim() || '',
+  package_name: (row[COLUMNS.PACKAGE_NAME] || "").toString().trim(),
+scope: (row[COLUMNS.SCOPE] || "").toString().trim(),
+category: (row[COLUMNS.CATEGORY] || "").toString().trim(),
+job_name: (row[COLUMNS.JOB_NAME] || "").toString().trim(),
+unit: (row[COLUMNS.UNIT] || "").toString().trim(),
 
-  material_price: Number(row[COLUMNS.MATERIAL_PRICE] || 0),
-  labour_price: Number(row[COLUMNS.LABOUR_PRICE] || 0),
-  total_price: Number(row[COLUMNS.TOTAL_PRICE] || 0),
+  material_price: 0,
+labour_price: 0,
+total_price: 0,
 
   status: itemStatus,
   created_at: row[COLUMNS.CREATED_AT] || '',

@@ -100,21 +100,21 @@ export async function POST(req: Request) {
 
     // ===== PREPARE ROWS =====
     const rows = items.map((item: any) => [
-      packageId,                   // A package_id
-      name,                        // B package_name
-      item.scope || category
-item.category || category
-      item.jobName,                // E job_name
-      item.unit,                   // F unit
-      status || "active",          // G status
-      now,                         // H created_at
-      createdBy,                   // I created_by
-      now,                         // J updated_at
-      createdBy,                   // K updated_by
-      notes || "",                 // L notes
-      item.material_price || 0,    // M material_price (jika ada kolom)
-      item.labour_price || 0       // N labour_price (jika ada kolom)
-    ])
+  packageId,                     // A package_id
+  name,                          // B package_name
+  item.scope || category,        // C scope
+  item.category || category,     // D category
+  item.jobName,                  // E job_name
+  item.unit,                     // F unit
+  status || "active",            // G status
+  now,                           // H created_at
+  createdBy,                     // I created_by
+  now,                           // J updated_at
+  createdBy,                     // K updated_by
+  notes || "",                   // L notes
+  item.material_price || 0,      // M material_price
+  item.labour_price || 0         // N labour_price
+])
 
     // ===== AUTH =====
     const auth = getAuth()

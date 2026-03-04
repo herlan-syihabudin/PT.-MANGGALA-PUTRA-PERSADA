@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react"
 import { toast } from "sonner"
 import { Library, Search, PlusCircle, X, Loader2, Check } from "lucide-react"
-import { useDebounce } from "use-debounce"
+
 
 // ============ TYPES SESUAI API BARU ============
 type WorkLibraryItem = {
@@ -40,12 +40,29 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
   const [addingId, setAddingId] = useState<string | null>(null)
   const [packages, setPackages] = useState<WorkLibraryPackage[]>([])
   const [search, setSearch] = useState("")
-  const [debouncedSearch] = useDebounce(search, 300)
+
   const [existingItems, setExistingItems] = useState<Set<string>>(new Set())
   const [expandedPackages, setExpandedPackages] = useState<Set<string>>(new Set())
   
   const abortRef = useRef<AbortController | null>(null)
   const existingAbortRef = useRef<AbortController | null>(null)
+
+ const [debouncedSearch, setDebouncedSearch] = useState("")
+
+  useEffect(() => {
+  if (open) {
+    setSearch("")
+    setDebouncedSearch("")
+  }
+}, [open])
+
+useEffect(() => {
+  const timer = setTimeout(() => {
+    setDebouncedSearch(search)
+  }, 300)
+
+  return () => clearTimeout(timer)
+}, [search])
 
   // Reset expanded packages when searching
   useEffect(() => {
@@ -410,7 +427,10 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
                   {packages.map((pkg) => {
                     const isExpanded = expandedPackages.has(pkg.package_id)
                     const packageItems = pkg.items
-                    const existingCount = packageItems.filter(item => isItemExists(item.job_name)).length
+                    const existingCount = packageItems.reduce(
+  (acc, item) => acc + (isItemExists(item.job_name) ? 1 : 0),
+  0
+)
                     const isAdding = addingId === pkg.package_id
 
                     return (

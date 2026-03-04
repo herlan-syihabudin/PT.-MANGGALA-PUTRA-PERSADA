@@ -32,20 +32,26 @@ const SHEET_NAME = "WORK_LIBRARY"
 const COLUMNS = {
   PACKAGE_ID: 0,
   PACKAGE_NAME: 1,
-  SCOPE: 2,
+  CATEGORY_ID: 2,
   CATEGORY: 3,
-  JOB_NAME: 4,
-  UNIT: 5,
-  STATUS: 6,
-  CREATED_AT: 7,
-  CREATED_BY: 8,
-  UPDATED_AT: 9,
-  UPDATED_BY: 10,
-  NOTES: 11,
+  SCOPE_ID: 4,
+  SCOPE: 5,
+  JOB_NAME_ID: 6,
+  JOB_NAME: 7,
+  UNIT: 8,
+  MATERIAL_PRICE: 9,
+  LABOUR_PRICE: 10,
+  TOTAL_PRICE: 11,
+  STATUS: 12,
+  CREATED_AT: 13,
+  CREATED_BY: 14,
+  UPDATED_AT: 15,
+  UPDATED_BY: 16,
+  NOTES: 17,
 } as const
 
 const RETRYABLE_CODES: number[] = [408, 429, 502, 503]
-const REQUIRED_COLUMNS = 6 
+const REQUIRED_COLUMNS = 9
 const VALID_STATUS = ['active', 'inactive', 'archived', 'all'] as const
 type StatusType = typeof VALID_STATUS[number]
 
@@ -57,6 +63,9 @@ export type WorkLibraryItem = {
   category: string
   job_name: string
   unit: string
+  material_price: number
+  labour_price: number
+  total_price: number
   status: string
   created_at: string
   created_by: string
@@ -162,7 +171,7 @@ export async function GET(req: Request) {
     const res = await withRetry(() =>
       sheets.spreadsheets.values.get({
         spreadsheetId: SHEET_ID,
-        range: `${SHEET_NAME}!A2:L`,
+        range: `${SHEET_NAME}!A2:R`,
       })
     )
 
@@ -202,7 +211,7 @@ export async function GET(req: Request) {
       }
 
       const packageId = row[COLUMNS.PACKAGE_ID]?.toString().trim()
-      const itemStatus = (row[COLUMNS.STATUS] || 'ACTIVE').toString().trim().toLowerCase()
+      const itemStatus = (row[COLUMNS.STATUS] || 'active').toString().trim().toLowerCase()
       
       if (!packageId) continue
 
@@ -213,19 +222,24 @@ export async function GET(req: Request) {
       if (categoryId && row[COLUMNS.CATEGORY]?.toString().trim().toLowerCase() !== categoryId.toLowerCase()) continue
 
       const item: WorkLibraryItem = {
-        package_id: packageId,
-        package_name: row[COLUMNS.PACKAGE_NAME]?.trim() || '',
-        scope: row[COLUMNS.SCOPE]?.trim() || '',
-        category: row[COLUMNS.CATEGORY]?.trim() || '',
-        job_name: row[COLUMNS.JOB_NAME]?.trim() || '',
-        unit: row[COLUMNS.UNIT]?.trim() || '',
-        status: itemStatus,
-        created_at: row[COLUMNS.CREATED_AT] || '',
-        created_by: row[COLUMNS.CREATED_BY] || '',
-        updated_at: row[COLUMNS.UPDATED_AT] || '',
-        updated_by: row[COLUMNS.UPDATED_BY] || '',
-        notes: row[COLUMNS.NOTES] || '',
-      }
+  package_id: packageId,
+  package_name: row[COLUMNS.PACKAGE_NAME]?.trim() || '',
+  scope: row[COLUMNS.SCOPE]?.trim() || '',
+  category: row[COLUMNS.CATEGORY]?.trim() || '',
+  job_name: row[COLUMNS.JOB_NAME]?.trim() || '',
+  unit: row[COLUMNS.UNIT]?.trim() || '',
+
+  material_price: Number(row[COLUMNS.MATERIAL_PRICE] || 0),
+  labour_price: Number(row[COLUMNS.LABOUR_PRICE] || 0),
+  total_price: Number(row[COLUMNS.TOTAL_PRICE] || 0),
+
+  status: itemStatus,
+  created_at: row[COLUMNS.CREATED_AT] || '',
+  created_by: row[COLUMNS.CREATED_BY] || '',
+  updated_at: row[COLUMNS.UPDATED_AT] || '',
+  updated_by: row[COLUMNS.UPDATED_BY] || '',
+  notes: row[COLUMNS.NOTES] || '',
+}
 
       if (!packageMap.has(packageId)) {
         packageMap.set(packageId, {
@@ -251,7 +265,7 @@ export async function GET(req: Request) {
     }
 
     const packages = Array.from(packageMap.values())
-    packages.sort((a, b) => a.package_id.localeCompare(b.package_id))
+    packages.sort((a, b) => a.package_name.localeCompare(b.package_name))
 
     logger.info('Work library fetched successfully', { 
       total_packages: packages.length,

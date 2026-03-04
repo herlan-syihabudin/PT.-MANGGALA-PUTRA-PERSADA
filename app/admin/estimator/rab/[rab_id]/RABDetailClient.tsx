@@ -847,21 +847,21 @@ const ws = wb.Sheets[sheetName]
       </div>
 
       <div>
-        <div className="flex items-center gap-2">
+  <div className="flex items-center gap-2">
+    <h1 className="text-lg font-semibold text-slate-900">
+      RAB Project
+    </h1>
 
-          <h1 className="text-lg font-semibold text-slate-900">
-  RAB Project
-</h1>
+    <p className="text-xs text-slate-500">
+      {rab_id}
+    </p>
+  </div>
+</div>
 
-<p className="text-xs text-slate-500">
-  {rab_id}
-</p>
+</div> {/* ⬅️ INI PENUTUP flex items-center gap-3 */}
 
-      </div>
-    </div>
-
-    {/* ACTION BUTTON */}
-    <div className="flex flex-wrap gap-2 justify-end">
+{/* ACTION BUTTON */}
+<div className="flex flex-wrap gap-2 justify-end">
 
       <button
   onClick={reload}

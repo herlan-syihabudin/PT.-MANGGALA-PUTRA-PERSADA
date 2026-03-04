@@ -24,17 +24,10 @@ import {
   Eye,
   EyeOff,
   Lock,
-  Unlock,
   AlertTriangle,
   Download,
-  Grid3x3,
-  List,
-  Settings,
-  Save,
-  X,
-  Check,
-  MoreVertical,
   Edit3,
+  Plus
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -96,10 +89,9 @@ function groupByScope(items: RabItem[]) {
   return scopes.map((scope) => ({
     scope,
     items: (map.get(scope) || []).slice().sort((a, b) => {
-      const ta = a.created_at || ""
-      const tb = b.created_at || ""
-      if (ta !== tb) return ta.localeCompare(tb)
-      return (a.item_name || "").localeCompare(b.item_name || "")
+      const ta = a.created_at ? new Date(a.created_at).getTime() : 0
+const tb = b.created_at ? new Date(b.created_at).getTime() : 0
+return ta - tb
     }),
   }))
 }
@@ -415,9 +407,7 @@ export default function RABDetailClient({
 
   const [searchTerm, setSearchTerm] = useState("")
   const [expandAll, setExpandAll] = useState(true)
-  const [viewMode, setViewMode] = useState<"grouped" | "flat">("grouped")
 
-  const rabStatus = data.header?.status || "DRAFT"
   const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
   const lockMode =
     mode === "view" ||
@@ -426,9 +416,9 @@ export default function RABDetailClient({
 
   const globalItems = useMemo(() => {
     return [...data.items].sort((a, b) => {
-      const ta = a.created_at || ""
-      const tb = b.created_at || ""
-      return ta.localeCompare(tb)
+      const ta = a.created_at ? new Date(a.created_at).getTime() : 0
+const tb = b.created_at ? new Date(b.created_at).getTime() : 0
+return ta - tb
     })
   }, [data.items])
 
@@ -450,10 +440,15 @@ export default function RABDetailClient({
   const [profitPct, setProfitPct] = useState<number>(10)
   const [openAdd, setOpenAdd] = useState(false)
 
-  async function reload() {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/estimator/rab/${rab_id}`, { cache: "no-store" })
+  const loadingRef = useRef(false)
+
+async function reload() {
+  if (loadingRef.current) return
+  loadingRef.current = true
+  setLoading(true)
+
+  try {
+    const res = await fetch(`/api/estimator/rab/${rab_id}`, { cache: "no-store" })
 
       if (!res.ok) {
         toast.error("Gagal refresh data")
@@ -484,8 +479,9 @@ export default function RABDetailClient({
     } catch {
       toast.error("Gagal refresh data")
     } finally {
-      setLoading(false)
-    }
+  loadingRef.current = false
+  setLoading(false)
+}
   }
 
   const totalValue = useMemo(
@@ -509,16 +505,16 @@ export default function RABDetailClient({
   }, [totalValue, overheadPct, profitPct])
 
   const filteredItems = useMemo(() => {
-    if (!searchTerm) return data.items
-    return data.items.filter(
-      (i) =>
-        (i.item_name || "")
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        (i.scope || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (i.category || "").toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  }, [data.items, searchTerm])
+  if (!searchTerm) return data.items
+
+  const q = searchTerm.toLowerCase()
+
+  return data.items.filter((i) =>
+    (i.item_name || "").toLowerCase().includes(q) ||
+    (i.scope || "").toLowerCase().includes(q) ||
+    (i.category || "").toLowerCase().includes(q)
+  )
+}, [data.items, searchTerm])
 
   const grouped = useMemo(() => groupByScope(filteredItems), [filteredItems])
 
@@ -572,7 +568,6 @@ export default function RABDetailClient({
     }
   }
 
-  const debouncedUpdate = useDebouncedCommit(updateField, 650)
 
   async function copyItem(item: RabItem) {
     if (lockMode) {
@@ -709,8 +704,14 @@ export default function RABDetailClient({
     try {
       const buf = await file.arrayBuffer()
       const wb = XLSX.read(buf, { type: "array" })
-      const ws = wb.Sheets[wb.SheetNames[0]]
-      const rows = XLSX.utils.sheet_to_json<any>(ws, { defval: "" })
+      const sheetName = wb.SheetNames?.[0]
+if (!sheetName) {
+  toast.error("File Excel tidak memiliki sheet")
+  return
+}
+
+const ws = wb.Sheets[sheetName]
+      const rows = XLSX.utils.sheet_to_json<any>(ws, { defval: "" }) || []
 
       // Validate all rows first
       const validationErrors: string[] = []
@@ -787,13 +788,17 @@ export default function RABDetailClient({
   })
 
   // ESC key handler for modal
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpenAdd(false)
-    }
-    window.addEventListener("keydown", handleEsc)
-    return () => window.removeEventListener("keydown", handleEsc)
-  }, [])
+ useEffect(() => {
+  if (!openAdd) return
+
+  const handleEsc = (e: KeyboardEvent) => {
+    if (e.key === "Escape") setOpenAdd(false)
+  }
+
+  window.addEventListener("keydown", handleEsc)
+
+  return () => window.removeEventListener("keydown", handleEsc)
+}, [openAdd])
   
   // Export to Excel
   const exportToExcel = () => {
@@ -815,697 +820,6 @@ export default function RABDetailClient({
     XLSX.utils.book_append_sheet(wb, ws, "RAB")
     XLSX.writeFile(wb, `RAB_${rab_id}_${new Date().toISOString().slice(0,10)}.xlsx`)
   }
-
-  /* ============ UI ============ */
-
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        
-        {/* HEADER SECTION */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-gradient-to-br from-slate-800 to-slate-700 rounded-xl shadow-lg">
-                <FileText className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-2xl font-semibold text-slate-900">
-                    Rincian Anggaran Biaya
-                  </h1>
-                  <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
-                    lockMode 
-                      ? 'bg-slate-100 text-slate-700 border border-slate-200' 
-                      : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                  }`}>
-                    {lockMode ? 'Terkunci' : 'Dapat Diedit'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="text-slate-500">
-                    <span className="font-mono text-xs bg-slate-100 px-2 py-1 rounded">
-                      {rab_id}
-                    </span>
-                  </span>
-                  <span className="text-slate-300">•</span>
-                  <span className="text-slate-600">{data.header?.project_name || 'Project'}</span>
-                  <span className="text-slate-300">•</span>
-                  <span className="text-slate-600">{data.header?.customer_name || 'Customer'}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={reload}
-                disabled={loading}
-                className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition disabled:opacity-50"
-                title="Refresh"
-              >
-                <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
-              </button>
-
-              <button
-                onClick={() => handlePrint(rab_id, data, totalValue)}
-                className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"
-                title="Print"
-              >
-                <Printer size={18} />
-              </button>
-
-              <button
-                onClick={exportToExcel}
-                className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"
-                title="Export Excel"
-              >
-                <Download size={18} />
-              </button>
-
-              <div className="w-px h-6 bg-slate-200 mx-1" />
-
-              <Link
-                href={`/admin/estimator/rab/${rab_id}/ve`}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition shadow-sm"
-              >
-                <TrendingUp size={16} />
-                Value Engineering
-              </Link>
-
-              <button
-                onClick={handleGenerateProposal}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition shadow-sm"
-              >
-                <FileText size={16} />
-                Generate Proposal
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* SUMMARY CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <Package size={18} className="text-blue-600" />
-              </div>
-              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Item</span>
-            </div>
-            <div className="text-2xl font-semibold text-slate-900">{data.items.length}</div>
-            <div className="text-xs text-slate-400 mt-1">Item pekerjaan</div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-amber-50 rounded-lg">
-                <Wrench size={18} className="text-amber-600" />
-              </div>
-              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Material</span>
-            </div>
-            <div className="text-2xl font-semibold text-slate-900">{formatIDR(totalMaterial)}</div>
-            <div className="text-xs text-slate-400 mt-1">Biaya material</div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-purple-50 rounded-lg">
-                <Users size={18} className="text-purple-600" />
-              </div>
-              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Upah</span>
-            </div>
-            <div className="text-2xl font-semibold text-slate-900">{formatIDR(totalLabour)}</div>
-            <div className="text-xs text-slate-400 mt-1">Biaya tenaga kerja</div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-emerald-50 rounded-lg">
-                <TrendingUp size={18} className="text-emerald-600" />
-              </div>
-              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Nilai</span>
-            </div>
-            <div className="text-2xl font-semibold text-emerald-600">{formatIDR(totalValue)}</div>
-            <div className="text-xs text-slate-400 mt-1">Nilai RAB keseluruhan</div>
-          </div>
-        </div>
-
-        {/* PROFIT PANEL */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <Settings size={18} className="text-slate-500" />
-            <h3 className="text-sm font-medium text-slate-700">Profit & Margin Settings</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Overhead & Margin</span>
-                <span className="font-medium text-slate-900">{overheadPct}%</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={50}
-                value={overheadPct}
-                onChange={(e) => {
-                  const val = Number(e.target.value)
-                  setOverheadPct(val)
-                  if (val === 0) toast.warning("Overhead 0%? Yakin?")
-                }}
-                disabled={lockMode}
-                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-800"
-              />
-              <div className="flex justify-between text-xs text-slate-400">
-                <span>0%</span>
-                <span>25%</span>
-                <span>50%</span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Profit</span>
-                <span className="font-medium text-slate-900">{profitPct}%</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={50}
-                value={profitPct}
-                onChange={(e) => {
-                  const val = Number(e.target.value)
-                  setProfitPct(val)
-                  if (val === 0) toast.warning("Profit 0%? Yakin?")
-                }}
-                disabled={lockMode}
-                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-800"
-              />
-              <div className="flex justify-between text-xs text-slate-400">
-                <span>0%</span>
-                <span>25%</span>
-                <span>50%</span>
-              </div>
-            </div>
-
-            <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-              <div className="text-xs text-slate-500 mb-1">Estimasi Harga Jual</div>
-              <div className="text-2xl font-bold text-blue-600">{formatIDR(sellTotal)}</div>
-              <div className="text-xs text-slate-400 mt-1">
-                Setelah overhead {overheadPct}% + profit {profitPct}%
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* TOOLBAR */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="relative w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input
-                placeholder="Cari item / scope / kategori..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
-              />
-            </div>
-
-            <div className="flex items-center gap-1 border border-slate-200 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode("grouped")}
-                className={`p-1.5 rounded-md transition ${
-                  viewMode === "grouped" 
-                    ? 'bg-slate-800 text-white' 
-                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
-                }`}
-                title="Group by Scope"
-              >
-                <Grid3x3 size={16} />
-              </button>
-              <button
-                onClick={() => setViewMode("flat")}
-                className={`p-1.5 rounded-md transition ${
-                  viewMode === "flat" 
-                    ? 'bg-slate-800 text-white' 
-                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
-                }`}
-                title="Flat View"
-              >
-                <List size={16} />
-              </button>
-            </div>
-
-            <button
-              onClick={() => setExpandAll(!expandAll)}
-              className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm hover:bg-slate-50 transition"
-            >
-              {expandAll ? <EyeOff size={14} /> : <Eye size={14} />}
-              {expandAll ? "Collapse All" : "Expand All"}
-            </button>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {!lockMode && (
-              <>
-                <button
-                  onClick={() => setOpenAdd(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition shadow-sm"
-                >
-                  <Plus size={16} />
-                  Tambah Item
-                </button>
-
-                <WorkLibraryButton
-                  rab_id={rab_id}
-                  project_id={project_id}
-                  onSuccess={reload}
-                />
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* BULK UPLOAD */}
-        {!lockMode && (
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <Upload size={18} className="text-slate-500" />
-              <h3 className="text-sm font-medium text-slate-700">Bulk Upload Excel</h3>
-            </div>
-
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition ${
-                bulkLoading ? "opacity-50 pointer-events-none" : ""
-              } ${
-                isDragActive
-                  ? "border-slate-500 bg-slate-50"
-                  : "border-slate-200 hover:border-slate-300 bg-white"
-              }`}
-            >
-              <input {...getInputProps()} />
-              <div className="space-y-2">
-                {bulkLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-400 border-t-transparent mx-auto" />
-                    <p className="text-sm text-slate-600">Memproses file...</p>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mx-auto h-8 w-8 text-slate-400" />
-                    <p className="text-sm text-slate-600">
-                      {isDragActive ? (
-                        "Drop file di sini..."
-                      ) : (
-                        <>
-                          Drag & drop file <span className="font-semibold">.xlsx</span> atau klik untuk pilih
-                        </>
-                      )}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      Format: scope, item_name, category, qty, unit, material_price, labour_price
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ITEMS TABLE */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
-            <div className="flex items-center gap-2">
-              <Edit3 size={16} className="text-slate-500" />
-              <span className="text-xs font-medium text-slate-600">Daftar Item Pekerjaan</span>
-              {searchTerm && (
-                <span className="text-xs text-slate-400 ml-2">
-                  Menampilkan {filteredItems.length} dari {data.items.length} item
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            {viewMode === "grouped" ? (
-              // GROUPED VIEW
-              <div className="divide-y divide-slate-200">
-                {grouped.length === 0 ? (
-                  <div className="p-12 text-center">
-                    <Package className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                    <p className="text-slate-500">Belum ada item RAB</p>
-                    {!lockMode && (
-                      <p className="text-sm text-slate-400 mt-2">
-                        Gunakan tombol "Tambah Item" atau upload Excel untuk memulai
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  grouped.map((g) => (
-                    <details
-                      key={g.scope}
-                      className="group"
-                      open={expandAll}
-                    >
-                      <summary className="flex items-center justify-between p-4 bg-slate-50 cursor-pointer hover:bg-slate-100 transition list-none">
-                        <div className="flex items-center gap-3">
-                          <ChevronDown size={16} className="text-slate-400 group-open:rotate-0 -rotate-90 transition" />
-                          <span className="font-medium text-slate-800">{g.scope}</span>
-                          <span className="text-xs text-slate-400 bg-white px-2 py-1 rounded-full border border-slate-200">
-                            {g.items.length} item
-                          </span>
-                        </div>
-                        <span className="text-sm font-medium text-emerald-600">
-                          {formatIDR(scopeTotal(g.items))}
-                        </span>
-                      </summary>
-
-                      <div className="p-4">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-slate-200">
-                              <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">No</th>
-                              <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Item Pekerjaan</th>
-                              <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Kategori</th>
-                              <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Qty</th>
-                              <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Unit</th>
-                              <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Material</th>
-                              <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Upah</th>
-                              <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Harga Unit</th>
-                              <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Total</th>
-                              {!lockMode && <th className="pb-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">Aksi</th>}
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {g.items.map((it, idx) => {
-                              const isActionLoading = actionLoading === it.item_id
-                              const isCopying = copyingId === it.item_id
-                              const isDeleting = deletingId === it.item_id
-
-                              return (
-                                <tr key={it.item_id} className="hover:bg-slate-50">
-                                  <td className="py-3 text-slate-400 font-mono text-xs">
-                                    {pad3(globalIndexMap.get(it.item_id) || idx + 1)}
-                                  </td>
-                                  <td className="py-3">
-                                    <InlineEdit
-                                      value={it.item_name}
-                                      disabled={lockMode || isActionLoading}
-                                      onSave={(val) => updateField(it.item_id, { item_name: val })}
-                                      validate={(val) => {
-                                        if (!val || String(val).trim() === "") return "Nama item wajib diisi"
-                                        return true
-                                      }}
-                                    />
-                                    <div className="text-[10px] text-slate-300 font-mono mt-1">
-                                      {it.item_id.slice(-8)}
-                                    </div>
-                                  </td>
-                                  <td className="py-3">
-                                    <InlineEdit
-                                      value={it.category}
-                                      disabled={lockMode || isActionLoading}
-                                      onSave={(val) => updateField(it.item_id, { category: val })}
-                                    />
-                                  </td>
-                                  <td className="py-3 text-right">
-                                    <InlineEdit
-                                      value={it.qty}
-                                      type="number"
-                                      disabled={lockMode || isActionLoading}
-                                      onSave={(val) => {
-                                        const parsed = safeNumber(val)
-                                        if (parsed <= 0) {
-                                          toast.error("Qty harus lebih dari 0")
-                                          return
-                                        }
-                                        updateField(it.item_id, { qty: parsed })
-                                      }}
-                                      validate={(val) => {
-                                        const num = Number(val)
-                                        if (num <= 0) return "Qty harus > 0"
-                                        return true
-                                      }}
-                                    />
-                                  </td>
-                                  <td className="py-3">
-                                    <InlineEdit
-                                      value={it.unit}
-                                      disabled={lockMode || isActionLoading}
-                                      onSave={(val) => updateField(it.item_id, { unit: val })}
-                                      validate={(val) => {
-                                        if (!val || String(val).trim() === "") return "Unit wajib diisi"
-                                        return true
-                                      }}
-                                    />
-                                  </td>
-                                  <td className="py-3 text-right font-mono">
-                                    <InlineEdit
-                                      value={it.material_price}
-                                      type="number"
-                                      disabled={lockMode || isActionLoading}
-                                      onSave={(val) => updateField(it.item_id, { material_price: safeNumber(val) })}
-                                      validate={(val) => {
-                                        const num = Number(val)
-                                        if (num < 0) return "Harga tidak boleh negatif"
-                                        return true
-                                      }}
-                                    />
-                                  </td>
-                                  <td className="py-3 text-right font-mono">
-                                    <InlineEdit
-                                      value={it.labour_price}
-                                      type="number"
-                                      disabled={lockMode || isActionLoading}
-                                      onSave={(val) => updateField(it.item_id, { labour_price: safeNumber(val) })}
-                                      validate={(val) => {
-                                        const num = Number(val)
-                                        if (num < 0) return "Harga tidak boleh negatif"
-                                        return true
-                                      }}
-                                    />
-                                  </td>
-                                  <td className="py-3 text-right font-mono text-slate-600">
-                                    {formatIDR(it.unit_price)}
-                                  </td>
-                                  <td className="py-3 text-right font-mono font-medium text-emerald-600">
-                                    {formatIDR(it.total_price)}
-                                  </td>
-                                  {!lockMode && (
-                                    <td className="py-3 text-center">
-                                      <div className="flex items-center justify-center gap-1">
-                                        <button
-                                          onClick={() => copyItem(it)}
-                                          disabled={isActionLoading || isCopying || isDeleting}
-                                          className="p-1 text-slate-400 hover:text-slate-600 rounded transition disabled:opacity-50"
-                                          title="Copy item"
-                                        >
-                                          {isCopying ? (
-                                            <RefreshCw size={14} className="animate-spin" />
-                                          ) : (
-                                            <Copy size={14} />
-                                          )}
-                                        </button>
-                                        <button
-                                          onClick={() => deleteItem(it)}
-                                          disabled={isActionLoading || isCopying || isDeleting}
-                                          className="p-1 text-slate-400 hover:text-rose-600 rounded transition disabled:opacity-50"
-                                          title="Hapus item"
-                                        >
-                                          {isDeleting ? (
-                                            <RefreshCw size={14} className="animate-spin" />
-                                          ) : (
-                                            <Trash2 size={14} />
-                                          )}
-                                        </button>
-                                      </div>
-                                    </td>
-                                  )}
-                                </tr>
-                              )
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </details>
-                  ))
-                )}
-              </div>
-            ) : (
-              // FLAT VIEW
-              <div className="p-4">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-200">
-                      <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">No</th>
-                      <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Scope</th>
-                      <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Item Pekerjaan</th>
-                      <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Kategori</th>
-                      <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Qty</th>
-                      <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Unit</th>
-                      <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Material</th>
-                      <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Upah</th>
-                      <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Harga Unit</th>
-                      <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Total</th>
-                      {!lockMode && <th className="pb-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">Aksi</th>}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredItems.map((it, idx) => (
-                      <tr key={it.item_id} className="hover:bg-slate-50">
-                        <td className="py-2 text-slate-400 font-mono text-xs">
-                          {pad3(idx + 1)}
-                        </td>
-                        <td className="py-2 text-slate-600">
-                          {it.scope}
-                        </td>
-                        <td className="py-2">
-                          <InlineEdit
-                            value={it.item_name}
-                            disabled={lockMode}
-                            onSave={(val) => updateField(it.item_id, { item_name: val })}
-                          />
-                        </td>
-                        <td className="py-2">
-                          <InlineEdit
-                            value={it.category}
-                            disabled={lockMode}
-                            onSave={(val) => updateField(it.item_id, { category: val })}
-                          />
-                        </td>
-                        <td className="py-2 text-right">
-                          <InlineEdit
-                            value={it.qty}
-                            type="number"
-                            disabled={lockMode}
-                            onSave={(val) => updateField(it.item_id, { qty: safeNumber(val) })}
-                          />
-                        </td>
-                        <td className="py-2">
-                          <InlineEdit
-                            value={it.unit}
-                            disabled={lockMode}
-                            onSave={(val) => updateField(it.item_id, { unit: val })}
-                          />
-                        </td>
-                        <td className="py-2 text-right font-mono">
-                          <InlineEdit
-                            value={it.material_price}
-                            type="number"
-                            disabled={lockMode}
-                            onSave={(val) => updateField(it.item_id, { material_price: safeNumber(val) })}
-                          />
-                        </td>
-                        <td className="py-2 text-right font-mono">
-                          <InlineEdit
-                            value={it.labour_price}
-                            type="number"
-                            disabled={lockMode}
-                            onSave={(val) => updateField(it.item_id, { labour_price: safeNumber(val) })}
-                          />
-                        </td>
-                        <td className="py-2 text-right font-mono text-slate-600">
-                          {formatIDR(it.unit_price)}
-                        </td>
-                        <td className="py-2 text-right font-mono font-medium text-emerald-600">
-                          {formatIDR(it.total_price)}
-                        </td>
-                        {!lockMode && (
-                          <td className="py-2 text-center">
-                            <button
-                              onClick={() => deleteItem(it)}
-                              className="p-1 text-slate-400 hover:text-rose-600 rounded"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          {/* TABLE FOOTER */}
-          <div className="px-4 py-3 border-t border-slate-200 bg-slate-50">
-            <div className="flex items-center justify-between text-sm">
-              <div className="text-slate-500">
-                Total <span className="font-medium text-slate-700">{filteredItems.length}</span> item 
-                {filteredItems.length !== data.items.length && (
-                  <span className="text-slate-400 ml-1">
-                    (dari {data.items.length} total)
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-6">
-                <div>
-                  <span className="text-slate-400 text-xs">Total Material</span>
-                  <span className="ml-2 font-medium text-slate-700">{formatIDR(totalMaterial)}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 text-xs">Total Upah</span>
-                  <span className="ml-2 font-medium text-slate-700">{formatIDR(totalLabour)}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 text-xs">GRAND TOTAL</span>
-                  <span className="ml-2 font-bold text-emerald-600">{formatIDR(totalValue)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ADD ITEM SLIDE PANEL */}
-        {openAdd && (
-          <div className="fixed inset-0 z-50 flex">
-            <div className="flex-1 bg-black/40" onClick={() => setOpenAdd(false)} />
-            <div className="w-[520px] bg-white shadow-2xl h-full p-6 overflow-y-auto">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold text-slate-800">Tambah Item RAB</h2>
-                <button
-                  onClick={() => setOpenAdd(false)}
-                  className="p-2 hover:bg-slate-100 rounded-lg transition"
-                >
-                  <X size={18} className="text-slate-500" />
-                </button>
-              </div>
-
-              <AddItemForm
-                rab_id={rab_id}
-                project_id={project_id}
-                onCreated={(newItem: RabItem) => {
-                  setData((prev) => ({
-                    ...prev,
-                    items: [...prev.items, newItem],
-                  }))
-                  setOpenAdd(false)
-                  toast.success("Item berhasil ditambahkan")
-                }}
-                onSuccess={() => {
-                  reload()
-                  setOpenAdd(false)
-                }}
-              />
-            </div>
-          </div>
-        )}
-        
-        {/* FOOTER */}
-        <div className="flex items-center gap-2 p-4 bg-white border border-slate-200 rounded-xl text-xs text-slate-500">
-          <Lock size={14} className="text-slate-400" />
-          <p>
-            <span className="font-medium text-slate-600">Security Note:</span> Modul ini adalah sumber RAB resmi.{" "}
-            {lockMode
-              ? "RAB dalam mode terkunci (read-only)."
-              : "Perubahan akan langsung tersimpan dan direfleksikan ke sistem."}
-          </p>
-        </div>
-      </div>
-    </div>
-  )
   
   /* ============ UI ============ */
 
@@ -1559,15 +873,20 @@ export default function RABDetailClient({
     <div className="flex flex-wrap gap-2 justify-end">
 
       <button
-        onClick={reload}
-        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-slate-200 rounded-lg hover:bg-slate-100 text-slate-600"
-      >
-        <RefreshCw size={14}/>
-        Reload
-      </button>
+  onClick={reload}
+  disabled={loading}
+  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-slate-200 rounded-lg hover:bg-slate-100 text-slate-600"
+>
+  {loading ? (
+    <div className="animate-spin h-3 w-3 border border-slate-400 border-t-transparent rounded-full" />
+  ) : (
+    <RefreshCw size={14}/>
+  )}
+  Reload
+</button>
 
       <button
-        onClick={() => handlePrint(rab_id)}
+        onClick={() => handlePrint(rab_id, data, totalValue)}
         className="inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-slate-200 rounded-lg hover:bg-slate-100 text-slate-600"
       >
         <Printer size={14}/>
@@ -2053,50 +1372,52 @@ export default function RABDetailClient({
           )}
         </div>
 
-        {/* ADD ITEM SLIDE PANEL */}
-        {openAdd && (
-          <div className="fixed inset-0 z-50 flex">
-            {/* Backdrop */}
-            <div
-              className="flex-1 bg-black/40"
-              onClick={() => setOpenAdd(false)}
-            />
+        {/* ADD ITEM SLIDE PANEL - FIXED */}
+{openAdd && (
+  <div className="fixed inset-0 z-50 flex">
+    {/* Backdrop */}
+    <div
+      className="flex-1 bg-black/40"
+      onClick={() => setOpenAdd(false)}
+    />
 
-            {/* Panel */}
-            <div className="w-[520px] bg-white shadow-2xl h-full p-6 overflow-y-auto transform transition-transform duration-300 ease-in-out translate-x-0">
-              
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold text-slate-800">
-                  Tambah Item RAB
-                </h2>
-                <button
-                  onClick={() => setOpenAdd(false)}
-                  className="text-slate-500 hover:text-slate-800"
-                >
-                  ✕
-                </button>
-              </div>
+    {/* Panel - ✅ FIX: className sebagai prop */}
+    <div className={`w-[520px] bg-white shadow-2xl h-full p-6 overflow-y-auto transform transition-transform duration-300 ${
+      openAdd ? "translate-x-0" : "translate-x-full"
+    }`}>
+      
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-lg font-semibold text-slate-800">
+          Tambah Item RAB
+        </h2>
+        <button
+          onClick={() => setOpenAdd(false)}
+          className="text-slate-500 hover:text-slate-800"
+        >
+          ✕
+        </button>
+      </div>
 
-              <AddItemForm
-                rab_id={rab_id}
-                project_id={project_id}
-                onCreated={(newItem: RabItem) => {
-                  setData((prev) => ({
-                    ...prev,
-                    items: [...prev.items, newItem],
-                  }))
-                  setOpenAdd(false)
-                  toast.success("Item berhasil ditambahkan")
-                }}
-                onSuccess={() => {
-                  reload()
-                  setOpenAdd(false)
-                }}
-              />
+      <AddItemForm
+        rab_id={rab_id}
+        project_id={project_id}
+        onCreated={(newItem: RabItem) => {
+          setData((prev) => ({
+            ...prev,
+            items: [...prev.items, newItem],
+          }))
+          setOpenAdd(false)
+          toast.success("Item berhasil ditambahkan")
+        }}
+        onSuccess={() => {
+          reload()
+          setOpenAdd(false)
+        }}
+      />
 
-            </div>
-          </div>
-        )}
+    </div>
+  </div>
+)}
         
         {/* FOOTER */}
         <div className="flex items-center gap-2 p-4 bg-slate-100/50 border border-slate-200 rounded-xl text-xs text-slate-500">

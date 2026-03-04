@@ -405,52 +405,7 @@ export default function PackagePage() {
       )}
     </div>
   )
-}  const packages: Package[] = [
-    {
-      id: '1',
-      name: 'Paket Kamar Mandi 3x4',
-      description: 'Complete bathroom package with standard spec',
-      category: 'Wet Area',
-      items: 24,
-      usageCount: 45,
-      lastUsed: '2026-02-20',
-      estimatedCost: 45000000,
-      status: 'active'
-    },
-    {
-      id: '2',
-      name: 'Paket Dapur Minimalis',
-      description: 'Modern kitchen with island',
-      category: 'Dry Area',
-      items: 32,
-      usageCount: 38,
-      lastUsed: '2026-02-19',
-      estimatedCost: 65000000,
-      status: 'active'
-    },
-    {
-      id: '3',
-      name: 'Paket Ruang Tamu Mewah',
-      description: 'Luxury living room with high-end finish',
-      category: 'Interior',
-      items: 28,
-      usageCount: 32,
-      lastUsed: '2026-02-18',
-      estimatedCost: 85000000,
-      status: 'active'
-    },
-    {
-      id: '4',
-      name: 'Paket Pondasi Rumah',
-      description: 'Standard foundation package',
-      category: 'Structure',
-      items: 18,
-      usageCount: 28,
-      lastUsed: '2026-02-15',
-      estimatedCost: 125000000,
-      status: 'draft'
-    }
-  ]
+}  
 
   const categories = ['Wet Area', 'Dry Area', 'Interior', 'Structure', 'Exterior']
 

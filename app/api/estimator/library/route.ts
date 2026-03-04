@@ -32,41 +32,31 @@ const SHEET_NAME = "WORK_LIBRARY"
 const COLUMNS = {
   PACKAGE_ID: 0,
   PACKAGE_NAME: 1,
-  CATEGORY_ID: 2,
+  SCOPE: 2,
   CATEGORY: 3,
-  SCOPE_ID: 4,
-  SCOPE: 5,
-  JOB_NAME_ID: 6,
-  JOB_NAME: 7,
-  UNIT: 8,
-  MATERIAL_PRICE: 9,
-  LABOUR_PRICE: 10,
-  TOTAL_PRICE: 11,
-  STATUS: 12,
-  CREATED_AT: 13,
-  CREATED_BY: 14,
-  UPDATED_AT: 15,
-  UPDATED_BY: 16,
-  NOTES: 17,
+  JOB_NAME: 4,
+  UNIT: 5,
+  STATUS: 6,
+  CREATED_AT: 7,
+  CREATED_BY: 8,
+  UPDATED_AT: 9,
+  UPDATED_BY: 10,
+  NOTES: 11,
 } as const
 
 const RETRYABLE_CODES: number[] = [408, 429, 502, 503]
-const REQUIRED_COLUMNS = Object.keys(COLUMNS).length
+const REQUIRED_COLUMNS = 6 
+const VALID_STATUS = ['active', 'inactive', 'archived', 'all'] as const
+type StatusType = typeof VALID_STATUS[number]
 
 /* ================= TYPES ================= */
 export type WorkLibraryItem = {
   package_id: string
   package_name: string
-  category_id: string
-  category: string
-  scope_id: string
   scope: string
-  job_name_id: string
+  category: string
   job_name: string
   unit: string
-  material_price: number
-  labour_price: number
-  total_price: number
   status: string
   created_at: string
   created_by: string
@@ -89,6 +79,10 @@ export type WorkLibraryResponse = {
   metadata?: {
     total_packages: number
     total_items: number
+    filters?: {
+      category?: string | null
+      status?: string
+    }
   }
 }
 
@@ -114,6 +108,14 @@ const logger = {
       context,
       ...metadata
     }))
+  },
+  warn: (context: string, metadata: any = {}) => {
+    console.warn(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'warn',
+      context,
+      ...metadata
+    }))
   }
 }
 
@@ -121,7 +123,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   try {
     return await fn()
   } catch (error: any) {
-    if (retries > 0 && RETRYABLE_CODES.includes(Number(error.code))) { // ✅ FIXED
+    if (retries > 0 && RETRYABLE_CODES.includes(Number(error.code))) {
       const delay = 1000 * (4 - retries)
       await new Promise(resolve => setTimeout(resolve, delay))
       return withRetry(fn, retries - 1)
@@ -130,11 +132,8 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   }
 }
 
-function safeParseNumber(value: any): number {
-  if (value === null || value === undefined) return 0
-  const cleaned = String(value).replace(/[^\d-]/g, '')
-  const num = Number(cleaned)
-  return isNaN(num) ? 0 : num
+function isEmptyRow(row: any[]): boolean {
+  return row.every(cell => !cell || cell.toString().trim() === '')
 }
 
 /* ================= MAIN API ================= */
@@ -142,17 +141,28 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
     const categoryId = searchParams.get('category_id')
-    const requestedStatus = (searchParams.get('status') || 'active').toLowerCase()
+    const requestedStatus = (searchParams.get('status') || 'active').toLowerCase() as StatusType
+
+    // ✅ Validasi status
+    if (!VALID_STATUS.includes(requestedStatus as any)) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Status tidak valid. Gunakan: active, inactive, archived, atau all" 
+        },
+        { status: 400 }
+      )
+    }
 
     logger.info('Fetching work library data', { 
       categoryId, 
-      status: requestedStatus  // ✅ FIXED
+      status: requestedStatus
     })
 
     const res = await withRetry(() =>
       sheets.spreadsheets.values.get({
         spreadsheetId: SHEET_ID,
-        range: `${SHEET_NAME}!A2:R`,
+        range: `${SHEET_NAME}!A2:L`,
       })
     )
 
@@ -162,44 +172,53 @@ export async function GET(req: Request) {
       return NextResponse.json({
         success: true,
         data: [],
-        metadata: { total_packages: 0, total_items: 0 }
+        metadata: { 
+          total_packages: 0, 
+          total_items: 0,
+          filters: { category: categoryId, status: requestedStatus }
+        }
       })
     }
 
     const packageMap = new Map<string, WorkLibraryPackage>()
     let totalItems = 0
+    let skippedRows = 0
 
     for (const row of rows) {
-      if (row.length < REQUIRED_COLUMNS) continue
+      // ✅ Skip baris kosong
+      if (isEmptyRow(row)) {
+        skippedRows++
+        continue
+      }
 
-      const packageId = row[COLUMNS.PACKAGE_ID]?.trim()
-      const itemStatus = row[COLUMNS.STATUS]?.toString().trim().toLowerCase() || 'active'
+      // ✅ Validasi panjang row
+      if (row.length < REQUIRED_COLUMNS) {
+        logger.warn('Row has insufficient columns', { 
+          length: row.length, 
+          required: REQUIRED_COLUMNS,
+          row: row.slice(0, 3) // Log first 3 cells for debugging
+        })
+        continue
+      }
+
+      const packageId = row[COLUMNS.PACKAGE_ID]?.toString().trim()
+      const itemStatus = (row[COLUMNS.STATUS] || 'ACTIVE').toString().trim().toLowerCase()
       
       if (!packageId) continue
 
       // Filter by status
       if (requestedStatus !== 'all' && itemStatus !== requestedStatus) continue
 
-      // Filter by category
-      if (categoryId && row[COLUMNS.CATEGORY_ID]?.trim() !== categoryId) continue
-
-      const materialPrice = safeParseNumber(row[COLUMNS.MATERIAL_PRICE])
-      const labourPrice = safeParseNumber(row[COLUMNS.LABOUR_PRICE])
-      const totalPrice = safeParseNumber(row[COLUMNS.TOTAL_PRICE]) || (materialPrice + labourPrice)
+      // ✅ Filter by category (case-insensitive)
+      if (categoryId && row[COLUMNS.CATEGORY]?.toString().trim().toLowerCase() !== categoryId.toLowerCase()) continue
 
       const item: WorkLibraryItem = {
         package_id: packageId,
         package_name: row[COLUMNS.PACKAGE_NAME]?.trim() || '',
-        category_id: row[COLUMNS.CATEGORY_ID]?.trim() || '',
-        category: row[COLUMNS.CATEGORY]?.trim() || '',
-        scope_id: row[COLUMNS.SCOPE_ID]?.trim() || '',
         scope: row[COLUMNS.SCOPE]?.trim() || '',
-        job_name_id: row[COLUMNS.JOB_NAME_ID]?.trim() || '',
+        category: row[COLUMNS.CATEGORY]?.trim() || '',
         job_name: row[COLUMNS.JOB_NAME]?.trim() || '',
         unit: row[COLUMNS.UNIT]?.trim() || '',
-        material_price: materialPrice,
-        labour_price: labourPrice,
-        total_price: totalPrice,
         status: itemStatus,
         created_at: row[COLUMNS.CREATED_AT] || '',
         created_by: row[COLUMNS.CREATED_BY] || '',
@@ -215,6 +234,16 @@ export async function GET(req: Request) {
           category: item.category,
           items: []
         })
+      } else {
+        // ✅ Opsional: validasi konsistensi package_name
+        const existing = packageMap.get(packageId)!
+        if (existing.package_name !== item.package_name) {
+          logger.warn('Inconsistent package_name', { 
+            packageId, 
+            existing: existing.package_name, 
+            new: item.package_name 
+          })
+        }
       }
 
       packageMap.get(packageId)!.items.push(item)
@@ -227,9 +256,10 @@ export async function GET(req: Request) {
     logger.info('Work library fetched successfully', { 
       total_packages: packages.length,
       total_items: totalItems,
+      skipped_rows: skippedRows,
       filters: { 
         categoryId, 
-        status: requestedStatus  // ✅ FIXED
+        status: requestedStatus
       }
     })
 
@@ -238,7 +268,11 @@ export async function GET(req: Request) {
       data: packages,
       metadata: {
         total_packages: packages.length,
-        total_items: totalItems
+        total_items: totalItems,
+        filters: {
+          category: categoryId,
+          status: requestedStatus
+        }
       }
     })
 

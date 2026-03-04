@@ -8,13 +8,15 @@ import {
   Edit3,
   FileText,
   Lock,
-Unlock,
+  Unlock,
   Plus,
   RefreshCw,
   Save,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  X
 } from "lucide-react"
+import { toast } from "sonner"
 
 // ================= TYPES =================
 type BoqStatus = "DRAFT" | "LOCKED" | "APPROVED" | "REJECTED" | "ARCHIVED"
@@ -40,6 +42,17 @@ type BoqItem = {
   volume: number
   unit: string
   unit_price: number
+}
+
+type LibraryItem = {
+  package_id: string
+  package_name: string
+  job_name: string
+  category: string
+  scope: string
+  unit: string
+  material_price?: number
+  labour_price?: number
 }
 
 // ================= HELPERS =================
@@ -81,6 +94,10 @@ export default function BoqDetailPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasUnsaved, setHasUnsaved] = useState(false)
+  const [library, setLibrary] = useState<LibraryItem[]>([])
+const [libraryLoading, setLibraryLoading] = useState(false)
+const [showLibrary, setShowLibrary] = useState(false)
+const [search, setSearch] = useState("")
 
   const lockMode = useMemo(
     () => header && header.status !== "DRAFT",
@@ -99,10 +116,17 @@ export default function BoqDetailPage() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [hasUnsaved])
 
-  
+  // ================= ESC KEY FOR MODAL =================
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowLibrary(false)
+    }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [])
 
   // ================= LOAD DATA =================
-  async function loadData() {
+  const loadData = useCallback(async () => {
     if (!boqId) return
     setLoading(true)
     setError(null)
@@ -125,11 +149,35 @@ export default function BoqDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [boqId])
+
+  const loadLibrary = useCallback(async () => {
+    setLibraryLoading(true)
+    try {
+      const res = await fetch("/api/estimator/library?status=active")
+      const json = await res.json()
+
+      if (json.success) {
+        const flatItems = json.data.flatMap((pkg: any) =>
+          pkg.items.map((it: any) => ({
+            ...it,
+            package_name: pkg.package_name,
+          }))
+        )
+        setLibrary(flatItems)
+      }
+    } catch (err) {
+      console.error("Failed load library", err)
+      toast.error("Gagal memuat library")
+    } finally {
+      setLibraryLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     loadData()
-  }, [boqId])
+    loadLibrary()
+  }, [loadData, loadLibrary])
 
   // ================= INLINE ITEM HANDLER =================
   const updateItem = useCallback((itemId: string, patch: Partial<BoqItem>) => {
@@ -167,6 +215,33 @@ export default function BoqDetailPage() {
     setHasUnsaved(true)
   }, [])
 
+  // ================= ADD FROM LIBRARY =================
+  const addFromLibrary = useCallback((lib: LibraryItem) => {
+
+  setItems(prev => {
+
+    const maxLine =
+      prev.length > 0 ? Math.max(...prev.map(it => it.line_no || 0)) : 0
+
+    const newItem: BoqItem = {
+      item_id: generateTempId(),
+      line_no: maxLine + 1,
+      description: lib.job_name,
+      category: lib.category,
+      volume: 1,
+      unit: lib.unit,
+      unit_price: (lib.material_price || 0) + (lib.labour_price || 0),
+    }
+
+    return [...prev, newItem]
+  })
+
+  setHasUnsaved(true)
+  setShowLibrary(false)
+  toast.success(`"${lib.job_name}" ditambahkan ke BOQ`)
+
+}, [])
+
   // ================= TOTALS =================
   const totals = useMemo(() => {
     const total_items = items.length
@@ -182,6 +257,20 @@ export default function BoqDetailPage() {
   // ================= SAVE =================
   const handleSave = useCallback(async () => {
     if (!header) return
+
+    // Validasi
+    const invalidItems = items.filter(it => !it.description.trim())
+    if (invalidItems.length > 0) {
+      toast.error("Semua item harus memiliki deskripsi")
+      return
+    }
+
+    const zeroVolumeItems = items.filter(it => it.volume <= 0)
+    if (zeroVolumeItems.length > 0) {
+      toast.error("Volume harus lebih dari 0")
+      return
+    }
+
     setSaving(true)
     setError(null)
 
@@ -213,13 +302,15 @@ export default function BoqDetailPage() {
 
       await loadData()
       setHasUnsaved(false)
+      toast.success("BOQ berhasil disimpan")
     } catch (err) {
       console.error("Save BOQ error:", err)
       setError("Gagal menyimpan perubahan")
+      toast.error("Gagal menyimpan perubahan")
     } finally {
       setSaving(false)
     }
-  }, [header, items, totals])
+  }, [header, items, totals, loadData])
 
   // ================= KEYBOARD SHORTCUTS =================
   useEffect(() => {
@@ -265,13 +356,15 @@ export default function BoqDetailPage() {
       }
 
       await loadData()
+      toast.success(lockMode ? "BOQ dibuka" : "BOQ dikunci")
     } catch (err) {
       console.error("Lock BOQ error:", err)
       setError("Gagal mengubah status lock")
+      toast.error("Gagal mengubah status lock")
     } finally {
       setSaving(false)
     }
-  }, [header, lockMode])
+  }, [header, lockMode, loadData])
 
   // ================= RENDER LOADING =================
   if (loading && !header) {
@@ -461,7 +554,15 @@ export default function BoqDetailPage() {
               </p>
             </div>
 
-            {!lockMode && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowLibrary(true)}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-slate-300 rounded-lg hover:bg-slate-100"
+              >
+                <Plus size={14} />
+                Library
+              </button>
+
               <button
                 onClick={addRow}
                 className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-slate-900 text-white rounded-lg hover:bg-slate-800"
@@ -469,7 +570,7 @@ export default function BoqDetailPage() {
                 <Plus size={14} />
                 Add Row
               </button>
-            )}
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -665,6 +766,76 @@ export default function BoqDetailPage() {
             </table>
           </div>
         </div>
+
+        {/* LIBRARY MODAL */}
+        {showLibrary && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white w-[700px] max-h-[80vh] overflow-auto rounded-xl shadow-lg">
+              <div className="flex justify-between items-center p-4 border-b sticky top-0 bg-white">
+                <h3 className="font-semibold">Work Library</h3>
+                <button 
+                  onClick={() => setShowLibrary(false)}
+                  className="p-1 hover:bg-slate-100 rounded"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-4 space-y-2">
+
+<input
+  placeholder="Cari pekerjaan..."
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
+  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-3"
+/>
+                {libraryLoading ? (
+                  <div className="flex items-center justify-center py-8 text-slate-400">
+                    <RefreshCw className="animate-spin mr-2" size={16} />
+                    Memuat library...
+                  </div>
+                ) : library.length === 0 ? (
+                  <div className="text-center py-8 text-slate-400">
+                    Tidak ada item di library
+                  </div>
+                ) : (
+                  library
+  .filter(it => {
+    const q = search.toLowerCase()
+
+    return (
+      it.job_name.toLowerCase().includes(q) ||
+      it.category.toLowerCase().includes(q) ||
+      it.package_name.toLowerCase().includes(q)
+    )
+  })
+  .map((it) => (
+                    <div
+                      key={`${it.package_id}-${it.job_name}`}
+                      className="flex justify-between border p-2 rounded hover:bg-slate-50"
+                    >
+                      <div>
+                        <div className="text-sm font-medium">{it.job_name}</div>
+                        <div className="text-xs text-slate-400">
+                          {it.category} • {it.unit}
+                          {it.material_price ? ` • Mat: ${formatIDR(it.material_price)}` : ''}
+                          {it.labour_price ? ` • Lab: ${formatIDR(it.labour_price)}` : ''}
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => addFromLibrary(it)}
+                        className="text-xs bg-slate-900 text-white px-3 py-1 rounded hover:bg-slate-700"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* BOTTOM INFO */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[11px] text-slate-500">

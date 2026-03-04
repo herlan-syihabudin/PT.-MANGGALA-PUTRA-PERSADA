@@ -27,7 +27,7 @@ import {
   AlertTriangle,
   Download,
   Edit3,
-  Plus
+  Plus, Library
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -938,22 +938,27 @@ const ws = wb.Sheets[sheetName]
 </div>
         
         {/* TOOLBAR ACTION */}
-        {!lockMode && (
-          <div className="flex justify-between items-center">
-            <button
-              onClick={() => setOpenAdd(true)}
-              className="h-9 px-4 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 transition"
-            >
-              + Tambah Item
-            </button>
+{!lockMode && (
+  <div className="flex items-center gap-2">
 
-            <WorkLibraryButton
-              rab_id={rab_id}
-              project_id={project_id}
-              onSuccess={reload}
-            />
-          </div>
-        )}
+    <button
+      type="button"
+      className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition"
+    >
+      <Plus size={16} />
+      Tambah
+    </button>
+
+    <button
+      type="button"
+      className="flex items-center gap-2 px-3 py-2 text-sm font-medium border border-slate-300 rounded-lg hover:bg-slate-50 transition"
+    >
+      <Library size={16} />
+      Library
+    </button>
+
+  </div>
+)}
 
         {/* BULK UPLOAD (hanya jika tidak lock) */}
         {!lockMode && (

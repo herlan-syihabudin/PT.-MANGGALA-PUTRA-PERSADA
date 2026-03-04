@@ -55,33 +55,27 @@ export async function POST(req: Request) {
     const scopeId = `SCOPE-${categorySlug}`
 
     // ===== PREPARE ROWS =====
-    const rows = items.map((item: any) => {
-      // Validasi per item
-      if (!item.jobId || !item.jobName || !item.unit) {
-        throw new Error(`Item ${item.jobName || 'unknown'} missing required fields`)
-      }
+    const rows = items.map((item:any)=>{
 
-      return [
-        packageId,                    // PACKAGE_ID
-        name,                         // PACKAGE_NAME
-        categoryId,                   // CATEGORY_ID
-        category,                     // CATEGORY (denormalized)
-        scopeId,                      // SCOPE_ID
-        category,                     // SCOPE (denormalized - bisa diubah nanti)
-        item.jobId,                   // JOB_NAME_ID
-        item.jobName,                 // JOB_NAME
-        item.unit,                    // UNIT
-        0,                            // MATERIAL_PRICE (to be filled later)
-        0,                            // LABOUR_PRICE (to be filled later)
-        0,                            // TOTAL_PRICE
-        status || 'active',           // STATUS
-        now,                          // CREATED_AT
-        createdBy,                    // CREATED_BY
-        now,                          // UPDATED_AT
-        createdBy,                    // UPDATED_BY
-        notes || ''                   // NOTES
-      ]
-    })
+ if(!item.jobName || !item.unit){
+   throw new Error(`Item ${item.jobName || 'unknown'} missing required fields`)
+ }
+
+ return [
+   packageId,                 // A package_id
+   name,                      // B package_name
+   category,                  // C scope
+   category,                  // D category
+   item.jobName,              // E job_name
+   item.unit,                 // F unit
+   status || "active",        // G status
+   now,                       // H created_at
+   createdBy,                 // I created_by
+   now,                       // J updated_at
+   createdBy,                 // K updated_by
+   notes || ""                // L notes
+ ]
+})
 
     // ===== AUTH =====
     const auth = new google.auth.JWT(
@@ -97,7 +91,7 @@ export async function POST(req: Request) {
     // ===== APPEND TO SHEET =====
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: "WORK_LIBRARY!A:R",
+      range: "WORK_LIBRARY!A:L",
       valueInputOption: "RAW",
       requestBody: { values: rows }
     })

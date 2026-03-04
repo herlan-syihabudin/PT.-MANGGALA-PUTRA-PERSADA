@@ -67,7 +67,6 @@ export default function CategoryPage() {
   
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState<string[]>([])
-  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // ========== FETCH CATEGORIES FROM API ==========
   const fetchCategories = useCallback(async (showRefresh = false) => {
@@ -272,7 +271,7 @@ const rootCategories = Array.from(categoryMap.values()).sort((a, b) =>
           ))}
       </>
     )
-  }, [expanded, toggleExpand, handleDelete, deletingId])
+ }, [expanded, toggleExpand, deletingId])
 
   // ========== LOADING STATE ==========
   if (loading) {

@@ -26,6 +26,15 @@ import {
   Lock,
   Unlock,
   AlertTriangle,
+  Download,
+  Grid3x3,
+  List,
+  Settings,
+  Save,
+  X,
+  Check,
+  MoreVertical,
+  Edit3,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -35,6 +44,1469 @@ export type RabItem = {
   item_id: string
   rab_id: string
   project_id: string
+  scope: string
+  item_name: string
+  category: string
+  qty: number
+  unit: string
+  material_price: number
+  labour_price: number
+  unit_price: number
+  total_price: number
+  status: string
+  created_by?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export type RabResponse = {
+  rab_id?: string
+  project_id: string
+  header?: any
+  summary: { total_items: number; total_value: number }
+  items: RabItem[]
+}
+
+type Props = {
+  rab_id: string
+  project_id: string
+  initialData: RabResponse
+  mode?: "view" | "edit"
+}
+
+/* ============ SAFE NUMBER HELPER ============ */
+function safeNumber(x: any): number {
+  if (x === null || x === undefined || x === "") return 0
+  const v = Number(x)
+  return Number.isFinite(v) && v >= 0 ? v : 0
+}
+
+function pad3(i: number) {
+  return String(i).padStart(3, "0")
+}
+
+function groupByScope(items: RabItem[]) {
+  const map = new Map<string, RabItem[]>()
+  for (const it of items) {
+    const key = (it.scope || "Tanpa Scope").trim() || "Tanpa Scope"
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(it)
+  }
+  const scopes = Array.from(map.keys()).sort((a, b) => a.localeCompare(b))
+  return scopes.map((scope) => ({
+    scope,
+    items: (map.get(scope) || []).slice().sort((a, b) => {
+      const ta = a.created_at || ""
+      const tb = b.created_at || ""
+      if (ta !== tb) return ta.localeCompare(tb)
+      return (a.item_name || "").localeCompare(b.item_name || "")
+    }),
+  }))
+}
+
+/* ============ PRINT FUNCTION ============ */
+function handlePrint(rab_id: string, data: RabResponse, totalValue: number) {
+  const printWindow = window.open("", "_blank", "width=1200,height=800")
+  if (!printWindow) return
+
+  const groupedItems = groupByScope(data.items)
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>RAB - ${rab_id}</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          background: white;
+          padding: 40px;
+          color: #1e293b;
+        }
+        .header {
+          margin-bottom: 32px;
+          border-bottom: 1px solid #e2e8f0;
+          padding-bottom: 20px;
+        }
+        h1 {
+          font-size: 28px;
+          font-weight: 300;
+          letter-spacing: -0.02em;
+          color: #0f172a;
+        }
+        h2 {
+          font-size: 14px;
+          font-weight: 400;
+          color: #64748b;
+          margin-top: 4px;
+        }
+        .badge {
+          display: inline-block;
+          padding: 4px 12px;
+          background: #f1f5f9;
+          color: #334155;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 500;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 24px;
+          font-size: 12px;
+        }
+        th {
+          background: #f8fafc;
+          color: #475569;
+          font-weight: 600;
+          text-align: left;
+          padding: 12px;
+          border: 1px solid #e2e8f0;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        td {
+          padding: 10px 12px;
+          border: 1px solid #e2e8f0;
+          color: #1e293b;
+        }
+        .scope-header {
+          background: #f1f5f9;
+          font-weight: 600;
+        }
+        .text-right { text-align: right; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .summary-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+          margin: 24px 0;
+        }
+        .summary-card {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 16px;
+        }
+        .summary-label {
+          font-size: 11px;
+          color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .summary-value {
+          font-size: 18px;
+          font-weight: 600;
+          color: #0f172a;
+          margin-top: 4px;
+        }
+        .footer {
+          margin-top: 40px;
+          padding-top: 20px;
+          border-top: 1px solid #e2e8f0;
+          font-size: 10px;
+          color: #94a3b8;
+          text-align: center;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>RINCIAN ANGGARAN BIAYA (RAB)</h1>
+        <h2>ID: ${rab_id} • ${data.header?.project_name || 'Project'} • ${data.header?.customer_name || 'Customer'}</h2>
+        <span class="badge">${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="summary-label">Total Item</div>
+          <div class="summary-value">${data.items.length}</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Total Material</div>
+          <div class="summary-value">${formatIDR(data.items.reduce((sum, i) => sum + safeNumber(i.material_price) * safeNumber(i.qty), 0))}</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Total Labour</div>
+          <div class="summary-value">${formatIDR(data.items.reduce((sum, i) => sum + safeNumber(i.labour_price) * safeNumber(i.qty), 0))}</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Total Nilai</div>
+          <div class="summary-value">${formatIDR(totalValue)}</div>
+        </div>
+      </div>
+
+      ${groupedItems.map(g => `
+        <h3 style="margin: 24px 0 12px; font-size: 16px; font-weight: 500;">${g.scope}</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Item Pekerjaan</th>
+              <th>Kategori</th>
+              <th>Qty</th>
+              <th>Unit</th>
+              <th>Material</th>
+              <th>Upah</th>
+              <th>Harga Unit</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${g.items.map((it, idx) => {
+              const no = String(idx + 1).padStart(3, '0')
+              return `
+                <tr>
+                  <td>${no}</td>
+                  <td>${it.item_name}</td>
+                  <td>${it.category || '-'}</td>
+                  <td class="text-right">${it.qty}</td>
+                  <td>${it.unit}</td>
+                  <td class="text-right font-mono">${formatIDR(it.material_price)}</td>
+                  <td class="text-right font-mono">${formatIDR(it.labour_price)}</td>
+                  <td class="text-right font-mono">${formatIDR(it.unit_price)}</td>
+                  <td class="text-right font-mono">${formatIDR(it.total_price)}</td>
+                </tr>
+              `
+            }).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="background: #f8fafc;">
+              <td colspan="8" class="text-right" style="font-weight: 600;">SUBTOTAL ${g.scope}</td>
+              <td class="text-right font-mono" style="font-weight: 600;">${formatIDR(g.items.reduce((sum, i) => sum + safeNumber(i.total_price), 0))}</td>
+            </tr>
+          </tfoot>
+        </table>
+      `).join('')}
+
+      <div class="footer">
+        <p>Dokumen ini digenerate secara otomatis dari sistem ERP MPP • ${new Date().toLocaleString('id-ID')}</p>
+      </div>
+    </body>
+    </html>
+  `
+
+  printWindow.document.write(html)
+  printWindow.document.close()
+  printWindow.print()
+}
+
+/* ============ IMPROVED DEBOUNCE HOOK ============ */
+function useDebouncedCommit<T extends (...args: any[]) => void>(fn: T, delay = 600) {
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [])
+  
+  return useCallback((...args: Parameters<T>) => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => fn(...args), delay)
+  }, [fn, delay])
+}
+
+/* ============ INLINE EDIT ============ */
+
+function InlineEdit({
+  value,
+  type = "text",
+  onSave,
+  disabled,
+  validate,
+}: {
+  value: string | number
+  type?: "text" | "number"
+  onSave: (val: string) => void
+  disabled?: boolean
+  validate?: (val: any) => boolean | string
+}) {
+  const [editing, setEditing] = useState(false)
+  const [temp, setTemp] = useState(String(value))
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setTemp(String(value))
+    setError(null)
+  }, [value])
+
+  const handleSave = () => {
+    if (validate) {
+      const result = validate(temp)
+      if (result !== true) {
+        setError(typeof result === "string" ? result : "Validasi gagal")
+        return
+      }
+    }
+    
+    setEditing(false)
+    setError(null)
+    if (temp !== String(value)) {
+      onSave(temp)
+    }
+  }
+
+  if (disabled) return <span className="text-slate-600">{value}</span>
+
+  if (!editing) {
+    return (
+      <div
+        onClick={() => setEditing(true)}
+        className="group cursor-pointer px-2 py-1 rounded-md hover:bg-slate-100 transition flex items-center gap-1"
+      >
+        <span className="text-slate-700">{value || "-"}</span>
+        <Edit3 size={12} className="opacity-0 group-hover:opacity-50 text-slate-400" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative">
+      <input
+        autoFocus
+        type={type}
+        value={temp}
+        onChange={(e) => {
+          setTemp(e.target.value)
+          setError(null)
+        }}
+        onBlur={handleSave}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") handleSave()
+          if (e.key === "Escape") {
+            setTemp(String(value))
+            setEditing(false)
+            setError(null)
+          }
+        }}
+        className={`w-full px-2 py-1 text-sm border rounded-md focus:outline-none focus:ring-2 ${
+          error 
+            ? 'border-red-300 focus:ring-red-200' 
+            : 'border-slate-300 focus:border-slate-500 focus:ring-slate-200'
+        }`}
+        step={type === "number" ? "any" : undefined}
+      />
+      {error && (
+        <div className="absolute -bottom-5 left-0 text-xs text-red-500 whitespace-nowrap">
+          {error}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ============ MAIN CLIENT COMPONENT ============ */
+
+export default function RABDetailClient({
+  rab_id,
+  project_id,
+  initialData,
+  mode = "edit",
+}: Props) {
+  const [data, setData] = useState<RabResponse>(initialData)
+  const [loading, setLoading] = useState(false)
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [copyingId, setCopyingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const [searchTerm, setSearchTerm] = useState("")
+  const [expandAll, setExpandAll] = useState(true)
+  const [viewMode, setViewMode] = useState<"grouped" | "flat">("grouped")
+
+  const rabStatus = data.header?.status || "DRAFT"
+  const statusNormalized = (data.header?.status || "DRAFT").toUpperCase()
+  const lockMode =
+    mode === "view" ||
+    statusNormalized === "LOCKED" ||
+    statusNormalized === "APPROVED"
+
+  const globalItems = useMemo(() => {
+    return [...data.items].sort((a, b) => {
+      const ta = a.created_at || ""
+      const tb = b.created_at || ""
+      return ta.localeCompare(tb)
+    })
+  }, [data.items])
+
+  // Item numbering based on created_at timestamp
+  const globalIndexMap = useMemo(() => {
+    const map = new Map<string, number>()
+    const sorted = [...globalItems].sort((a, b) => {
+      const ta = a.created_at ? new Date(a.created_at).getTime() : 0
+      const tb = b.created_at ? new Date(b.created_at).getTime() : 0
+      return ta - tb
+    })
+    sorted.forEach((it, i) => {
+      map.set(it.item_id, i + 1)
+    })
+    return map
+  }, [globalItems])
+
+  const [overheadPct, setOverheadPct] = useState<number>(10)
+  const [profitPct, setProfitPct] = useState<number>(10)
+  const [openAdd, setOpenAdd] = useState(false)
+
+  async function reload() {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/estimator/rab/${rab_id}`, { cache: "no-store" })
+
+      if (!res.ok) {
+        toast.error("Gagal refresh data")
+        return
+      }
+
+      const raw = await res.json()
+
+      const normalized: RabResponse = {
+        rab_id: raw.rab_id,
+        project_id: raw.project_id ?? "",
+        header: {
+          status: raw.status,
+          created_by: raw.created_by,
+          created_at: raw.created_at,
+          customer_name: raw.customer_name,
+          project_name: raw.project_name,
+        },
+        summary: {
+          total_items: raw.total_items ?? raw.items?.length ?? 0,
+          total_value: raw.total_value ?? 0,
+        },
+        items: raw.items ?? [],
+      }
+
+      setData(normalized)
+      toast.success("Data berhasil direfresh")
+    } catch {
+      toast.error("Gagal refresh data")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const totalValue = useMemo(
+    () => data.items.reduce((sum, i) => sum + safeNumber(i.total_price), 0),
+    [data.items]
+  )
+
+  const totalMaterial = useMemo(
+    () => data.items.reduce((sum, i) => sum + safeNumber(i.material_price) * safeNumber(i.qty), 0),
+    [data.items]
+  )
+
+  const totalLabour = useMemo(
+    () => data.items.reduce((sum, i) => sum + safeNumber(i.labour_price) * safeNumber(i.qty), 0),
+    [data.items]
+  )
+
+  const sellTotal = useMemo(() => {
+    const factor = 1 + overheadPct / 100 + profitPct / 100
+    return Math.round(totalValue * factor)
+  }, [totalValue, overheadPct, profitPct])
+
+  const filteredItems = useMemo(() => {
+    if (!searchTerm) return data.items
+    return data.items.filter(
+      (i) =>
+        (i.item_name || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (i.scope || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (i.category || "").toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }, [data.items, searchTerm])
+
+  const grouped = useMemo(() => groupByScope(filteredItems), [filteredItems])
+
+  function scopeTotal(items: RabItem[]) {
+    return items.reduce((sum, i) => sum + safeNumber(i.total_price), 0)
+  }
+
+  async function updateField(item_id: string, patch: Partial<RabItem>) {
+    if (lockMode) {
+      toast.error("RAB dalam mode terkunci")
+      return
+    }
+
+    setData((prev) => ({
+      ...prev,
+      items: prev.items.map((it) => {
+        if (it.item_id !== item_id) return it
+
+        const updated = { ...it, ...patch }
+
+        const unit_price = safeNumber(updated.material_price) + safeNumber(updated.labour_price)
+        const total_price = safeNumber(updated.qty) * unit_price
+
+        return {
+          ...updated,
+          unit_price,
+          total_price,
+        }
+      }),
+    }))
+
+    setActionLoading(item_id)
+
+    try {
+      const res = await fetch(`/api/estimator/rab/${rab_id}/items/${item_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      })
+
+      if (!res.ok) {
+        toast.error("Gagal update, rollback")
+        reload()
+        return
+      }
+    } catch {
+      toast.error("Error update, rollback")
+      reload()
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const debouncedUpdate = useDebouncedCommit(updateField, 650)
+
+  async function copyItem(item: RabItem) {
+    if (lockMode) {
+      toast.error("RAB dalam mode terkunci, tidak dapat menyalin")
+      return
+    }
+
+    setCopyingId(item.item_id)
+    try {
+      const res = await fetch(`/api/estimator/rab/${rab_id}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_id,
+          scope: item.scope,
+          item_name: `${item.item_name} (Copy)`,
+          category: item.category,
+          qty: item.qty,
+          unit: item.unit,
+          material_price: item.material_price,
+          labour_price: item.labour_price,
+          created_by: "Estimator",
+        }),
+      })
+
+      if (!res.ok) {
+        const error = await res.text()
+        toast.error(`Gagal copy: ${error}`)
+        return
+      }
+
+      toast.success("Item berhasil disalin")
+      reload()
+    } catch {
+      toast.error("Gagal menyalin item")
+    } finally {
+      setCopyingId(null)
+    }
+  }
+
+  async function deleteItem(item: RabItem) {
+    if (lockMode) {
+      toast.error("RAB dalam mode terkunci, tidak dapat menghapus")
+      return
+    }
+
+    if (!confirm(`Yakin ingin menghapus item "${item.item_name}"?`)) return
+
+    setDeletingId(item.item_id)
+    try {
+      const res = await fetch(`/api/estimator/rab/${rab_id}/items/${item.item_id}`, {
+        method: "DELETE",
+      })
+
+      if (!res.ok) {
+        const error = await res.text()
+        toast.error(`Gagal hapus: ${error}`)
+        return
+      }
+
+      toast.success("Item berhasil dihapus")
+      reload()
+    } catch {
+      toast.error("Gagal menghapus item")
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  const router = useRouter()
+
+  async function handleGenerateProposal() {
+    try {
+      const res = await fetch("/api/crm/proposal/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pipeline_id: project_id,
+          rab_id: rab_id,
+          total_value: sellTotal,
+        }),
+      })
+
+      const result = await res.json()
+
+      if (!res.ok) {
+        toast.error(result.message || "Gagal membuat proposal")
+        return
+      }
+
+      toast.success("Proposal berhasil dibuat")
+      router.push(`/admin/crm/proposal/${result.proposal_id}`)
+    } catch (err) {
+      toast.error("Terjadi kesalahan saat generate proposal")
+    }
+  }
+
+  // Enhanced Excel validation
+  const validateExcelRow = (row: any, index: number): { valid: boolean; errors: string[] } => {
+    const errors: string[] = []
+    
+    if (!row.item_name && !row["item name"] && !row.Item) {
+      errors.push(`Baris ${index + 1}: Nama item wajib diisi`)
+    }
+    
+    const qty = Number(row.qty || row.Qty || row.volume || 0)
+    if (qty <= 0) {
+      errors.push(`Baris ${index + 1}: Quantity harus lebih dari 0`)
+    }
+    
+    const material = Number(row.material_price || row.Material || 0)
+    if (material < 0) {
+      errors.push(`Baris ${index + 1}: Harga material tidak boleh negatif`)
+    }
+    
+    const labour = Number(row.labour_price || row.Labour || 0)
+    if (labour < 0) {
+      errors.push(`Baris ${index + 1}: Harga upah tidak boleh negatif`)
+    }
+    
+    return { valid: errors.length === 0, errors }
+  }
+
+  const onDrop = async (acceptedFiles: File[]) => {
+    if (lockMode) {
+      toast.error("RAB dalam mode terkunci, tidak dapat upload")
+      return
+    }
+
+    const file = acceptedFiles?.[0]
+    if (!file) return
+
+    setBulkLoading(true)
+    try {
+      const buf = await file.arrayBuffer()
+      const wb = XLSX.read(buf, { type: "array" })
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      const rows = XLSX.utils.sheet_to_json<any>(ws, { defval: "" })
+
+      // Validate all rows first
+      const validationErrors: string[] = []
+      rows.forEach((row, idx) => {
+        const { valid, errors } = validateExcelRow(row, idx)
+        if (!valid) {
+          validationErrors.push(...errors)
+        }
+      })
+
+      if (validationErrors.length > 0) {
+        toast.error(`Validasi gagal:\n${validationErrors.slice(0, 3).join('\n')}${validationErrors.length > 3 ? `\n...dan ${validationErrors.length - 3} error lainnya` : ''}`)
+        return
+      }
+
+      const payloadItems = rows
+        .map((r: any) => {
+          const item_name = String(r.item_name || r["item name"] || r.Item || "").trim()
+          if (!item_name) return null
+
+          const qty = Math.max(1, Number(r.qty || r.Qty || r.volume || 1))
+          
+          return {
+            scope: String(r.scope || r.Scope || "").trim() || "Umum",
+            item_name,
+            category: String(r.category || r.Kategori || "").trim() || "Umum",
+            qty: qty,
+            unit: String(r.unit || r.Unit || "").trim() || "Unit",
+            material_price: Math.max(0, Number(r.material_price || r.Material || 0)),
+            labour_price: Math.max(0, Number(r.labour_price || r.Labour || 0)),
+          }
+        })
+        .filter((x): x is NonNullable<typeof x> => x !== null)
+
+      if (payloadItems.length === 0) {
+        toast.error("Tidak ada data valid untuk diupload")
+        setBulkLoading(false)
+        return
+      }
+
+      const res = await fetch(`/api/estimator/rab/${rab_id}/items/bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_id,
+          created_by: "Estimator",
+          items: payloadItems,
+        }),
+      })
+
+      if (!res.ok) {
+        const error = await res.text()
+        toast.error(`Gagal upload: ${error}`)
+        return
+      }
+
+      toast.success(`${payloadItems.length} item berhasil diupload`)
+      reload()
+    } catch (e: any) {
+      toast.error(`Gagal baca Excel: ${e?.message || "unknown error"}`)
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+      "application/vnd.ms-excel": [".xls"],
+    },
+    multiple: false,
+    disabled: lockMode || bulkLoading,
+  })
+
+  // ESC key handler for modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpenAdd(false)
+    }
+    window.addEventListener("keydown", handleEsc)
+    return () => window.removeEventListener("keydown", handleEsc)
+  }, [])
+  
+  // Export to Excel
+  const exportToExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(
+      data.items.map((item, idx) => ({
+        No: idx + 1,
+        Scope: item.scope,
+        'Item Pekerjaan': item.item_name,
+        Kategori: item.category,
+        Qty: item.qty,
+        Unit: item.unit,
+        Material: item.material_price,
+        Upah: item.labour_price,
+        'Harga Unit': item.unit_price,
+        Total: item.total_price,
+      }))
+    )
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, "RAB")
+    XLSX.writeFile(wb, `RAB_${rab_id}_${new Date().toISOString().slice(0,10)}.xlsx`)
+  }
+
+  /* ============ UI ============ */
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        
+        {/* HEADER SECTION */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-gradient-to-br from-slate-800 to-slate-700 rounded-xl shadow-lg">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <div className="flex items-center gap-3 mb-1">
+                  <h1 className="text-2xl font-semibold text-slate-900">
+                    Rincian Anggaran Biaya
+                  </h1>
+                  <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
+                    lockMode 
+                      ? 'bg-slate-100 text-slate-700 border border-slate-200' 
+                      : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  }`}>
+                    {lockMode ? 'Terkunci' : 'Dapat Diedit'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="text-slate-500">
+                    <span className="font-mono text-xs bg-slate-100 px-2 py-1 rounded">
+                      {rab_id}
+                    </span>
+                  </span>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-600">{data.header?.project_name || 'Project'}</span>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-600">{data.header?.customer_name || 'Customer'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={reload}
+                disabled={loading}
+                className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition disabled:opacity-50"
+                title="Refresh"
+              >
+                <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+              </button>
+
+              <button
+                onClick={() => handlePrint(rab_id, data, totalValue)}
+                className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"
+                title="Print"
+              >
+                <Printer size={18} />
+              </button>
+
+              <button
+                onClick={exportToExcel}
+                className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"
+                title="Export Excel"
+              >
+                <Download size={18} />
+              </button>
+
+              <div className="w-px h-6 bg-slate-200 mx-1" />
+
+              <Link
+                href={`/admin/estimator/rab/${rab_id}/ve`}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition shadow-sm"
+              >
+                <TrendingUp size={16} />
+                Value Engineering
+              </Link>
+
+              <button
+                onClick={handleGenerateProposal}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition shadow-sm"
+              >
+                <FileText size={16} />
+                Generate Proposal
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* SUMMARY CARDS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Package size={18} className="text-blue-600" />
+              </div>
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Item</span>
+            </div>
+            <div className="text-2xl font-semibold text-slate-900">{data.items.length}</div>
+            <div className="text-xs text-slate-400 mt-1">Item pekerjaan</div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-amber-50 rounded-lg">
+                <Wrench size={18} className="text-amber-600" />
+              </div>
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Material</span>
+            </div>
+            <div className="text-2xl font-semibold text-slate-900">{formatIDR(totalMaterial)}</div>
+            <div className="text-xs text-slate-400 mt-1">Biaya material</div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-purple-50 rounded-lg">
+                <Users size={18} className="text-purple-600" />
+              </div>
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Upah</span>
+            </div>
+            <div className="text-2xl font-semibold text-slate-900">{formatIDR(totalLabour)}</div>
+            <div className="text-xs text-slate-400 mt-1">Biaya tenaga kerja</div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-emerald-50 rounded-lg">
+                <TrendingUp size={18} className="text-emerald-600" />
+              </div>
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Nilai</span>
+            </div>
+            <div className="text-2xl font-semibold text-emerald-600">{formatIDR(totalValue)}</div>
+            <div className="text-xs text-slate-400 mt-1">Nilai RAB keseluruhan</div>
+          </div>
+        </div>
+
+        {/* PROFIT PANEL */}
+        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <Settings size={18} className="text-slate-500" />
+            <h3 className="text-sm font-medium text-slate-700">Profit & Margin Settings</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-600">Overhead & Margin</span>
+                <span className="font-medium text-slate-900">{overheadPct}%</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={50}
+                value={overheadPct}
+                onChange={(e) => {
+                  const val = Number(e.target.value)
+                  setOverheadPct(val)
+                  if (val === 0) toast.warning("Overhead 0%? Yakin?")
+                }}
+                disabled={lockMode}
+                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-800"
+              />
+              <div className="flex justify-between text-xs text-slate-400">
+                <span>0%</span>
+                <span>25%</span>
+                <span>50%</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-600">Profit</span>
+                <span className="font-medium text-slate-900">{profitPct}%</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={50}
+                value={profitPct}
+                onChange={(e) => {
+                  const val = Number(e.target.value)
+                  setProfitPct(val)
+                  if (val === 0) toast.warning("Profit 0%? Yakin?")
+                }}
+                disabled={lockMode}
+                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-800"
+              />
+              <div className="flex justify-between text-xs text-slate-400">
+                <span>0%</span>
+                <span>25%</span>
+                <span>50%</span>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+              <div className="text-xs text-slate-500 mb-1">Estimasi Harga Jual</div>
+              <div className="text-2xl font-bold text-blue-600">{formatIDR(sellTotal)}</div>
+              <div className="text-xs text-slate-400 mt-1">
+                Setelah overhead {overheadPct}% + profit {profitPct}%
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* TOOLBAR */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="relative w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input
+                placeholder="Cari item / scope / kategori..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none"
+              />
+            </div>
+
+            <div className="flex items-center gap-1 border border-slate-200 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode("grouped")}
+                className={`p-1.5 rounded-md transition ${
+                  viewMode === "grouped" 
+                    ? 'bg-slate-800 text-white' 
+                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                }`}
+                title="Group by Scope"
+              >
+                <Grid3x3 size={16} />
+              </button>
+              <button
+                onClick={() => setViewMode("flat")}
+                className={`p-1.5 rounded-md transition ${
+                  viewMode === "flat" 
+                    ? 'bg-slate-800 text-white' 
+                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                }`}
+                title="Flat View"
+              >
+                <List size={16} />
+              </button>
+            </div>
+
+            <button
+              onClick={() => setExpandAll(!expandAll)}
+              className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm hover:bg-slate-50 transition"
+            >
+              {expandAll ? <EyeOff size={14} /> : <Eye size={14} />}
+              {expandAll ? "Collapse All" : "Expand All"}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {!lockMode && (
+              <>
+                <button
+                  onClick={() => setOpenAdd(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition shadow-sm"
+                >
+                  <Plus size={16} />
+                  Tambah Item
+                </button>
+
+                <WorkLibraryButton
+                  rab_id={rab_id}
+                  project_id={project_id}
+                  onSuccess={reload}
+                />
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* BULK UPLOAD */}
+        {!lockMode && (
+          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <Upload size={18} className="text-slate-500" />
+              <h3 className="text-sm font-medium text-slate-700">Bulk Upload Excel</h3>
+            </div>
+
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition ${
+                bulkLoading ? "opacity-50 pointer-events-none" : ""
+              } ${
+                isDragActive
+                  ? "border-slate-500 bg-slate-50"
+                  : "border-slate-200 hover:border-slate-300 bg-white"
+              }`}
+            >
+              <input {...getInputProps()} />
+              <div className="space-y-2">
+                {bulkLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-400 border-t-transparent mx-auto" />
+                    <p className="text-sm text-slate-600">Memproses file...</p>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mx-auto h-8 w-8 text-slate-400" />
+                    <p className="text-sm text-slate-600">
+                      {isDragActive ? (
+                        "Drop file di sini..."
+                      ) : (
+                        <>
+                          Drag & drop file <span className="font-semibold">.xlsx</span> atau klik untuk pilih
+                        </>
+                      )}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      Format: scope, item_name, category, qty, unit, material_price, labour_price
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ITEMS TABLE */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
+            <div className="flex items-center gap-2">
+              <Edit3 size={16} className="text-slate-500" />
+              <span className="text-xs font-medium text-slate-600">Daftar Item Pekerjaan</span>
+              {searchTerm && (
+                <span className="text-xs text-slate-400 ml-2">
+                  Menampilkan {filteredItems.length} dari {data.items.length} item
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            {viewMode === "grouped" ? (
+              // GROUPED VIEW
+              <div className="divide-y divide-slate-200">
+                {grouped.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <Package className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                    <p className="text-slate-500">Belum ada item RAB</p>
+                    {!lockMode && (
+                      <p className="text-sm text-slate-400 mt-2">
+                        Gunakan tombol "Tambah Item" atau upload Excel untuk memulai
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  grouped.map((g) => (
+                    <details
+                      key={g.scope}
+                      className="group"
+                      open={expandAll}
+                    >
+                      <summary className="flex items-center justify-between p-4 bg-slate-50 cursor-pointer hover:bg-slate-100 transition list-none">
+                        <div className="flex items-center gap-3">
+                          <ChevronDown size={16} className="text-slate-400 group-open:rotate-0 -rotate-90 transition" />
+                          <span className="font-medium text-slate-800">{g.scope}</span>
+                          <span className="text-xs text-slate-400 bg-white px-2 py-1 rounded-full border border-slate-200">
+                            {g.items.length} item
+                          </span>
+                        </div>
+                        <span className="text-sm font-medium text-emerald-600">
+                          {formatIDR(scopeTotal(g.items))}
+                        </span>
+                      </summary>
+
+                      <div className="p-4">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-slate-200">
+                              <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">No</th>
+                              <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Item Pekerjaan</th>
+                              <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Kategori</th>
+                              <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Qty</th>
+                              <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Unit</th>
+                              <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Material</th>
+                              <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Upah</th>
+                              <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Harga Unit</th>
+                              <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Total</th>
+                              {!lockMode && <th className="pb-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">Aksi</th>}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {g.items.map((it, idx) => {
+                              const isActionLoading = actionLoading === it.item_id
+                              const isCopying = copyingId === it.item_id
+                              const isDeleting = deletingId === it.item_id
+
+                              return (
+                                <tr key={it.item_id} className="hover:bg-slate-50">
+                                  <td className="py-3 text-slate-400 font-mono text-xs">
+                                    {pad3(globalIndexMap.get(it.item_id) || idx + 1)}
+                                  </td>
+                                  <td className="py-3">
+                                    <InlineEdit
+                                      value={it.item_name}
+                                      disabled={lockMode || isActionLoading}
+                                      onSave={(val) => updateField(it.item_id, { item_name: val })}
+                                      validate={(val) => {
+                                        if (!val || String(val).trim() === "") return "Nama item wajib diisi"
+                                        return true
+                                      }}
+                                    />
+                                    <div className="text-[10px] text-slate-300 font-mono mt-1">
+                                      {it.item_id.slice(-8)}
+                                    </div>
+                                  </td>
+                                  <td className="py-3">
+                                    <InlineEdit
+                                      value={it.category}
+                                      disabled={lockMode || isActionLoading}
+                                      onSave={(val) => updateField(it.item_id, { category: val })}
+                                    />
+                                  </td>
+                                  <td className="py-3 text-right">
+                                    <InlineEdit
+                                      value={it.qty}
+                                      type="number"
+                                      disabled={lockMode || isActionLoading}
+                                      onSave={(val) => {
+                                        const parsed = safeNumber(val)
+                                        if (parsed <= 0) {
+                                          toast.error("Qty harus lebih dari 0")
+                                          return
+                                        }
+                                        updateField(it.item_id, { qty: parsed })
+                                      }}
+                                      validate={(val) => {
+                                        const num = Number(val)
+                                        if (num <= 0) return "Qty harus > 0"
+                                        return true
+                                      }}
+                                    />
+                                  </td>
+                                  <td className="py-3">
+                                    <InlineEdit
+                                      value={it.unit}
+                                      disabled={lockMode || isActionLoading}
+                                      onSave={(val) => updateField(it.item_id, { unit: val })}
+                                      validate={(val) => {
+                                        if (!val || String(val).trim() === "") return "Unit wajib diisi"
+                                        return true
+                                      }}
+                                    />
+                                  </td>
+                                  <td className="py-3 text-right font-mono">
+                                    <InlineEdit
+                                      value={it.material_price}
+                                      type="number"
+                                      disabled={lockMode || isActionLoading}
+                                      onSave={(val) => updateField(it.item_id, { material_price: safeNumber(val) })}
+                                      validate={(val) => {
+                                        const num = Number(val)
+                                        if (num < 0) return "Harga tidak boleh negatif"
+                                        return true
+                                      }}
+                                    />
+                                  </td>
+                                  <td className="py-3 text-right font-mono">
+                                    <InlineEdit
+                                      value={it.labour_price}
+                                      type="number"
+                                      disabled={lockMode || isActionLoading}
+                                      onSave={(val) => updateField(it.item_id, { labour_price: safeNumber(val) })}
+                                      validate={(val) => {
+                                        const num = Number(val)
+                                        if (num < 0) return "Harga tidak boleh negatif"
+                                        return true
+                                      }}
+                                    />
+                                  </td>
+                                  <td className="py-3 text-right font-mono text-slate-600">
+                                    {formatIDR(it.unit_price)}
+                                  </td>
+                                  <td className="py-3 text-right font-mono font-medium text-emerald-600">
+                                    {formatIDR(it.total_price)}
+                                  </td>
+                                  {!lockMode && (
+                                    <td className="py-3 text-center">
+                                      <div className="flex items-center justify-center gap-1">
+                                        <button
+                                          onClick={() => copyItem(it)}
+                                          disabled={isActionLoading || isCopying || isDeleting}
+                                          className="p-1 text-slate-400 hover:text-slate-600 rounded transition disabled:opacity-50"
+                                          title="Copy item"
+                                        >
+                                          {isCopying ? (
+                                            <RefreshCw size={14} className="animate-spin" />
+                                          ) : (
+                                            <Copy size={14} />
+                                          )}
+                                        </button>
+                                        <button
+                                          onClick={() => deleteItem(it)}
+                                          disabled={isActionLoading || isCopying || isDeleting}
+                                          className="p-1 text-slate-400 hover:text-rose-600 rounded transition disabled:opacity-50"
+                                          title="Hapus item"
+                                        >
+                                          {isDeleting ? (
+                                            <RefreshCw size={14} className="animate-spin" />
+                                          ) : (
+                                            <Trash2 size={14} />
+                                          )}
+                                        </button>
+                                      </div>
+                                    </td>
+                                  )}
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </details>
+                  ))
+                )}
+              </div>
+            ) : (
+              // FLAT VIEW
+              <div className="p-4">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200">
+                      <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">No</th>
+                      <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Scope</th>
+                      <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Item Pekerjaan</th>
+                      <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Kategori</th>
+                      <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Qty</th>
+                      <th className="pb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Unit</th>
+                      <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Material</th>
+                      <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Upah</th>
+                      <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Harga Unit</th>
+                      <th className="pb-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Total</th>
+                      {!lockMode && <th className="pb-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">Aksi</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredItems.map((it, idx) => (
+                      <tr key={it.item_id} className="hover:bg-slate-50">
+                        <td className="py-2 text-slate-400 font-mono text-xs">
+                          {pad3(idx + 1)}
+                        </td>
+                        <td className="py-2 text-slate-600">
+                          {it.scope}
+                        </td>
+                        <td className="py-2">
+                          <InlineEdit
+                            value={it.item_name}
+                            disabled={lockMode}
+                            onSave={(val) => updateField(it.item_id, { item_name: val })}
+                          />
+                        </td>
+                        <td className="py-2">
+                          <InlineEdit
+                            value={it.category}
+                            disabled={lockMode}
+                            onSave={(val) => updateField(it.item_id, { category: val })}
+                          />
+                        </td>
+                        <td className="py-2 text-right">
+                          <InlineEdit
+                            value={it.qty}
+                            type="number"
+                            disabled={lockMode}
+                            onSave={(val) => updateField(it.item_id, { qty: safeNumber(val) })}
+                          />
+                        </td>
+                        <td className="py-2">
+                          <InlineEdit
+                            value={it.unit}
+                            disabled={lockMode}
+                            onSave={(val) => updateField(it.item_id, { unit: val })}
+                          />
+                        </td>
+                        <td className="py-2 text-right font-mono">
+                          <InlineEdit
+                            value={it.material_price}
+                            type="number"
+                            disabled={lockMode}
+                            onSave={(val) => updateField(it.item_id, { material_price: safeNumber(val) })}
+                          />
+                        </td>
+                        <td className="py-2 text-right font-mono">
+                          <InlineEdit
+                            value={it.labour_price}
+                            type="number"
+                            disabled={lockMode}
+                            onSave={(val) => updateField(it.item_id, { labour_price: safeNumber(val) })}
+                          />
+                        </td>
+                        <td className="py-2 text-right font-mono text-slate-600">
+                          {formatIDR(it.unit_price)}
+                        </td>
+                        <td className="py-2 text-right font-mono font-medium text-emerald-600">
+                          {formatIDR(it.total_price)}
+                        </td>
+                        {!lockMode && (
+                          <td className="py-2 text-center">
+                            <button
+                              onClick={() => deleteItem(it)}
+                              className="p-1 text-slate-400 hover:text-rose-600 rounded"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* TABLE FOOTER */}
+          <div className="px-4 py-3 border-t border-slate-200 bg-slate-50">
+            <div className="flex items-center justify-between text-sm">
+              <div className="text-slate-500">
+                Total <span className="font-medium text-slate-700">{filteredItems.length}</span> item 
+                {filteredItems.length !== data.items.length && (
+                  <span className="text-slate-400 ml-1">
+                    (dari {data.items.length} total)
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-6">
+                <div>
+                  <span className="text-slate-400 text-xs">Total Material</span>
+                  <span className="ml-2 font-medium text-slate-700">{formatIDR(totalMaterial)}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 text-xs">Total Upah</span>
+                  <span className="ml-2 font-medium text-slate-700">{formatIDR(totalLabour)}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 text-xs">GRAND TOTAL</span>
+                  <span className="ml-2 font-bold text-emerald-600">{formatIDR(totalValue)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ADD ITEM SLIDE PANEL */}
+        {openAdd && (
+          <div className="fixed inset-0 z-50 flex">
+            <div className="flex-1 bg-black/40" onClick={() => setOpenAdd(false)} />
+            <div className="w-[520px] bg-white shadow-2xl h-full p-6 overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg font-semibold text-slate-800">Tambah Item RAB</h2>
+                <button
+                  onClick={() => setOpenAdd(false)}
+                  className="p-2 hover:bg-slate-100 rounded-lg transition"
+                >
+                  <X size={18} className="text-slate-500" />
+                </button>
+              </div>
+
+              <AddItemForm
+                rab_id={rab_id}
+                project_id={project_id}
+                onCreated={(newItem: RabItem) => {
+                  setData((prev) => ({
+                    ...prev,
+                    items: [...prev.items, newItem],
+                  }))
+                  setOpenAdd(false)
+                  toast.success("Item berhasil ditambahkan")
+                }}
+                onSuccess={() => {
+                  reload()
+                  setOpenAdd(false)
+                }}
+              />
+            </div>
+          </div>
+        )}
+        
+        {/* FOOTER */}
+        <div className="flex items-center gap-2 p-4 bg-white border border-slate-200 rounded-xl text-xs text-slate-500">
+          <Lock size={14} className="text-slate-400" />
+          <p>
+            <span className="font-medium text-slate-600">Security Note:</span> Modul ini adalah sumber RAB resmi.{" "}
+            {lockMode
+              ? "RAB dalam mode terkunci (read-only)."
+              : "Perubahan akan langsung tersimpan dan direfleksikan ke sistem."}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}  project_id: string
   scope: string
   item_name: string
   category: string

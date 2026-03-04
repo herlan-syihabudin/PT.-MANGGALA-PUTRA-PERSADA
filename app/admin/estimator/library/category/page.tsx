@@ -81,7 +81,7 @@ export default function CategoryPage() {
   
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState<string[]>([])
-  const [deletingId, setDeletingId] = useState<string | null>(null)
+  
 
   // ========== FETCH PACKAGES & TRANSFORM TO CATEGORIES ==========
   const fetchCategories = useCallback(async (showRefresh = false) => {
@@ -231,14 +231,19 @@ export default function CategoryPage() {
   }, [router])
 
   // ========== CATEGORY ROW COMPONENT ==========
-  const CategoryRow = useCallback(({ cat, level = 0 }: { cat: Category; level?: number }) => {
+ const CategoryRow = useCallback(
+  ({ cat, level = 0 }: { cat: Category; level?: number }) => {
     const hasChildren = cat.subcategories && cat.subcategories.length > 0
     const isExpanded = expanded.includes(cat.id)
     const isDeleting = deletingId === cat.id
 
     return (
       <>
-        <tr className={`border-b hover:bg-gray-50 hover:border-blue-300 transition ${isDeleting ? 'opacity-50' : ''}`}>
+        <tr
+          className={`border-b hover:bg-gray-50 hover:border-blue-300 transition ${
+            isDeleting ? 'opacity-50' : ''
+          }`}
+        >
           <td className="p-4">
             <div
               className="flex items-center gap-2"
@@ -247,16 +252,17 @@ export default function CategoryPage() {
               {hasChildren ? (
                 <button
                   onClick={() => toggleExpand(cat.id)}
-                  className="p-1 hover:bg-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isDeleting}
+                  className="p-1 hover:bg-gray-100 rounded"
                 >
                   <ChevronRight
                     size={16}
-                    className={`transform transition ${isExpanded ? 'rotate-90' : ''}`}
+                    className={`transform transition ${
+                      isExpanded ? 'rotate-90' : ''
+                    }`}
                   />
                 </button>
               ) : (
-                <div className="w-6" /> // Spacer for alignment
+                <div className="w-6" />
               )}
 
               <FolderTree
@@ -266,39 +272,54 @@ export default function CategoryPage() {
 
               <div>
                 <p className="font-medium text-gray-900">{cat.name}</p>
+
                 {cat.description && (
-                  <p className="text-xs text-gray-500 line-clamp-1">{cat.description}</p>
+                  <p className="text-xs text-gray-500 line-clamp-1">
+                    {cat.description}
+                  </p>
                 )}
+
                 {cat.updated_at && (
                   <p className="text-[10px] text-gray-400 mt-0.5">
-                    Updated {new Date(cat.updated_at).toLocaleDateString('id-ID')}
+                    Updated{' '}
+                    {new Date(cat.updated_at).toLocaleDateString('id-ID')}
                   </p>
                 )}
               </div>
             </div>
           </td>
 
-          <td className="p-4 text-center font-medium">{cat.totalItems || 0}</td>
-          <td className="p-4 text-center font-medium">{cat.totalPackages || 0}</td>
+          <td className="p-4 text-center font-medium">
+            {cat.totalItems || 0}
+          </td>
+
+          <td className="p-4 text-center font-medium">
+            {cat.totalPackages || 0}
+          </td>
 
           <td className="p-4">
             <div className="flex items-center justify-end gap-2">
               <button
                 onClick={(e) => viewPackages(cat.name, e)}
                 className="p-2 hover:bg-blue-50 rounded transition"
-                title="View packages in this category"
+                title="View packages"
               >
                 <FolderTree size={16} className="text-blue-600" />
               </button>
-              
+
               <button
                 onClick={() => handleDelete(cat.id, cat.name)}
                 disabled={isDeleting}
-                className={`p-2 hover:bg-red-50 rounded transition ${isDeleting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`p-2 hover:bg-red-50 rounded transition ${
+                  isDeleting ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
                 title="View packages to delete"
               >
                 {isDeleting ? (
-                  <RefreshCw size={16} className="animate-spin text-red-500" />
+                  <RefreshCw
+                    size={16}
+                    className="animate-spin text-red-500"
+                  />
                 ) : (
                   <Trash2 size={16} className="text-red-500" />
                 )}
@@ -309,12 +330,14 @@ export default function CategoryPage() {
 
         {hasChildren &&
           isExpanded &&
-          cat.subcategories?.map(sub => (
+          cat.subcategories?.map((sub) => (
             <CategoryRow key={sub.id} cat={sub} level={level + 1} />
           ))}
       </>
     )
-  }, [expanded, toggleExpand, handleDelete, deletingId, viewPackages])
+  },
+  [expanded, toggleExpand, handleDelete, deletingId, viewPackages]
+)
 
   // ========== LOADING STATE ==========
   if (loading) {
@@ -493,12 +516,6 @@ export default function CategoryPage() {
       )}
     </div>
   )
-}    total_categories: number
-    total_items: number
-    total_packages: number
-  }
-  error?: string
-}
 
 /* ================= SAFE COLOR MAP ================= */
 const colorMap = {
@@ -669,7 +686,6 @@ const rootCategories = Array.from(categoryMap.values()).sort((a, b) =>
   const CategoryRow = useCallback(({ cat, level = 0 }: { cat: Category; level?: number }) => {
     const hasChildren = cat.subcategories && cat.subcategories.length > 0
     const isExpanded = expanded.includes(cat.id)
-    const isDeleting = deletingId === cat.id
 
     return (
       <>

@@ -114,23 +114,33 @@ export default function NewPackagePage() {
         const categorySet = new Set<string>()
 
         json.data.forEach((pkg: any) => {
-          if (pkg.items && Array.isArray(pkg.items)) {
-            pkg.items.forEach((item: any) => {
-              allItems.push({
-                id: `${pkg.id}-${item.job_name}`,
-                jobId: `${pkg.id}-${item.job_name}`,
-                jobName: item.job_name,
-                category: item.category || pkg.category || 'Uncategorized',
-                unit: item.unit || 'unit',
-                material_price: item.material_price || 0,
-                labour_price: item.labour_price || 0
-              })
-              categorySet.add(item.category || pkg.category || 'Uncategorized')
-            }
-          )}
-        })
+  if (pkg.items && Array.isArray(pkg.items)) {
+    pkg.items.forEach((item: any) => {
 
-        setAvailableJobs(allItems)
+      const category = item.category ?? pkg.category ?? 'General'
+      const jobId = `${pkg.name || 'pkg'}-${item.job_name}`
+
+      allItems.push({
+        id: jobId,
+        jobId: jobId,
+        jobName: item.job_name,
+        category: category,
+        unit: item.unit || 'unit',
+        material_price: item.material_price || 0,
+        labour_price: item.labour_price || 0
+      })
+
+      categorySet.add(category)
+    })
+  }
+})
+
+const unique = Array.from(
+  new Map(allItems.map(item => [item.jobId, item])).values()
+)
+
+setAvailableJobs(unique)
+
         setCategories(Array.from(categorySet).sort())
       } else {
         throw new Error(json.error || 'Failed to load jobs')
@@ -180,7 +190,7 @@ export default function NewPackagePage() {
     return availableJobs.filter(job => {
       const matchesSearch = 
         job.jobName.toLowerCase().includes(searchJob.toLowerCase()) ||
-        job.jobId.toLowerCase().includes(searchJob.toLowerCase())
+        (job.jobId || '').toLowerCase().includes(searchJob.toLowerCase())
       const matchesCategory = selectedCategory === 'all' || job.category === selectedCategory
       return matchesSearch && matchesCategory
     })

@@ -635,70 +635,121 @@ async function handleGenerateProposal() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-slate-100 rounded-xl">
-              <FileText size={24} className="text-slate-600" />
-            </div>
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-light tracking-tight text-slate-800">
-                RAB Project
-              </h1>
-              <p className="text-slate-500 text-xs mt-1">
-                RAB ID: {rab_id} • Project ID: {project_id || "-"}
-              </p>
-            </div>
-          </div>
+        
+        {/* STICKY HEADER */}
+<div className="sticky top-0 z-20 border-b border-slate-200 bg-slate-50/80 backdrop-blur">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
-          <div className="flex items-center gap-2">
-            {lockMode ? (
-              <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs">
-                <Lock size={14} />
-                <span>Terkunci</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 px-3 py-1.5 bg-emerald-100 text-emerald-600 rounded-lg text-xs">
-                <Unlock size={14} />
-                <span>Dapat Diedit</span>
-              </div>
-            )}
+    {/* LEFT */}
+    <div className="flex items-center gap-3">
 
-            <button
-              onClick={reload}
-              disabled={loading}
-              className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition disabled:opacity-50"
-              title="Refresh"
-            >
-              <RefreshCw size={16} className={`text-slate-500 ${loading ? "animate-spin" : ""}`} />
-            </button>
+      <button
+        onClick={() => router.back()}
+        className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs border border-slate-200 rounded-lg hover:bg-slate-100 text-slate-600"
+      >
+        <ArrowLeft size={14} />
+        Back
+      </button>
 
-            <button
-              onClick={() => handlePrint(rab_id)}
-              className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition"
-              title="Print"
-            >
-              <Printer size={16} className="text-slate-500" />
-            </button>
+      <div className="p-2 bg-slate-100 rounded-xl">
+        <FileText size={20} className="text-slate-700" />
+      </div>
 
-            <Link
-              href={`/admin/estimator/rab/${rab_id}/ve`}
-              className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm bg-slate-900 text-white hover:bg-slate-800 transition"
-            >
-              <TrendingUp size={14} />
-              VE Options
-            </Link>
+      <div>
+        <div className="flex items-center gap-2">
 
-            <button
-  onClick={handleGenerateProposal}
-  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 transition"
->
-  <FileText size={16} />
-  Generate Proposal
-</button>
-          </div>
+          <h1 className="text-lg sm:text-xl font-light text-slate-900">
+            RAB Project
+          </h1>
+
+          <span className={`px-2 py-0.5 text-[10px] rounded-full uppercase tracking-wide ${
+            lockMode ? "bg-slate-200 text-slate-700" : "bg-emerald-100 text-emerald-700"
+          }`}>
+            {lockMode ? "LOCKED" : "DRAFT"}
+          </span>
+
         </div>
 
+        <p className="text-xs text-slate-500">
+          {rab_id} • {data.header?.project_name} •{" "}
+          <span className="font-medium">{data.header?.customer_name}</span>
+        </p>
+
+      </div>
+    </div>
+
+    {/* ACTION BUTTON */}
+    <div className="flex flex-wrap gap-2 justify-end">
+
+      <button
+        onClick={reload}
+        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-slate-200 rounded-lg hover:bg-slate-100 text-slate-600"
+      >
+        <RefreshCw size={14}/>
+        Reload
+      </button>
+
+      <button
+        onClick={() => handlePrint(rab_id)}
+        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-slate-200 rounded-lg hover:bg-slate-100 text-slate-600"
+      >
+        <Printer size={14}/>
+        Print
+      </button>
+
+      <Link
+        href={`/admin/estimator/rab/${rab_id}/ve`}
+        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-slate-900 text-white rounded-lg hover:bg-slate-800"
+      >
+        <TrendingUp size={14}/>
+        VE Options
+      </Link>
+
+      <button
+        onClick={handleGenerateProposal}
+        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+      >
+        <FileText size={14}/>
+        Generate Proposal
+      </button>
+
+    </div>
+  </div>
+</div>
+
+        {/* INFO BAR */}
+<div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+
+  <div className="bg-white border border-slate-200 rounded-xl p-3">
+    <p className="text-[11px] text-slate-500">Project</p>
+    <p className="text-sm font-medium text-slate-800">
+      {data.header?.project_name}
+    </p>
+  </div>
+
+  <div className="bg-white border border-slate-200 rounded-xl p-3">
+    <p className="text-[11px] text-slate-500">Customer</p>
+    <p className="text-sm font-medium text-slate-800">
+      {data.header?.customer_name}
+    </p>
+  </div>
+
+  <div className="bg-white border border-slate-200 rounded-xl p-3">
+    <p className="text-[11px] text-slate-500">Total Items</p>
+    <p className="text-xl font-light text-slate-900">
+      {data.items.length}
+    </p>
+  </div>
+
+  <div className="bg-white border border-slate-200 rounded-xl p-3">
+    <p className="text-[11px] text-slate-500">Total Value</p>
+    <p className="text-lg font-semibold text-slate-900">
+      {formatIDR(totalValue)}
+    </p>
+  </div>
+
+</div>
+        
         {/* TOOLBAR ACTION */}
         {!lockMode && (
           <div className="flex justify-between items-center">

@@ -943,19 +943,18 @@ const ws = wb.Sheets[sheetName]
 
     <button
       type="button"
+      onClick={() => setOpenAdd(true)}
       className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition"
     >
-      <Plus size={16} />
+      <Plus size={16}/>
       Tambah
     </button>
 
-    <button
-      type="button"
-      className="flex items-center gap-2 px-3 py-2 text-sm font-medium border border-slate-300 rounded-lg hover:bg-slate-50 transition"
-    >
-      <Library size={16} />
-      Library
-    </button>
+    <WorkLibraryButton
+      rab_id={rab_id}
+      project_id={project_id}
+      onSuccess={reload}
+    />
 
   </div>
 )}

@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback, useMemo } from "react"
 import { toast } from "sonner"
 import { Library, Search, PlusCircle, X, Loader2, Check } from "lucide-react"
+import { useDebounce } from "use-debounce"
 
 // ============ TYPES SESUAI API BARU ============
 type WorkLibraryItem = {
@@ -12,8 +13,8 @@ type WorkLibraryItem = {
   scope: string
   job_name: string
   unit: string
-  material_price: number
-  labour_price: number
+  material_price?: number
+  labour_price?: number
 }
 
 type WorkLibraryPackage = {
@@ -21,6 +22,10 @@ type WorkLibraryPackage = {
   package_name: string
   category: string
   items: WorkLibraryItem[]
+}
+
+type RabItem = {
+  item_name?: string
 }
 
 type Props = {
@@ -34,51 +39,69 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
   const [loading, setLoading] = useState(false)
   const [addingId, setAddingId] = useState<string | null>(null)
   const [packages, setPackages] = useState<WorkLibraryPackage[]>([])
-  const [selectedPackage, setSelectedPackage] = useState<string | null>(null)
   const [search, setSearch] = useState("")
+  const [debouncedSearch] = useDebounce(search, 300)
   const [existingItems, setExistingItems] = useState<Set<string>>(new Set())
   const [expandedPackages, setExpandedPackages] = useState<Set<string>>(new Set())
   
   const abortRef = useRef<AbortController | null>(null)
+  const existingAbortRef = useRef<AbortController | null>(null)
+
+  // Reset expanded packages when searching
+  useEffect(() => {
+    if (debouncedSearch.trim()) {
+      setExpandedPackages(new Set())
+    }
+  }, [debouncedSearch])
 
   // Load existing items di RAB
   useEffect(() => {
     if (!open) return
 
+    existingAbortRef.current?.abort()
+    existingAbortRef.current = new AbortController()
+
     const loadExisting = async () => {
       try {
-        const res = await fetch(`/api/estimator/rab/${rab_id}/items`)
+        const res = await fetch(`/api/estimator/rab/${rab_id}/items`, {
+          signal: existingAbortRef.current?.signal
+        })
         if (res.ok) {
           const data = await res.json()
           const names = new Set(
             Array.isArray(data) 
-              ? data.map((item: any) => item.item_name.toLowerCase())
+              ? data.map((item: RabItem) => item.item_name?.toLowerCase?.() || "")
               : []
           )
           setExistingItems(names)
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (error.name === 'AbortError') return
         console.error("Failed to load existing items:", error)
       }
     }
 
     loadExisting()
+
+    return () => {
+      existingAbortRef.current?.abort()
+    }
   }, [open, rab_id])
 
   // Load library ketika modal dibuka
   useEffect(() => {
     if (!open) return
 
-    const load = async () => {
-      // Cancel previous request
-      abortRef.current?.abort()
-      abortRef.current = new AbortController()
+    // Cancel previous request
+    abortRef.current?.abort()
+    abortRef.current = new AbortController()
 
+    const load = async () => {
       try {
         setLoading(true)
         const res = await fetch("/api/estimator/library", { 
           cache: "no-store",
-          signal: abortRef.current.signal 
+          signal: abortRef.current?.signal 
         })
         
         if (!res.ok) {
@@ -92,7 +115,7 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
         if (json.success && Array.isArray(json.data)) {
           setPackages(json.data)
           // Auto expand first package
-          if (json.data.length > 0) {
+          if (json.data.length > 0 && !debouncedSearch.trim()) {
             setExpandedPackages(new Set([json.data[0].package_id]))
           }
         } else {
@@ -114,41 +137,49 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
     }
   }, [open])
 
-  // Filter items berdasarkan search
-  const getFilteredItems = () => {
-    if (!search.trim()) {
-      // Kalau no search, return semua items
-      return packages.flatMap(pkg => pkg.items)
-    }
+  // Format price helper
+  const formatPrice = useCallback((price?: number): string => {
+    if (price === undefined || price === null) return '0'
+    return price.toLocaleString('id-ID')
+  }, [])
 
-    const q = search.toLowerCase()
-    const allItems = packages.flatMap(pkg => pkg.items)
-    
-    return allItems.filter((it) => 
-      it.job_name.toLowerCase().includes(q) ||
-      it.package_name.toLowerCase().includes(q) ||
-      it.category.toLowerCase().includes(q) ||
-      (it.scope || "").toLowerCase().includes(q)
-    )
-  }
+  const allItems = useMemo(
+  () => packages.flatMap(pkg => pkg.items),
+  [packages]
+)
 
-  const filteredItems = getFilteredItems()
-  const isSearchActive = search.trim().length > 0
+  // Filter items berdasarkan search (pakai debouncedSearch)
+  const filteredItems = useMemo(() => {
+  if (!debouncedSearch.trim()) return []
+
+  const q = debouncedSearch.toLowerCase()
+
+  return allItems.filter((it) =>
+    it.job_name.toLowerCase().includes(q) ||
+    it.package_name.toLowerCase().includes(q) ||
+    it.category.toLowerCase().includes(q) ||
+    (it.scope || "").toLowerCase().includes(q)
+  )
+}, [allItems, debouncedSearch])
+
+  const isSearchActive = debouncedSearch.trim().length > 0
 
   // Toggle package expand
-  const togglePackage = (packageId: string) => {
-    const newExpanded = new Set(expandedPackages)
-    if (newExpanded.has(packageId)) {
-      newExpanded.delete(packageId)
-    } else {
-      newExpanded.add(packageId)
-    }
-    setExpandedPackages(newExpanded)
-  }
+  const togglePackage = useCallback((packageId: string) => {
+    setExpandedPackages(prev => {
+      const newExpanded = new Set(prev)
+      if (newExpanded.has(packageId)) {
+        newExpanded.delete(packageId)
+      } else {
+        newExpanded.add(packageId)
+      }
+      return newExpanded
+    })
+  }, [])
 
-  const isItemExists = (jobName: string) => {
+  const isItemExists = useCallback((jobName: string) => {
     return existingItems.has(jobName.toLowerCase())
-  }
+  }, [existingItems])
 
   async function addPackageItems(pkg: WorkLibraryPackage) {
     // Filter items yang belum ada di RAB
@@ -193,11 +224,6 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
         toast.success(`${successCount} item dari "${pkg.package_name}" ditambahkan`)
         onSuccess()
       }
-
-      // Auto close if all items added
-      if (successCount === pkg.items.length) {
-        setTimeout(() => setOpen(false), 1000)
-      }
     } catch (e: any) {
       console.error(e)
       toast.error(e.message || "Gagal menambah package")
@@ -212,7 +238,9 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
       return
     }
 
-    setAddingId(`${item.package_id}-${item.job_name}`)
+    const uniqueId = `${item.package_id}-${item.job_name}`
+    setAddingId(uniqueId)
+    
     try {
       const res = await fetch(`/api/estimator/rab/${rab_id}/items`, {
         method: "POST",
@@ -318,12 +346,13 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
                       Tidak ada item yang cocok dengan pencarian
                     </div>
                   ) : (
-                    filteredItems.map((item, idx) => {
+                    filteredItems.map((item) => {
                       const exists = isItemExists(item.job_name)
-                      const isAdding = addingId === `${item.package_id}-${item.job_name}`
+                      const uniqueId = `${item.package_id}-${item.job_name}`
+                      const isAdding = addingId === uniqueId
 
                       return (
-                        <div key={idx} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-lg hover:bg-slate-50">
+                        <div key={uniqueId} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-lg hover:bg-slate-50">
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium text-slate-800">{item.job_name}</span>
@@ -338,15 +367,16 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
+                            {/* Price Display */}
                             <div className="text-right">
                               <div className="text-xs text-slate-500">Material</div>
-                              <div className="text-sm font-medium">{item.material_price.toLocaleString('id-ID')}</div>
+                              <div className="text-sm font-medium">{formatPrice(item.material_price)}</div>
                             </div>
                             <div className="text-right">
                               <div className="text-xs text-slate-500">Labour</div>
-                              <div className="text-sm font-medium">{item.labour_price.toLocaleString('id-ID')}</div>
+                              <div className="text-sm font-medium">{formatPrice(item.labour_price)}</div>
                             </div>
-                            <div className="w-20 text-center">
+                            <div className="w-24 text-center">
                               {exists ? (
                                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-xs">
                                   <Check size={12} />
@@ -427,11 +457,12 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
                         {/* Package Items */}
                         {isExpanded && (
                           <div className="p-4 space-y-2 bg-white">
-                            {packageItems.map((item, idx) => {
+                            {packageItems.map((item) => {
                               const exists = isItemExists(item.job_name)
+                              const uniqueId = `${item.package_id}-${item.job_name}`
                               
                               return (
-                                <div key={idx} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+                                <div key={uniqueId} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
                                   <div className="flex-1">
                                     <span className="text-sm text-slate-700">{item.job_name}</span>
                                     <div className="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
@@ -441,15 +472,16 @@ export default function WorkLibraryButton({ rab_id, project_id, onSuccess }: Pro
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-4">
+                                    {/* Price Display */}
                                     <div className="text-right">
                                       <div className="text-xs text-slate-400">Material</div>
-                                      <div className="text-sm">{item.material_price.toLocaleString('id-ID')}</div>
+                                      <div className="text-sm">{formatPrice(item.material_price)}</div>
                                     </div>
                                     <div className="text-right">
                                       <div className="text-xs text-slate-400">Labour</div>
-                                      <div className="text-sm">{item.labour_price.toLocaleString('id-ID')}</div>
+                                      <div className="text-sm">{formatPrice(item.labour_price)}</div>
                                     </div>
-                                    <div className="w-16 text-center">
+                                    <div className="w-24 text-center">
                                       {exists ? (
                                         <span className="text-emerald-600 text-xs">✓ Ada</span>
                                       ) : (

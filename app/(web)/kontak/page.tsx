@@ -1,6 +1,10 @@
 import type { Metadata } from "next"
 import KontakForm from "@/components/KontakForm"
-import { Building2, Mail, Clock, Shield } from "lucide-react"
+import { Building2, Mail, Clock, Shield, Phone } from "lucide-react"  // ✅ SATU BARIS
+
+const PHONE = process.env.NEXT_PUBLIC_PHONE || "02138716203"
+const EMAIL = process.env.NEXT_PUBLIC_COMPANY_EMAIL || "info@mppindo.com"
+const LOCATION = process.env.NEXT_PUBLIC_COMPANY_LOCATION || "Bekasi, Jawa Barat – Indonesia"
 
 export const metadata: Metadata = {
   title: "Kontak Kami | Konsultasi Proyek Konstruksi | MPP Engineering",
@@ -50,19 +54,56 @@ export default function KontakPage() {
               </div>
               <div>
                 <p className="font-semibold text-gray-900">Kantor</p>
-                <p className="text-gray-600">Bekasi, Jawa Barat – Indonesia</p>
+                <p className="text-gray-600">{LOCATION}</p>
               </div>
             </div>
 
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-gold/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Phone size={18} className="text-gold" />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900">Telepon</p>
+                <a
+                  href={`tel:${PHONE}`}
+                  className="text-gray-600 hover:text-red-600 transition"
+                >
+                  {PHONE}
+                </a>
+              </div>
+            </div>
+            
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 bg-gold/10 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Mail size={18} className="text-gold" />
               </div>
               <div>
                 <p className="font-semibold text-gray-900">Email</p>
-                <p className="text-gray-600">info@mpp-engineering.com</p>
+                <a
+                  href={`mailto:${EMAIL}`}
+                  className="text-gray-600 hover:text-red-600 transition"
+                >
+                  {EMAIL}
+                </a>
               </div>
             </div>
+
+            <div className="flex items-start gap-3">
+  <div className="w-8 h-8 bg-gold/10 rounded-lg flex items-center justify-center flex-shrink-0">
+    <Phone size={18} className="text-gold" />
+  </div>
+  <div>
+    <p className="font-semibold text-gray-900">WhatsApp</p>
+    <a
+      href={`https://wa.me/${process.env.NEXT_PUBLIC_WA_NUMBER}`}
+      target="_blank"
+      rel="noopener noreferrer"  // ✅ SUDAH DITAMBAH
+      className="text-gray-600 hover:text-red-600 transition"
+    >
+      +62 812 2922 2463
+    </a>
+  </div>
+</div>
 
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 bg-gold/10 rounded-lg flex items-center justify-center flex-shrink-0">

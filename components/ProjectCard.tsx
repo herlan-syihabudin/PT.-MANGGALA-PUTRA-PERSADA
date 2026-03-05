@@ -12,12 +12,16 @@ import {
 import type { Project } from "@/lib/projects"
 
 // Format tanggal Indonesia
-const formatDate = (dateString: string) => {
-  const options: Intl.DateTimeFormatOptions = { 
-    year: 'numeric', 
-    month: 'short'
-  }
-  return new Date(dateString).toLocaleDateString('id-ID', options)
+const formatDate = (dateString?: string) => {
+  if (!dateString) return ""
+
+  const date = new Date(dateString)
+
+  return date.toLocaleDateString("id-ID", {
+    year: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  })
 }
 
 export default function ProjectCard({

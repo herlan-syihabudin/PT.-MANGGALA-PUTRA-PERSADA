@@ -230,23 +230,20 @@ export const faqItems: FAQItem[] = [
   },
   
   {
-    id: "certifications-standards",
-    question: "Sertifikasi dan standar apa yang dimiliki perusahaan?",
-    answer: `
-      <p>PT Manggala Putra Persada memiliki berbagai sertifikasi dan mengikuti standar industri:</p>
-      <ul>
-        <li>ISO 9001:2015 untuk sistem manajemen mutu</li>
-        <li>ISO 14001:2015 untuk manajemen lingkungan</li>
-        <li>ISO 45001:2018 untuk K3</li>
-        <li>SMK3 (Sistem Manajemen K3) dari Kemnaker RI</li>
-        <li>Anggota GAPEKSINDO dan ASPEKINDO</li>
-        <li>Kualifikasi usaha BUMN dan swasta</li>
-      </ul>
-      <p>Sertifikasi ini menjadi bukti komitmen kami terhadap kualitas, keselamatan, dan profesionalisme.</p>
-    `,
-    category: 'general',
-    tags: ['sertifikasi', 'iso', 'kualifikasi', 'standar'],
-    order: 8,
-    featured: true,
-  },
+  id: "industrial-construction-indonesia",
+  question: "Apakah PT Manggala Putra Persada melayani proyek konstruksi industri di seluruh Indonesia?",
+  answer: `
+  <p>Ya, PT Manggala Putra Persada melayani proyek konstruksi industri dan komersial di berbagai wilayah Indonesia.</p>
+  <p>Kami memiliki pengalaman dalam pembangunan:</p>
+  <ul>
+    <li>Pabrik dan fasilitas manufaktur</li>
+    <li>Gudang logistik</li>
+    <li>Bangunan komersial</li>
+    <li>Fasilitas industri khusus</li>
+  </ul>
+  `,
+  category: "general",
+  schemaMarkup: true,
+  featured: true,
+}
 ]

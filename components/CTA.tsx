@@ -1,6 +1,6 @@
 "use client"
 
-import { Phone, Shield, CheckCircle } from "lucide-react"
+import { Phone, CheckCircle } from "lucide-react"
 import Link from "next/link"
 
 // Environment variables
@@ -62,15 +62,11 @@ export default function CTA() {
 
         {/* MICRO TRUST */}
         <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm text-red-200">
-          <div className="flex items-center gap-2">
-            <Shield size={14} className="text-gold" aria-hidden="true" />
-            ISO 9001 Certified
-          </div>
-          <div className="flex items-center gap-2">
-            <CheckCircle size={14} className="text-gold" aria-hidden="true" />
-            24-Hour Response Guarantee
-          </div>
-        </div>
+  <div className="flex items-center gap-2">
+    <CheckCircle size={14} className="text-gold" aria-hidden="true" />
+    24-Hour Response Guarantee
+  </div>
+</div>
 
       </div>
     </section>

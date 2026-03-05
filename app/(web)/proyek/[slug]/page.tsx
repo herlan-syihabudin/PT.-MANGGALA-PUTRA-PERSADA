@@ -8,20 +8,24 @@ import {
   MapPin,
   HardHat,
   Clock,
-  Award,
   ChevronRight,
   Download,
-  Share2,
 } from "lucide-react"
 import ProjectCard from "@/components/ProjectCard"
 
 type Props = {
-  params: Promise<{
+  params: {
     slug: string
-  }>
+  }
 }
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://mppindo.com"
+
+export function generateStaticParams() {
+  return projects.map((project) => ({
+    slug: project.slug,
+  }))
+}
 
 /* =========================
    SEO METADATA PER PROJECT
@@ -56,7 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       authors: ["PT Manggala Putra Persada"],
       images: [
         {
-          url: project.images[0],
+          url: project.images?.[0] || `${BASE_URL}/images/project-placeholder.jpg`,
           width: 1200,
           height: 630,
           alt: project.title,
@@ -86,18 +90,30 @@ export default async function ProjectDetailPage({ params }: Props) {
     })
   }
 
+  const relatedProjects = projects
+    .filter(p => p.category === project.category && p.slug !== project.slug)
+    .slice(0, 3)
+
   return (
     <article className="py-24 bg-gradient-to-b from-white to-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* ===== BREADCRUMB ===== */}
-        <div className="mb-8 text-sm text-gray-500">
-          <Link href="/" className="hover:text-gold transition">Home</Link>
-          <ChevronRight size={14} className="inline mx-2" />
-          <Link href="/proyek" className="hover:text-gold transition">Proyek</Link>
-          <ChevronRight size={14} className="inline mx-2" />
-          <span className="text-gray-900 font-medium">{project.title}</span>
-        </div>
+        <nav className="mb-8 text-sm text-gray-500" aria-label="Breadcrumb">
+          <ol className="flex items-center flex-wrap">
+            <li className="flex items-center">
+              <Link href="/" className="hover:text-gold transition">Home</Link>
+              <ChevronRight size={14} className="mx-2" aria-hidden="true" />
+            </li>
+            <li className="flex items-center">
+              <Link href="/proyek" className="hover:text-gold transition">Proyek</Link>
+              <ChevronRight size={14} className="mx-2" aria-hidden="true" />
+            </li>
+            <li className="font-medium text-gray-900 truncate max-w-[200px] md:max-w-none">
+              {project.title}
+            </li>
+          </ol>
+        </nav>
 
         {/* ===== HEADER ===== */}
         <div className="grid lg:grid-cols-2 gap-12 items-start mb-16">
@@ -107,26 +123,6 @@ export default async function ProjectDetailPage({ params }: Props) {
               <span className="px-4 py-1.5 text-sm font-semibold text-red-600 bg-red-50 rounded-full border border-red-200">
                 {project.category}
               </span>
-
-              {/* Share Button */}
-              <button 
-                onClick={() => {
-                  if (navigator.share) {
-                    navigator.share({
-                      title: project.title,
-                      text: project.description,
-                      url: window.location.href,
-                    })
-                  } else {
-                    navigator.clipboard.writeText(window.location.href)
-                    alert("Link copied to clipboard!")
-                  }
-                }}
-                className="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition"
-              >
-                <Share2 size={18} />
-                <span className="text-sm hidden sm:inline">Bagikan</span>
-              </button>
             </div>
 
             <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight leading-tight mt-6 mb-6">
@@ -141,7 +137,7 @@ export default async function ProjectDetailPage({ params }: Props) {
               {project.location && (
                 <div>
                   <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
-                    <MapPin size={14} /> Location
+                    <MapPin size={14} aria-hidden="true" /> Location
                   </div>
                   <p className="font-semibold text-gray-900">{project.location}</p>
                 </div>
@@ -150,7 +146,7 @@ export default async function ProjectDetailPage({ params }: Props) {
               {project.completionDate && (
                 <div>
                   <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
-                    <Calendar size={14} /> Completed
+                    <Calendar size={14} aria-hidden="true" /> Completed
                   </div>
                   <p className="font-semibold text-gray-900">
                     {formatDate(project.completionDate)}
@@ -161,7 +157,7 @@ export default async function ProjectDetailPage({ params }: Props) {
               {project.duration && (
                 <div>
                   <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
-                    <Clock size={14} /> Duration
+                    <Clock size={14} aria-hidden="true" /> Duration
                   </div>
                   <p className="font-semibold text-gray-900">{project.duration}</p>
                 </div>
@@ -170,7 +166,7 @@ export default async function ProjectDetailPage({ params }: Props) {
               {project.client && (
                 <div>
                   <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
-                    <HardHat size={14} /> Client
+                    <HardHat size={14} aria-hidden="true" /> Client
                   </div>
                   <p className="font-semibold text-gray-900">{project.client}</p>
                 </div>
@@ -183,8 +179,9 @@ export default async function ProjectDetailPage({ params }: Props) {
                 href={project.pdfUrl}
                 download
                 className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition"
+                aria-label={`Download PDF for ${project.title}`}
               >
-                <Download size={18} />
+                <Download size={18} aria-hidden="true" />
                 <span>Download Project PDF</span>
               </a>
             )}
@@ -192,7 +189,7 @@ export default async function ProjectDetailPage({ params }: Props) {
 
           <div className="relative rounded-2xl overflow-hidden shadow-2xl">
             <Image
-              src={project.images[0]}
+              src={project.images?.[0] || "/images/project-placeholder.jpg"}
               alt={project.title}
               width={800}
               height={600}
@@ -204,14 +201,14 @@ export default async function ProjectDetailPage({ params }: Props) {
 
         {/* ===== SCOPE ===== */}
         {project.scope && project.scope.length > 0 && (
-          <section className="mb-16">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          <section className="mb-16" aria-labelledby="scope-heading">
+            <h2 id="scope-heading" className="text-2xl font-bold text-gray-900 mb-6">
               Scope of Work
             </h2>
             <ul className="space-y-3">
               {project.scope.map((item, index) => (
                 <li key={index} className="flex items-start gap-3 text-gray-700">
-                  <span className="w-2 h-2 bg-red-600 rounded-full mt-2" />
+                  <span className="w-2 h-2 bg-red-600 rounded-full mt-2 flex-shrink-0" aria-hidden="true" />
                   {item}
                 </li>
               ))}
@@ -220,21 +217,21 @@ export default async function ProjectDetailPage({ params }: Props) {
         )}
 
         {/* ===== GALLERY ===== */}
-        {project.images.length > 1 && (
-          <section className="mb-16">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        {project.images?.length > 1 && (
+          <section className="mb-16" aria-labelledby="gallery-heading">
+            <h2 id="gallery-heading" className="text-2xl font-bold text-gray-900 mb-6">
               Project Gallery
             </h2>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {project.images.slice(1).map((img, i) => (
-                <div key={i} className="relative rounded-xl overflow-hidden group">
+                <div key={i} className="relative rounded-xl overflow-hidden group aspect-square">
                   <Image
                     src={img}
                     alt={`${project.title} - Construction progress photo ${i + 2}`}
-                    width={400}
-                    height={300}
-                    className="object-cover w-full h-48 group-hover:scale-105 transition-transform duration-500"
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 768px) 50vw, 25vw"
                   />
                 </div>
               ))}
@@ -243,18 +240,15 @@ export default async function ProjectDetailPage({ params }: Props) {
         )}
 
         {/* ===== RELATED PROJECTS ===== */}
-        {projects.filter(p => p.category === project.category && p.slug !== project.slug).length > 0 && (
-          <section className="mt-24">
-            <h2 className="text-2xl font-bold text-gray-900 mb-8">
+        {relatedProjects.length > 0 && (
+          <section className="mt-24" aria-labelledby="related-heading">
+            <h2 id="related-heading" className="text-2xl font-bold text-gray-900 mb-8">
               Proyek Terkait
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
-              {projects
-                .filter(p => p.category === project.category && p.slug !== project.slug)
-                .slice(0, 3)
-                .map(related => (
-                  <ProjectCard key={related.slug} {...related} />
-                ))}
+              {relatedProjects.map(related => (
+                <ProjectCard key={related.slug} {...related} />
+              ))}
             </div>
           </section>
         )}
@@ -264,8 +258,9 @@ export default async function ProjectDetailPage({ params }: Props) {
           <Link
             href="/proyek"
             className="inline-flex items-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 transition group mb-4"
+            aria-label="Back to all projects"
           >
-            <ChevronRight size={16} className="rotate-180 group-hover:-translate-x-1 transition-transform" />
+            <ChevronRight size={16} className="rotate-180 group-hover:-translate-x-1 transition-transform" aria-hidden="true" />
             Back to All Projects
           </Link>
 
@@ -275,7 +270,7 @@ export default async function ProjectDetailPage({ params }: Props) {
               className="inline-flex items-center gap-2 bg-red-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-red-700 transition shadow-lg shadow-red-600/20 hover:shadow-xl hover:-translate-y-0.5"
             >
               Konsultasi Proyek Serupa
-              <ChevronRight size={18} />
+              <ChevronRight size={18} aria-hidden="true" />
             </Link>
           </div>
         </div>
@@ -287,22 +282,27 @@ export default async function ProjectDetailPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Article",
-            "headline": project.title,
-            "description": project.description,
-            "image": project.images[0],
-            "author": {
-              "@type": "Organization",
-              "name": "PT Manggala Putra Persada"
-            },
-            "publisher": {
-              "@type": "Organization",
-              "name": "PT Manggala Putra Persada"
-            },
-            "datePublished": project.completionDate,
-            "keywords": project.scope?.join(", "),
-          })
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": project.title,
+  "description": project.description,
+  "image": project.images?.[0] || `${BASE_URL}/images/project-placeholder.jpg`,
+  "author": {
+    "@type": "Organization",
+    "name": "PT Manggala Putra Persada",
+    "url": BASE_URL,
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "PT Manggala Putra Persada",
+    "logo": {
+      "@type": "ImageObject",
+      "url": `${BASE_URL}/images/logo-mpp.png`,
+    },
+  },
+  "datePublished": project.completionDate,
+  "keywords": project.scope?.join(", ") || project.category,
+})
         }}
       />
     </article>

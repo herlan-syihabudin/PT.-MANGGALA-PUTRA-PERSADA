@@ -55,7 +55,7 @@ export default function ProjectCard({
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
           
           <Image
-            src={images[0]}
+            src={images?.[0] || "/images/project-placeholder.jpg"}
             alt={title}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

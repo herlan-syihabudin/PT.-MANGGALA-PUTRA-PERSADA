@@ -1,3 +1,4 @@
+"use client"
 
 import Link from "next/link"
 import Image from "next/image"
@@ -5,7 +6,8 @@ import {
   Phone, 
   Mail, 
   MapPin, 
-  Clock, 
+  Clock,
+  Globe,
   Award,
   ChevronRight,
   Facebook,
@@ -20,15 +22,52 @@ import {
   Paintbrush,
   Compass
 } from "lucide-react"
+import { useState } from "react"
+import { toast } from "sonner"
+
+const WA_NUMBER = process.env.NEXT_PUBLIC_WA_NUMBER || "6281229222463"
+const PHONE = process.env.NEXT_PUBLIC_PHONE || "02138716203"
+const EMAIL = process.env.NEXT_PUBLIC_COMPANY_EMAIL || "info@mppindo.com"
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.mppindo.com"
+
+const WA_LINK = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(
+  "Hello PT Manggala Putra Persada, I would like to discuss a project inquiry."
+)}`
+
+// Format phone untuk display
+const formatPhone = (phone: string) => {
+  if (!phone) return ""
+  if (phone.startsWith("0") && phone.length >= 10) {
+    return phone.replace(/(\d{3})(\d{4})(\d+)/, "$1-$2-$3")
+  }
+  return phone
+}
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
+  const [email, setEmail] = useState("")
+  const [subscribing, setSubscribing] = useState(false)
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email) {
+      toast.error("Please enter your email")
+      return
+    }
+    
+    setSubscribing(true)
+    // TODO: Implement newsletter subscription
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    toast.success("Thank you for subscribing!")
+    setEmail("")
+    setSubscribing(false)
+  }
 
   return (
     <footer className="bg-gray-900 text-gray-300 relative overflow-hidden">
       
       {/* ===== BACKGROUND ELEMENTS ===== */}
-      <div className="absolute inset-0 pointer-events-none">
+      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
         <div className="absolute top-0 right-0 w-96 h-96 bg-gold/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-red-600/5 rounded-full blur-3xl" />
         <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] bg-center opacity-[0.02]" />
@@ -41,21 +80,21 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16">
           <div className="flex items-center gap-3">
             <div className="relative w-20 h-20 shrink-0">
-  <Image
-    src="/images/logo-mpp.png"
-    alt="PT Manggala Putra Persada Logo"
-    fill
-    className="object-contain"
-    priority
-  />
-</div>
+              <Image
+                src="/images/logo-mpp.png"
+                alt="PT Manggala Putra Persada - Engineering & Construction Contractor"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
             <div>
               <h2 className="text-white font-bold text-xl">PT Manggala Putra Persada</h2>
               <p className="text-sm text-gray-400">Engineering & Construction Contractor</p>
             </div>
           </div>
           
-          {/* Gold divider panjang */}
+          {/* Gold divider */}
           <div className="hidden md:block w-64 h-[2px] bg-gradient-to-r from-gold via-gold/50 to-transparent rounded-full" />
         </div>
 
@@ -66,7 +105,7 @@ export default function Footer() {
           <div className="space-y-6">
             <div>
               <h3 className="text-white font-bold text-lg mb-3 flex items-center gap-2">
-                <Building2 size={18} className="text-gold" />
+                <Building2 size={18} className="text-gold" aria-hidden="true" />
                 About Company
               </h3>
               <div className="w-12 h-[2px] bg-gold rounded-full mb-4" />
@@ -80,27 +119,26 @@ export default function Footer() {
             </p>
 
             {/* Standards & Commitments */}
-<div className="space-y-2">
-  <p className="text-xs font-semibold text-gold uppercase tracking-wider">
-    Standards & Commitments
-  </p>
-
-  <div className="flex flex-wrap gap-2">
-    {standards.map((item, index) => (
-      <div
-        key={index}
-        className="flex items-center gap-1 px-2 py-1 bg-gray-800 rounded-md"
-      >
-        <Shield size={10} className="text-gold" />
-        <span className="text-xs text-gray-300">{item}</span>
-      </div>
-    ))}
-  </div>
-</div>
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-gold uppercase tracking-wider">
+                Standards & Commitments
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {standards.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-1 px-2 py-1 bg-gray-800 rounded-md"
+                  >
+                    <Shield size={10} className="text-gold" aria-hidden="true" />
+                    <span className="text-xs text-gray-300">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             {/* Legal Status */}
             <p className="text-xs text-gray-500 flex items-center gap-1">
-              <FileText size={12} />
+              <FileText size={12} aria-hidden="true" />
               Legally registered construction company in Indonesia
             </p>
           </div>
@@ -109,7 +147,7 @@ export default function Footer() {
           <div className="space-y-6">
             <div>
               <h3 className="text-white font-bold text-lg mb-3 flex items-center gap-2">
-                <HardHat size={18} className="text-gold" />
+                <HardHat size={18} className="text-gold" aria-hidden="true" />
                 Our Services
               </h3>
               <div className="w-12 h-[2px] bg-gold rounded-full mb-4" />
@@ -122,9 +160,9 @@ export default function Footer() {
                     href={service.href}
                     className="group flex items-center gap-2 text-sm text-gray-400 hover:text-white transition"
                   >
-                    <service.icon size={14} className="text-gold group-hover:translate-x-1 transition" />
+                    <service.icon size={14} className="text-gold group-hover:translate-x-1 transition" aria-hidden="true" />
                     <span>{service.name}</span>
-                    <ChevronRight size={12} className="ml-auto opacity-0 group-hover:opacity-100 transition" />
+                    <ChevronRight size={12} className="ml-auto opacity-0 group-hover:opacity-100 transition" aria-hidden="true" />
                   </Link>
                 </li>
               ))}
@@ -135,7 +173,7 @@ export default function Footer() {
           <div className="space-y-6">
             <div>
               <h3 className="text-white font-bold text-lg mb-3 flex items-center gap-2">
-                <Compass size={18} className="text-gold" />
+                <Compass size={18} className="text-gold" aria-hidden="true" />
                 Quick Links
               </h3>
               <div className="w-12 h-[2px] bg-gold rounded-full mb-4" />
@@ -148,7 +186,7 @@ export default function Footer() {
                   href={link.href}
                   className="text-sm text-gray-400 hover:text-white transition flex items-center gap-1 group"
                 >
-                  <ChevronRight size={10} className="text-gold opacity-0 group-hover:opacity-100 transition" />
+                  <ChevronRight size={10} className="text-gold opacity-0 group-hover:opacity-100 transition" aria-hidden="true" />
                   {link.name}
                 </Link>
               ))}
@@ -163,11 +201,11 @@ export default function Footer() {
                     key={index}
                     href={social.href}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="p-2 bg-gray-800 rounded-lg hover:bg-gold hover:text-gray-900 transition group"
-                    aria-label={social.name}
+                    aria-label={`Follow us on ${social.name}`}
                   >
-                    <social.icon size={16} className="group-hover:scale-110 transition" />
+                    <social.icon size={16} className="group-hover:scale-110 transition" aria-hidden="true" />
                   </a>
                 ))}
               </div>
@@ -178,7 +216,7 @@ export default function Footer() {
           <div className="space-y-6">
             <div>
               <h3 className="text-white font-bold text-lg mb-3 flex items-center gap-2">
-                <Phone size={18} className="text-gold" />
+                <Phone size={18} className="text-gold" aria-hidden="true" />
                 Contact Info
               </h3>
               <div className="w-12 h-[2px] bg-gold rounded-full mb-4" />
@@ -187,52 +225,71 @@ export default function Footer() {
             <div className="space-y-4">
               
               {/* Address */}
-<div className="flex items-start gap-3">
-  <MapPin size={16} className="text-gold mt-1 flex-shrink-0" />
-  <div>
-    <a 
-  href="https://www.google.com/maps/search/?api=1&query=Setu+Bekasi+West+Java+17320"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="group transition"
->
-  <p className="text-sm text-gray-400 group-hover:text-white transition">
-    Setu, Bekasi Regency
-  </p>
-  <p className="text-xs text-gray-500 group-hover:text-gray-300 transition">
-    West Java 17320 – Indonesia
-  </p>
-</a>
-  </div>
-</div>
+              <div className="flex items-start gap-3">
+                <MapPin size={16} className="text-gold mt-1 flex-shrink-0" aria-hidden="true" />
+                <a 
+                  href="https://www.google.com/maps/search/?api=1&query=Setu+Bekasi+West+Java+17320"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group transition"
+                >
+                  <p className="text-sm text-gray-400 group-hover:text-white transition">
+                    Setu, Bekasi Regency
+                  </p>
+                  <p className="text-xs text-gray-500 group-hover:text-gray-300 transition">
+                    West Java 17320 – Indonesia
+                  </p>
+                </a>
+              </div>
 
-{/* Phone */}
+              {/* Phone */}
+              <div className="flex items-center gap-3">
+                <Phone size={16} className="text-gold flex-shrink-0" aria-hidden="true" />
+                <div className="flex flex-col">
+                  <a 
+                    href={WA_LINK}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-gray-400 hover:text-white transition"
+                  >
+                    +62 812 2922 2463 (WhatsApp)
+                  </a>
+                  <a
+                    href={`tel:${PHONE}`}
+                    className="text-sm text-gray-400 hover:text-white transition"
+                  >
+                    {formatPhone(PHONE)}
+                  </a>
+                </div>
+              </div>
+            
+              {/* Email */}
+              <div className="flex items-center gap-3">
+                <Mail size={16} className="text-gold flex-shrink-0" aria-hidden="true" />
+                <a 
+                  href={`mailto:${EMAIL}?subject=Project Inquiry - PT MPP`}
+                  className="text-sm text-gray-400 hover:text-white transition"
+                >
+                  {EMAIL}
+                </a>
+              </div>
+
+              {/* Website */}
 <div className="flex items-center gap-3">
-  <Phone size={16} className="text-gold flex-shrink-0" />
+  <Globe size={16} className="text-gold flex-shrink-0" aria-hidden="true" />
   <a 
-    href="https://wa.me/6281229222463?text=Hello%20PT%20Manggala%20Putra%20Persada,%20I%20would%20like%20to%20discuss%20a%20project%20inquiry."
+    href={SITE_URL}
     target="_blank"
     rel="noopener noreferrer"
     className="text-sm text-gray-400 hover:text-white transition"
   >
-    +62 812 2922 2463
+    {SITE_URL.replace(/^https?:\/\//, "")}
   </a>
 </div>
 
-              {/* Email */}
-              <div className="flex items-center gap-3">
-                <Mail size={16} className="text-gold flex-shrink-0" />
-                <a 
-                  href="mailto:info@mppindo.com?subject=Project Inquiry - PT MPP"
-                  className="text-sm text-gray-400 hover:text-white transition"
-                >
-                  info@mppindo.com
-                </a>
-              </div>
-
               {/* Business Hours */}
               <div className="flex items-start gap-3">
-                <Clock size={16} className="text-gold mt-1 flex-shrink-0" />
+                <Clock size={16} className="text-gold mt-1 flex-shrink-0" aria-hidden="true" />
                 <div>
                   <p className="text-sm text-gray-400">Monday – Friday</p>
                   <p className="text-xs text-gray-500">08.00 – 17.00 WIB</p>
@@ -240,19 +297,26 @@ export default function Footer() {
               </div>
             </div>
 
-            {/* Newsletter Signup (optional) */}
+            {/* Newsletter Signup */}
             <div className="pt-4">
               <p className="text-sm font-semibold text-white mb-2">Get Updates</p>
-              <div className="flex">
+              <form onSubmit={handleSubscribe} className="flex">
                 <input
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="Your email"
                   className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-l-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gold"
+                  disabled={subscribing}
                 />
-                <button className="px-4 py-2 bg-gold text-gray-900 rounded-r-lg font-semibold text-sm hover:bg-gold/80 transition">
-                  Subscribe
+                <button
+                  type="submit"
+                  disabled={subscribing}
+                  className="px-4 py-2 bg-gold text-gray-900 rounded-r-lg font-semibold text-sm hover:bg-gold/80 transition disabled:opacity-50"
+                >
+                  {subscribing ? '...' : 'Subscribe'}
                 </button>
-              </div>
+              </form>
             </div>
           </div>
         </div>

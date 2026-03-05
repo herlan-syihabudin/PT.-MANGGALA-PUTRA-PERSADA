@@ -14,7 +14,6 @@ import {
   HardHat,
   Zap,
   Paintbrush,
-  Hammer,
   Compass,
   ChevronRight
 } from "lucide-react"
@@ -22,7 +21,8 @@ import {
 export default function Navbar() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
-  const [openService, setOpenService] = useState(false)
+  const [openServiceDesktop, setOpenServiceDesktop] = useState(false)
+  const [openServiceMobile, setOpenServiceMobile] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
@@ -32,7 +32,7 @@ export default function Navbar() {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20)
     }
-    window.addEventListener("scroll", handleScroll)
+    window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
@@ -40,7 +40,7 @@ export default function Navbar() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setOpenService(false)
+        setOpenServiceDesktop(false)
       }
     }
     document.addEventListener("mousedown", handleClickOutside)
@@ -141,12 +141,12 @@ export default function Navbar() {
               Tentang Kami
             </NavLink>
 
-            {/* DROPDOWN LAYANAN - HOVER BASED (lebih user friendly) */}
+            {/* DROPDOWN LAYANAN - HOVER BASED */}
             <div 
               className="relative"
               ref={dropdownRef}
-              onMouseEnter={() => setOpenService(true)}
-              onMouseLeave={() => setOpenService(false)}
+              onMouseEnter={() => setOpenServiceDesktop(true)}
+              onMouseLeave={() => setOpenServiceDesktop(false)}
             >
               <button
                 className={`flex items-center gap-1 px-3 py-2 rounded-md transition-all ${
@@ -154,18 +154,20 @@ export default function Navbar() {
                     ? "text-red-600 font-semibold"
                     : "text-gray-700 hover:text-red-600"
                 }`}
+                aria-expanded={openServiceDesktop}
+                aria-haspopup="true"
               >
                 Layanan 
                 <ChevronDown 
                   size={16} 
                   className={`transition-transform duration-200 ${
-                    openService ? "rotate-180" : ""
+                    openServiceDesktop ? "rotate-180" : ""
                   }`}
                 />
               </button>
 
               {/* Mega Menu Dropdown */}
-              {openService && (
+              {openServiceDesktop && (
                 <div className="absolute left-0 top-full mt-1 w-80 bg-white border rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="p-2">
                     {services.map((service) => (
@@ -173,7 +175,7 @@ export default function Navbar() {
                         key={service.href}
                         href={service.href}
                         className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
-                        onClick={() => setOpenService(false)}
+                        onClick={() => setOpenServiceDesktop(false)}
                       >
                         <div className="p-2 bg-red-50 rounded-lg group-hover:bg-red-100 transition-colors">
                           <service.icon size={18} className="text-red-600" />
@@ -192,7 +194,7 @@ export default function Navbar() {
                     <Link 
                       href="/layanan" 
                       className="text-sm text-red-600 hover:underline flex items-center gap-1"
-                      onClick={() => setOpenService(false)}
+                      onClick={() => setOpenServiceDesktop(false)}
                     >
                       Lihat semua layanan <ChevronRight size={14} />
                     </Link>
@@ -227,6 +229,7 @@ export default function Navbar() {
             onClick={() => setIsOpen(!isOpen)}
             className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
             aria-label="Toggle menu"
+            aria-expanded={isOpen}
           >
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -270,30 +273,39 @@ export default function Navbar() {
 
               {/* Menu items */}
               <div className="space-y-4">
-                <MobileLink href="/" onClick={() => setIsOpen(false)}>
+                <MobileLink 
+                  href="/" 
+                  active={isActive("/")}
+                  onClick={() => setIsOpen(false)}
+                >
                   Home
                 </MobileLink>
                 
-                <MobileLink href="/tentang" onClick={() => setIsOpen(false)}>
+                <MobileLink 
+                  href="/tentang" 
+                  active={isActive("/tentang")}
+                  onClick={() => setIsOpen(false)}
+                >
                   Tentang Kami
                 </MobileLink>
 
                 {/* Mobile Layanan Dropdown */}
                 <div>
                   <button
-                    onClick={() => setOpenService(!openService)}
+                    onClick={() => setOpenServiceMobile(!openServiceMobile)}
                     className="w-full flex items-center justify-between py-2 text-gray-700 font-medium hover:text-red-600"
+                    aria-expanded={openServiceMobile}
                   >
                     Layanan
                     <ChevronDown 
                       size={18} 
                       className={`transition-transform duration-200 ${
-                        openService ? "rotate-180" : ""
+                        openServiceMobile ? "rotate-180" : ""
                       }`}
                     />
                   </button>
 
-                  {openService && (
+                  {openServiceMobile && (
                     <div className="mt-3 ml-4 space-y-3 border-l-2 border-red-200 pl-4">
                       {services.map((service) => (
                         <Link
@@ -309,33 +321,52 @@ export default function Navbar() {
                           </div>
                         </Link>
                       ))}
+                      <Link
+                        href="/layanan"
+                        className="flex items-center gap-1 py-2 text-sm text-red-600 hover:underline"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        Lihat semua layanan <ChevronRight size={14} />
+                      </Link>
                     </div>
                   )}
                 </div>
 
-                <MobileLink href="/proyek" onClick={() => setIsOpen(false)}>
+                <MobileLink 
+                  href="/proyek" 
+                  active={isActive("/proyek")}
+                  onClick={() => setIsOpen(false)}
+                >
                   Proyek
                 </MobileLink>
                 
-                <MobileLink href="/klien" onClick={() => setIsOpen(false)}>
+                <MobileLink 
+                  href="/klien" 
+                  active={isActive("/klien")}
+                  onClick={() => setIsOpen(false)}
+                >
                   Klien & Mitra
                 </MobileLink>
                 
-                <MobileLink href="/insight" onClick={() => setIsOpen(false)}>
+                <MobileLink 
+                  href="/insight" 
+                  active={isActive("/insight")}
+                  onClick={() => setIsOpen(false)}
+                >
                   Insight
                 </MobileLink>
               </div>
 
               {/* Contact Info Mobile */}
               <div className="pt-6 border-t space-y-3">
-                <div className="flex items-center gap-3 text-sm text-gray-600">
+                <a href="tel:02138716203" className="flex items-center gap-3 text-sm text-gray-600 hover:text-red-600">
                   <Phone size={16} className="text-red-600" />
-                  <span>021-1234-5678</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <span>021-38716203</span>
+                </a>
+                <a href="mailto:info@mppindo.com" className="flex items-center gap-3 text-sm text-gray-600 hover:text-red-600">
                   <Mail size={16} className="text-red-600" />
-                  <span>info@mpp.co.id</span>
-                </div>
+                  <span>info@mppindo.com</span>
+                </a>
               </div>
 
               {/* CTA Mobile */}
@@ -382,17 +413,23 @@ function NavLink({
 function MobileLink({ 
   href, 
   children, 
+  active,
   onClick 
 }: { 
   href: string
   children: React.ReactNode
+  active?: boolean
   onClick: () => void
 }) {
   return (
     <Link
       href={href}
       onClick={onClick}
-      className="block py-2 text-gray-700 font-medium hover:text-red-600 transition-colors"
+      className={`block py-2 font-medium transition-colors ${
+        active
+          ? "text-red-600"
+          : "text-gray-700 hover:text-red-600"
+      }`}
     >
       {children}
     </Link>

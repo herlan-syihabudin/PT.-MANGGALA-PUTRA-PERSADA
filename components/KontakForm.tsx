@@ -2,40 +2,60 @@
 
 import { useState } from "react"
 import { ChevronRight, Shield } from "lucide-react"
+import { toast } from "sonner"
+
+const WA_NUMBER = process.env.NEXT_PUBLIC_WA_NUMBER || "6281229222463"
+
+const initialForm = {
+  nama: "",
+  perusahaan: "",
+  whatsapp: "",
+  jenis: "",
+  estimasi: "",
+  pesan: "",
+}
 
 export default function KontakForm() {
-  const [form, setForm] = useState({
-    nama: "",
-    perusahaan: "",
-    whatsapp: "",
-    jenis: "",
-    estimasi: "",
-    pesan: "",
-  })
-  
+  const [form, setForm] = useState(initialForm)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const validateWhatsApp = (number: string) => {
     const digits = number.replace(/\D/g, "")
-    return digits.length >= 10
+    if (digits.length < 10 || digits.length > 15) return false
+    // Validasi format Indonesia (62 atau 08)
+    return digits.startsWith('62') || digits.startsWith('08')
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const formatWhatsApp = (number: string) => {
+    const digits = number.replace(/\D/g, "")
+    if (digits.startsWith('62')) return `+${digits}`
+    if (digits.startsWith('08')) return `+62 ${digits.slice(1)}`
+    return number
+  }
+  
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+
+    // Honeypot anti spam
+    const honeypot = (e.currentTarget as HTMLFormElement).website?.value
+    if (honeypot) {
+      console.log("Spam detected")
+      return
+    }
 
     // Validasi
     if (!form.nama.trim()) {
-      alert("Nama lengkap harus diisi.")
+      toast.error("Nama lengkap harus diisi")
       return
     }
 
     if (!form.whatsapp.trim()) {
-      alert("Nomor WhatsApp harus diisi.")
+      toast.error("Nomor WhatsApp harus diisi")
       return
     }
 
     if (!validateWhatsApp(form.whatsapp)) {
-      alert("Nomor WhatsApp minimal 10 digit.")
+      toast.error("Nomor WhatsApp tidak valid (minimal 10 digit, format 62xxx atau 08xxx)")
       return
     }
 
@@ -47,7 +67,7 @@ Saya ingin mendiskusikan proyek dengan detail berikut:
 
 Nama: ${form.nama}
 Perusahaan: ${form.perusahaan || "-"}
-WhatsApp: ${form.whatsapp}
+WhatsApp: ${formatWhatsApp(form.whatsapp)}
 Tipe Proyek: ${form.jenis || "-"}
 Estimasi Budget: ${form.estimasi || "-"}
 
@@ -57,15 +77,20 @@ ${form.pesan || "-"}
 Terima kasih.`
 
     window.open(
-      `https://wa.me/6281297396612?text=${encodeURIComponent(text)}`,
+      `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(text)}`,
       "_blank"
     )
+
+    // Success feedback
+    toast.success("Pesan berhasil dikirim via WhatsApp")
     
+    // Reset form
+    setForm(initialForm)
     setIsSubmitting(false)
   }
-
+  
   return (
-    <div className="border border-gray-200 rounded-2xl p-8 shadow-soft bg-white">
+    <div className="border border-gray-200 rounded-2xl p-8 shadow-lg bg-white">
       <form onSubmit={handleSubmit} className="space-y-5">
 
         {/* Honeypot (anti-spam) */}
@@ -76,9 +101,14 @@ Terima kasih.`
           tabIndex={-1}
           autoComplete="off"
         />
+        <input
+          type="hidden"
+          name="form_loaded"
+          value={Date.now()}
+        />
 
-        <div className="form-group">
-          <label htmlFor="nama" className="form-label">
+        <div>
+          <label htmlFor="nama" className="block text-sm font-medium text-gray-700 mb-1">
             Nama Lengkap <span className="text-red-600">*</span>
           </label>
           <input
@@ -88,12 +118,12 @@ Terima kasih.`
             value={form.nama}
             onChange={(e) => setForm({ ...form, nama: e.target.value })}
             required
-            className="form-input"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition"
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="perusahaan" className="form-label">
+        <div>
+          <label htmlFor="perusahaan" className="block text-sm font-medium text-gray-700 mb-1">
             Perusahaan / Instansi
           </label>
           <input
@@ -102,12 +132,12 @@ Terima kasih.`
             placeholder="PT. Contoh"
             value={form.perusahaan}
             onChange={(e) => setForm({ ...form, perusahaan: e.target.value })}
-            className="form-input"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition"
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="whatsapp" className="form-label">
+        <div>
+          <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-700 mb-1">
             Nomor WhatsApp <span className="text-red-600">*</span>
           </label>
           <input
@@ -117,20 +147,22 @@ Terima kasih.`
             value={form.whatsapp}
             onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
             required
-            className="form-input"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition"
           />
-          <p className="form-hint">Minimal 10 digit, bisa dengan atau tanpa kode negara</p>
+          <p className="text-xs text-gray-500 mt-1">
+            Minimal 10 digit, format 62xxx atau 08xxx
+          </p>
         </div>
 
-        <div className="form-group">
-          <label htmlFor="jenis" className="form-label">
+        <div>
+          <label htmlFor="jenis" className="block text-sm font-medium text-gray-700 mb-1">
             Tipe Proyek
           </label>
           <select
             id="jenis"
             value={form.jenis}
             onChange={(e) => setForm({ ...form, jenis: e.target.value })}
-            className="form-select"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition bg-white"
           >
             <option value="">Pilih Tipe Proyek</option>
             <option value="Industrial / Factory / Warehouse">
@@ -145,15 +177,15 @@ Terima kasih.`
           </select>
         </div>
 
-        <div className="form-group">
-          <label htmlFor="estimasi" className="form-label">
+        <div>
+          <label htmlFor="estimasi" className="block text-sm font-medium text-gray-700 mb-1">
             Estimasi Budget (Opsional)
           </label>
           <select
             id="estimasi"
             value={form.estimasi}
             onChange={(e) => setForm({ ...form, estimasi: e.target.value })}
-            className="form-select"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition bg-white"
           >
             <option value="">Pilih Estimasi Budget</option>
             <option value="< 500 Million IDR">&lt; 500 Juta IDR</option>
@@ -162,8 +194,8 @@ Terima kasih.`
           </select>
         </div>
 
-        <div className="form-group">
-          <label htmlFor="pesan" className="form-label">
+        <div>
+          <label htmlFor="pesan" className="block text-sm font-medium text-gray-700 mb-1">
             Deskripsi Singkat Proyek
           </label>
           <textarea
@@ -171,14 +203,15 @@ Terima kasih.`
             placeholder="Jelaskan kebutuhan proyek Anda..."
             value={form.pesan}
             onChange={(e) => setForm({ ...form, pesan: e.target.value })}
-            className="form-textarea"
+            rows={4}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition resize-none"
           />
         </div>
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="btn-primary w-full shadow-lg shadow-red-600/20 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-lg"
+          className="w-full inline-flex items-center justify-center px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-600/20 hover:shadow-xl"
         >
           {isSubmitting ? (
             "Memproses..."

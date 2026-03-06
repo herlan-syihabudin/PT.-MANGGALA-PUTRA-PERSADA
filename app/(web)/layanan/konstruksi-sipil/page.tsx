@@ -12,10 +12,28 @@ export const metadata: Metadata = {
   description: "Engineering-led civil and structural construction services in Indonesia. Reinforced concrete, foundations, and structural systems for industrial & commercial projects with strict quality control.",
   keywords: "kontraktor sipil, konstruksi struktur, jasa pondasi, beton bertulang, konstruksi pabrik, civil contractor indonesia, earthworks, foundation contractor",
   openGraph: {
-    title: "Civil & Structural Construction Engineering | MPP Engineering",
-    description: "Professional civil and structural construction services for industrial and commercial projects.",
-    images: ["/images/og-civil.jpg"],
-  },
+  title: "Civil & Structural Construction Engineering | PT Manggala Putra Persada",
+  description:
+    "Professional civil and structural construction services for industrial and commercial projects.",
+  url: "https://mppindo.com/layanan/konstruksi-sipil",
+  siteName: "PT Manggala Putra Persada",
+  type: "website",
+  images: [
+    {
+      url: "https://mppindo.com/images/og-civil.jpg",
+      width: 1200,
+      height: 630,
+      alt: "Civil & Structural Construction Engineering",
+    },
+  ],
+},
+  twitter: {
+  card: "summary_large_image",
+  title: "Civil & Structural Construction Engineering | PT Manggala Putra Persada",
+  description:
+    "Professional civil and structural construction services for industrial and commercial projects.",
+  images: ["https://mppindo.com/images/og-civil.jpg"],
+},
   alternates: {
     canonical: "https://mppindo.com/layanan/konstruksi-sipil",
   },
@@ -196,6 +214,36 @@ export default function KonstruksiSipilPage() {
         title="FAQ Konstruksi Sipil & Struktur"
         items={faqByService["konstruksi-sipil"]}
       />
+
+      <script
+type="application/ld+json"
+dangerouslySetInnerHTML={{
+__html: JSON.stringify({
+"@context": "https://schema.org",
+"@type": "BreadcrumbList",
+"itemListElement": [
+{
+"@type": "ListItem",
+"position": 1,
+"name": "Home",
+"item": "https://mppindo.com"
+},
+{
+"@type": "ListItem",
+"position": 2,
+"name": "Layanan",
+"item": "https://mppindo.com/layanan"
+},
+{
+"@type": "ListItem",
+"position": 3,
+"name": "Konstruksi Sipil",
+"item": "https://mppindo.com/layanan/konstruksi-sipil"
+}
+]
+})
+}}
+/>
 
     </section>
   )

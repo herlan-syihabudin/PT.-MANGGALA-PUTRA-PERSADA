@@ -12,30 +12,33 @@ import { ProjectOutcome } from "@/components/ProjectOutcome"
 
 export const metadata: Metadata = {
   // Basic SEO
-  title: "Engineering-Led Construction Contractor Indonesia | PT Manggala Putra Persada",
-  description: "PT Manggala Putra Persada (MPP Engineering) delivers integrated construction solutions: steel structure, civil works, MEP installation, and design-build services for industrial & commercial projects across Indonesia.",
-  
+  title: "Kontraktor Konstruksi Engineering Indonesia | PT Manggala Putra Persada",
+
+  description:
+    "PT Manggala Putra Persada menyediakan layanan konstruksi struktur baja, pekerjaan sipil, instalasi Mechanical Electrical Plumbing (MEP), serta design & build untuk proyek industri dan komersial di Indonesia.",
+
   // Keywords untuk search engine
   keywords: [
-    "kontraktor indonesia",
-    "construction contractor indonesia",
-    "steel structure contractor",
-    "civil engineering indonesia",
-    "MEP installation",
-    "design build indonesia",
+    "kontraktor konstruksi indonesia",
+    "kontraktor struktur baja",
+    "konstruksi sipil indonesia",
+    "instalasi MEP",
+    "design build konstruksi",
     "kontraktor pabrik",
     "jasa konstruksi baja",
+    "kontraktor industri",
     "PT Manggala Putra Persada",
     "MPP Engineering"
   ],
-  
+
   // Author
   authors: [{ name: "PT Manggala Putra Persada", url: "https://mppindo.com" }],
-  
+
   // Open Graph (Facebook, LinkedIn, WhatsApp)
   openGraph: {
-    title: "Engineering-Led Construction Contractor Indonesia",
-    description: "Steel Structure, Civil Engineering, MEP Installation & Design-Build Services",
+    title: "Kontraktor Konstruksi Engineering Indonesia",
+    description:
+      "Layanan konstruksi struktur baja, pekerjaan sipil, instalasi MEP, serta design & build untuk proyek industri dan komersial.",
     url: "https://mppindo.com",
     siteName: "PT Manggala Putra Persada",
     images: [
@@ -43,21 +46,22 @@ export const metadata: Metadata = {
         url: "https://mppindo.com/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "PT Manggala Putra Persada - Engineering Construction",
+        alt: "PT Manggala Putra Persada - Kontraktor Konstruksi Engineering",
       },
     ],
     locale: "id_ID",
     type: "website",
   },
-  
+
   // Twitter Card
   twitter: {
     card: "summary_large_image",
-    title: "Engineering-Led Construction Contractor Indonesia",
-    description: "Steel Structure, Civil Engineering, MEP Installation & Design-Build Services",
+    title: "Kontraktor Konstruksi Engineering Indonesia",
+    description:
+      "Konstruksi struktur baja, pekerjaan sipil, instalasi MEP, dan design & build.",
     images: ["https://mppindo.com/og-image.jpg"],
   },
-  
+
   // Robots directives
   robots: {
     index: true,
@@ -67,31 +71,31 @@ export const metadata: Metadata = {
       index: true,
       follow: true,
       noimageindex: false,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
-  
+
   // Canonical URL
   alternates: {
     canonical: "https://mppindo.com",
   },
-  
+
   // Verification (isi dengan token lu)
   verification: {
     google: "google-site-verification-token",
     yandex: "yandex-verification-token",
     yahoo: "yahoo-verification-token",
   },
-  
+
   // Icons
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon-16x16.png",
     apple: "/apple-touch-icon.png",
   },
-  
+
   // Manifest
   manifest: "/site.webmanifest",
 }

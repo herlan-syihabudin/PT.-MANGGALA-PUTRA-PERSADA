@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   description: "Profil baja struktural untuk kolom dan balok industri. Tabel berat lengkap.",
   url: `${SITE_URL}/material/besi/wf`,
   images: [`${SITE_URL}/images/og-wf.jpg`],
+  type: "article",
 },
   alternates: {
     canonical: `${SITE_URL}/material/besi/wf`,

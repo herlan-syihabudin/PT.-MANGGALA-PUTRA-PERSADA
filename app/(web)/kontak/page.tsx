@@ -5,16 +5,33 @@ import { Building2, Mail, Clock, Shield, Phone } from "lucide-react"  // ✅ SAT
 const PHONE = process.env.NEXT_PUBLIC_PHONE || "02138716203"
 const EMAIL = process.env.NEXT_PUBLIC_COMPANY_EMAIL || "info@mppindo.com"
 const LOCATION = process.env.NEXT_PUBLIC_COMPANY_LOCATION || "Bekasi, Jawa Barat – Indonesia"
+const WA = process.env.NEXT_PUBLIC_WA_NUMBER || "6281229222463"
 
 export const metadata: Metadata = {
   title: "Kontak Kami | Konsultasi Proyek Konstruksi | MPP Engineering",
   description: "Hubungi PT Manggala Putra Persada untuk konsultasi proyek konstruksi industri, komersial, dan residential. Tim engineering kami siap membantu mewujudkan proyek Anda.",
   keywords: "kontak kontraktor bekasi, konsultasi proyek konstruksi, kontraktor indonesia, konsultasi engineering, tender proyek",
   openGraph: {
-    title: "Konsultasi Proyek Konstruksi | MPP Engineering",
-    description: "Diskusikan proyek konstruksi Anda dengan tim engineering kami. Gratis konsultasi awal.",
-    images: ["/images/og-kontak.jpg"],
-  },
+  title: "Konsultasi Proyek Konstruksi | MPP Engineering",
+  description: "Diskusikan proyek konstruksi Anda dengan tim engineering kami.",
+  url: "https://mppindo.com/kontak",
+  siteName: "PT Manggala Putra Persada",
+  type: "website",
+  images: [
+    {
+      url: "https://mppindo.com/images/og-kontak.jpg",
+      width: 1200,
+      height: 630,
+      alt: "Kontak PT Manggala Putra Persada",
+    },
+  ],
+},
+  twitter: {
+  card: "summary_large_image",
+  title: "Kontak Kami | Konsultasi Proyek Konstruksi",
+  description: "Hubungi PT Manggala Putra Persada untuk konsultasi proyek konstruksi.",
+  images: ["https://mppindo.com/images/og-kontak.jpg"],
+},
   alternates: {
     canonical: "https://mppindo.com/kontak",
   },
@@ -95,13 +112,13 @@ export default function KontakPage() {
   <div>
     <p className="font-semibold text-gray-900">WhatsApp</p>
     <a
-      href={`https://wa.me/${process.env.NEXT_PUBLIC_WA_NUMBER}`}
-      target="_blank"
-      rel="noopener noreferrer"  // ✅ SUDAH DITAMBAH
-      className="text-gray-600 hover:text-red-600 transition"
-    >
-      +62 812 2922 2463
-    </a>
+  href={`https://wa.me/${WA}`}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="text-gray-600 hover:text-red-600 transition"
+>
+  +62 812 2922 2463
+</a>
   </div>
 </div>
 
@@ -129,6 +146,32 @@ export default function KontakPage() {
 
         {/* RIGHT – FORM */}
         <KontakForm />
+
+        <script
+type="application/ld+json"
+dangerouslySetInnerHTML={{
+__html: JSON.stringify({
+"@context": "https://schema.org",
+"@type": "Organization",
+"name": "PT Manggala Putra Persada",
+"url": "https://mppindo.com",
+"logo": "https://mppindo.com/logo-mp.png",
+"contactPoint": {
+  "@type": "ContactPoint",
+  "telephone": PHONE,
+  "contactType": "customer service",
+  "areaServed": "ID",
+  "availableLanguage": ["Indonesian", "English"]
+},
+"address": {
+  "@type": "PostalAddress",
+  "addressLocality": "Bekasi",
+  "addressRegion": "Jawa Barat",
+  "addressCountry": "Indonesia"
+}
+})
+}}
+/>
       </div>
     </section>
   )

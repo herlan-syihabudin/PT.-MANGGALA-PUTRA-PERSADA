@@ -1,5 +1,4 @@
 import Link from "next/link"
-import Image from "next/image"
 import { 
   ChevronRight, 
   Factory, 
@@ -18,10 +17,26 @@ export const metadata: Metadata = {
   description: "PT Manggala Putra Persada telah dipercaya oleh berbagai klien industri, komersial, dan residential. Kami juga bermitra dengan konsultan engineering, supplier material, dan fabrikator terpercaya di Indonesia.",
   keywords: "klien kontraktor indonesia, mitra konstruksi, konsultan engineering, supplier material bangunan, fabrikator baja, kontraktor bekasi",
   openGraph: {
-    title: "Klien & Mitra Strategis | MPP Engineering",
-    description: "Kolaborasi dengan klien dan mitra strategis di seluruh Indonesia.",
-    images: ["/images/og-klien.jpg"],
-  },
+  title: "Klien & Mitra Strategis | MPP Engineering",
+  description: "Kolaborasi dengan klien dan mitra strategis di seluruh Indonesia.",
+  url: "https://mppindo.com/klien",
+  siteName: "PT Manggala Putra Persada",
+  type: "website",
+  images: [
+    {
+      url: "https://mppindo.com/images/og-klien.jpg",
+      width: 1200,
+      height: 630,
+      alt: "Klien dan Mitra Strategis PT Manggala Putra Persada",
+    },
+  ],
+},
+  twitter: {
+  card: "summary_large_image",
+  title: "Klien & Mitra Strategis | PT Manggala Putra Persada",
+  description: "Kolaborasi dengan klien industri, komersial, dan residential.",
+  images: ["https://mppindo.com/images/og-klien.jpg"],
+},
   alternates: {
     canonical: "https://mppindo.com/klien",
   },
@@ -128,7 +143,7 @@ export default function KlienPage() {
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
               <div 
                 key={i}
-                className="h-20 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center hover:border-gold/30 transition-colors"
+                className="h-20 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center hover:border-gold/30 transition-all grayscale hover:grayscale-0"
               >
                 <span className="text-gray-400 font-medium">Logo {i}</span>
               </div>
@@ -212,6 +227,23 @@ export default function KlienPage() {
           </Link>
         </div>
 
+        <script
+type="application/ld+json"
+dangerouslySetInnerHTML={{
+__html: JSON.stringify({
+"@context": "https://schema.org",
+"@type": "Organization",
+"name": "PT Manggala Putra Persada",
+"url": "https://mppindo.com",
+"logo": "https://mppindo.com/logo-mp.png",
+"sameAs": [
+"https://www.linkedin.com/company/mppindo"
+],
+"areaServed": "Indonesia",
+"industry": "Construction",
+})
+}}
+/>
       </div>
     </section>
   )

@@ -12,10 +12,28 @@ export const metadata: Metadata = {
   description: "Engineering-oriented interior and fit-out construction services in Indonesia for offices, commercial spaces, and industrial facilities. Quality finishing, MEP coordination, and durable materials.",
   keywords: "kontraktor interior jakarta, jasa fit out kantor, interior komersial, fit out industrial, partisi gypsum, plafon akustik, lantai vinyl, kontraktor interior indonesia",
   openGraph: {
-    title: "Interior & Fit-Out Construction Services | MPP Engineering",
-    description: "Professional interior and fit-out construction services for offices, commercial, and industrial spaces.",
-    images: ["/images/og-fitout.jpg"],
-  },
+  title: "Interior & Fit-Out Construction Services | PT Manggala Putra Persada",
+  description:
+    "Professional interior and fit-out construction services for offices, commercial, and industrial spaces.",
+  url: "https://mppindo.com/layanan/fit-out",
+  siteName: "PT Manggala Putra Persada",
+  type: "website",
+  images: [
+    {
+      url: "https://mppindo.com/images/og-fitout.jpg",
+      width: 1200,
+      height: 630,
+      alt: "Interior & Fit-Out Construction Services",
+    },
+  ],
+},
+  twitter: {
+  card: "summary_large_image",
+  title: "Interior & Fit-Out Construction Services | PT Manggala Putra Persada",
+  description:
+    "Professional interior and fit-out construction services for offices, commercial, and industrial spaces.",
+  images: ["https://mppindo.com/images/og-fitout.jpg"],
+},
   alternates: {
     canonical: "https://mppindo.com/layanan/fit-out",
   },
@@ -208,6 +226,36 @@ export default function FitOutPage() {
         items={faqByService["fit-out"]}
       />
 
+      <script
+type="application/ld+json"
+dangerouslySetInnerHTML={{
+__html: JSON.stringify({
+"@context": "https://schema.org",
+"@type": "BreadcrumbList",
+"itemListElement": [
+{
+"@type": "ListItem",
+"position": 1,
+"name": "Home",
+"item": "https://mppindo.com"
+},
+{
+"@type": "ListItem",
+"position": 2,
+"name": "Layanan",
+"item": "https://mppindo.com/layanan"
+},
+{
+"@type": "ListItem",
+"position": 3,
+"name": "Interior & Fit-Out",
+"item": "https://mppindo.com/layanan/fit-out"
+}
+]
+})
+}}
+/>
+      
     </section>
   )
 }

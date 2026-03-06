@@ -91,19 +91,18 @@ publishedAt: "2024-12-10",
     lastUpdated: "2025-02-19",
     author: "PT Manggala Putra Persada",
     
-    featuredImage: "/images/insights/structured-execution.jpg",
-    images: [
-      {
-        url: "/images/insights/structured-execution-1.jpg",
-        alt: "Industrial construction site with structured execution",
-        caption: "Structured execution ensures safety and quality"
-      },
-      {
-        url: "/images/insights/structured-execution-2.jpg",
-        alt: "Engineering coordination meeting",
-        caption: "Engineering coordination is key to structured execution"
-      }
-    ],
+    featuredImage: "/images/insights/structured-execution-industrial-construction.jpg",
+
+images: [
+  {
+    url: "/images/insights/steel-structure-installation-industrial.jpg",
+    alt: "Steel structure installation at industrial construction site"
+  },
+  {
+    url: "/images/insights/industrial-construction-site-progress.jpg",
+    alt: "Industrial construction project progress"
+  }
+],
     
     readingTime: 5,
     wordCount: 850,

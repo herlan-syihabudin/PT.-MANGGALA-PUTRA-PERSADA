@@ -132,11 +132,12 @@ export default function InsightClient({ insights, categories, avgReadTime }: Ins
                 {/* GAMBAR */}
                 <div className="relative h-[300px] md:h-full bg-gray-100">
                   <Image
-                    src={filteredInsights[0].featuredImage || "/images/insight-placeholder.jpg"}
-                    alt={filteredInsights[0].title}
-                    fill
-                    className="object-cover group-hover:scale-105 transition duration-700"
-                  />
+  src={filteredInsights[0].featuredImage || "/images/insight-placeholder.jpg"}
+  alt={filteredInsights[0].title}
+  fill
+  priority
+  className="object-cover group-hover:scale-105 transition duration-700"
+/>
                 </div>
                 
                 {/* KONTEN */}
@@ -212,11 +213,12 @@ export default function InsightClient({ insights, categories, avgReadTime }: Ins
                   {/* GAMBAR */}
                   <div className="relative h-48 overflow-hidden bg-gray-100">
                     <Image
-                      src={insight.featuredImage || "/images/insight-placeholder.jpg"}
-                      alt={insight.title}
-                      fill
-                      className="object-cover group-hover:scale-110 transition duration-700"
-                    />
+  src={insight.featuredImage || "/images/insight-placeholder.jpg"}
+  alt={insight.title}
+  fill
+  sizes="(max-width:768px) 100vw, (max-width:1200px) 50vw, 33vw"
+  className="object-cover group-hover:scale-110 transition duration-700"
+/>
                     
                     {/* CATEGORY BADGE DI ATAS GAMBAR */}
                     <div className="absolute top-4 left-4">

@@ -80,6 +80,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProjectDetailPage({ params }: Props) {
   const { slug } = params
   const project = projects.find((p) => p.slug === slug)
+
   if (!project) return notFound()
 
   const formatDate = (dateString?: string) => {
@@ -288,7 +289,7 @@ export default async function ProjectDetailPage({ params }: Props) {
   "description": project.description,
   "image": project.images?.[0]
   ? `${BASE_URL}${project.images[0]}`
-  : `${BASE_URL}/images/project-placeholder.jpg`
+  : `${BASE_URL}/images/project-placeholder.jpg`,
   "author": {
     "@type": "Organization",
     "name": "PT Manggala Putra Persada",

@@ -1,5 +1,31 @@
 import Link from "next/link"
 import { insights } from "@/lib/insights"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Engineering Insights | PT Manggala Putra Persada",
+  description:
+    "Artikel dan insight engineering dari PT Manggala Putra Persada tentang konstruksi industri, struktur baja, MEP, dan manajemen proyek.",
+  alternates: {
+    canonical: "https://mppindo.com/insight",
+  },
+  openGraph: {
+    title: "Engineering Insights | PT Manggala Putra Persada",
+    description:
+      "Artikel engineering, konstruksi, dan manajemen proyek dari tim PT Manggala Putra Persada.",
+    url: "https://mppindo.com/insight",
+    siteName: "PT Manggala Putra Persada",
+    type: "website",
+    images: [
+      {
+        url: "https://mppindo.com/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Engineering Insights PT Manggala Putra Persada",
+      },
+    ],
+  },
+}
 
 export default function InsightPage() {
   return (
@@ -23,15 +49,15 @@ export default function InsightPage() {
           {insights.map((insight) => (
             <div
               key={insight.slug}
-              className="border rounded-2xl p-8 flex flex-col"
+              className="border rounded-2xl p-8 flex flex-col hover:shadow-xl hover:-translate-y-1 transition"
             >
               <span className="text-sm font-semibold text-red-600 mb-2">
                 {insight.category}
               </span>
 
-              <h3 className="font-bold text-gray-900 mb-3">
+              <h2 className="font-bold text-gray-900 mb-3 text-lg">
                 {insight.title}
-              </h3>
+              </h2>
 
               <p className="text-gray-600 mb-6">
                 {insight.excerpt}
@@ -65,6 +91,24 @@ export default function InsightPage() {
           </Link>
         </div>
 
+        <script
+type="application/ld+json"
+dangerouslySetInnerHTML={{
+__html: JSON.stringify({
+"@context": "https://schema.org",
+"@type": "Blog",
+"name": "Engineering Insights",
+"url": "https://mppindo.com/insight",
+"blogPost": insights.map((i) => ({
+"@type": "BlogPosting",
+"headline": i.title,
+"url": `https://mppindo.com/insight/${i.slug}`,
+"datePublished": i.publishedAt,
+}))
+})
+}}
+/>
+        
       </div>
     </section>
   )

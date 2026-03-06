@@ -18,10 +18,10 @@ const inter = Inter({
 const siteConfig = {
   name: "PT Manggala Putra Persada",
   shortName: "MPP Engineering",
-  url: "https://pt-manggala-putra-persada.vercel.app",
+  url: "https://mppindo.com",
   logo: "/logo-mp.png",
-  phone: "+62-812-9739-6612",
-  email: "info@mpp-engineering.com",
+  phone: "+62-812-2922-2463",
+  email: "info@mppindo.com",
   address: {
     locality: "Bekasi",
     region: "West Java",
@@ -33,6 +33,8 @@ const siteConfig = {
   },
 }
 
+const siteDescription =
+"PT Manggala Putra Persada (MPP Engineering) is an engineering-led construction contractor in Indonesia specializing in steel structure, civil works, MEP systems, and design & build services for industrial and commercial projects."
 // ===== METADATA =====
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -41,8 +43,12 @@ export const metadata: Metadata = {
     default: "Engineering-Led Construction Contractor Indonesia | PT Manggala Putra Persada",
     template: "%s | PT Manggala Putra Persada",
   },
+
+  alternates: {
+  canonical: siteConfig.url
+},
   
-  description: "PT Manggala Putra Persada (MPP Engineering) is an engineering-led construction contractor in Indonesia specializing in steel structure, civil works, MEP systems, and design & build services for industrial and commercial projects.",
+  description: siteDescription,
   
   keywords: [
     "engineering contractor indonesia",
@@ -71,7 +77,7 @@ export const metadata: Metadata = {
   // ===== OPEN GRAPH =====
   openGraph: {
     title: "Engineering-Led Construction Contractor Indonesia | PT Manggala Putra Persada",
-    description: "Engineering-led construction services covering steel structure, civil, MEP, and design & build for industrial and commercial projects in Indonesia.",
+    description: siteDescription,
     url: siteConfig.url,
     siteName: siteConfig.name,
     locale: "id_ID",
@@ -182,7 +188,7 @@ function generateOrganizationSchema() {
         alternateName: siteConfig.shortName,
         url: siteConfig.url,
         logo: `${siteConfig.url}${siteConfig.logo}`,
-        description: metadata.description,
+        description: siteDescription,
         sameAs: Object.values(siteConfig.socials),
         email: siteConfig.email,
         telephone: siteConfig.phone,
@@ -216,16 +222,33 @@ function generateOrganizationSchema() {
         paymentAccepted: "Cash, Credit Card, Bank Transfer",
       },
       {
-        "@type": "WebSite",
-        "@id": `${siteConfig.url}/#website`,
-        url: siteConfig.url,
-        name: siteConfig.name,
-        description: metadata.description,
-        publisher: {
-          "@id": `${siteConfig.url}/#organization`,
-        },
-        inLanguage: ["en-US", "id-ID"],
-      },
+  "@type": "ConstructionCompany",
+  "@id": `${siteConfig.url}/#constructioncompany`,
+  name: siteConfig.name,
+  url: siteConfig.url,
+  logo: `${siteConfig.url}${siteConfig.logo}`,
+  telephone: siteConfig.phone,
+  areaServed: {
+    "@type": "Country",
+    name: "Indonesia"
+  }
+},
+      {
+  "@type": "WebSite",
+  "@id": `${siteConfig.url}/#website`,
+  url: siteConfig.url,
+  name: siteConfig.name,
+  description: siteDescription,
+  publisher: {
+    "@id": `${siteConfig.url}/#organization`,
+  },
+  potentialAction: {
+    "@type": "SearchAction",
+    target: `${siteConfig.url}/search?q={search_term_string}`,
+    "query-input": "required name=search_term_string"
+  },
+  inLanguage: ["en-US", "id-ID"],
+},
     ],
   }
 }

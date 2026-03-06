@@ -3,6 +3,9 @@ import Link from "next/link"
 import { ChevronRight, Phone } from "lucide-react"
 import type { Metadata } from "next"
 
+const WA_NUMBER = process.env.NEXT_PUBLIC_WA_NUMBER || "6281229222463"
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://mppindo.com"
+
 /* =====================
    SEO METADATA
 ===================== */
@@ -11,13 +14,15 @@ export const metadata: Metadata = {
   description: "Supplier material besi dan baja untuk proyek industri, gudang, dan konstruksi. Menyediakan H-Beam, WF / IWF, UNP, Besi Beton, Plat Baja, dan Pipa Baja standar SNI & JIS. Ready stock dan pengiriman cepat.",
   keywords: "supplier besi baja, H-Beam, WF beam, UNP channel, besi beton SNI, plat baja, pipa baja, material konstruksi",
   openGraph: {
-    title: "Supplier Besi & Baja Proyek | MPP Engineering",
-    description: "Material besi dan baja standar SNI untuk proyek industri dan konstruksi.",
-    images: ["/images/og-besi.jpg"],
-  },
+  title: "Supplier Besi & Baja Proyek – H-Beam, WF, UNP, Plat & Pipa | MPP Engineering",
+  description: "...",
+  url: `${SITE_URL}/material/besi`,
+  images: [`${SITE_URL}/images/og-besi.jpg`],
+  type: "website",
+},
   alternates: {
-    canonical: "https://mppindo.com/material/besi",
-  },
+  canonical: `${SITE_URL}/material/besi`,
+},
 }
 
 export default function BesiPage() {
@@ -160,18 +165,21 @@ export default function BesiPage() {
                   </Link>
 
                   <a
-                    href={`https://wa.me/6281297396612?text=Halo%20PT%20Manggala%20Putra%20Persada,%20saya%20ingin%20penawaran%20${encodeURIComponent(
-                      item.title
-                    )}%20(ukuran,%20qty,%20lokasi%20kirim).`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-center bg-gradient-to-r from-red-600 to-red-700 text-white py-3 rounded-xl font-semibold 
-                      hover:from-red-700 hover:to-red-800 transition flex items-center justify-center gap-2
-                      shadow-lg shadow-red-600/20 hover:shadow-xl"
-                  >
-                    <Phone size={16} />
-                    Request Harga & Stok
-                  </a>
+  href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(
+`Halo PT Manggala Putra Persada, saya ingin penawaran ${item.title}.
+Ukuran: ______
+Qty: ______
+Lokasi Kirim: ______`
+)}`}
+  target="_blank"
+  rel="noreferrer"
+  className="text-center bg-gradient-to-r from-red-600 to-red-700 text-white py-3 rounded-xl font-semibold 
+  hover:from-red-700 hover:to-red-800 transition flex items-center justify-center gap-2
+  shadow-lg shadow-red-600/20 hover:shadow-xl"
+>
+  <Phone size={16} />
+  Request Harga & Stok
+</a>
                 </div>
               </div>
             </div>
@@ -218,9 +226,9 @@ export default function BesiPage() {
               "itemListElement": materials.map((item, index) => ({
                 "@type": "ListItem",
                 "position": index + 1,
-                "url": `https://mppindo.com/material/besi/${item.slug}`,
+                "url": `${SITE_URL}/material/besi/${item.slug}`,
                 "name": item.title,
-                "image": item.image,
+                "image": `${SITE_URL}${item.image}`,
               }))
             })
           }}

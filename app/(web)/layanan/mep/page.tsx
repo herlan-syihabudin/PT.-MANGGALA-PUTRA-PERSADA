@@ -12,10 +12,28 @@ export const metadata: Metadata = {
   description: "Professional Mechanical, Electrical, and Plumbing (MEP) engineering and installation services in Indonesia for industrial & commercial projects. HVAC, electrical distribution, plumbing, fire protection, and commissioning.",
   keywords: "kontraktor MEP, mechanical electrical plumbing, instalasi listrik industri, HVAC contractor, fire protection system, plumbing system, MEP engineering indonesia",
   openGraph: {
-    title: "MEP Engineering Services | Mechanical Electrical Plumbing",
-    description: "Professional MEP engineering and installation services for industrial and commercial projects.",
-    images: ["/images/og-mep.jpg"],
-  },
+  title: "MEP Engineering Services | PT Manggala Putra Persada",
+  description:
+    "Professional Mechanical, Electrical, and Plumbing engineering and installation services for industrial and commercial projects.",
+  url: "https://mppindo.com/layanan/mep",
+  siteName: "PT Manggala Putra Persada",
+  type: "website",
+  images: [
+    {
+      url: "https://mppindo.com/images/og-mep.jpg",
+      width: 1200,
+      height: 630,
+      alt: "MEP Engineering Services",
+    },
+  ],
+},
+  twitter: {
+  card: "summary_large_image",
+  title: "MEP Engineering Services | PT Manggala Putra Persada",
+  description:
+    "Professional Mechanical, Electrical, and Plumbing engineering and installation services.",
+  images: ["https://mppindo.com/images/og-mep.jpg"],
+},
   alternates: {
     canonical: "https://mppindo.com/layanan/mep",
   },
@@ -235,6 +253,36 @@ export default function MEPPage() {
         title="Frequently Asked Questions – MEP Engineering"
         items={faqByService["mep"]}
       />
+
+      <script
+type="application/ld+json"
+dangerouslySetInnerHTML={{
+__html: JSON.stringify({
+"@context": "https://schema.org",
+"@type": "BreadcrumbList",
+"itemListElement": [
+{
+"@type": "ListItem",
+"position": 1,
+"name": "Home",
+"item": "https://mppindo.com"
+},
+{
+"@type": "ListItem",
+"position": 2,
+"name": "Layanan",
+"item": "https://mppindo.com/layanan"
+},
+{
+"@type": "ListItem",
+"position": 3,
+"name": "MEP Engineering",
+"item": "https://mppindo.com/layanan/mep"
+}
+]
+})
+}}
+/>
 
     </section>
   )

@@ -1,52 +1,79 @@
 export const mepServiceSchema = {
   "@context": "https://schema.org",
-  "@type": "Service",
+  "@type": ["Service", "ProfessionalService"],
   "@id": "https://mppindo.com/layanan/mep#service",
+
   name: "Mechanical, Electrical & Plumbing (MEP) Engineering Services",
+
   description:
     "Professional Mechanical, Electrical, and Plumbing (MEP) engineering and installation services in Indonesia for industrial, commercial, and building projects, delivered with coordinated design, safe execution, and full compliance with technical standards.",
+
+  url: "https://mppindo.com/layanan/mep",
+
+  image: "https://mppindo.com/images/services/mep-engineering.jpg",
+
   provider: {
     "@type": "Organization",
     name: "PT Manggala Putra Persada",
     alternateName: "MPP Engineering",
-    url: "https://mppindo.com",
+    url: "https://mppindo.com"
   },
-  areaServed: {
-    "@type": "Country",
-    name: "Indonesia",
-  },
+
+  areaServed: [
+    {
+      "@type": "Country",
+      name: "Indonesia"
+    },
+    {
+      "@type": "AdministrativeArea",
+      name: "Jakarta"
+    },
+    {
+      "@type": "AdministrativeArea",
+      name: "West Java"
+    }
+  ],
+
   serviceType: [
     "MEP Engineering Contractor",
     "Mechanical Electrical Plumbing Contractor",
     "HVAC Engineering Services",
     "Fire Protection System Contractor",
-    "Building Services Engineering",
+    "Building Services Engineering"
   ],
+
   hasOfferCatalog: {
     "@type": "OfferCatalog",
     name: "MEP Engineering Services Scope",
     itemListElement: [
       {
         "@type": "Offer",
-        itemOffered: { "@type": "Service", name: "HVAC Systems (Split, VRV/VRF, Chilled Water)" },
+        itemOffered: { "@type": "Service", name: "HVAC Systems (Split, VRV/VRF, Chilled Water)" }
       },
       {
         "@type": "Offer",
-        itemOffered: { "@type": "Service", name: "Electrical Power Distribution & Lighting Systems" },
+        itemOffered: { "@type": "Service", name: "Electrical Power Distribution & Lighting Systems" }
       },
       {
         "@type": "Offer",
-        itemOffered: { "@type": "Service", name: "Plumbing & Sanitary Systems" },
+        itemOffered: { "@type": "Service", name: "Plumbing & Sanitary Systems" }
       },
       {
         "@type": "Offer",
-        itemOffered: { "@type": "Service", name: "Fire Protection Systems (Hydrant & Sprinkler)" },
+        itemOffered: { "@type": "Service", name: "Fire Protection Systems (Hydrant & Sprinkler)" }
       },
       {
         "@type": "Offer",
-        itemOffered: { "@type": "Service", name: "Testing, Commissioning & System Handover" },
-      },
-    ],
+        itemOffered: { "@type": "Service", name: "Testing, Commissioning & System Handover" }
+      }
+    ]
   },
-  url: "https://mppindo.com/layanan/mep",
+
+  keywords: [
+    "MEP contractor indonesia",
+    "mechanical electrical plumbing contractor",
+    "HVAC contractor indonesia",
+    "fire protection contractor jakarta",
+    "building services engineering indonesia"
+  ]
 }

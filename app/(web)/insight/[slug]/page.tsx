@@ -183,10 +183,15 @@ export default function InsightDetailPage({ params }: Props) {
             </p>
             <ul className="space-y-2 text-sm">
               {insight.relatedServices.map((s, i) => {
-                const href = typeof s === 'string' ? s : s.href || '#'
-                const label = typeof s === 'string' 
-                  ? s.replace("/layanan/", "").replace(/-/g, " ")
-                  : s.label || 'Lihat layanan'
+                const href =
+  typeof s === "string"
+    ? s
+    : (s as { href?: string }).href || "#"
+
+const label =
+  typeof s === "string"
+    ? s.replace("/layanan/", "").replace(/-/g, " ")
+    : (s as { label?: string }).label || "Lihat layanan"
                 
                 return (
                   <li key={i}>

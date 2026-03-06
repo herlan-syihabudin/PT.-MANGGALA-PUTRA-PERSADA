@@ -2,12 +2,48 @@ import Link from "next/link"
 import Image from "next/image"
 import ServiceFAQ from "@/components/ServiceFAQ"
 import { faqByService } from "@/lib/faq-layanan"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Steel Structure Engineering & Construction | MPP Engineering",
+  description:
+    "Engineering-led steel structure fabrication and erection services in Indonesia for industrial, warehouse, and commercial projects.",
+  keywords:
+    "kontraktor struktur baja, steel structure contractor, fabrikasi baja, erection baja, konstruksi baja industri, gudang baja, pipe rack steel",
+  openGraph: {
+    title: "Steel Structure Engineering & Construction | PT Manggala Putra Persada",
+    description:
+      "Engineering-led steel structure fabrication and erection services for industrial and commercial projects.",
+    url: "https://mppindo.com/layanan/struktur-baja",
+    siteName: "PT Manggala Putra Persada",
+    type: "website",
+    images: [
+      {
+        url: "https://mppindo.com/images/og-struktur-baja.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Steel Structure Engineering & Construction",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Steel Structure Engineering & Construction | PT Manggala Putra Persada",
+    description:
+      "Engineering-led steel structure fabrication and erection services for industrial and commercial projects.",
+    images: ["https://mppindo.com/images/og-struktur-baja.jpg"],
+  },
+  alternates: {
+    canonical: "https://mppindo.com/layanan/struktur-baja",
+  },
+}
 
 export default function StrukturBajaPage() {
   const faqs = faqByService["struktur-baja"]
 
   return (
     <section className="bg-white">
+      
       {/* ===== SCHEMA SEO: STEEL STRUCTURE SERVICE ===== */}
       <script
         type="application/ld+json"
@@ -16,15 +52,17 @@ export default function StrukturBajaPage() {
             "@context": "https://schema.org",
             "@type": "Service",
             "@id":
-              "https://pt-manggala-putra-persada.vercel.app/layanan/struktur-baja#service",
+              "https://mppindo.com/layanan/struktur-baja#service",
             name: "Steel Structure Engineering & Construction Services",
             description:
               "Engineering-led steel structure fabrication and erection services in Indonesia for industrial, warehouse, and commercial projects.",
             provider: {
-              "@type": "Organization",
-              name: "PT Manggala Putra Persada",
-              url: "https://pt-manggala-putra-persada.vercel.app",
-            },
+  "@type": "Organization",
+  name: "PT Manggala Putra Persada",
+  alternateName: "MPP Engineering",
+  url: "https://mppindo.com",
+  logo: "https://mppindo.com/logo-mp.png",
+},
             areaServed: {
               "@type": "Country",
               name: "Indonesia",
@@ -36,7 +74,7 @@ export default function StrukturBajaPage() {
               "Industrial Steel Construction",
             ],
             url:
-              "https://pt-manggala-putra-persada.vercel.app/layanan/struktur-baja",
+              "https://mppindo.com/layanan/struktur-baja",
           }),
         }}
       />
@@ -136,24 +174,54 @@ export default function StrukturBajaPage() {
       {/* ===== FAQ SECTION ===== */}
       <ServiceFAQ items={faqs} />
 
-      {/* ===== FAQ SCHEMA (RICH RESULT) ===== */}
       <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            mainEntity: faqs.map((item) => ({
-              "@type": "Question",
-              name: item.question,
-              acceptedAnswer: {
-                "@type": "Answer",
-                text: item.answer,
-              },
-            })),
-          }),
-        }}
-      />
+type="application/ld+json"
+dangerouslySetInnerHTML={{
+__html: JSON.stringify({
+"@context": "https://schema.org",
+"@type": "FAQPage",
+mainEntity: faqs.map((item) => ({
+  "@type": "Question",
+  name: item.question,
+  acceptedAnswer: {
+    "@type": "Answer",
+    text: item.answer,
+  },
+}))
+})
+}}
+/>
+
+      {/* ===== BREADCRUMB SCHEMA ===== */}
+      <script
+  type="application/ld+json"
+  dangerouslySetInnerHTML={{
+    __html: JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: "https://mppindo.com",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Layanan",
+          item: "https://mppindo.com/layanan",
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: "Struktur Baja",
+          item: "https://mppindo.com/layanan/struktur-baja",
+        },
+      ],
+    }),
+  }}
+/>
     </section>
   )
 }

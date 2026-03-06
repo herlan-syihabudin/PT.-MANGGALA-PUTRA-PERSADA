@@ -28,14 +28,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: "About PT Manggala Putra Persada - Engineering-Led Construction Contractor",
     description: "Engineering-led construction contractor with 14+ years experience and 100+ completed industrial projects across Indonesia. ISO certified with structured execution approach.",
-    url: "https://pt-manggala-putra-persada.vercel.app/tentang",
+    url: "https://mppindo.com/tentang",
     siteName: "PT Manggala Putra Persada",
     type: "website",
     locale: "id_ID",
     alternateLocale: "en_US",
     images: [
       {
-        url: "/og-about.png",
+        url: "https://mppindo.com/images/og-about.png",
         width: 1200,
         height: 630,
         alt: "PT Manggala Putra Persada - Engineering Contractor Indonesia",
@@ -47,14 +47,14 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "About PT Manggala Putra Persada",
     description: "Engineering-led construction contractor with 14+ years experience and 100+ completed industrial projects.",
-    images: ["/twitter-about.png"],
+    images: ["https://mppindo.com/images/twitter-about.png"],
   },
 
   alternates: {
-    canonical: "https://pt-manggala-putra-persada.vercel.app/tentang",
+    canonical: "https://mppindo.com/tentang",
     languages: {
-      'id-ID': 'https://pt-manggala-putra-persada.vercel.app/id/tentang',
-      'en-US': 'https://pt-manggala-putra-persada.vercel.app/en/about',
+      'id-ID': 'https://mppindo.com/id/tentang',
+      'en-US': 'https://mppindo.com/en/about',
     },
   },
 
@@ -86,20 +86,58 @@ export default function TentangPage() {
             "@type": "AboutPage",
             "name": "About PT Manggala Putra Persada",
             "description": "Engineering-led construction contractor in Indonesia with 14+ years experience",
-            "url": "https://pt-manggala-putra-persada.vercel.app/tentang",
+            "url": "https://mppindo.com/tentang",
             "mainEntity": {
-              "@type": "Organization",
-              "name": "PT Manggala Putra Persada",
-              "description": "Engineering-led construction contractor",
-              "foundingDate": "2010",
-              "numberOfEmployees": "50+",
-              "areaServed": "Indonesia",
-              "award": "ISO 9001:2015, ISO 14001:2015, ISO 45001:2018",
-              "knowsAbout": ["Steel Structure", "Civil Works", "MEP", "Design Build"],
-            }
+  "@type": "Organization",
+"@id": "https://mppindo.com/#organization",
+  "name": "PT Manggala Putra Persada",
+  "url": "https://mppindo.com",
+  "logo": "https://mppindo.com/logo-mp.png",
+  "foundingDate": "2010",
+  "numberOfEmployees": "50+",
+  "areaServed": "Indonesia",
+  "award": [
+    "ISO 9001:2015",
+    "ISO 14001:2015",
+    "ISO 45001:2018"
+  ],
+              "sameAs": [
+  "https://www.linkedin.com/company/mpp-engineering",
+  "https://www.instagram.com/mppengineering"
+],
+  "knowsAbout": [
+    "Steel Structure",
+    "Civil Works",
+    "MEP Engineering",
+    "Design Build Construction"
+  ]
+}
           })
         }}
       />
+      <script
+type="application/ld+json"
+dangerouslySetInnerHTML={{
+__html: JSON.stringify({
+"@context": "https://schema.org",
+"@type": "BreadcrumbList",
+"itemListElement": [
+{
+"@type": "ListItem",
+"position": 1,
+"name": "Home",
+"item": "https://mppindo.com"
+},
+{
+"@type": "ListItem",
+"position": 2,
+"name": "About",
+"item": "https://mppindo.com/tentang"
+}
+]
+})
+}}
+/>
     </main>
   )
 }

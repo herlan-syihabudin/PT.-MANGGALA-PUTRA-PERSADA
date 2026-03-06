@@ -21,7 +21,7 @@ export const faqByService: Record<string, FAQItem[]> = {
     {
       question: "Apakah pekerjaan struktur baja mengikuti standar SNI?",
       answer:
-        "Seluruh pekerjaan struktur baja kami mengikuti standar SNI serta praktik engineering internasional seesuai spesifikasi teknis proyek.",
+        "Seluruh pekerjaan struktur baja kami mengikuti standar SNI serta praktik engineering internasional sesuai spesifikasi teknis proyek.",
     },
     {
       question: "Apakah termasuk fabrikasi dan erection di lokasi?",
@@ -92,7 +92,7 @@ export const faqByService: Record<string, FAQItem[]> = {
         "Design & build adalah metode pelaksanaan proyek di mana proses desain dan konstruksi dikelola secara terintegrasi oleh satu kontraktor.",
     },
     {
-      question: "Apa keuntungan menggunakan design & build?",
+      question: "Keuntungan design & build meliputi koordinasi desain dan konstruksi yang lebih terintegrasi, efisiensi biaya proyek, waktu pelaksanaan lebih singkat, serta pengurangan risiko perubahan desain selama konstruksi berlangsung.",
       answer:
         "Keuntungan design & build meliputi koordinasi lebih baik, efisiensi biaya, waktu pelaksanaan lebih singkat, serta risiko perubahan desain yang lebih rendah.",
     },

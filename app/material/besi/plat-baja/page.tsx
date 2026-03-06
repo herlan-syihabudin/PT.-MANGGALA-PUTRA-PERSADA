@@ -3,18 +3,23 @@ import Link from "next/link"
 import { ChevronRight, Phone, Package, Truck, CheckCircle, Flame, Droplets, Ruler } from "lucide-react"
 import type { Metadata } from "next"
 
+const WA_NUMBER = process.env.NEXT_PUBLIC_WA_NUMBER || "6281229222463"
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://mppindo.com"
+
 export const metadata: Metadata = {
   title: "Plat Baja Hitam & Galvanis | Harga & Tabel Berat | Supplier | MPP Engineering",
   description: "Supplier plat baja hitam dan galvanis untuk fabrikasi, base plate, tangki, dan konstruksi. Tersedia ketebalan 1.2-20mm, ukuran 4x8 ft & 5x20 ft, custom cutting. Request harga & stok.",
   keywords: "plat baja, plat hitam, plat galvanis, base plate, plat struktur, checker plate, plat kapal, supplier plat baja jakarta",
   openGraph: {
-    title: "Plat Baja Hitam & Galvanis | MPP Engineering",
-    description: "Lengkap dengan tabel berat dan spesifikasi teknis.",
-    images: ["/images/og-plat.jpg"],
-  },
+  title: "Plat Baja Hitam & Galvanis | MPP Engineering",
+  description: "Lengkap dengan tabel berat dan spesifikasi teknis.",
+  url: `${SITE_URL}/material/besi/plat-baja`,
+  images: [`${SITE_URL}/images/og-plat.jpg`],
+  type: "article",
+},
   alternates: {
-    canonical: "https://mppindo.com/material/besi/plat-baja",
-  },
+  canonical: `${SITE_URL}/material/besi/plat-baja`,
+},
 }
 
 export default function PlatBajaPage() {
@@ -296,7 +301,14 @@ export default function PlatBajaPage() {
         {/* ===== CTA ===== */}
         <div className="flex flex-col md:flex-row gap-4">
           <a
-            href="https://wa.me/6281297396612?text=Halo%20PT%20Manggala%20Putra%20Persada,%20saya%20ingin%20request%20harga%20dan%20stok%20Plat%20Baja.%0AJenis:%20______%20(Hitam/Galvanis),%0AKetebalan:%20______%20mm,%0AUkuran:%20______%20(4x8%20ft%20/%20custom),%0AJumlah:%20______%20lembar,%0ALokasi%20Kirim:%20______."
+            href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(
+`Halo PT Manggala Putra Persada, saya ingin request harga dan stok Plat Baja.
+Jenis: ______ (Hitam/Galvanis)
+Ketebalan: ______ mm
+Ukuran: ______ (4x8 ft / custom)
+Jumlah: ______ lembar
+Lokasi Kirim: ______`
+)}`}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-4 rounded-xl font-semibold 
@@ -325,7 +337,7 @@ export default function PlatBajaPage() {
               "@type": "Product",
               "name": "Plat Baja Hitam & Galvanis",
               "description": "Plat baja untuk fabrikasi, base plate, tangki, dan konstruksi industri.",
-              "image": "https://mppindo.com/material/besi/plat-baja.jpg",
+              "image": `${SITE_URL}/material/besi/plat-baja.jpg`,
               "brand": {
                 "@type": "Brand",
                 "name": "ASTM A36 / SS400"

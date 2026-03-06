@@ -72,8 +72,22 @@ export const insights: Insight[] = [
     metaDescription: "Learn how structured execution reduces risk, improves coordination, and ensures predictable outcomes in industrial construction projects in Indonesia.",
     
     excerpt: "Structured execution reduces risk, improves coordination, and ensures predictable outcomes in industrial construction projects.",
-    
-    publishedAt: "2024-12-10",
+
+content: `
+Industrial construction projects involve multiple engineering disciplines, contractors, and technical systems.
+
+Without a structured execution framework, projects often experience coordination issues, delays, and cost overruns.
+
+Structured execution provides a systematic methodology for planning, coordination, and execution throughout the project lifecycle.
+
+Engineering teams align design, procurement, and construction activities to ensure smooth project delivery.
+
+This approach minimizes design conflicts, improves communication between disciplines, and significantly reduces costly rework.
+
+For industrial facilities such as factories and warehouses, structured execution ensures predictable project outcomes and long-term operational reliability.
+`,
+
+publishedAt: "2024-12-10",
     lastUpdated: "2025-02-19",
     author: "PT Manggala Putra Persada",
     
@@ -161,8 +175,21 @@ export const insights: Insight[] = [
     title: "The Importance of Engineering Coordination in Design & Build Projects",
     metaTitle: "Engineering Coordination for Design-Build Projects | MPP",
     metaDescription: "Early engineering coordination prevents design conflicts, rework, and cost escalation in design-build projects. Learn best practices from Indonesia's leading contractor.",
-    
-    excerpt: "Early engineering coordination is critical to avoid design conflicts, rework, and cost escalation in design & build projects.",
+
+    excerpt: "Early engineering coordination prevents design conflicts, rework, and cost escalation in design & build projects.",
+    content: `
+Engineering coordination is a critical element in successful design-build projects.
+
+Multiple engineering disciplines such as structural, mechanical, electrical, and architectural design must be integrated carefully.
+
+Without proper coordination, conflicts often appear during construction, resulting in redesign, delays, and increased project cost.
+
+Early engineering coordination allows teams to identify clashes and technical constraints during the design stage.
+
+Design reviews, coordinated drawings, and multidisciplinary meetings help align all engineering systems before construction begins.
+
+By resolving technical conflicts early, projects can be delivered faster, with higher quality, and fewer unexpected issues during execution.
+`,
     
     publishedAt: "2024-12-18",
     lastUpdated: "2025-02-19",
@@ -221,6 +248,19 @@ export const insights: Insight[] = [
     metaDescription: "Learn effective cost and schedule control strategies for construction projects. Engineering-based planning and monitoring systems for predictable outcomes.",
     
     excerpt: "Cost and schedule control are achieved through disciplined planning, monitoring, and corrective action during project execution.",
+    content: `
+Cost and schedule control are essential components of construction project management.
+
+Effective control begins with accurate engineering planning and realistic budgeting.
+
+Project teams must continuously monitor construction progress against the baseline schedule and cost plan.
+
+When deviations occur, corrective actions must be implemented quickly to prevent delays and cost escalation.
+
+Engineering-based planning improves coordination between trades and ensures that work sequences are optimized.
+
+With proper monitoring systems and disciplined management practices, construction projects can achieve predictable cost and schedule outcomes.
+`,
     
     publishedAt: "2025-01-05",
     lastUpdated: "2025-02-19",
@@ -281,6 +321,19 @@ export const insights: Insight[] = [
     metaDescription: "Quality control systems ensure construction meets specifications and engineering standards. Learn how systematic inspection prevents rework and improves safety.",
     
     excerpt: "Quality control systems ensure that construction work complies with specifications, drawings, and long-term performance requirements.",
+    content: `
+Quality control systems ensure that construction work meets engineering specifications and project standards.
+
+Without structured inspection procedures, construction defects may go unnoticed until later stages of the project.
+
+Inspection and Test Plans (ITP) are commonly used to verify material quality, workmanship, and compliance with design drawings.
+
+Regular inspections during construction allow teams to detect issues early and prevent costly rework.
+
+Quality control also improves safety by ensuring proper installation of structural elements, mechanical systems, and electrical infrastructure.
+
+A strong quality control system protects both the contractor and the project owner by ensuring long-term reliability of the facility.
+`,
     
     publishedAt: "2025-01-20",
     lastUpdated: "2025-02-19",

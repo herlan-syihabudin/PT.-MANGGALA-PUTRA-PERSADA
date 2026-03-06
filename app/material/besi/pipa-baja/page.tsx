@@ -3,18 +3,23 @@ import Link from "next/link"
 import { ChevronRight, Phone, Package, Truck, CheckCircle, Flame, Droplets } from "lucide-react"
 import type { Metadata } from "next"
 
+const WA_NUMBER = process.env.NEXT_PUBLIC_WA_NUMBER || "6281229222463"
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://mppindo.com"
+
 export const metadata: Metadata = {
   title: "Pipa Baja Hitam & Galvanis | Harga & Tabel Berat | Supplier | MPP Engineering",
   description: "Supplier pipa baja hitam dan galvanis untuk struktur, mechanical support, dan instalasi industri. Tersedia diameter 1/2-12 inch, schedule 40/80, panjang 6m, SNI/ASTM. Request harga & stok.",
   keywords: "pipa baja, pipa hitam, pipa galvanis, pipa schedule 40, pipa schedule 80, pipa struktur, supplier pipa baja jakarta",
   openGraph: {
-    title: "Pipa Baja Hitam & Galvanis | MPP Engineering",
-    description: "Lengkap dengan tabel berat dan spesifikasi teknis.",
-    images: ["/images/og-pipa.jpg"],
-  },
+  title: "Pipa Baja Hitam & Galvanis | MPP Engineering",
+  description: "Lengkap dengan tabel berat dan spesifikasi teknis.",
+  url: `${SITE_URL}/material/besi/pipa-baja`,
+  images: [`${SITE_URL}/images/og-pipa.jpg`],
+    type: "article",
+},
   alternates: {
-    canonical: "https://mppindo.com/material/besi/pipa-baja",
-  },
+  canonical: `${SITE_URL}/material/besi/pipa-baja`,
+},
 }
 
 export default function PipaBajaPage() {
@@ -262,7 +267,15 @@ export default function PipaBajaPage() {
         {/* ===== CTA ===== */}
         <div className="flex flex-col md:flex-row gap-4">
           <a
-            href="https://wa.me/6281297396612?text=Halo%20PT%20Manggala%20Putra%20Persada,%20saya%20ingin%20request%20harga%20dan%20stok%20Pipa%20Baja.%0AJenis:%20______%20(Hitam/Galvanis),%0ADiameter:%20______,%0ATebal/Schedule:%20______,%0APanjang:%20______,%0AQty:%20______%20batang,%0ALokasi%20Kirim:%20______."
+            href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(
+`Halo PT Manggala Putra Persada, saya ingin request harga dan stok Pipa Baja.
+Jenis: ______ (Hitam/Galvanis)
+Diameter: ______
+Tebal/Schedule: ______
+Panjang: ______
+Qty: ______ batang
+Lokasi Kirim: ______`
+)}`}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-4 rounded-xl font-semibold 
@@ -291,7 +304,7 @@ export default function PipaBajaPage() {
               "@type": "Product",
               "name": "Pipa Baja Hitam & Galvanis",
               "description": "Pipa baja Schedule 40 untuk struktur, mechanical support, dan instalasi industri.",
-              "image": "https://mppindo.com/material/besi/pipa-baja.jpg",
+              "image": `${SITE_URL}/material/besi/pipa-baja.jpg`,
               "brand": {
                 "@type": "Brand",
                 "name": "ASTM / SNI"

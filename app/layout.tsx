@@ -1,18 +1,22 @@
 import "./globals.css"
 import type { Metadata, Viewport } from "next"
+import Script from "next/script"
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: "#b91c1c",
   colorScheme: "light",
 }
 
 export const metadata: Metadata = {
   // ===== BASE =====
   metadataBase: new URL("https://mppindo.com"),
+  themeColor: [
+  { media: "(prefers-color-scheme: light)", color: "#b91c1c" },
+  { media: "(prefers-color-scheme: dark)", color: "#7f1d1d" },
+],
   title: {
     default: "MPP Engineering - Kontraktor Konstruksi Engineering-Led di Indonesia",
     template: "%s | MPP Engineering",
@@ -21,15 +25,15 @@ export const metadata: Metadata = {
   
   // ===== SEO =====
   keywords: [
-    "kontraktor indonesia",
-    "konstruksi baja",
-    "civil engineering",
-    "MEP installation",
-    "design build",
-    "jasa konstruksi",
-    "kontraktor pabrik",
-    "MPP Engineering",
-  ].join(", "),
+  "kontraktor indonesia",
+  "konstruksi baja",
+  "civil engineering",
+  "MEP installation",
+  "design build",
+  "jasa konstruksi",
+  "kontraktor pabrik",
+  "MPP Engineering",
+],
   authors: [{ name: "PT Manggala Putra Persada", url: "https://mppindo.com" }],
   
   // ===== ROBOTS =====
@@ -48,11 +52,7 @@ export const metadata: Metadata = {
   // ===== CANONICAL =====
   alternates: {
     canonical: "https://mppindo.com",
-    languages: {
-      "id-ID": "https://mppindo.com/id",
-      "en-US": "https://mppindo.com/en",
     },
-  },
   
   // ===== OPEN GRAPH (SOCIAL MEDIA) =====
   openGraph: {
@@ -62,8 +62,8 @@ export const metadata: Metadata = {
     description: "Engineering-led construction contractor for industrial and commercial projects.",
     url: "https://mppindo.com",
     images: [
-      {
-        url: "/og-image.jpg",
+  {
+    url: "https://mppindo.com/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "MPP Engineering - Kontraktor Konstruksi Indonesia",
@@ -79,7 +79,7 @@ export const metadata: Metadata = {
     creator: "@mppengineering",
     title: "MPP Engineering - Kontraktor Konstruksi Indonesia",
     description: "Engineering-led construction contractor for industrial and commercial projects.",
-    images: ["/og-image.jpg"],
+    images: ["https://mppindo.com/og-image.jpg"],
   },
   
   // ===== PWA & MANIFEST =====
@@ -129,16 +129,15 @@ export const metadata: Metadata = {
    
     yandex: "yandex-verification-code",
     yahoo: "yahoo-verification-code",
+    google: "google-site-verification-code",
   },
   
   // ===== FORMAT DETECTION =====
   formatDetection: {
-    telephone: true,
-    date: true,
-    address: true,
-    email: true,
-    url: true,
-  },
+  telephone: true,
+  address: true,
+  email: true,
+},
   
   // ===== CATEGORY =====
   category: "construction",
@@ -159,28 +158,43 @@ export default function RootLayout({
   return (
     <html lang="id" dir="ltr" className="scroll-smooth">
       <head>
-        {/* Preconnect ke domain penting */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         
         {/* DNS Prefetch untuk domain yang sering diakses */}
         <link rel="dns-prefetch" href="https://wa.me" />
         
+        
         {/* RSS Feed (kalau ada blog) */}
         <link rel="alternate" type="application/rss+xml" title="RSS Feed" href="/feed.xml" />
       </head>
-      <body className="antialiased bg-white text-gray-900 font-sans">
-        <a 
-          href="#main-content" 
-          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-white focus:text-gray-900"
-        >
-          Skip to main content
-        </a>
-        
-        <div id="main-content">
-          {children}
-        </div>
-      </body>
+      <body className="antialiased bg-white text-gray-900 font-sans min-h-screen">
+  <a 
+    href="#main-content"
+    className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-white focus:text-gray-900"
+  >
+    Skip to main content
+  </a>
+
+  <main id="main-content">
+    {children}
+
+    <script
+type="application/ld+json"
+dangerouslySetInnerHTML={{
+__html: JSON.stringify({
+ "@context": "https://schema.org",
+ "@type": "Organization",
+ name: "PT Manggala Putra Persada",
+ url: "https://mppindo.com",
+ logo: "https://mppindo.com/logo-mp.png",
+ sameAs: [
+   "https://linkedin.com/company/mpp-engineering",
+   "https://instagram.com/mppengineering"
+ ]
+})
+}}
+/>
+  </main>
+</body>
     </html>
   )
 }

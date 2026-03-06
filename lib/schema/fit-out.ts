@@ -4,7 +4,7 @@ export const fitOutServiceSchema = {
   "@id": "https://mppindo.com/layanan/fit-out#service",
 
   name: "Interior & Fit-Out Construction Services",
-  
+
   description:
     "Engineering-oriented interior and fit-out construction services in Indonesia for offices, commercial spaces, retail spaces, and industrial facilities. Our fit-out solutions focus on functionality, durability, engineering coordination, and high-quality finishing.",
 
@@ -17,30 +17,29 @@ export const fitOutServiceSchema = {
     name: "PT Manggala Putra Persada",
     alternateName: "MPP Engineering",
     url: "https://mppindo.com",
-    logo: "https://mppindo.com/logo-mp.png",
+    logo: "https://mppindo.com/logo-mp.png"
   },
 
   areaServed: [
     {
       "@type": "Country",
-      name: "Indonesia",
+      name: "Indonesia"
     },
     {
       "@type": "AdministrativeArea",
-      name: "Jakarta",
+      name: "Jakarta"
     },
     {
       "@type": "AdministrativeArea",
-      name: "West Java",
-    },
+      name: "West Java"
+    }
   ],
 
   serviceType: [
     "Interior Fit-Out Contractor",
     "Office Interior Construction",
     "Commercial Interior Fit-Out",
-    "Industrial Fit-Out Services",
-    "Interior Construction Contractor Indonesia",
+    "Industrial Fit-Out Services"
   ],
 
   serviceOutput: [
@@ -66,38 +65,23 @@ export const fitOutServiceSchema = {
     itemListElement: [
       {
         "@type": "Offer",
-        itemOffered: {
-          "@type": "Service",
-          name: "Partition, Ceiling & Flooring Works"
-        }
+        itemOffered: { "@type": "Service", name: "Partition, Ceiling & Flooring Works" }
       },
       {
         "@type": "Offer",
-        itemOffered: {
-          "@type": "Service",
-          name: "Wall Finishing, Coating & Painting"
-        }
+        itemOffered: { "@type": "Service", name: "Wall Finishing, Coating & Painting" }
       },
       {
         "@type": "Offer",
-        itemOffered: {
-          "@type": "Service",
-          name: "Custom Joinery & Built-In Furniture"
-        }
+        itemOffered: { "@type": "Service", name: "Custom Joinery & Built-In Furniture" }
       },
       {
         "@type": "Offer",
-        itemOffered: {
-          "@type": "Service",
-          name: "Interior Lighting & Architectural Elements"
-        }
+        itemOffered: { "@type": "Service", name: "Interior Lighting & Architectural Elements" }
       },
       {
         "@type": "Offer",
-        itemOffered: {
-          "@type": "Service",
-          name: "MEP & Structural Coordination for Fit-Out"
-        }
+        itemOffered: { "@type": "Service", name: "MEP & Structural Coordination for Fit-Out" }
       }
     ]
   },
@@ -119,20 +103,6 @@ export const fitOutServiceSchema = {
   ],
 
   sameAs: [
-    "https://www.linkedin.com/company/mppindo",
+    "https://www.linkedin.com/company/mppindo"
   ]
-}        "@type": "Offer",
-        itemOffered: { "@type": "Service", name: "Custom Joinery & Built-In Furniture" },
-      },
-      {
-        "@type": "Offer",
-        itemOffered: { "@type": "Service", name: "Interior Lighting & Architectural Elements" },
-      },
-      {
-        "@type": "Offer",
-        itemOffered: { "@type": "Service", name: "MEP & Structural Coordination for Fit-Out" },
-      },
-    ],
-  },
-  url: "https://mppindo.com/layanan/fit-out",
 }

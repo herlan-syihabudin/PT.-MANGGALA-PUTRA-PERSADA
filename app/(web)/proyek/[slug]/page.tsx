@@ -31,7 +31,7 @@ export function generateStaticParams() {
    SEO METADATA PER PROJECT
 ========================= */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params
+  const { slug } = params
   const project = projects.find((p) => p.slug === slug)
 
   if (!project) {
@@ -78,7 +78,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
    PROJECT DETAIL PAGE
 ========================= */
 export default async function ProjectDetailPage({ params }: Props) {
-  const { slug } = await params
+  const { slug } = params
   const project = projects.find((p) => p.slug === slug)
   if (!project) return notFound()
 
@@ -286,7 +286,9 @@ export default async function ProjectDetailPage({ params }: Props) {
   "@type": "Article",
   "headline": project.title,
   "description": project.description,
-  "image": project.images?.[0] || `${BASE_URL}/images/project-placeholder.jpg`,
+  "image": project.images?.[0]
+  ? `${BASE_URL}${project.images[0]}`
+  : `${BASE_URL}/images/project-placeholder.jpg`
   "author": {
     "@type": "Organization",
     "name": "PT Manggala Putra Persada",
@@ -301,7 +303,10 @@ export default async function ProjectDetailPage({ params }: Props) {
     },
   },
   "datePublished": project.completionDate,
-  "keywords": project.scope?.join(", ") || project.category,
+  "keywords": [
+  project.category,
+  ...(project.scope || [])
+].join(", ")
 })
         }}
       />

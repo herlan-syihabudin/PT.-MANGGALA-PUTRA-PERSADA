@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { insights } from "@/lib/insights"
 import type { Metadata } from "next"
+import Link from "next/link"
 
 type Props = {
   params: { slug: string }
@@ -21,7 +22,7 @@ export async function generateMetadata(
     }
   }
 
-  const url = `https://pt-manggala-putra-persada.vercel.app/insight/${insight.slug}`
+  const url = `https://mppindo.com/insight/${insight.slug}`
 
   return {
     title: insight.title,
@@ -35,6 +36,20 @@ export async function generateMetadata(
       type: "article",
       siteName: "PT Manggala Putra Persada",
       publishedTime: insight.publishedAt,
+      images: [
+        {
+          url: "https://mppindo.com/og-image.png",
+          width: 1200,
+          height: 630,
+          alt: insight.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: insight.title,
+      description: insight.excerpt,
+      images: ["https://mppindo.com/og-image.png"],
     },
     robots: {
       index: true,
@@ -50,7 +65,7 @@ export default function InsightDetailPage({ params }: Props) {
   const insight = insights.find((i) => i.slug === params.slug)
   if (!insight) return notFound()
 
-  const url = `https://pt-manggala-putra-persada.vercel.app/insight/${insight.slug}`
+  const url = `https://mppindo.com/insight/${insight.slug}`
 
   return (
     <section className="py-24 bg-white">
@@ -69,8 +84,8 @@ export default function InsightDetailPage({ params }: Props) {
             headline: insight.title,
             description: insight.excerpt,
             articleSection: insight.category,
-            datePublished: insight.publishedAt,
-            dateModified: insight.publishedAt,
+            datePublished: insight.publishedAt || new Date().toISOString().split('T')[0],
+            dateModified: insight.publishedAt || new Date().toISOString().split('T')[0],
             author: {
               "@type": "Organization",
               name: insight.author ?? "PT Manggala Putra Persada",
@@ -80,13 +95,13 @@ export default function InsightDetailPage({ params }: Props) {
               name: "PT Manggala Putra Persada",
               logo: {
                 "@type": "ImageObject",
-                url: "https://pt-manggala-putra-persada.vercel.app/logo-mp.png",
+                url: "https://mppindo.com/logo-mp.png",
               },
             },
             isPartOf: {
               "@type": "Blog",
               name: "MPP Engineering Insights",
-              url: "https://pt-manggala-putra-persada.vercel.app/insight",
+              url: "https://mppindo.com/insight",
             },
             about: (insight.keywords ?? []).map((k) => ({
               "@type": "Thing",
@@ -108,13 +123,13 @@ export default function InsightDetailPage({ params }: Props) {
                 "@type": "ListItem",
                 position: 1,
                 name: "Home",
-                item: "https://pt-manggala-putra-persada.vercel.app",
+                item: "https://mppindo.com",
               },
               {
                 "@type": "ListItem",
                 position: 2,
                 name: "Insights",
-                item: "https://pt-manggala-putra-persada.vercel.app/insight",
+                item: "https://mppindo.com/insight",
               },
               {
                 "@type": "ListItem",
@@ -167,25 +182,32 @@ export default function InsightDetailPage({ params }: Props) {
               Related Engineering Services
             </p>
             <ul className="space-y-2 text-sm">
-              {insight.relatedServices.map((s, i) => (
-                <li key={i}>
-                  <a href={s} className="text-red-600 hover:underline">
-                    → {s.replace("/layanan/", "").replace(/-/g, " ")}
-                  </a>
-                </li>
-              ))}
+              {insight.relatedServices.map((s, i) => {
+                const href = typeof s === 'string' ? s : s.href || '#'
+                const label = typeof s === 'string' 
+                  ? s.replace("/layanan/", "").replace(/-/g, " ")
+                  : s.label || 'Lihat layanan'
+                
+                return (
+                  <li key={i}>
+                    <Link href={href} className="text-red-600 hover:underline">
+                      → {label}
+                    </Link>
+                  </li>
+                )
+              })}
             </ul>
           </div>
         )}
 
         {/* BACK */}
         <div className="mt-14">
-          <a
+          <Link
             href="/insight"
             className="text-sm font-semibold text-red-600 hover:underline"
           >
             ← Back to Insights
-          </a>
+          </Link>  {/* ✅ FIXED: pakai </Link> */}
         </div>
 
       </div>

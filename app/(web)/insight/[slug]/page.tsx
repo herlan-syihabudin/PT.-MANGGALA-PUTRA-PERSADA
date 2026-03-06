@@ -165,16 +165,14 @@ export default function InsightDetailPage({ params }: Props) {
         </p>
 
         {/* CONTENT */}
-        <article className="prose prose-gray max-w-none">
-  {insight.content ? (
-    insight.content
-      .trim()
-      .split("\n")
-      .filter(Boolean)
-      .map((p, i) => <p key={i}>{p}</p>)
-  ) : (
-    <p>Content coming soon.</p>
-  )}
+<article className="prose prose-gray max-w-none">
+  {(insight.content ?? "")
+    .trim()
+    .split("\n")
+    .filter(Boolean)
+    .map((p, i) => (
+      <p key={i}>{p}</p>
+    ))}
 </article>
 
         {/* ===== AUTO INTERNAL LINKING (LONG-TAIL BOOST) ===== */}

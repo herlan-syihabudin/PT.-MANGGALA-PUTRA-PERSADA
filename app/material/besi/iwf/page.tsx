@@ -3,17 +3,21 @@ import Link from "next/link"
 import { ChevronRight, Phone, Package, Truck, CheckCircle, Ruler } from "lucide-react"
 import type { Metadata } from "next"
 
+const WA_NUMBER = process.env.NEXT_PUBLIC_WA_NUMBER || "6281229222463"
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://mppindo.com"
+
 export const metadata: Metadata = {
   title: "Besi WF / IWF SNI | Harga & Tabel Berat | Supplier Baja Struktural | MPP Engineering",
   description: "Supplier besi WF (Wide Flange) standar SNI & JIS untuk struktur gudang, pabrik, dan bangunan industri. Tersedia ukuran 100-500, panjang 12m, ready stock. Request harga & stok untuk proyek Anda.",
   keywords: "besi WF, IWF, baja struktural, balok baja, kolom baja, supplier WF, WF 200, WF 250, WF 300, WF 400, konstruksi baja",
   openGraph: {
-    title: "Besi WF / IWF SNI | MPP Engineering",
-    description: "Profil baja struktural untuk kolom dan balok industri. Tabel berat lengkap.",
-    images: ["/images/og-wf.jpg"],
-  },
+  title: "Besi WF / IWF SNI | MPP Engineering",
+  description: "Profil baja struktural untuk kolom dan balok industri. Tabel berat lengkap.",
+  url: `${SITE_URL}/material/besi/wf`,
+  images: [`${SITE_URL}/images/og-wf.jpg`],
+},
   alternates: {
-    canonical: "https://mppindo.com/material/besi/wf",
+    canonical: `${SITE_URL}/material/besi/wf`,
   },
 }
 
@@ -227,7 +231,9 @@ export default function WFPage() {
         {/* ===== CTA ===== */}
         <div className="flex flex-col md:flex-row gap-4">
           <a
-            href="https://wa.me/6281297396612?text=Halo%20PT%20Manggala%20Putra%20Persada,%20saya%20ingin%20request%20harga%20dan%20stok%20Besi%20WF.%20Ukuran:%20______,%20Qty:%20______,%20Lokasi%20Kirim:%20______."
+            href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(
+  "Halo PT Manggala Putra Persada, saya ingin request harga dan stok Besi WF. Ukuran: ______, Qty: ______, Lokasi Kirim: ______."
+)}`}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-4 rounded-xl font-semibold 
@@ -256,7 +262,7 @@ export default function WFPage() {
               "@type": "Product",
               "name": "Besi WF / IWF SNI",
               "description": "Besi WF (Wide Flange) standar SNI & JIS untuk struktur bangunan industri, gudang, dan pabrik.",
-              "image": "https://mppindo.com/material/besi/wf.jpg",
+              "image": `${SITE_URL}/material/besi/wf.jpg`,
               "brand": {
                 "@type": "Brand",
                 "name": "SNI / JIS"

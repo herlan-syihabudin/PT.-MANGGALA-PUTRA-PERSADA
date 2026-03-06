@@ -27,20 +27,20 @@ export const metadata: Metadata = {
     "jasa konstruksi baja",
     "PT Manggala Putra Persada",
     "MPP Engineering"
-  ].join(", "),
+  ],
   
   // Author
-  authors: [{ name: "PT Manggala Putra Persada", url: "https://mpp-engineering.com" }],
+  authors: [{ name: "PT Manggala Putra Persada", url: "https://mppindo.com" }],
   
   // Open Graph (Facebook, LinkedIn, WhatsApp)
   openGraph: {
     title: "Engineering-Led Construction Contractor Indonesia",
     description: "Steel Structure, Civil Engineering, MEP Installation & Design-Build Services",
-    url: "https://mpp-engineering.com",
+    url: "https://mppindo.com",
     siteName: "PT Manggala Putra Persada",
     images: [
       {
-        url: "/og-image.jpg",
+        url: "https://mppindo.com/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "PT Manggala Putra Persada - Engineering Construction",
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Engineering-Led Construction Contractor Indonesia",
     description: "Steel Structure, Civil Engineering, MEP Installation & Design-Build Services",
-    images: ["/og-image.jpg"],
+    images: ["https://mppindo.com/og-image.jpg"],
   },
   
   // Robots directives
@@ -75,11 +75,7 @@ export const metadata: Metadata = {
   
   // Canonical URL
   alternates: {
-    canonical: "https://mpp-engineering.com",
-    languages: {
-      'id-ID': 'https://mpp-engineering.com/id',
-      'en-US': 'https://mpp-engineering.com/en',
-    },
+    canonical: "https://mppindo.com",
   },
   
   // Verification (isi dengan token lu)
@@ -134,6 +130,7 @@ export default function Home() {
       {/* ===== CTA ===== */}
       {/* Final conversion push */}
       <CTA />
+      
     </main>
   )
 }

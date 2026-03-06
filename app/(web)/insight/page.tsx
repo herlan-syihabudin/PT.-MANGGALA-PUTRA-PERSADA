@@ -6,6 +6,7 @@ import { insights } from "@/lib/insights"
 import type { Metadata } from "next"
 import { Calendar, Clock, Eye, ArrowRight, Search } from "lucide-react"
 import { useState, useMemo } from "react"
+import InsightFilter from "@/components/InsightFilter"
 
 export const metadata: Metadata = {
   title: "Engineering Insights | PT Manggala Putra Persada",
@@ -295,6 +296,9 @@ export default function InsightPage() {
           </div>
         </div>
 
+        {/* FILTER + LIST ARTIKEL */}
+        <InsightFilter />
+
         {/* ===== CTA PREMIUM ===== */}
         <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-2xl p-12 text-center text-white">
           <h2 className="text-3xl font-bold mb-4">Need Engineering Perspective on Your Project?</h2>
@@ -309,6 +313,7 @@ export default function InsightPage() {
             <ArrowRight size={18} />
           </Link>
         </div>
+
 
         {/* ===== SCHEMA BLOG ===== */}
         <script

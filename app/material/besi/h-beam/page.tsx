@@ -3,17 +3,25 @@ import Link from "next/link"
 import { ChevronRight, Phone, Package, Truck, CheckCircle } from "lucide-react"
 import type { Metadata } from "next"
 
+const WA_NUMBER = process.env.NEXT_PUBLIC_WA_NUMBER || "6281297396612"
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://mppindo.com"
+
+const message = encodeURIComponent(
+  "Halo PT Manggala Putra Persada, saya ingin penawaran Besi Beton (SNI) – diameter, qty, dan lokasi kirim."
+)
+
 export const metadata: Metadata = {
   title: "Besi H-Beam SNI | Harga & Tabel Berat | Supplier Baja Industri | MPP Engineering",
   description: "Supplier besi H-Beam standar SNI & JIS untuk struktur industri, gudang, dan pabrik. Tersedia ukuran 100-400, panjang 12m, ready stock. Request harga & stok untuk proyek Anda.",
   keywords: "besi H-Beam, H-Beam SNI, baja struktural, kolom baja, balok baja, supplier H-Beam, H-Beam 200, H-Beam 250",
   openGraph: {
-    title: "Besi H-Beam SNI | MPP Engineering",
-    description: "Material baja struktural utama untuk bangunan industri. Tabel berat lengkap.",
-    images: ["/images/og-hbeam.jpg"],
-  },
+  title: "Besi H-Beam SNI | MPP Engineering",
+  description: "Material baja struktural utama untuk bangunan industri. Tabel berat lengkap.",
+  url: `${SITE_URL}/material/besi/h-beam`,
+  images: [`${SITE_URL}/images/og-hbeam.jpg`],
+},
   alternates: {
-    canonical: "https://mppindo.com/material/besi/h-beam",
+    canonical: `${SITE_URL}/material/besi/h-beam`,
   },
 }
 
@@ -30,7 +38,6 @@ export default function HBeamPage() {
     { ukuran: "H 400 x 400", webFlange: "13 / 21", beratPerM: "172.0", beratPerBatang: "≈ 2.064 kg" },
   ]
 
-  const waBase = "https://wa.me/6281297396612?text="
 
   return (
     <section className="py-24 bg-white">
@@ -207,9 +214,9 @@ export default function HBeamPage() {
         {/* ===== CTA ===== */}
         <div className="flex flex-col md:flex-row gap-4">
           <a
-            href={`${waBase}${encodeURIComponent(
-              "Halo PT Manggala Putra Persada, saya ingin request harga & stok Besi H-Beam. Ukuran: ______, Qty: ______, Lokasi Kirim: ______."
-            )}`}
+            href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(
+  "Halo PT Manggala Putra Persada, saya ingin request harga & stok Besi H-Beam. Ukuran: ______, Qty: ______, Lokasi Kirim: ______."
+)}`}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-4 rounded-xl font-semibold 
@@ -238,7 +245,7 @@ export default function HBeamPage() {
               "@type": "Product",
               "name": "Besi H-Beam SNI",
               "description": "Besi H-Beam standar SNI & JIS untuk struktur bangunan industri, gudang, dan pabrik.",
-              "image": "https://mppindo.com/material/besi/hbeam.jpg",
+              "image": `${SITE_URL}/material/besi/hbeam.jpg`,
               "brand": {
                 "@type": "Brand",
                 "name": "SNI / JIS"

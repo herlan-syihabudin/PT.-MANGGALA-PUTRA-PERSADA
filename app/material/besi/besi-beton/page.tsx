@@ -3,6 +3,13 @@ import Link from "next/link"
 import { ChevronRight, Phone, Package, Truck, CheckCircle } from "lucide-react"
 import type { Metadata } from "next"
 
+const WA_NUMBER = process.env.NEXT_PUBLIC_WA_NUMBER || "6281297396612"
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://mppindo.com"
+
+const message = encodeURIComponent(
+  "Halo PT Manggala Putra Persada, saya ingin penawaran Besi Beton (SNI) – diameter, qty, dan lokasi kirim."
+)
+
 export const metadata: Metadata = {
   title: "Besi Beton Polos & Ulir SNI | Harga & Tabel Berat | MPP Engineering",
   description: "Supplier besi beton polos (BJTP) dan ulir (BJTS) standar SNI untuk proyek konstruksi. Tersedia diameter 6-32mm, panjang 12m, ready stock. Request harga & stok untuk pengiriman cepat.",
@@ -10,10 +17,10 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Besi Beton Polos & Ulir SNI | MPP Engineering",
     description: "Lengkap dengan tabel berat dan spesifikasi teknis. Ready stock untuk proyek Anda.",
-    images: ["/images/og-besi-beton.jpg"],
+    images: [`${SITE_URL}/images/og-besi-beton.jpg`],
   },
   alternates: {
-    canonical: "https://mppindo.com/material/besi/besi-beton",
+    canonical: `${SITE_URL}/material/besi/besi-beton`,
   },
 }
 
@@ -238,13 +245,13 @@ export default function BesiBetonPage() {
         {/* ===== CTA ===== */}
         <div className="flex flex-col md:flex-row gap-4">
           <a
-            href="https://wa.me/6281297396612?text=Halo%20PT%20Manggala%20Putra%20Persada,%20saya%20ingin%20penawaran%20Besi%20Beton%20(SNI)%20–%20diameter,%20qty,%20dan%20lokasi%20kirim."
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-4 rounded-xl font-semibold 
-              hover:from-red-700 hover:to-red-800 transition-all shadow-lg shadow-red-600/20 
-              hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 group flex-1"
-          >
+  href={`https://wa.me/${WA_NUMBER}?text=${message}`}
+  target="_blank"
+  rel="noreferrer"
+  className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-4 rounded-xl font-semibold 
+  hover:from-red-700 hover:to-red-800 transition-all shadow-lg shadow-red-600/20 
+  hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 group flex-1"
+>
             <Phone size={18} />
             Request Harga & Stok
             <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
@@ -267,7 +274,7 @@ export default function BesiBetonPage() {
               "@type": "Product",
               "name": "Besi Beton Polos & Ulir SNI",
               "description": "Besi beton polos (BJTP) dan ulir (BJTS) standar SNI untuk konstruksi beton bertulang.",
-              "image": "https://mppindo.com/material/besi/besi-beton.jpg",
+              "image": `${SITE_URL}/material/besi/besi-beton.jpg`,
               "brand": {
                 "@type": "Brand",
                 "name": "SNI"

@@ -12,13 +12,29 @@ export const metadata: Metadata = {
   description: "Integrated design and build construction services in Indonesia. Single responsibility system for industrial & commercial projects. Engineering, planning, and execution under one roof.",
   keywords: "design build kontraktor, jasa konstruksi design build, kontraktor industrial indonesia, epc contractor, engineering procurement construction",
   openGraph: {
-    title: "Design & Build Construction Services | PT Manggala Putra Persada",
-    description: "Integrated design and build construction services for industrial and commercial projects.",
-    images: ["/images/og-design-build.jpg"],
-  },
+  title: "Design & Build Construction Services | PT Manggala Putra Persada",
+  description: "Integrated design and build construction services for industrial and commercial projects.",
+  url: "https://mppindo.com/layanan/design-build",
+  siteName: "PT Manggala Putra Persada",
+  type: "website",
+  images: [
+    {
+      url: "https://mppindo.com/images/og-design-build.jpg",
+      width: 1200,
+      height: 630,
+      alt: "Design & Build Construction Services",
+    },
+  ],
+},
+  twitter: {
+  card: "summary_large_image",
+  title: "Design & Build Construction Services | PT Manggala Putra Persada",
+  description: "Integrated design and build construction services in Indonesia.",
+  images: ["https://mppindo.com/images/og-design-build.jpg"],
+},
   alternates: {
-    canonical: "https://mpp-engineering.com/layanan/design-build",
-  },
+  canonical: "https://mppindo.com/layanan/design-build",
+},
 }
 
 export default function DesignBuildPage() {
@@ -210,6 +226,36 @@ export default function DesignBuildPage() {
         items={faqByService["design-build"]}
       />
 
+      <script
+type="application/ld+json"
+dangerouslySetInnerHTML={{
+__html: JSON.stringify({
+"@context": "https://schema.org",
+"@type": "BreadcrumbList",
+"itemListElement": [
+{
+"@type": "ListItem",
+"position": 1,
+"name": "Home",
+"item": "https://mppindo.com"
+},
+{
+"@type": "ListItem",
+"position": 2,
+"name": "Layanan",
+"item": "https://mppindo.com/layanan"
+},
+{
+"@type": "ListItem",
+"position": 3,
+"name": "Design & Build",
+"item": "https://mppindo.com/layanan/design-build"
+}
+]
+})
+}}
+/>
+      
     </section>
   )
 }

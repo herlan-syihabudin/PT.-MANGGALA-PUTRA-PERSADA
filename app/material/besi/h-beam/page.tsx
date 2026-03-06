@@ -3,7 +3,7 @@ import Link from "next/link"
 import { ChevronRight, Phone, Package, Truck, CheckCircle } from "lucide-react"
 import type { Metadata } from "next"
 
-const WA_NUMBER = process.env.NEXT_PUBLIC_WA_NUMBER || "6281297396612"
+const WA_NUMBER = process.env.NEXT_PUBLIC_WA_NUMBER || "6281229222463"
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://mppindo.com"
 
 const message = encodeURIComponent(

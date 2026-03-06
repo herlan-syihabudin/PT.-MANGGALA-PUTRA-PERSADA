@@ -9,14 +9,38 @@ import { projects, getCategories } from "@/lib/projects"
 
 export const metadata: Metadata = {
   title: "Portofolio Proyek Industri & Komersial | PT Manggala Putra Persada",
-  description: "Jelajahi portofolio proyek konstruksi industri, manufaktur, pergudangan, dan komersial MPP Engineering yang telah selesai di seluruh Indonesia dengan pendekatan engineering-led.",
+  description:
+    "Jelajahi portofolio proyek konstruksi industri, manufaktur, pergudangan, dan komersial MPP Engineering yang telah selesai di seluruh Indonesia dengan pendekatan engineering-led.",
+
   openGraph: {
     title: "100+ Proyek Industri & Komersial | MPP Engineering",
-    description: "Lihat portofolio proyek konstruksi engineering-led kami di berbagai sektor industri.",
-    images: ["/images/og-projects.jpg"],
+    description:
+      "Lihat portofolio proyek konstruksi engineering-led kami di berbagai sektor industri.",
+    url: "https://mppindo.com/proyek",
+    siteName: "PT Manggala Putra Persada",
+    type: "website",
+    images: [
+      {
+        url: "https://mppindo.com/images/og-projects.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Portofolio Proyek MPP Engineering",
+      },
+    ],
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "Portofolio Proyek Industri & Komersial | MPP Engineering",
+    description:
+      "Lihat portofolio proyek konstruksi industri dan komersial MPP Engineering.",
+    images: ["https://mppindo.com/images/og-projects.jpg"],
+  },
+
+  alternates: {
+    canonical: "https://mppindo.com/proyek",
   },
 }
-
 const categories = ["All", ...getCategories()] // Dinamis dari data
 
 export default function ProyekPage() {
@@ -111,11 +135,35 @@ export default function ProyekPage() {
                 "position": index + 1,
                 "url": `https://mppindo.com/proyek/${project.slug}`,
                 "name": project.title,
-                "image": project.images[0],
+                "image": `https://mppindo.com${project.images[0]}`
               }))
             })
           }}
         />
+
+        <script
+type="application/ld+json"
+dangerouslySetInnerHTML={{
+__html: JSON.stringify({
+"@context": "https://schema.org",
+"@type": "BreadcrumbList",
+"itemListElement": [
+{
+"@type": "ListItem",
+"position": 1,
+"name": "Home",
+"item": "https://mppindo.com"
+},
+{
+"@type": "ListItem",
+"position": 2,
+"name": "Proyek",
+"item": "https://mppindo.com/proyek"
+}
+]
+})
+}}
+/>
 
       </div>
     </section>

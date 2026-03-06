@@ -194,7 +194,7 @@ By resolving technical conflicts early, projects can be delivered faster, with h
     lastUpdated: "2025-02-19",
     author: "PT Manggala Putra Persada",
     
-    featuredImage: "/images/insights/engineering-coordination.jpg",
+    featuredImage: "/images/insights/engineer-reviewing-blueprints.jpg",
     
     readingTime: 4,
     wordCount: 720,

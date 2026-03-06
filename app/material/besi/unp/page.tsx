@@ -3,18 +3,23 @@ import Link from "next/link"
 import { ChevronRight, Phone, Package, Truck, CheckCircle, Ruler, Gauge } from "lucide-react"
 import type { Metadata } from "next"
 
+const WA_NUMBER = process.env.NEXT_PUBLIC_WA_NUMBER || "6281229222463"
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://mppindo.com"
+
 export const metadata: Metadata = {
   title: "Besi UNP (U-Channel) | Harga & Tabel Berat | Supplier Baja | MPP Engineering",
   description: "Supplier besi UNP (U-Channel) untuk secondary structure, rangka atap, purlin, dan support struktur. Tersedia ukuran 50-200, panjang 6m & 12m, SNI/JIS. Request harga & stok.",
   keywords: "besi UNP, U-Channel, kanal U, profil UNP, secondary structure, rangka atap, gording, purlin, supplier UNP jakarta",
   openGraph: {
-    title: "Besi UNP (U-Channel) | MPP Engineering",
-    description: "Profil baja untuk secondary structure dan rangka. Tabel berat lengkap.",
-    images: ["/images/og-unp.jpg"],
-  },
+  title: "Besi UNP (U-Channel) | MPP Engineering",
+  description: "Profil baja untuk secondary structure dan rangka. Tabel berat lengkap.",
+  url: `${SITE_URL}/material/besi/unp`,
+  images: [`${SITE_URL}/images/og-unp.jpg`],
+  type: "article",
+},
   alternates: {
-    canonical: "https://mppindo.com/material/besi/unp",
-  },
+  canonical: `${SITE_URL}/material/besi/unp`,
+},
 }
 
 export default function UNPPage() {
@@ -230,7 +235,13 @@ export default function UNPPage() {
         {/* ===== CTA ===== */}
         <div className="flex flex-col md:flex-row gap-4">
           <a
-            href="https://wa.me/6281297396612?text=Halo%20PT%20Manggala%20Putra%20Persada,%20saya%20ingin%20request%20harga%20dan%20stok%20Besi%20UNP.%0AUkuran:%20______,%0APanjang:%20______%20(6m%20/%2012m),%0AJumlah:%20______%20batang,%0ALokasi%20Kirim:%20______."
+            href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(
+`Halo PT Manggala Putra Persada, saya ingin request harga dan stok Besi UNP.
+Ukuran: ______
+Panjang: ______ (6m / 12m)
+Jumlah: ______ batang
+Lokasi Kirim: ______`
+)}`}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-4 rounded-xl font-semibold 
@@ -259,7 +270,7 @@ export default function UNPPage() {
               "@type": "Product",
               "name": "Besi UNP (U-Channel)",
               "description": "Profil baja UNP untuk secondary structure, rangka atap, dan support struktur.",
-              "image": "https://mppindo.com/material/besi/unp.jpg",
+              "image": `${SITE_URL}/material/besi/unp.jpg`,
               "brand": {
                 "@type": "Brand",
                 "name": "JIS / SNI"

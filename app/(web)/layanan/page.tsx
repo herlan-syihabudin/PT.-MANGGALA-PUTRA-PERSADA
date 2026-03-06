@@ -1,4 +1,30 @@
 import Link from "next/link"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Engineering & Construction Services | PT Manggala Putra Persada",
+  description:
+    "Engineering-led construction services in Indonesia including civil construction, steel structures, MEP systems, interior fit-out, and design-build projects.",
+  alternates: {
+    canonical: "https://mppindo.com/layanan",
+  },
+  openGraph: {
+    title: "Engineering & Construction Services | PT Manggala Putra Persada",
+    description:
+      "Integrated engineering-led construction services for industrial and commercial projects.",
+    url: "https://mppindo.com/layanan",
+    siteName: "PT Manggala Putra Persada",
+    type: "website",
+    images: [
+      {
+        url: "https://mppindo.com/images/og-layanan.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Engineering & Construction Services",
+      },
+    ],
+  },
+}
 
 export default function LayananPage() {
   return (
@@ -16,7 +42,7 @@ export default function LayananPage() {
             name: "Engineering & Construction Services",
             description:
               "Engineering-led construction services in Indonesia covering civil, structural, steel structure, MEP, fit-out, and design & build projects.",
-            url: "https://pt-manggala-putra-persada.vercel.app/layanan",
+            url: "https://mppindo.com/layanan",
             mainEntity: {
               "@type": "ItemList",
               itemListElement: [
@@ -24,39 +50,41 @@ export default function LayananPage() {
                   "@type": "ListItem",
                   position: 1,
                   name: "Civil & Structural Construction",
-                  url: "https://pt-manggala-putra-persada.vercel.app/layanan/konstruksi-sipil",
+                  url: "https://mppindo.com/layanan/konstruksi-sipil",
                 },
                 {
                   "@type": "ListItem",
                   position: 2,
                   name: "Steel Structure Engineering",
-                  url: "https://pt-manggala-putra-persada.vercel.app/layanan/struktur-baja",
+                  url: "https://mppindo.com/layanan/struktur-baja",
                 },
                 {
                   "@type": "ListItem",
                   position: 3,
                   name: "Mechanical Electrical Plumbing (MEP)",
-                  url: "https://pt-manggala-putra-persada.vercel.app/layanan/mep",
+                  url: "https://mppindo.com/layanan/mep",
                 },
                 {
                   "@type": "ListItem",
                   position: 4,
                   name: "Interior & Fit-Out Services",
-                  url: "https://pt-manggala-putra-persada.vercel.app/layanan/fit-out",
+                  url: "https://mppindo.com/layanan/fit-out",
                 },
                 {
                   "@type": "ListItem",
                   position: 5,
                   name: "Design & Build Construction",
-                  url: "https://pt-manggala-putra-persada.vercel.app/layanan/design-build",
+                  url: "https://mppindo.com/layanan/design-build",
                 },
               ],
             },
             provider: {
-              "@type": "Organization",
-              name: "PT Manggala Putra Persada",
-              url: "https://pt-manggala-putra-persada.vercel.app",
-            },
+  "@type": "Organization",
+  name: "PT Manggala Putra Persada",
+  alternateName: "MPP Engineering",
+  url: "https://mppindo.com",
+  logo: "https://mppindo.com/logo-mp.png"
+},
           }),
         }}
       />
@@ -75,13 +103,13 @@ export default function LayananPage() {
                 "@type": "ListItem",
                 position: 1,
                 name: "Home",
-                item: "https://pt-manggala-putra-persada.vercel.app",
+                item: "https://mppindo.com",
               },
               {
                 "@type": "ListItem",
                 position: 2,
                 name: "Services",
-                item: "https://pt-manggala-putra-persada.vercel.app/layanan",
+                item: "https://mppindo.com/layanan",
               },
             ],
           }),

@@ -10,39 +10,39 @@ interface WhyChooseUsProps {
 
 const CARDS = [
   {
-    id: 'engineering',
+    id: 'technical',
     icon: HardHat,
-    title: { id: 'Engineering-Led Execution', en: 'Engineering-Led Execution' },
+    title: { id: 'Perencanaan Teknis yang Jelas', en: 'Technical Planning' },
     description: {
-      id: 'Setiap pekerjaan dijalankan berdasarkan gambar approved...',
-      en: 'Every work is executed based on approved drawings...'
+      id: 'Setiap pekerjaan dilaksanakan berdasarkan gambar kerja, spesifikasi teknis, serta metode kerja yang telah direncanakan.',
+      en: 'All works are executed based on approved drawings and technical specifications.'
     }
   },
   {
-    id: 'cost',
+    id: 'schedule',
     icon: TrendingDown,
-    title: { id: 'Cost & Schedule Discipline', en: 'Cost & Schedule Discipline' },
+    title: { id: 'Pengendalian Waktu & Biaya', en: 'Cost & Schedule Control' },
     description: {
-      id: 'Perencanaan terstruktur, monitoring progres...',
-      en: 'Structured planning, progress monitoring...'
+      id: 'Perencanaan pekerjaan, pengawasan progres, serta koordinasi tim dilakukan untuk menjaga proyek berjalan sesuai jadwal.',
+      en: 'Structured planning and progress monitoring to maintain project schedule.'
     },
     highlighted: true
   },
   {
     id: 'quality',
     icon: Shield,
-    title: { id: 'Quality & HSE Control', en: 'Quality & HSE Control' },
+    title: { id: 'Pengawasan Mutu & K3', en: 'Quality & Safety Control' },
     description: {
-      id: 'Sistem jaminan kualitas dan prosedur K3...',
-      en: 'Quality assurance system and HSE procedures...'
+      id: 'Setiap tahap pekerjaan diawasi untuk memastikan kualitas konstruksi dan penerapan standar keselamatan kerja.',
+      en: 'Quality assurance and safety procedures are applied throughout the project.'
     }
   }
 ] as const
 
 const FEATURES = [
-  { id: 'execution', icon: Shield, label: { id: 'Engineering-Led Execution', en: 'Engineering-Led Execution' } },
-  { id: 'control', icon: Shield, label: { id: 'Structured Project Control', en: 'Structured Project Control' } },
-  { id: 'hse', icon: Shield, label: { id: 'Quality & HSE Commitment', en: 'Quality & HSE Commitment' } }
+  { id: 'execution', icon: Shield, label: { id: 'Pelaksanaan Berdasarkan Gambar Kerja', en: 'Execution Based on Drawings' } },
+  { id: 'control', icon: Shield, label: { id: 'Pengendalian Proyek yang Terencana', en: 'Structured Project Control' } },
+  { id: 'hse', icon: Shield, label: { id: 'Pengawasan Mutu dan Keselamatan Kerja', en: 'Quality & Safety Control' } }
 ] as const
 
 export function WhyChooseUs({ 
@@ -76,9 +76,9 @@ export function WhyChooseUs({
             id="why-choose-heading"
             className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900"
           >
-            {locale === 'id' ? 'Proyek Terstruktur, Hasil Pasti:' : 'Structured Projects, Guaranteed Results:'}
+            {locale === 'id' ? 'Sistem Kerja yang Terencana untuk Hasil Proyek yang Baik' : 'Structured Project Execution'}
             <span className="block text-gold">
-              {locale === 'id' ? 'Engineering-Led Execution' : 'Engineering-Led Execution'}
+              {locale === 'id' ? 'Pelaksanaan Proyek yang Terencana' : 'Engineering-Led Execution'}
             </span>
           </h2>
 
@@ -89,7 +89,7 @@ export function WhyChooseUs({
 
           <p className="mt-6 text-lg text-gray-700 leading-relaxed max-w-2xl">
             {locale === 'id' 
-              ? 'Banyak proyek konstruksi gagal...' 
+              ? id: 'Banyak proyek konstruksi mengalami kendala karena perencanaan yang kurang matang, koordinasi yang tidak jelas, serta pengendalian pekerjaan yang lemah. Kami menjalankan setiap proyek dengan sistem kerja yang terstruktur agar pelaksanaan di lapangan berjalan lebih terkendali.' 
               : 'Many construction projects fail...'}
           </p>
         </div>
@@ -133,10 +133,10 @@ export function WhyChooseUs({
             <Link
               href={aboutUrl}
               className="inline-flex items-center gap-2 text-gold font-semibold hover:gap-3 transition-all group"
-              aria-label={locale === 'id' ? 'Pelajari pendekatan engineering kami' : 'Learn about our engineering approach'}
+              aria-label={locale === 'id' ? 'Lihat Cara Kami Menjalankan Proyek' : 'Learn about our engineering approach'}
             >
               <span>
-                {locale === 'id' ? 'Pelajari Pendekatan Engineering Kami' : 'Learn Our Engineering Approach'}
+                {locale === 'id' ? 'Lihat Cara Kami Menjalankan Proyek' : 'Learn Our Engineering Approach'}
               </span>
               <ChevronRight
                 size={18}

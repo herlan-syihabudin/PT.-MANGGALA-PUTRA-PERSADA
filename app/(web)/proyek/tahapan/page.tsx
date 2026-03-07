@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { ChevronLeft } from "lucide-react"
-import ProjectExecutionFlow from "./ProjectExecutionFlow"
+import ProjectExecutionFlow from "../ProjectExecutionFlow"
 
 export const metadata: Metadata = {
   title: "7 Tahapan Pelaksanaan Proyek Konstruksi Industri | MPP Engineering",

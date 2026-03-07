@@ -217,6 +217,11 @@ export default function ProjectExecutionFlow() {
             
             return (
               <div
+      id={`step-${step.number}`}  // ⬅️ TAMBAH INI (NOMOR 2)
+      key={step.number}
+      className="group relative bg-white rounded-2xl border border-gray-200 p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:border-transparent overflow-hidden scroll-mt-24"  // ⬅️ TAMBAH scroll-mt-24
+    >
+              <div
                 key={step.number}
                 className="group relative bg-white rounded-2xl border border-gray-200 p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:border-transparent overflow-hidden"
               >
@@ -285,25 +290,29 @@ export default function ProjectExecutionFlow() {
         </div>
 
         {/* BOTTOM CTA - Menghubungkan ke action berikutnya */}
-        <div className="mt-16 text-center">
-          <div className="inline-flex items-center gap-3 bg-gold/5 px-8 py-4 rounded-full border border-gold/20 hover:bg-gold/10 transition-all group cursor-pointer">
-            <span className="font-semibold text-gold">
-              Lihat Detail Setiap Tahapan
-            </span>
-            <ArrowRight size={18} className="text-gold group-hover:translate-x-1 transition-transform" />
-          </div>
+        {/* BOTTOM CTA - Menghubungkan ke action berikutnya */}
+<div className="mt-16 text-center">
+  <Link  // ⬅️ GANTI DIV JADI LINK
+    href="#step-01"  // ⬅️ TAMBAH HREF
+    className="inline-flex items-center gap-3 bg-gold/5 px-8 py-4 rounded-full border border-gold/20 hover:bg-gold/10 transition-all group"
+  >
+    <span className="font-semibold text-gold">
+      Lihat Detail Setiap Tahapan
+    </span>
+    <ArrowRight size={18} className="text-gold group-hover:translate-x-1 transition-transform" />
+  </Link>  {/* ⬅️ TAMBAH TAG PENUTUP */}
 
-          {/* Progress Indicator */}
-          <div className="flex justify-center gap-2 mt-8">
-            {steps.map((_, i) => (
-              <div 
-                key={i}
-                className="w-2 h-2 rounded-full bg-gray-300 hover:bg-gold/50 transition-colors cursor-pointer"
-                title={`Tahap ${i + 1}`}
-              />
-            ))}
-          </div>
-        </div>
+  {/* Progress Indicator */}
+  <div className="flex justify-center gap-2 mt-8">
+    {steps.map((_, i) => (
+      <div 
+        key={i}
+        className="w-2 h-2 rounded-full bg-gray-300 hover:bg-gold/50 transition-colors cursor-pointer"
+        title={`Tahap ${i + 1}`}
+      />
+    ))}
+  </div>
+</div>
       </div>
     </section>
   )

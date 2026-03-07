@@ -40,7 +40,7 @@ export default function Hero() {
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.1] tracking-tight">
-              <span className="text-gray-900">Engineering-Led </span>
+              <span className="text-gray-900">Industrial & Commercial </span>
               <span className="bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
                 Construction Contractor
               </span>

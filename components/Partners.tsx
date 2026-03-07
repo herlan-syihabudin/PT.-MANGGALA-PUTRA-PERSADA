@@ -171,6 +171,7 @@ export default function Partners() {
             Garansi Produk
           </span>
         </div>
+        </div>
     </section>
   )
 }

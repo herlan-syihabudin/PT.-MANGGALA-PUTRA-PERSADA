@@ -3,42 +3,40 @@ import AboutSection from "@/components/AboutSection"
 import { WhyChooseUs } from "@/components/WhyChooseUs"
 
 export const metadata: Metadata = {
-  title: "About Us | Engineering Contractor Indonesia | PT Manggala Putra Persada",
-  
-  description: "PT Manggala Putra Persada is an engineering-led construction contractor in Indonesia with 14+ years experience, 100+ completed projects, and ISO-certified processes. Specializing in steel structure, civil works, MEP, and design-build for industrial and commercial projects.",
+  title: "Tentang Kami | Kontraktor Pabrik & Industri di Indonesia | PT Manggala Putra Persada",
+  description:
+  "PT Manggala Putra Persada merupakan perusahaan kontraktor yang menangani pekerjaan konstruksi sipil, struktur baja, instalasi MEP, serta proyek design & build untuk sektor industri dan komersial di Indonesia.",
   
   keywords: [
-    "engineering contractor indonesia",
-    "construction company bekasi",
-    "jasa konstruksi baja indonesia",
-    "kontraktor sipil jakarta",
-    "design build contractor",
-    "iso certified construction company",
-    "industrial plant contractor indonesia",
-    "mep installation services",
-    "steel structure fabrication",
-    "engineering procurement construction",
-    "PT Manggala Putra Persada",
-    "MPP Engineering",
-    "kontraktor industri indonesia"
-  ],
+"engineering contractor indonesia",
+"kontraktor industri indonesia",
+"kontraktor sipil jakarta",
+"kontraktor struktur baja",
+"jasa konstruksi baja indonesia",
+"instalasi mep",
+"kontraktor listrik bekasi",
+"design build contractor",
+"industrial plant contractor indonesia",
+"steel structure fabrication",
+"PT Manggala Putra Persada",
+"MPP Engineering"
+],
   
   authors: [{ name: "PT Manggala Putra Persada" }],
   
   openGraph: {
-    title: "About PT Manggala Putra Persada - Engineering-Led Construction Contractor",
-    description: "Engineering-led construction contractor with 14+ years experience and 100+ completed industrial projects across Indonesia. ISO certified with structured execution approach.",
+    title: "About PT Manggala Putra Persada - Kontraktor Industri",
+    "description": "PT Manggala Putra Persada merupakan perusahaan kontraktor yang menangani pekerjaan konstruksi sipil, struktur baja, instalasi MEP, serta proyek design & build untuk sektor industri dan komersial di Indonesia.",
     url: "https://mppindo.com/tentang",
     siteName: "PT Manggala Putra Persada",
     type: "website",
     locale: "id_ID",
-    alternateLocale: "en_US",
     images: [
       {
         url: "https://mppindo.com/images/og-about.png",
         width: 1200,
         height: 630,
-        alt: "PT Manggala Putra Persada - Engineering Contractor Indonesia",
+        alt: "PT Manggala Putra Persada - Kontraktor Industri",
       },
     ],
   },
@@ -46,17 +44,13 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "About PT Manggala Putra Persada",
-    description: "Engineering-led construction contractor with 14+ years experience and 100+ completed industrial projects.",
+    "description":  "Perusahaan kontraktor untuk pekerjaan konstruksi sipil, struktur baja, instalasi MEP, dan design & build.",
     images: ["https://mppindo.com/images/twitter-about.png"],
   },
 
   alternates: {
     canonical: "https://mppindo.com/tentang",
-    languages: {
-      'id-ID': 'https://mppindo.com/id/tentang',
-      'en-US': 'https://mppindo.com/en/about',
     },
-  },
 
   robots: {
     index: true,
@@ -85,7 +79,7 @@ export default function TentangPage() {
             "@context": "https://schema.org",
             "@type": "AboutPage",
             "name": "About PT Manggala Putra Persada",
-            "description": "Engineering-led construction contractor in Indonesia with 14+ years experience",
+            "description": "PT Manggala Putra Persada merupakan perusahaan kontraktor yang menangani pekerjaan konstruksi sipil, struktur baja, instalasi MEP, serta proyek design & build untuk sektor industri dan komersial di Indonesia.",
             "url": "https://mppindo.com/tentang",
             "mainEntity": {
   "@type": "Organization",
@@ -96,11 +90,7 @@ export default function TentangPage() {
   "foundingDate": "2010",
   "numberOfEmployees": "50+",
   "areaServed": "Indonesia",
-  "award": [
-    "ISO 9001:2015",
-    "ISO 14001:2015",
-    "ISO 45001:2018"
-  ],
+  
               "sameAs": [
   "https://www.linkedin.com/company/mpp-engineering",
   "https://www.instagram.com/mppengineering"
@@ -109,7 +99,7 @@ export default function TentangPage() {
     "Steel Structure",
     "Civil Works",
     "MEP Engineering",
-    "Design Build Construction"
+    "Design & Build"
   ]
 }
           })

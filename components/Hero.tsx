@@ -35,7 +35,7 @@ export default function Hero() {
             <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-red-50 border border-red-200 rounded-full">
               <HardHat size={16} className="text-red-600" />
               <span className="text-sm font-semibold text-red-700">
-                Engineering-Led Construction Contractor
+               Industrial & Commercial Projects
               </span>
             </div>
 
@@ -48,7 +48,8 @@ export default function Hero() {
             </h1>
 
             <p className="mt-8 text-xl text-gray-700 font-medium max-w-2xl">
-              Steel Structure, Civil Engineering, MEP Installation & Design-Build Services
+              Steel Structure, Civil Works, MEP Installation,
+and Design-Build Services
               <span className="block text-base text-gray-500 font-normal mt-2">
                 for Industrial and Commercial Projects Across Indonesia
               </span>

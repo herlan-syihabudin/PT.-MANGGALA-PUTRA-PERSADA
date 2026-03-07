@@ -2,7 +2,7 @@ import { Suspense } from "react"
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
 import type { Metadata } from "next"
-
+import ProjectExecutionFlow from "./ProjectExecutionFlow"
 import ProjectCard from "@/components/ProjectCard"
 import ProjectFilters from "@/components/ProjectFilters"
 import { projects, getCategories } from "@/lib/projects"
@@ -80,6 +80,10 @@ export default function ProyekPage() {
             manufacturing, warehousing, and commercial sectors in Indonesia.
           </p>
         </div>
+
+        {/* ===== PROJECT EXECUTION FLOW ===== */}
+<ProjectExecutionFlow />
+        
 
         {/* ===== FILTERS ===== */}
         <div className="mt-12">

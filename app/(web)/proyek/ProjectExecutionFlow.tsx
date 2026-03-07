@@ -216,15 +216,11 @@ export default function ProjectExecutionFlow() {
       const style = colorStyles[step.lightColor]
             
             return (
-              <div
-      id={`step-${step.number}`}  // ⬅️ TAMBAH INI (NOMOR 2)
-      key={step.number}
-      className="group relative bg-white rounded-2xl border border-gray-200 p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:border-transparent overflow-hidden scroll-mt-24"  // ⬅️ TAMBAH scroll-mt-24
-    >
-              <div
-                key={step.number}
-                className="group relative bg-white rounded-2xl border border-gray-200 p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:border-transparent overflow-hidden"
-              >
+  <div
+    id={`step-${step.number}`}
+    key={step.number}
+    className="group relative bg-white rounded-2xl border border-gray-200 p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:border-transparent overflow-hidden scroll-mt-24"
+  >
                 {/* Background Gradient on Hover */}
                 <div className={`
                   absolute inset-0 bg-gradient-to-br ${step.color} opacity-0 group-hover:opacity-5 

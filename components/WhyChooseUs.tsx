@@ -49,7 +49,7 @@ export function WhyChooseUs({
   className = '', 
   showCta = true,
   locale = 'id',
-  aboutUrl = '/tentang-kami'
+  aboutUrl = '/tentang'
 }: WhyChooseUsProps) {
   return (
     <section

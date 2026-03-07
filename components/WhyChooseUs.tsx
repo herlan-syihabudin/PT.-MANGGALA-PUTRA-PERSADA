@@ -65,7 +65,7 @@ export function WhyChooseUs({
     <section
       id="why-choose-us"
       aria-labelledby="why-choose-heading"
-      className={`relative py-16 md:py-20 bg-gradient-to-b from-gray-50 to-white overflow-hidden ${className}`}
+      className="relative py-12 md:py-16 bg-gradient-to-b from-gray-50 to-white overflow-hidden"
     >
       {/* BACKGROUND ACCENTS - lebih halus */}
       <div className="absolute inset-0 pointer-events-none">
@@ -81,7 +81,7 @@ export function WhyChooseUs({
       <div className="relative max-w-7xl mx-auto px-6">
         
         {/* HEADER - dengan dekorasi tambahan */}
-        <div className="max-w-3xl mb-14">
+        <div className="max-w-3xl mb-8">
           {/* Badge dengan garis di samping */}
           <div className="inline-flex items-center gap-3 mb-4">
             <div className="w-8 h-[2px] bg-gold/30 rounded-full" />
@@ -93,7 +93,7 @@ export function WhyChooseUs({
 
           <h2
             id="why-choose-heading"
-            className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-gray-900"
+            className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900"
           >
             {locale === 'id' ? 'Sistem Kerja yang Terencana untuk Hasil Proyek yang Baik' : 'Structured Project Execution'}
             <span className="block text-gold mt-2">
@@ -108,7 +108,7 @@ export function WhyChooseUs({
             <div className="h-[3px] w-6 bg-gold/10 rounded-full mt-1" />
           </div>
 
-          <p className="mt-8 text-lg text-gray-700 leading-relaxed max-w-2xl">
+          <p className="mt-5 text-base md:text-lg text-gray-700 leading-relaxed max-w-2xl">
             {locale === 'id' 
               ? 'Banyak proyek konstruksi mengalami kendala karena perencanaan yang kurang matang, koordinasi yang tidak jelas, serta pengendalian pekerjaan yang lemah. Kami menjalankan setiap proyek dengan sistem kerja yang terstruktur agar pelaksanaan di lapangan berjalan lebih terkendali.'
               : 'Many construction projects face challenges due to poor planning, unclear coordination, and weak execution control. We implement structured workflows to ensure controlled and predictable project delivery.'}
@@ -116,7 +116,7 @@ export function WhyChooseUs({
         </div>
 
         {/* CARDS GRID */}
-        <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid md:grid-cols-3 gap-6">
           {CARDS.map((card) => {
             const Icon = card.icon
             const isHighlighted = 'highlighted' in card && card.highlighted
@@ -125,7 +125,7 @@ export function WhyChooseUs({
               <div
                 key={card.id}
                 className={`
-                  group relative bg-white border border-gray-200 rounded-2xl p-8 
+                  className="group relative bg-white border border-gray-200 rounded-xl p-6"
                   shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-2
                   ${isHighlighted 
                     ? 'border-t-4 border-gold border-t-4 border-gold shadow-gold/5' 
@@ -145,7 +145,7 @@ export function WhyChooseUs({
                 <div className="relative">
                   {/* Icon container dengan efek */}
                   <div className={`
-                    w-14 h-14 rounded-xl flex items-center justify-center mb-5 
+                    w-12 h-12 rounded-xl flex items-center justify-center mb-5 
                     transition-all duration-300 group-hover:scale-110
                     ${isHighlighted 
                       ? 'bg-gold/20 text-gold' 
@@ -154,7 +154,7 @@ export function WhyChooseUs({
                     <Icon size={28} className="text-gold" aria-hidden="true" />
                   </div>
 
-                  <h3 className="font-bold text-gray-900 mb-3 text-xl">
+                  <h3 className="font-bold text-gray-900 mb-3 text-lg">
                     {card.title[locale]}
                   </h3>
 

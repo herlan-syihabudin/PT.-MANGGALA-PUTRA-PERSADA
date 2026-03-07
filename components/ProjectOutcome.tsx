@@ -17,128 +17,86 @@ import Link from "next/link"
 
 export function ProjectOutcome() {
   return (
-    <section className="relative py-28 bg-gradient-to-b from-white via-gray-50/50 to-white overflow-hidden">
+    <section className="relative py-16 md:py-20 bg-gradient-to-b from-white via-gray-50/50 to-white overflow-hidden">
       
-      {/* ===== BACKGROUND ELEMENTS - ENHANCED ===== */}
+      {/* ===== BACKGROUND ELEMENTS ===== */}
       <div className="absolute inset-0 pointer-events-none">
-        {/* Gold accent blobs dengan animasi lebih halus */}
-        <div className="absolute -top-32 -right-32 w-[620px] h-[620px] bg-gold/5 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute -bottom-32 -left-32 w-[560px] h-[560px] bg-red-600/5 rounded-full blur-3xl animate-pulse-slower" />
+        {/* Gold accent blobs */}
+        <div className="absolute -top-32 -right-32 w-[520px] h-[520px] bg-gold/5 rounded-full blur-3xl" />
+        <div className="absolute -bottom-32 -left-32 w-[460px] h-[460px] bg-red-600/5 rounded-full blur-3xl" />
         
-        {/* Multiple grid layers untuk depth */}
+        {/* Grid pattern */}
         <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] bg-center opacity-[0.02]" />
         <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
         
-        {/* Floating particles - lebih banyak dan bervariasi */}
-        <div className="absolute top-40 left-1/4 w-2 h-2 bg-gold/20 rounded-full animate-float-slow" />
-        <div className="absolute top-60 left-2/3 w-3 h-3 bg-gold/20 rounded-full animate-float-delayed" />
-        <div className="absolute bottom-40 right-1/4 w-4 h-4 bg-red-600/10 rounded-full animate-float-slower" />
-        <div className="absolute bottom-60 left-1/3 w-2 h-2 bg-gold/30 rounded-full animate-ping-slow" />
+        {/* Floating particles - lebih subtle */}
+        <div className="absolute top-40 left-1/4 w-1.5 h-1.5 bg-gold/20 rounded-full animate-float-slow" />
+        <div className="absolute bottom-40 right-1/4 w-2 h-2 bg-red-600/10 rounded-full animate-float-slower" />
         
-        {/* Decorative lines - lebih elegan */}
-        <div className="absolute top-1/3 left-0 w-64 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-        <div className="absolute bottom-1/3 right-0 w-64 h-px bg-gradient-to-l from-transparent via-gold/20 to-transparent" />
+        {/* Decorative lines */}
+        <div className="absolute top-1/3 left-0 w-40 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+        <div className="absolute bottom-1/3 right-0 w-40 h-px bg-gradient-to-l from-transparent via-gold/20 to-transparent" />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative max-w-7xl mx-auto px-6">
 
-        {/* ===== HEADER SECTION - ENHANCED ===== */}
-        <div className="max-w-3xl mb-16">
-          {/* Badge dengan icon dan efek glow */}
-          <div className="inline-flex items-center gap-3 mb-6 relative">
-            <div className="absolute -inset-1 bg-gold/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition" />
-            <div className="relative inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-gold/10 to-amber-50 border border-gold/20 rounded-full shadow-sm">
-              <Award size={18} className="text-gold" />
-              <span className="text-sm font-semibold bg-gradient-to-r from-gold to-amber-600 bg-clip-text text-transparent">
+        {/* ===== HEADER SECTION - TUNED ===== */}
+        <div className="max-w-3xl mb-10">
+          {/* Badge - konsisten dengan WhyChooseUs */}
+          <div className="inline-flex items-center gap-2 mb-4">
+            <div className="w-6 h-[2px] bg-gold/30 rounded-full" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gold/10 border border-gold/20 rounded-full">
+              <Award size={14} className="text-gold" />
+              <span className="text-xs font-semibold text-gold">
                 Kinerja Pelaksanaan Proyek
               </span>
-              <Sparkles size={14} className="text-gold/60" />
             </div>
+            <div className="w-6 h-[2px] bg-gold/30 rounded-full" />
           </div>
 
-          {/* Title dengan efek lebih dramatis */}
-          <div className="relative">
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight leading-[1.1]">
-              Pelaksanaan Proyek dengan Pendekatan 
-              <span className="relative inline-block mt-2">
-                <span className="bg-gradient-to-r from-gold via-amber-500 to-yellow-500 bg-clip-text text-transparent">
-                  {' '}Kerja yang Terstruktur
-                </span>
-                {/* Underline effect yang lebih cantik */}
-                <svg className="absolute -bottom-3 left-0 w-full" height="12" viewBox="0 0 300 12" preserveAspectRatio="none">
-                  <path 
-                    d="M0,8 Q75,0 150,8 T300,8" 
-                    stroke="url(#goldGradient)" 
-                    strokeWidth="3" 
-                    fill="none" 
-                    strokeLinecap="round"
-                  />
-                  <defs>
-                    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#D4AF37" stopOpacity="0.3" />
-                      <stop offset="50%" stopColor="#D4AF37" stopOpacity="0.8" />
-                      <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.3" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-              </span>
-            </h2>
+          {/* Title - ukuran diturunkan */}
+          <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">
+            Pelaksanaan Proyek dengan Pendekatan{' '}
+            <span className="text-gold block mt-1 text-lg md:text-xl">
+              Kerja yang Terstruktur
+            </span>
+          </h2>
+
+          {/* Gold divider sederhana */}
+          <div className="relative mt-4">
+            <div className="h-[2px] w-16 bg-gold rounded-full" />
+            <div className="h-[2px] w-10 bg-gold/30 rounded-full mt-1" />
           </div>
 
-          {/* Gold divider dengan efek lebih kaya */}
-          <div className="relative mt-8">
-            <div className="flex items-center gap-2">
-              <div className="h-[3px] w-20 bg-gradient-to-r from-gold to-amber-400 rounded-full" />
-              <div className="h-[3px] w-12 bg-gradient-to-r from-amber-400 to-gold/50 rounded-full" />
-              <div className="h-[3px] w-6 bg-gold/30 rounded-full" />
-            </div>
-            <div className="flex items-center gap-2 mt-1 ml-1">
-              <div className="h-[2px] w-16 bg-gold/20 rounded-full" />
-              <div className="h-[2px] w-8 bg-gold/10 rounded-full" />
-            </div>
-          </div>
-
-          {/* Description dengan styling lebih baik */}
-          <div className="mt-8 relative">
-            <div className="absolute -left-4 top-0 w-1 h-full bg-gradient-to-b from-gold via-amber-400 to-transparent rounded-full" />
-            <p className="text-lg md:text-xl text-gray-700 leading-relaxed max-w-2xl pl-6 italic">
-              Setiap proyek dilaksanakan dengan perencanaan dan metode kerja yang
+          {/* Description - konsisten font size */}
+          <p className="mt-4 text-sm md:text-base text-gray-700 leading-relaxed max-w-2xl">
+            Setiap proyek dilaksanakan dengan perencanaan dan metode kerja yang
 terstruktur untuk menjaga kualitas pekerjaan, ketepatan waktu pelaksanaan,
 serta keselamatan kerja di lapangan. Kami berupaya memastikan hasil
 konstruksi dapat mendukung kebutuhan operasional klien dengan baik.
-            </p>
-          </div>
+          </p>
         </div>
 
-        {/* ===== STATS COUNTERS - ENHANCED ===== */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+        {/* ===== STATS COUNTERS - UKURAN DIKECILKAN ===== */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           {stats.map((stat, index) => (
             <div 
               key={index} 
-              className="group relative bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-2 overflow-hidden"
+              className="group relative bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden"
             >
-              {/* Background gradient on hover */}
-              <div className="absolute inset-0 bg-gradient-to-br from-gold/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              {/* Decorative corner */}
-              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-gold/10 to-transparent rounded-bl-[32px] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              <div className="relative p-6 text-center">
-                <div className="text-3xl md:text-4xl font-black bg-gradient-to-br from-gold to-amber-600 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
+              <div className="relative p-4 text-center">
+                <div className="text-lg md:text-xl font-bold bg-gradient-to-br from-gold to-amber-600 bg-clip-text text-transparent mb-1">
                   {stat.value}
                 </div>
-                <p className="text-sm font-bold text-gray-900 mb-1">{stat.label}</p>
-                <p className="text-xs text-gray-500 leading-relaxed">{stat.description}</p>
-                
-                {/* Subtle indicator */}
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-8 h-1 bg-gold/20 rounded-full group-hover:w-12 transition-all" />
+                <p className="text-xs font-semibold text-gray-900 mb-0.5">{stat.label}</p>
+                <p className="text-[10px] text-gray-500 leading-relaxed">{stat.description}</p>
               </div>
             </div>
           ))}
         </div>
 
-        {/* ===== OUTCOME CARDS - ENHANCED ===== */}
-        <div className="grid md:grid-cols-3 gap-8 mb-20">
+        {/* ===== OUTCOME CARDS - UKURAN DIKECILKAN ===== */}
+        <div className="grid md:grid-cols-3 gap-4 mb-16">
           
           {outcomes.map((outcome, index) => {
             const isHighlighted = index === 1
@@ -147,88 +105,73 @@ konstruksi dapat mendukung kebutuhan operasional klien dengan baik.
               <div 
                 key={index}
                 className={`
-                  group relative bg-white border rounded-2xl p-8 
-                  transition-all duration-500 hover:-translate-y-3 hover:shadow-2xl
+                  group relative bg-white border rounded-xl p-5 
+                  transition-all duration-300 hover:-translate-y-2 hover:shadow-xl
                   ${isHighlighted 
-                    ? 'border-t-4 border-gold shadow-xl shadow-gold/10 scale-105 md:scale-100' 
-                    : 'border-gray-200 shadow-lg hover:border-gold/40'
+                    ? 'border-t-4 border-gold shadow-md shadow-gold/10' 
+                    : 'border-gray-200 shadow-sm hover:border-gold/40'
                   }
                   overflow-hidden
                 `}
               >
-                {/* Shine effect untuk semua card */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
-                
-                {/* Background pattern */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-500">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(212,175,55,0.1)_0%,transparent_50%)]" />
-                </div>
+                {/* Shine effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
 
-                {/* Icon dengan efek lebih hidup */}
-                <div className="relative mb-6">
+                {/* Icon */}
+                <div className="relative mb-4">
                   <div className={`
-                    absolute -inset-1 rounded-xl blur-md opacity-0 group-hover:opacity-30 transition
-                    ${isHighlighted ? 'bg-gold' : 'bg-gray-400'}
-                  `} />
-                  <div className={`
-                    relative w-16 h-16 rounded-xl flex items-center justify-center
-                    transition-all duration-300 group-hover:scale-110 group-hover:rotate-3
+                    relative w-12 h-12 rounded-xl flex items-center justify-center
+                    transition-all duration-300 group-hover:scale-110
                     ${isHighlighted 
-                      ? 'bg-gradient-to-br from-gold to-amber-500 shadow-lg shadow-gold/30' 
+                      ? 'bg-gradient-to-br from-gold to-amber-500 shadow-md shadow-gold/30' 
                       : 'bg-gradient-to-br from-gray-100 to-gray-50 group-hover:from-gold/20 group-hover:to-amber-50'
                     }
                   `}>
                     <outcome.icon 
-                      size={32} 
-                      className={isHighlighted 
-                        ? 'text-white' 
-                        : 'text-gray-600 group-hover:text-gold transition-colors'
-                      } 
+                      size={22} 
+                      className={isHighlighted ? 'text-white' : 'text-gray-600 group-hover:text-gold'} 
                     />
                   </div>
                 </div>
 
                 {/* Title dengan badge */}
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <h3 className="text-xl font-bold text-gray-900">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <h3 className="text-sm font-bold text-gray-900">
                     {outcome.title}
                   </h3>
                   {isHighlighted && (
-                    <span className="relative px-3 py-1.5 bg-gradient-to-r from-gold to-amber-500 text-white text-xs font-bold rounded-full shadow-lg whitespace-nowrap">
-                      <span className="relative z-10">Most Valued</span>
-                      <div className="absolute inset-0 bg-white/20 rounded-full blur-sm" />
+                    <span className="px-2 py-0.5 bg-gradient-to-r from-gold to-amber-500 text-white text-[10px] font-bold rounded-full whitespace-nowrap">
+                      Most Valued
                     </span>
                   )}
                 </div>
 
-                {/* Description dengan line height lebih baik */}
-                <p className="text-gray-600 leading-relaxed mb-6 min-h-[120px]">
+                {/* Description */}
+                <p className="text-xs text-gray-600 leading-relaxed mb-4">
                   {outcome.description}
                 </p>
 
-                {/* Key metrics dengan desain lebih menarik */}
-                <div className="mt-auto pt-6 border-t border-gray-100">
-                  <div className="flex items-center justify-between text-sm mb-2">
+                {/* Key metrics */}
+                <div className="pt-4 border-t border-gray-100">
+                  <div className="flex items-center justify-between text-xs mb-1.5">
                     <span className="text-gray-500 flex items-center gap-1">
-                      <Target size={14} className="text-gold" />
+                      <Target size={12} className="text-gold" />
                       {outcome.metric.label}
                     </span>
-                    <span className="font-bold text-lg text-gold">{outcome.metric.value}</span>
+                    <span className="font-bold text-sm text-gold">{outcome.metric.value}</span>
                   </div>
-                  <div className="relative w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="relative w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                     <div 
                       className="absolute inset-0 bg-gradient-to-r from-gold via-amber-400 to-gold rounded-full"
                       style={{ width: outcome.metric.percentage }}
-                    >
-                      <div className="absolute inset-0 bg-white/20 animate-shimmer" />
-                    </div>
+                    />
                   </div>
                 </div>
 
-                {/* Hover effect arrow - lebih halus */}
-                <div className="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
-                  <div className="p-2 bg-gold/10 rounded-full">
-                    <ChevronRight size={18} className="text-gold" />
+                {/* Hover effect arrow */}
+                <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-1 group-hover:translate-x-0">
+                  <div className="p-1 bg-gold/10 rounded-full">
+                    <ChevronRight size={14} className="text-gold" />
                   </div>
                 </div>
               </div>
@@ -236,38 +179,29 @@ konstruksi dapat mendukung kebutuhan operasional klien dengan baik.
           })}
         </div>
 
-        {/* ===== ADDITIONAL VALUE PROPOSITIONS - ENHANCED ===== */}
-        <div className="grid lg:grid-cols-2 gap-8 mb-16">
+        {/* ===== ADDITIONAL VALUE PROPOSITIONS - UKURAN DIKECILKAN ===== */}
+        <div className="grid lg:grid-cols-2 gap-4 mb-12">
           
-          {/* Client Testimonial Snapshot - lebih premium */}
-          <div className="group relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-3xl p-8 text-white overflow-hidden">
+          {/* Client Testimonial Snapshot */}
+          <div className="group relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl p-6 text-white overflow-hidden">
             {/* Background pattern */}
-            <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0 opacity-5">
               <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] bg-center" />
             </div>
             
-            {/* Gold accent */}
-            <div className="absolute -right-20 -top-20 w-40 h-40 bg-gold/10 rounded-full blur-3xl" />
-            
             <div className="relative">
-              {/* Star rating dengan animasi */}
-              <div className="flex items-center gap-1 mb-6">
-                {[1, 2, 3, 4, 5].map((star, i) => (
-                  <div key={star} className="relative group/star">
-                    <Star 
-                      size={24} 
-                      className="fill-gold text-gold drop-shadow-lg animate-pulse-glow" 
-                      style={{ animationDelay: `${i * 100}ms` }}
-                    />
-                  </div>
+              {/* Star rating */}
+              <div className="flex items-center gap-0.5 mb-4">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star key={star} size={16} className="fill-gold text-gold" />
                 ))}
-                <span className="ml-2 text-sm text-gray-300">5.0</span>
+                <span className="ml-2 text-xs text-gray-300">5.0</span>
               </div>
 
-              {/* Testimonial text dengan quote style */}
+              {/* Testimonial text */}
               <div className="relative">
-                <span className="absolute -top-4 -left-2 text-6xl text-gold/20 font-serif">"</span>
-                <p className="text-lg italic text-gray-300 leading-relaxed pl-4">
+                <span className="absolute -top-3 -left-1 text-4xl text-gold/20 font-serif">"</span>
+                <p className="text-sm italic text-gray-300 leading-relaxed pl-3">
                   Pelaksanaan proyek berjalan sesuai jadwal dengan koordinasi yang baik
 di lapangan. Pendekatan kerja yang terstruktur membantu pekerjaan
 berjalan lebih lancar.
@@ -275,17 +209,17 @@ berjalan lebih lancar.
               </div>
 
               {/* Author info */}
-              <div className="mt-6 flex items-center gap-4">
+              <div className="mt-4 flex items-center gap-3">
                 <div className="relative">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gold to-amber-500 flex items-center justify-center">
-                    <Users size={24} className="text-white" />
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold to-amber-500 flex items-center justify-center">
+                    <Users size={16} className="text-white" />
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-900" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-gray-900" />
                 </div>
                 <div>
-                  <p className="font-bold text-lg">Operations Director</p>
-                  <p className="text-sm text-gray-400 flex items-center gap-1">
-                    <Building2 size={14} />
+                  <p className="font-semibold text-sm">Operations Director</p>
+                  <p className="text-xs text-gray-400 flex items-center gap-1">
+                    <Building2 size={12} />
                     Major Industrial Client
                   </p>
                 </div>
@@ -293,57 +227,48 @@ berjalan lebih lancar.
             </div>
           </div>
 
-          {/* CTA Mini - lebih engaging */}
-          <div className="group relative bg-white border-2 border-gray-200 rounded-3xl p-8 flex flex-col justify-center hover:border-gold/30 transition-all hover:shadow-2xl overflow-hidden">
-            {/* Background elements */}
-            <div className="absolute inset-0 bg-gradient-to-br from-gold/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            
+          {/* CTA Mini */}
+          <div className="group relative bg-white border border-gray-200 rounded-2xl p-6 flex flex-col justify-center hover:border-gold/30 transition-all hover:shadow-lg overflow-hidden">
             {/* Icon decoratif */}
-            <div className="absolute top-4 right-4 opacity-10">
-              <HardHat size={80} className="text-gold" />
+            <div className="absolute top-3 right-3 opacity-5">
+              <HardHat size={60} className="text-gold" />
             </div>
             
-            <h4 className="text-2xl font-bold text-gray-900 mb-3 relative">
+            <h4 className="text-base font-bold text-gray-900 mb-2 relative">
               Sedang merencanakan proyek konstruksi?
             </h4>
             
-            <p className="text-gray-600 mb-8 relative leading-relaxed">
+            <p className="text-xs text-gray-600 mb-4 relative leading-relaxed">
               Diskusikan kebutuhan proyek Anda bersama tim kami untuk mengetahui
 bagaimana pendekatan kerja kami dapat mendukung pelaksanaan proyek Anda.
             </p>
             
             <Link 
               href="/kontak"
-              className="relative inline-flex items-center gap-3 bg-gradient-to-r from-gold to-amber-500 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-xl transition-all group/btn w-fit"
+              className="relative inline-flex items-center gap-2 bg-gradient-to-r from-gold to-amber-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:shadow-md transition-all group/btn w-fit"
             >
               <span>Konsultasikan Proyek Anda</span>
-              <ChevronRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />
-              
-              {/* Shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000 rounded-xl" />
+              <ChevronRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
             </Link>
 
             {/* Trust badges */}
-            <div className="mt-6 flex items-center gap-4 text-xs text-gray-400">
+            <div className="mt-4 flex items-center gap-3 text-[10px] text-gray-400">
               <span className="flex items-center gap-1">
-                <Zap size={12} className="text-gold" />
+                <Zap size={10} className="text-gold" />
                 Fast Response
               </span>
               <span className="flex items-center gap-1">
-                <PenTool size={12} className="text-gold" />
+                <PenTool size={10} className="text-gold" />
                 Free Consultation
               </span>
             </div>
           </div>
         </div>
 
-        {/* ===== DISCLAIMER - ENHANCED ===== */}
+        {/* ===== DISCLAIMER - SEDERHANA ===== */}
         <div className="relative max-w-3xl mx-auto">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gold/5 to-transparent rounded-full blur-xl" />
-          <div className="relative text-sm text-gray-400 border border-gray-200/80 bg-white/50 backdrop-blur-sm rounded-2xl px-8 py-5 flex items-start gap-3 shadow-sm">
-            <div className="p-1 bg-gold/10 rounded-full shrink-0">
-              <span className="block w-4 h-4 text-gold text-center text-xs font-bold">ⓘ</span>
-            </div>
+          <div className="relative text-xs text-gray-400 border border-gray-200 bg-white/50 rounded-xl px-5 py-3 flex items-start gap-2">
+            <span className="text-gold text-xs">ⓘ</span>
             <p>
               Hasil proyek dapat berbeda tergantung pada ruang lingkup pekerjaan,
 kondisi lapangan, serta kebutuhan spesifik dari masing-masing klien.
@@ -356,7 +281,7 @@ kondisi lapangan, serta kebutuhan spesifik dari masing-masing klien.
   )
 }
 
-// Data (100% SAME - TIDAK DIUBAH)
+// Data (100% SAME)
 const stats = [
   { 
     value: "Tim Berpengalaman", 
@@ -384,19 +309,19 @@ const outcomes = [
   {
     icon: Calendar,
     title: "Ketepatan Waktu Pelaksanaan",
-    description: "Proyek dilaksanakan sesuai jadwal yang telah disepakati sehingga klien\ndapat mempersiapkan instalasi peralatan, proses commissioning, serta kegiatan operasional tanpa mengalami keterlambatan.",
+    description: "Proyek dilaksanakan sesuai jadwal yang telah disepakati sehingga klien dapat mempersiapkan instalasi peralatan, proses commissioning, serta kegiatan operasional tanpa mengalami keterlambatan.",
     metric: { label: "On-time delivery", value: "98%", percentage: "98%" }
   },
   {
     icon: Shield,
     title: "Pengendalian Risiko Pelaksanaan",
-    description: "Perencanaan teknis serta koordinasi pekerjaan yang baik membantu\nmengurangi pekerjaan ulang, perbedaan gambar kerja, serta penyesuaian\ndi lapangan selama proses konstruksi berlangsung.",
+    description: "Perencanaan teknis serta koordinasi pekerjaan yang baik membantu mengurangi pekerjaan ulang, perbedaan gambar kerja, serta penyesuaian di lapangan selama proses konstruksi berlangsung.",
     metric: { label: "Risk reduction", value: "75%", percentage: "75%" }
   },
   {
     icon: CheckCircle,
     title: "Kesiapan Operasional",
-    description: "Struktur dan sistem yang telah selesai dikerjakan diserahkan kepada klien\ndalam kondisi siap untuk proses pengujian, commissioning, serta\ndigunakan dalam kegiatan operasional.",
+    description: "Struktur dan sistem yang telah selesai dikerjakan diserahkan kepada klien dalam kondisi siap untuk proses pengujian, commissioning, serta digunakan dalam kegiatan operasional.",
     metric: { label: "Zero defects", value: "95%", percentage: "95%" }
   }
 ]

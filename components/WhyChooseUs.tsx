@@ -181,10 +181,10 @@ export function WhyChooseUs({
           <div className="mt-16 text-center">
             {/* CTA Link dengan style button */}
             <Link
-              href={aboutUrl}
-              className="inline-flex items-center gap-3 bg-gold/5 text-gold font-semibold px-8 py-4 rounded-full hover:bg-gold/10 transition-all group border border-gold/20 hover:border-gold/40"
-              aria-label={locale === 'id' ? 'Lihat Cara Kami Menjalankan Proyek' : 'Learn about our engineering approach'}
-            >
+  href="/proyek/tahapan"
+  className="inline-flex items-center gap-3 bg-gold/5 text-gold font-semibold px-8 py-4 rounded-full hover:bg-gold/10 transition-all group border border-gold/20 hover:border-gold/40"
+  aria-label="Lihat Tahapan Pelaksanaan Proyek"
+>
               <span className="text-lg">
                 {locale === 'id' ? 'Lihat Cara Kami Menjalankan Proyek' : 'Learn Our Engineering Approach'}
               </span>

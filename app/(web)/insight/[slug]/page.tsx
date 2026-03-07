@@ -306,10 +306,14 @@ export default function InsightDetailPage({ params }: Props) {
   prose-h2:font-bold
   prose-h2:mt-10
   prose-h2:mb-4
+  prose-h2:scroll-mt-32
   prose-h3:text-xl
   prose-h3:font-semibold
   prose-p:text-gray-600
-  prose-p:leading-relaxed"
+  prose-p:leading-relaxed
+  prose-ul:pl-6
+  prose-li:mb-2
+  prose-headings:scroll-mt-32"
   dangerouslySetInnerHTML={{ __html: insight.content || "" }}
 />
 

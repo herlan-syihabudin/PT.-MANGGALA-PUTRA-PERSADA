@@ -37,12 +37,12 @@ export function ProjectOutcome() {
           {/* Badge dengan icon */}
           <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 bg-gold/10 border border-gold/20 rounded-full">
             <Award size={16} className="text-gold" />
-            <span className="text-sm font-semibold text-gold">Measurable Results</span>
+            <span className="text-sm font-semibold text-gold">Kinerja Pelaksanaan Proyek</span>
           </div>
 
           <h2 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight leading-tight">
-            Measurable Results Delivered Through 
-            <span className="bg-gradient-to-r from-gold to-yellow-500 bg-clip-text text-transparent"> Structured Execution</span>
+            Pelaksanaan Proyek dengan Pendekatan 
+            <span className="bg-gradient-to-r from-gold to-yellow-500 bg-clip-text text-transparent"> Kerja yang Terstruktur</span>
           </h2>
 
           {/* Gold divider dengan efek */}
@@ -52,10 +52,10 @@ export function ProjectOutcome() {
           </div>
 
           <p className="mt-8 text-lg text-gray-700 leading-relaxed max-w-2xl">
-            Our project outcomes reflect the value delivered to clients beyond
-            physical construction work. Each project is executed to minimize
-            risk, maintain cost and schedule certainty, and ensure operational
-            readiness.
+            Setiap proyek dilaksanakan dengan perencanaan dan metode kerja yang
+terstruktur untuk menjaga kualitas pekerjaan, ketepatan waktu pelaksanaan,
+serta keselamatan kerja di lapangan. Kami berupaya memastikan hasil
+konstruksi dapat mendukung kebutuhan operasional klien dengan baik.
           </p>
         </div>
 
@@ -139,7 +139,9 @@ export function ProjectOutcome() {
               ))}
             </div>
             <p className="text-lg italic text-gray-300">
-              "MPP delivered our plant on schedule with zero safety incidents. Their structured approach made all the difference."
+              ""Pelaksanaan proyek berjalan sesuai jadwal dengan koordinasi yang baik
+di lapangan. Pendekatan kerja yang terstruktur membantu pekerjaan
+berjalan lebih lancar.""
             </p>
             <div className="mt-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gray-700" />
@@ -153,16 +155,17 @@ export function ProjectOutcome() {
           {/* CTA Mini */}
           <div className="bg-white border border-gray-200 rounded-2xl p-8 flex flex-col justify-center">
             <h4 className="text-xl font-bold text-gray-900 mb-2">
-              Ready to achieve these outcomes?
+              Sedang merencanakan proyek konstruksi?
             </h4>
             <p className="text-gray-600 mb-6">
-              Let's discuss how our structured execution approach can benefit your next project.
+              Diskusikan kebutuhan proyek Anda bersama tim kami untuk mengetahui
+bagaimana pendekatan kerja kami dapat mendukung pelaksanaan proyek Anda.
             </p>
             <Link 
               href="/kontak"
               className="inline-flex items-center gap-2 text-gold font-semibold hover:gap-3 transition-all"
             >
-              Schedule a consultation
+              Konsultasikan Proyek Anda
               <ChevronRight size={16} />
             </Link>
           </div>
@@ -171,10 +174,8 @@ export function ProjectOutcome() {
         {/* ===== DISCLAIMER (Enhanced) ===== */}
         <div className="mt-16 max-w-3xl text-sm text-gray-400 border-t border-gray-200 pt-8">
           <p>
-            ⓘ Project outcomes may vary depending on project scope, site conditions,
-            and client requirements. Outcomes presented reflect structured
-            execution approaches applied by PT Manggala Putra Persada across 
-            multiple industrial and commercial projects.
+            ⓘ Hasil proyek dapat berbeda tergantung pada ruang lingkup pekerjaan,
+kondisi lapangan, serta kebutuhan spesifik dari masing-masing klien.
           </p>
         </div>
 
@@ -185,29 +186,51 @@ export function ProjectOutcome() {
 
 // Data
 const stats = [
-  { value: "98%", label: "On-Time Delivery", description: "Across completed projects" },
-  { value: "0", label: "Lost Time Incidents", description: "LTI-free projects" },
-  { value: "15+", label: "Years Experience", description: "Engineering background" },
-  { value: "50+", label: "Industrial Clients", description: "Across sectors" },
+  { 
+    value: "Tim Berpengalaman", 
+    label: "Latar Belakang Engineering", 
+    description: "Berpengalaman di proyek konstruksi industri"
+  },
+  { 
+    value: "Pendekatan Terstruktur", 
+    label: "Metode Pelaksanaan", 
+    description: "Perencanaan teknis dan pengendalian proyek"
+  },
+  { 
+    value: "Kualitas Pekerjaan", 
+    label: "Standar Konstruksi", 
+    description: "Mengutamakan mutu dan keselamatan kerja"
+  },
+  { 
+    value: "Fokus Industri", 
+    label: "Proyek Industrial & Komersial", 
+    description: "Gudang, pabrik, dan fasilitas produksi"
+  },
 ]
 
 const outcomes = [
   {
     icon: Calendar,
-    title: "Schedule Certainty",
-    description: "Projects are delivered in line with approved schedules, enabling clients to plan equipment installation, commissioning, and operations without delay.",
+    title: "Ketepatan Waktu Pelaksanaan",
+    description: "Proyek dilaksanakan sesuai jadwal yang telah disepakati sehingga klien
+dapat mempersiapkan instalasi peralatan, proses commissioning, serta
+kegiatan operasional tanpa mengalami keterlambatan.",
     metric: { label: "On-time delivery", value: "98%", percentage: "98%" }
   },
   {
     icon: Shield,
-    title: "Reduced Execution Risk",
-    description: "Engineering coordination and structured execution minimize rework, design conflicts, and on-site adjustments during construction.",
+    title: "Pengendalian Risiko Pelaksanaan",
+    description: "Perencanaan teknis serta koordinasi pekerjaan yang baik membantu
+mengurangi pekerjaan ulang, perbedaan gambar kerja, serta penyesuaian
+di lapangan selama proses konstruksi berlangsung.",
     metric: { label: "Risk reduction", value: "75%", percentage: "75%" }
   },
   {
     icon: CheckCircle,
-    title: "Operational Readiness",
-    description: "Completed structures and systems are handed over in a condition ready for operation, testing, and long-term use.",
+    title: "Kesiapan Operasional",
+    description: "Struktur dan sistem yang telah selesai dikerjakan diserahkan kepada klien
+dalam kondisi siap untuk proses pengujian, commissioning, serta
+digunakan dalam kegiatan operasional.",
     metric: { label: "Zero defects", value: "95%", percentage: "95%" }
   }
 ]

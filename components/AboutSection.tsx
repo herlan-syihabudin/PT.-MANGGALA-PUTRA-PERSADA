@@ -1,4 +1,3 @@
-import Image from "next/image"
 import { 
   Users,
   HardHat,
@@ -56,7 +55,7 @@ export default function AboutSection() {
 
             {/* Main Description */}
             <div className="prose prose-lg max-w-none">
-              <p className="text-xl text-gray-700 leading-relaxed font-medium">
+              <p className="text-lg md:text-xl text-gray-700 leading-relaxed font-medium">
                 <span className="font-bold text-gray-900">PT Manggala Putra Persada</span> merupakan perusahaan kontraktor yang
 menangani pekerjaan konstruksi sipil, struktur baja, instalasi MEP,
 serta proyek design & build untuk sektor industri dan komersial di Indonesia.
@@ -65,7 +64,7 @@ serta proyek design & build untuk sektor industri dan komersial di Indonesia.
               <p className="mt-6 text-gray-600 leading-relaxed">
                 Kami percaya hasil konstruksi yang baik dicapai melalui
 perencanaan yang matang, sistem kerja yang jelas,
-serta disiplin teknis dalam setiap tahap pelaksanaan proyek.
+serta disiplin teknis dalam setiap tahap pelaksanaan proyek, bukan hanya kecepatan di lapangan.
               </p>
             </div>
 
@@ -157,7 +156,7 @@ proyek konstruksi untuk sektor industri dan komersial di Indonesia.
 
             {/* Company Milestone */}
             <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
-              <h4 className="font-semibold text-gray-900 mb-4">Company Milestones</h4>
+              <h4 className="font-semibold text-gray-900 mb-4">Perjalanan Perusahaan</h4>
               <div className="space-y-3">
                 {milestones.map((item, index) => (
                   <div key={index} className="flex items-center gap-3">
@@ -175,10 +174,19 @@ proyek konstruksi untuk sektor industri dan komersial di Indonesia.
         <div className="mt-20 text-center">
           <div className="inline-flex items-center gap-4 p-6 bg-white rounded-2xl border border-gray-200 shadow-lg">
             <div className="flex -space-x-3">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 border-2 border-white" />
-              ))}
-            </div>
+  <div className="w-10 h-10 rounded-full bg-red-100 border-2 border-white flex items-center justify-center">
+    <Users size={16} className="text-red-600" />
+  </div>
+  <div className="w-10 h-10 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center">
+    <Users size={16} className="text-blue-600" />
+  </div>
+  <div className="w-10 h-10 rounded-full bg-green-100 border-2 border-white flex items-center justify-center">
+    <Users size={16} className="text-green-600" />
+  </div>
+  <div className="w-10 h-10 rounded-full bg-purple-100 border-2 border-white flex items-center justify-center">
+    <Users size={16} className="text-purple-600" />
+  </div>
+</div>
             <div className="text-left">
               <p className="text-sm font-semibold text-gray-900">Siap Memulai Proyek Anda?</p>
               <p className="text-xs text-gray-500">Diskusikan kebutuhan proyek Anda bersama tim kami</p>
@@ -195,9 +203,9 @@ proyek konstruksi untuk sektor industri dan komersial di Indonesia.
 
 // Data
 const stats = [
-  { value: "Tim Berpengalaman", label: "Tenaga Kerja & Engineer Berpengalaman" },
-  { value: "Beragam Proyek", label: "Pengalaman Tim di Proyek Industri" },
-  { value: "Fokus Industri", label: "Konstruksi Sipil, Baja & MEP" },
+  { value: "Tim Profesional", label: "Tenaga Kerja & Engineer Berpengalaman" },
+  { value: "Multi Proyek", label: "Pengalaman Tim di Proyek Industri" },
+  { value: "Sektor Industri", label: "Konstruksi Sipil, Baja & MEP" },
 ]
 
 const differentiators = [
@@ -231,7 +239,12 @@ const missions = [
 ]
 
 const values = [
-  "Integrity", "Excellence", "Safety First", "Innovation", "Accountability", "Teamwork"
+  "Integritas",
+  "Profesionalisme",
+  "Keselamatan Kerja",
+  "Kualitas Pekerjaan",
+  "Tanggung Jawab",
+  "Kerja Sama Tim"
 ]
 
 const certifications = [
@@ -241,7 +254,7 @@ const certifications = [
 ]
 
 const milestones = [
-  { year: "2026", text: "PT Manggala Putra Persada didirikan" },
-  { year: "2026", text: "Memulai layanan konstruksi sipil dan struktur baja" },
-  { year: "2026", text: "Pengembangan layanan instalasi MEP dan design & build" }
+  { year: "2018", text: "Tim inti memulai pengalaman kerja di proyek konstruksi industri" },
+  { year: "2019", text: "Terlibat dalam berbagai proyek konstruksi berskala besar" },
+  { year: "2026", text: "PT Manggala Putra Persada resmi didirikan" }
 ]

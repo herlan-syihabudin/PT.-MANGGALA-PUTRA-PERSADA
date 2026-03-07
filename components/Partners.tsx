@@ -171,18 +171,6 @@ export default function Partners() {
             Garansi Produk
           </span>
         </div>
-
-        {/* ===== BOTTOM CTA (optional) ===== */}
-        <div className="mt-8 text-center">
-          <Link
-            href="/material"
-            className="inline-flex items-center gap-2 text-gold text-sm font-medium hover:gap-3 transition-all group"
-          >
-            <span>Lihat Semua Mitra Strategis</span>
-            <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
-      </div>
     </section>
   )
 }

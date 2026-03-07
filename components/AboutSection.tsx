@@ -1,16 +1,13 @@
 import Image from "next/image"
 import { 
-  Award, 
-  Users, 
-  Building2, 
+  Users,
   HardHat,
   CheckCircle,
   Target,
   Eye,
   TrendingUp,
   Shield,
-  Clock,
-  Zap
+  Clock
 } from "lucide-react"
 
 export default function AboutSection() {
@@ -30,12 +27,12 @@ export default function AboutSection() {
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 bg-red-50 border border-red-200 rounded-full">
             <HardHat size={16} className="text-red-600" />
-            <span className="text-sm font-semibold text-red-700">Engineering Excellence Since 2010</span>
+            <span className="text-sm font-semibold text-red-700">Didukung Tim Berpengalaman di Bidang Konstruksi</span>
           </div>
           
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-gray-900 max-w-3xl mx-auto leading-tight">
-            Engineering-Driven Construction with 
-            <span className="bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent"> Structured Approach</span>
+            Pelaksanaan Proyek dengan 
+            <span className="bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent"> Perencanaan Teknis yang Jelas</span>
           </h2>
           
           <div className="w-24 h-1 bg-gradient-to-r from-red-600 to-red-700 mx-auto mt-6 rounded-full" />
@@ -60,16 +57,15 @@ export default function AboutSection() {
             {/* Main Description */}
             <div className="prose prose-lg max-w-none">
               <p className="text-xl text-gray-700 leading-relaxed font-medium">
-                <span className="font-bold text-gray-900">PT Manggala Putra Persada</span> is an engineering and construction company
-                in Indonesia delivering projects through disciplined planning,
-                controlled execution, and measurable quality standards.
+                <span className="font-bold text-gray-900">PT Manggala Putra Persada</span> merupakan perusahaan kontraktor yang
+menangani pekerjaan konstruksi sipil, struktur baja, instalasi MEP,
+serta proyek design & build untuk sektor industri dan komersial di Indonesia.
               </p>
 
               <p className="mt-6 text-gray-600 leading-relaxed">
-                We believe reliable construction outcomes are achieved through
-                strong engineering fundamentals, clear systems of work, and
-                technical discipline to ensure long-term performance, safety,
-                and sustainability.
+                Kami percaya hasil konstruksi yang baik dicapai melalui
+perencanaan yang matang, sistem kerja yang jelas,
+serta disiplin teknis dalam setiap tahap pelaksanaan proyek.
               </p>
             </div>
 
@@ -90,7 +86,7 @@ export default function AboutSection() {
 
             {/* Certifications */}
             <div className="flex flex-wrap items-center gap-6 pt-6 border-t border-gray-200">
-              <p className="text-sm font-semibold text-gray-900">Certified by:</p>
+              <p className="text-sm font-semibold text-gray-900">Komitmen Kerja:</p>
               {certifications.map((cert, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <Shield size={16} className="text-green-600" />
@@ -110,12 +106,11 @@ export default function AboutSection() {
               <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-4">
                   <Eye size={28} className="text-white/90" />
-                  <h3 className="text-2xl font-bold">Our Vision</h3>
+                  <h3 className="text-2xl font-bold">Visi Perusahaan</h3>
                 </div>
                 <p className="text-lg text-white/90 leading-relaxed">
-                  To become a trusted engineering and construction partner by
-                  delivering structured, precise, and accountable project
-                  execution across Indonesia.
+                  Menjadi mitra kerja yang terpercaya dalam pelaksanaan
+proyek konstruksi untuk sektor industri dan komersial di Indonesia.
                 </p>
                 <div className="mt-6 flex items-center gap-2 text-white/80 text-sm">
                   <Target size={16} />
@@ -130,7 +125,7 @@ export default function AboutSection() {
                 <div className="p-3 bg-red-50 rounded-xl group-hover:bg-red-100 transition">
                   <TrendingUp size={24} className="text-red-600" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900">Our Mission</h3>
+                <h3 className="text-2xl font-bold text-gray-900">Misi Perusahaan</h3>
               </div>
 
               <div className="space-y-4">
@@ -146,7 +141,7 @@ export default function AboutSection() {
 
               {/* Values */}
               <div className="mt-8 pt-6 border-t border-gray-200">
-                <h4 className="font-semibold text-gray-900 mb-4">Our Core Values</h4>
+                <h4 className="font-semibold text-gray-900 mb-4">Nilai Perusahaan</h4>
                 <div className="flex flex-wrap gap-2">
                   {values.map((value, index) => (
                     <span 
@@ -185,11 +180,11 @@ export default function AboutSection() {
               ))}
             </div>
             <div className="text-left">
-              <p className="text-sm font-semibold text-gray-900">Ready to start your project?</p>
-              <p className="text-xs text-gray-500">Join 50+ industrial partners who trust us</p>
+              <p className="text-sm font-semibold text-gray-900">Siap Memulai Proyek Anda?</p>
+              <p className="text-xs text-gray-500">Diskusikan kebutuhan proyek Anda bersama tim kami</p>
             </div>
             <button className="px-6 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition ml-4">
-              Consult Now
+              Konsultasi Proyek
             </button>
           </div>
         </div>
@@ -200,39 +195,39 @@ export default function AboutSection() {
 
 // Data
 const stats = [
-  { value: "14+", label: "Years Experience" },
-  { value: "100+", label: "Projects Completed" },
-  { value: "50+", label: "Industrial Clients" },
+  { value: "Tim Berpengalaman", label: "Tenaga Kerja & Engineer Berpengalaman" },
+  { value: "Beragam Proyek", label: "Pengalaman Tim di Proyek Industri" },
+  { value: "Fokus Industri", label: "Konstruksi Sipil, Baja & MEP" },
 ]
 
 const differentiators = [
   {
     icon: HardHat,
-    title: "Engineering-Led",
-    description: "Every project starts with engineering fundamentals"
+    title: "Perencanaan Teknis",
+    description: "Setiap pekerjaan dilaksanakan berdasarkan gambar kerja dan spesifikasi teknis"
   },
   {
     icon: Clock,
-    title: "On-Time Delivery",
-    description: "Structured planning & schedule control"
+    title: "Pengendalian Waktu",
+    description: "Pelaksanaan proyek dengan pengendalian jadwal kerja yang terencana"
   },
   {
     icon: Shield,
-    title: "Quality Assured",
-    description: "ISO 9001 certified processes"
+    title: "Pengawasan Kualitas",
+    description: "Setiap tahap pekerjaan diawasi untuk menjaga mutu konstruksi"
   },
   {
     icon: Users,
-    title: "Expert Team",
-    description: "Licensed engineers & certified workers"
+    title: "Tim Berpengalaman",
+    description: "Didukung tenaga kerja dan teknisi berpengalaman di bidang konstruksi"
   }
 ]
 
 const missions = [
-  "Deliver engineering-led construction solutions across all project phases",
-  "Maintain strict quality, safety, and schedule control systems",
-  "Build long-term trust through professional work systems and transparency",
-  "Continuous innovation in construction methods and technologies"
+  "Melaksanakan pekerjaan konstruksi sesuai gambar kerja dan spesifikasi teknis",
+  "Menjaga kualitas pekerjaan, keselamatan kerja, dan ketepatan waktu proyek",
+  "Membangun hubungan kerja yang baik dengan klien dan mitra proyek",
+  "Mengembangkan kemampuan tim serta metode kerja konstruksi yang efektif"
 ]
 
 const values = [
@@ -240,13 +235,13 @@ const values = [
 ]
 
 const certifications = [
-  "ISO 9001:2015", "ISO 14001:2015", "ISO 45001:2018", "SMK3"
+  "Pengendalian Mutu Pekerjaan",
+  "Penerapan Keselamatan Kerja (K3)",
+  "Pengawasan Teknis Lapangan"
 ]
 
 const milestones = [
-  { year: "2010", text: "Company founded in Jakarta" },
-  { year: "2015", text: "First industrial plant project" },
-  { year: "2018", text: "ISO 9001 certification" },
-  { year: "2020", text: "Expanded to design-build services" },
-  { year: "2024", text: "50+ industrial clients milestone" }
+  { year: "2026", text: "PT Manggala Putra Persada didirikan" },
+  { year: "2026", text: "Memulai layanan konstruksi sipil dan struktur baja" },
+  { year: "2026", text: "Pengembangan layanan instalasi MEP dan design & build" }
 ]

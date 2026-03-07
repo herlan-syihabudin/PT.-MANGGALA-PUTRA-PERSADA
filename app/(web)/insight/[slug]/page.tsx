@@ -95,8 +95,6 @@ export default function InsightDetailPage({ params }: Props) {
 
   const url = `https://mppindo.com/insight/${insight.slug}`
   
-  // Format konten dengan paragraf
-  const paragraphs = (insight.content ?? "").trim().split("\n").filter(Boolean)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
@@ -302,16 +300,18 @@ export default function InsightDetailPage({ params }: Props) {
             )}
 
             {/* CONTENT DENGAN STYLING BAGUS */}
-            <article className="prose prose-lg prose-gray max-w-none">
-              {paragraphs.map((p, i) => (
-  <p
-    key={i}
-    className={i === 0 ? "text-xl text-gray-700 font-medium leading-relaxed" : ""}
-  >
-    {p}
-  </p>
-))}
-            </article>
+<article
+  className="prose prose-lg prose-gray max-w-none
+  prose-h2:text-2xl
+  prose-h2:font-bold
+  prose-h2:mt-10
+  prose-h2:mb-4
+  prose-h3:text-xl
+  prose-h3:font-semibold
+  prose-p:text-gray-600
+  prose-p:leading-relaxed"
+  dangerouslySetInnerHTML={{ __html: insight.content || "" }}
+/>
 
             {/* FAQ SECTION (RICH SNIPPETS) */}
             {insight.faqs && insight.faqs.length > 0 && (

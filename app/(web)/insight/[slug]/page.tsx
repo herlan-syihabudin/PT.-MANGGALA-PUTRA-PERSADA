@@ -1,8 +1,11 @@
+"use client"
+
 import { notFound } from "next/navigation"
 import { insights } from "@/lib/insights"
 import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
+import { useEffect, useState } from "react"
 import { 
   Calendar, 
   Clock, 
@@ -21,6 +24,30 @@ type Props = {
   params: { slug: string }
 }
 
+  function ReadingProgress() {
+  const [progress, setProgress] = useState(0)
+
+  useEffect(() => {
+    const updateProgress = () => {
+      const scrollTop = window.scrollY
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight
+      const progress = (scrollTop / docHeight) * 100
+      setProgress(progress)
+    }
+
+    window.addEventListener("scroll", updateProgress)
+    return () => window.removeEventListener("scroll", updateProgress)
+  }, [])
+
+  return (
+    <div className="fixed top-0 left-0 w-full h-1 bg-gray-200 z-50">
+      <div 
+        className="h-full bg-gradient-to-r from-gold to-red-600 transition-all duration-150"
+        style={{ width: `${progress}%` }}
+      />
+    </div>
+  )
+}
 /* =========================
    SEO METADATA (AUTO + SAFE)
 ========================= */
@@ -199,24 +226,48 @@ export default function InsightDetailPage({ params }: Props) {
                 </div>
               )}
               
-              {/* SHARE BUTTONS */}
-              <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                <h4 className="font-bold text-gray-900 mb-4">Share This Insight</h4>
-                <div className="flex gap-2">
-                  <button className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                    <Share2 size={18} />
-                  </button>
-                  <button className="p-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition">
-                    <MessageCircle size={18} />
-                  </button>
-                  <button className="p-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition">
-                    <Bookmark size={18} />
-                  </button>
-                  <button className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
-                    <ThumbsUp size={18} />
-                  </button>
-                </div>
-              </div>
+              {/* SHARE BUTTONS - PAKE YANG INI (YANG UDAH DIUPGRADE) */}
+    <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+      <h4 className="font-bold text-gray-900 mb-4">Share This Insight</h4>
+      <div className="flex gap-2">
+        <button 
+          onClick={() => {
+            navigator.clipboard.writeText(window.location.href)
+            alert('Link copied!')
+          }}
+          className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          title="Copy link"
+        >
+          <Share2 size={18} />
+        </button>
+        <a 
+          href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(insight.title)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="p-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition"
+          title="Share on Twitter"
+        >
+          <MessageCircle size={18} />
+        </a>
+        <a 
+          href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="p-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition"
+          title="Share on LinkedIn"
+        >
+          <Bookmark size={18} />
+        </a>
+        <button 
+          onClick={() => {/* Implementasi like */}}
+          className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+          title="Like this article"
+        >
+          <ThumbsUp size={18} />
+        </button>
+      </div>
+    </div>
+
               
               {/* KEYWORDS */}
               {insight.keywords && insight.keywords.length > 0 && (
@@ -413,25 +464,6 @@ export default function InsightDetailPage({ params }: Props) {
                 </div>
               </div>
             )}
-
-            {/* BACK BUTTON */}
-            <div className="mt-16 flex justify-between items-center">
-              <Link
-                href="/insight"
-                className="inline-flex items-center gap-2 text-gray-600 hover:text-red-600 transition group"
-              >
-                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition" />
-                Back to all insights
-              </Link>
-              
-              <button className="inline-flex items-center gap-2 text-gray-600 hover:text-red-600 transition">
-                <Share2 size={16} />
-                Share
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* ===== SCHEMA SEO : ARTICLE ===== */}
       <script

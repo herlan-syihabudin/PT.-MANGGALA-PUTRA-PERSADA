@@ -10,12 +10,12 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        gold: "#C9A24D",      // corporate gold
-        goldDark: "#A8842D",  // hover / accent
-        goldSoft: "#F5EEDC",  // soft background
+        gold: "#C9A24D",
+        goldDark: "#A8842D",
+        goldSoft: "#F5EEDC",
       },
     },
   },
 
-  plugins: [],
+  plugins: [require("@tailwindcss/typography")],
 }

@@ -12,7 +12,7 @@ import {
   Trophy
 } from "lucide-react"
 
-const steps = [
+export const steps = [
   {
     number: "01",
     title: "Kick-Off Proyek & Analisis Kebutuhan",
@@ -84,6 +84,58 @@ const steps = [
     stats: "Hasil terjamin"
   },
 ]
+
+const colorStyles = {
+  blue: {
+    bg: "bg-blue-50",
+    hoverBg: "group-hover:bg-blue-100",
+    text: "text-blue-600",
+    hoverText: "group-hover:text-blue-700",
+    shadow: "shadow-blue-500/10"
+  },
+  purple: {
+    bg: "bg-purple-50",
+    hoverBg: "group-hover:bg-purple-100",
+    text: "text-purple-600",
+    hoverText: "group-hover:text-purple-700",
+    shadow: "shadow-purple-500/10"
+  },
+  amber: {
+    bg: "bg-amber-50",
+    hoverBg: "group-hover:bg-amber-100",
+    text: "text-amber-600",
+    hoverText: "group-hover:text-amber-700",
+    shadow: "shadow-amber-500/10"
+  },
+  emerald: {
+    bg: "bg-emerald-50",
+    hoverBg: "group-hover:bg-emerald-100",
+    text: "text-emerald-600",
+    hoverText: "group-hover:text-emerald-700",
+    shadow: "shadow-emerald-500/10"
+  },
+  red: {
+    bg: "bg-red-50",
+    hoverBg: "group-hover:bg-red-100",
+    text: "text-red-600",
+    hoverText: "group-hover:text-red-700",
+    shadow: "shadow-red-500/10"
+  },
+  indigo: {
+    bg: "bg-indigo-50",
+    hoverBg: "group-hover:bg-indigo-100",
+    text: "text-indigo-600",
+    hoverText: "group-hover:text-indigo-700",
+    shadow: "shadow-indigo-500/10"
+  },
+  green: {
+    bg: "bg-green-50",
+    hoverBg: "group-hover:bg-green-100",
+    text: "text-green-600",
+    hoverText: "group-hover:text-green-700",
+    shadow: "shadow-green-500/10"
+  }
+}
 
 export default function ProjectExecutionFlow() {
   return (
@@ -161,6 +213,7 @@ export default function ProjectExecutionFlow() {
             const Icon = step.icon
             const isLastInRow = (index + 1) % 3 === 0
             const isMiddle = (index + 1) % 3 === 2
+      const style = colorStyles[step.lightColor]
             
             return (
               <div
@@ -185,16 +238,18 @@ export default function ProjectExecutionFlow() {
                 <div className="relative z-10 flex flex-col h-full">
                   {/* Header dengan icon yang lebih hidup */}
                   <div className="flex items-start justify-between mb-5">
-                    <div className={`
-                      w-14 h-14 rounded-xl flex items-center justify-center
-                      bg-${step.lightColor}-50 group-hover:bg-${step.lightColor}-100
-                      transition-all duration-300 group-hover:scale-110 group-hover:rotate-3
-                      shadow-lg shadow-${step.lightColor}-500/10
-                    `}>
+                    <div
+  className={`
+    w-14 h-14 rounded-xl flex items-center justify-center
+    ${style.bg} ${style.hoverBg}
+    transition-all duration-300 group-hover:scale-110 group-hover:rotate-3
+    shadow-lg ${style.shadow}
+  `}
+>
                       <Icon 
-                        size={28} 
-                        className={`text-${step.lightColor}-600 group-hover:text-${step.lightColor}-700 transition-colors`} 
-                      />
+ size={28} 
+ className={`${style.text} ${style.hoverText} transition-colors`} 
+/>
                     </div>
                     
                     {/* Stats tag - subtle */}

@@ -111,5 +111,3 @@ export default function TahapanPage() {
   )
 }
 
-// Kita perlu import steps dari component
-import { steps } from "../ProjectExecutionFlow"

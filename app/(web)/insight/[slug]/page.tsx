@@ -3,6 +3,7 @@ import { insights } from "@/lib/insights"
 import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
+import InsightDetailClient from "./InsightDetailClient"
 import { 
   Calendar, 
   Clock, 
@@ -21,6 +22,32 @@ type Props = {
   params: { slug: string }
 }
 
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const insight = insights.find((i) => i.slug === params.slug)
+
+  if (!insight) {
+    return {
+      title: "Insight Not Found | PT Manggala Putra Persada",
+      robots: { index: false }
+    }
+  }
+
+  const url = `https://mppindo.com/insight/${insight.slug}`
+
+  return {
+    title: insight.metaTitle || `${insight.title} | MPP Engineering`,
+    description: insight.metaDescription || insight.excerpt,
+    alternates: { canonical: url }
+  }
+}
+
+export default function Page({ params }: Props) {
+  const insight = insights.find((i) => i.slug === params.slug)
+
+  if (!insight) return notFound()
+
+  return <InsightDetailClient insight={insight} />
+}
 /* =========================
    SEO METADATA (AUTO + SAFE)
 ========================= */

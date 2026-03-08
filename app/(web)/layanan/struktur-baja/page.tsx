@@ -5,13 +5,13 @@ import { faqByService } from "@/lib/faq-layanan"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Steel Structure Engineering & Construction | MPP Engineering",
+  title: "Steel Structure & Construction | PT Manggala Putra Persada",
   description:
-    "Engineering-led steel structure fabrication and erection services in Indonesia for industrial, warehouse, and commercial projects.",
+"Jasa konstruksi struktur baja untuk proyek pabrik, gudang, dan bangunan komersial di Indonesia. Pekerjaan meliputi fabrikasi baja, erection struktur, pengelasan, dan pemasangan sesuai standar konstruksi.",
   keywords:
     "kontraktor struktur baja, steel structure contractor, fabrikasi baja, erection baja, konstruksi baja industri, gudang baja, pipe rack steel",
   openGraph: {
-    title: "Steel Structure Engineering & Construction | PT Manggala Putra Persada",
+    title: "Steel Structure & Construction | PT Manggala Putra Persada",
     description:
       "Engineering-led steel structure fabrication and erection services for industrial and commercial projects.",
     url: "https://mppindo.com/layanan/struktur-baja",
@@ -87,22 +87,23 @@ export default function StrukturBajaPage() {
               Steel Structure Engineering & Construction
             </h1>
             <p className="mt-6 text-lg text-gray-600 max-w-2xl">
-              Engineering-led steel structure services for industrial,
-              commercial, and warehouse projects, covering fabrication,
-              erection, and quality-controlled execution in Indonesia.
+              Layanan konstruksi struktur baja untuk proyek industri,
+gudang, dan bangunan komersial di Indonesia.
+
+Pekerjaan meliputi fabrikasi baja, erection struktur,
+serta instalasi elemen baja sesuai gambar kerja,
+spesifikasi teknis, dan standar konstruksi yang berlaku.
             </p>
           </div>
 
-          <div className="relative h-[240px] md:h-[320px] rounded-2xl overflow-hidden bg-gray-200">
-            <Image
-              src="/projects/steel-hero.jpg"
-              alt="Steel structure contractor for industrial building construction in Indonesia"
-              fill
-              priority
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover"
-            />
-          </div>
+          <div className="relative h-80 rounded-xl overflow-hidden mt-6">
+<Image
+src="/images/insights/steel-structure-erection.jpg"
+alt="Pemasangan struktur baja pada proyek konstruksi industri"
+fill
+className="object-cover"
+/>
+</div>
         </div>
       </div>
 
@@ -114,10 +115,11 @@ export default function StrukturBajaPage() {
               Steel Structure Scope of Work
             </h2>
             <p className="text-gray-700 leading-relaxed">
-              Our steel structure services include engineering detailing,
-              fabrication, surface treatment, and on-site erection in
-              accordance with approved drawings, SNI standards, and
-              international engineering practices.
+              Pekerjaan struktur baja meliputi proses detailing
+engineering, fabrikasi material baja, perlakuan
+permukaan (surface treatment), hingga pemasangan
+struktur baja di lokasi proyek sesuai gambar kerja
+dan spesifikasi teknis.
             </p>
           </div>
 
@@ -126,12 +128,11 @@ export default function StrukturBajaPage() {
               Steel Fabrication & Erection Services
             </h2>
             <ul className="list-disc pl-5 space-y-2 text-gray-700">
-              <li>Structural steel shop drawings</li>
-              <li>Fabrication of H-Beam, WF, Plate</li>
-              <li>Blasting & coating systems</li>
-              <li>Steel erection & alignment</li>
-              <li>Bolting & welding works</li>
-              <li>As-built documentation</li>
+              <li>Pembuatan shop drawing struktur baja</li>
+<li>Fabrikasi profil baja (WF, H-Beam, Plate)</li>
+<li>Pemasangan dan alignment struktur baja</li>
+<li>Pekerjaan baut struktur dan pengelasan</li>
+<li>Dokumentasi as-built drawing</li>
             </ul>
           </div>
 
@@ -140,10 +141,14 @@ export default function StrukturBajaPage() {
               Safety & Quality Control
             </h2>
             <p className="text-gray-700 leading-relaxed">
-              All steel works are executed under strict HSE implementation,
-              lifting plans, work-at-height procedures, and inspection
-              processes to ensure safety, durability, and structural
-              reliability.
+              Seluruh pekerjaan struktur baja dilaksanakan dengan
+memperhatikan prosedur keselamatan kerja, metode
+pengangkatan (lifting plan), serta prosedur kerja
+di ketinggian.
+
+Pemeriksaan kualitas pekerjaan dilakukan secara
+berkala untuk memastikan struktur terpasang dengan
+baik, aman, dan sesuai spesifikasi proyek.
             </p>
           </div>
         </div>

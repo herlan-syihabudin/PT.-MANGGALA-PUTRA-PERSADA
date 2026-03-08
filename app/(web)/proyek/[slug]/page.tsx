@@ -363,9 +363,10 @@ export default async function ProjectDetailPage({ params }: Props) {
               "name": project.location || "Indonesia"
             },
             "image": project.images?.[0]
-              ? `${BASE_URL}${project.images[0]}`
-              : `${BASE_URL}/images/project-placeholder.jpg`,
-            ...(project.startDate && { "startDate": project.startDate }),
+  ? `${BASE_URL}${project.images[0]}`
+  : `${BASE_URL}/images/project-placeholder.jpg`,
+
+"endDate": project.completionDate,
             "endDate": project.completionDate,
             "contractor": {
               "@type": "Organization",

@@ -60,8 +60,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: project.title,
       description: project.description,
       type: "website",
-      publishedTime: project.completionDate,
-      authors: ["PT Manggala Putra Persada"],
       images: [
         {
           url: project.images?.[0] || `${BASE_URL}/images/project-placeholder.jpg`,

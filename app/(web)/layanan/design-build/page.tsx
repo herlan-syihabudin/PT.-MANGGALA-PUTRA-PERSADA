@@ -77,8 +77,8 @@ dari tahap perencanaan hingga serah terima pekerjaan.
           {/* IMAGE */}
           <div className="relative h-[240px] md:h-[320px] rounded-2xl overflow-hidden bg-gray-200 shadow-xl">
             <Image
-              src="/projects/designbuild-hero.jpg"
-              alt="Design and build construction contractor for industrial and commercial projects in Indonesia"
+              src="/images/design-build-construction-site.jpg"
+              alt="Design build contractor industrial construction project Indonesia"
               fill
               priority
               sizes="(max-width: 768px) 100vw, 50vw"

@@ -9,8 +9,7 @@ import { fitOutServiceSchema } from "@/lib/schema/fit-out"
 
 export const metadata: Metadata = {
   title: "Interior & Fit-Out Construction Services | PT Manggala Putra Persada",
-  description: "Interior dan fit-out contractor untuk kantor, area komersial, dan fasilitas industri di Indonesia. 
-Pekerjaan meliputi partisi, plafon, lantai, finishing interior, serta koordinasi dengan sistem MEP.",
+  description: "Interior dan fit-out contractor untuk kantor, area komersial, dan fasilitas industri di Indonesia. Pekerjaan meliputi partisi, plafon, lantai, finishing interior, serta koordinasi dengan sistem MEP.",
   keywords: "kontraktor interior jakarta, jasa fit out kantor, interior komersial, fit out industrial, partisi gypsum, plafon akustik, lantai vinyl, kontraktor interior indonesia",
   openGraph: {
   title: "Interior & Fit-Out Construction Services | PT Manggala Putra Persada",

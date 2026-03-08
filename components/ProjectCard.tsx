@@ -135,15 +135,13 @@ export default function ProjectCard({
 
           {/* Project Stats (optional) */}
           {client && (
-            <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 gap-4">
-              {client && (
-                <div>
-                  <p className="text-xs text-gray-400">Client</p>
-                  <p className="text-sm font-medium text-gray-900 truncate">{client}</p>
-                </div>
-              )}
-            </div>
-          )}
+  <div className="mt-4 pt-4 border-t border-gray-100">
+    <p className="text-xs text-gray-400">Client</p>
+    <p className="text-sm font-medium text-gray-900 truncate">
+      {client}
+    </p>
+  </div>
+)}
 
           {/* View Details Link */}
           <div className="mt-4 flex items-center text-sm font-semibold text-red-600 group-hover:text-red-700 transition-colors">

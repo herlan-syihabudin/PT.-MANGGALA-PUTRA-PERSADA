@@ -6,10 +6,14 @@ import type { Metadata } from "next"
 import {
   Calendar,
   MapPin,
-  HardHat,
   Clock,
   ChevronRight,
   Download,
+  CheckCircle,
+  FileText,
+  Share2,
+  Building2,
+  Wrench
 } from "lucide-react"
 import ProjectCard from "@/components/ProjectCard"
 
@@ -55,7 +59,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: project.title,
       description: project.description,
-      type: "article",
+      type: "website",
       publishedTime: project.completionDate,
       authors: ["PT Manggala Putra Persada"],
       images: [
@@ -95,133 +99,192 @@ export default async function ProjectDetailPage({ params }: Props) {
     .filter(p => p.category === project.category && p.slug !== project.slug)
     .slice(0, 3)
 
+
   return (
-    <article className="py-24 bg-gradient-to-b from-white to-gray-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-
-        {/* ===== BREADCRUMB ===== */}
-        <nav className="mb-8 text-sm text-gray-500" aria-label="Breadcrumb">
-          <ol className="flex items-center flex-wrap">
-            <li className="flex items-center">
-              <Link href="/" className="hover:text-gold transition">Home</Link>
-              <ChevronRight size={14} className="mx-2" aria-hidden="true" />
-            </li>
-            <li className="flex items-center">
-              <Link href="/proyek" className="hover:text-gold transition">Proyek</Link>
-              <ChevronRight size={14} className="mx-2" aria-hidden="true" />
-            </li>
-            <li className="font-medium text-gray-900 truncate max-w-[200px] md:max-w-none">
-              {project.title}
-            </li>
-          </ol>
-        </nav>
-
-        {/* ===== HEADER ===== */}
-        <div className="grid lg:grid-cols-2 gap-12 items-start mb-16">
-
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <span className="px-4 py-1.5 text-sm font-semibold text-red-600 bg-red-50 rounded-full border border-red-200">
+    <article className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+      
+      {/* ===== HERO SECTION WITH COVER IMAGE ===== */}
+      {project.images?.[0] && (
+        <div className="relative h-[60vh] md:h-[70vh] w-full overflow-hidden">
+          <Image
+            src={project.images[0]}
+            alt={project.title}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+          
+          {/* BREADCRUMB DI ATAS HERO */}
+          <div className="absolute top-8 left-0 right-0 max-w-7xl mx-auto px-6 z-10">
+            <nav className="flex items-center gap-2 text-sm text-white/80" aria-label="Breadcrumb">
+              <Link href="/" className="hover:text-white transition">Home</Link>
+              <ChevronRight size={14} className="text-white/60" />
+              <Link href="/proyek" className="hover:text-white transition">Proyek</Link>
+              <ChevronRight size={14} className="text-white/60" />
+              <span className="text-white font-medium truncate">{project.title}</span>
+            </nav>
+          </div>
+          
+          {/* PROJECT INFO DI ATAS HERO */}
+          <div className="absolute bottom-0 left-0 right-0 max-w-7xl mx-auto px-6 pb-16 z-10">
+            <div className="flex flex-wrap gap-3 mb-4">
+              <span className="px-4 py-1.5 bg-red-600 text-white text-sm font-semibold rounded-full">
                 {project.category}
               </span>
             </div>
-
-            <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight leading-tight mt-6 mb-6">
+            
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white max-w-4xl leading-tight">
               {project.title}
             </h1>
-
-            <p className="text-lg text-gray-700 leading-relaxed mb-8">
+            
+            <p className="text-lg md:text-xl text-white/90 mt-4 max-w-3xl">
               {project.description}
             </p>
+          </div>
+        </div>
+      )}
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-6 bg-white border border-gray-200 rounded-xl mb-8">
-              {project.location && (
-                <div>
-                  <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
-                    <MapPin size={14} aria-hidden="true" /> Location
-                  </div>
-                  <p className="font-semibold text-gray-900">{project.location}</p>
-                </div>
-              )}
-
-              {project.completionDate && (
-                <div>
-                  <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
-                    <Calendar size={14} aria-hidden="true" /> Completed
-                  </div>
-                  <p className="font-semibold text-gray-900">
-                    {formatDate(project.completionDate)}
-                  </p>
-                </div>
-              )}
-
-              {project.duration && (
-                <div>
-                  <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
-                    <Clock size={14} aria-hidden="true" /> Duration
-                  </div>
-                  <p className="font-semibold text-gray-900">{project.duration}</p>
-                </div>
-              )}
-
-              {project.client && (
-                <div>
-                  <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
-                    <HardHat size={14} aria-hidden="true" /> Client
-                  </div>
-                  <p className="font-semibold text-gray-900">{project.client}</p>
-                </div>
-              )}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        
+        {/* ===== PROJECT STATS CARDS ===== */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+          {project.location && (
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+              <MapPin size={20} className="text-gold mb-2" />
+              <p className="text-xs text-gray-500">Lokasi</p>
+              <p className="font-semibold text-gray-900 text-sm">{project.location}</p>
             </div>
+          )}
+          
+          {project.completionDate && (
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+              <Calendar size={20} className="text-gold mb-2" />
+              <p className="text-xs text-gray-500">Selesai</p>
+              <p className="font-semibold text-gray-900 text-sm">{formatDate(project.completionDate)}</p>
+            </div>
+          )}
+          
+          {project.duration && (
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+              <Clock size={20} className="text-gold mb-2" />
+              <p className="text-xs text-gray-500">Durasi</p>
+              <p className="font-semibold text-gray-900 text-sm">{project.duration}</p>
+            </div>
+          )}
+          
+          {project.client && (
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+              <Building2 size={20} className="text-gold mb-2" />
+              <p className="text-xs text-gray-500">Klien</p>
+              <p className="font-semibold text-gray-900 text-sm">{project.client}</p>
+            </div>
+          )}
+        </div>
 
-            {/* Download PDF Button */}
-            {project.pdfUrl && (
-              <a
-                href={project.pdfUrl}
-                download
-                className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition"
-                aria-label={`Download PDF for ${project.title}`}
-              >
-                <Download size={18} aria-hidden="true" />
-                <span>Download Project PDF</span>
-              </a>
+        {/* ===== MAIN CONTENT GRID ===== */}
+        <div className="grid lg:grid-cols-3 gap-12">
+          
+          {/* ===== LEFT CONTENT - DETAIL TEKNIS ===== */}
+          <div className="lg:col-span-2 space-y-12">
+            
+            {/* SCOPES OF WORK */}
+            {project.scope && project.scope.length > 0 && (
+              <section className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <Wrench size={24} className="text-gold" />
+                  Lingkup Pekerjaan
+                </h2>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {project.scope.map((item, index) => (
+                    <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                      <CheckCircle size={18} className="text-green-600 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700 text-sm">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
             )}
           </div>
 
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-            <Image
-              src={project.images?.[0] || "/images/project-placeholder.jpg"}
-              alt={project.title}
-              width={800}
-              height={600}
-              className="w-full h-[450px] object-cover"
-              priority
-            />
+          {/* ===== RIGHT SIDEBAR ===== */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-32 space-y-6">
+              
+              {/* QUICK ACTIONS */}
+              <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <span className="w-1 h-5 bg-gold rounded-full" />
+                  Informasi Proyek
+                </h3>
+
+                {/* DOWNLOAD BUTTONS */}
+                <div className="mt-6 space-y-3">
+                  {project.pdfUrl && (
+                    <a
+                      href={project.pdfUrl}
+                      download
+                      className="flex items-center justify-between w-full p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileText size={18} className="text-gold" />
+                        <span className="text-sm font-medium">Download PDF</span>
+                      </div>
+                      <Download size={16} className="text-gray-400 group-hover:text-gold transition" />
+                    </a>
+                  )}
+                  </div>
+                </div>
+
+              {/* SHARE BUTTONS */}
+              <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                <h3 className="font-bold text-gray-900 mb-4">Bagikan Proyek</h3>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${BASE_URL}/proyek/${project.slug}`)
+                      alert('Link copied!')
+                    }}
+                    className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    title="Copy link"
+                  >
+                    <Share2 size={16} />
+                  </button>
+                  <a 
+                    href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(`${BASE_URL}/proyek/${project.slug}`)}&text=${encodeURIComponent(project.title)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition"
+                    title="Share on Twitter"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
+                  </a>
+                  <a 
+                    href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`${BASE_URL}/proyek/${project.slug}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition"
+                    title="Share on LinkedIn"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451c.979 0 1.778-.773 1.778-1.729V1.73C24 .774 23.204 0 22.225 0z" />
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* ===== SCOPE ===== */}
-        {project.scope && project.scope.length > 0 && (
-          <section className="mb-16" aria-labelledby="scope-heading">
-            <h2 id="scope-heading" className="text-2xl font-bold text-gray-900 mb-6">
-              Scope of Work
-            </h2>
-            <ul className="space-y-3">
-              {project.scope.map((item, index) => (
-                <li key={index} className="flex items-start gap-3 text-gray-700">
-                  <span className="w-2 h-2 bg-red-600 rounded-full mt-2 flex-shrink-0" aria-hidden="true" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
         {/* ===== GALLERY ===== */}
         {project.images?.length > 1 && (
-          <section className="mb-16" aria-labelledby="gallery-heading">
-            <h2 id="gallery-heading" className="text-2xl font-bold text-gray-900 mb-6">
-              Project Gallery
+          <section className="mt-20" aria-labelledby="gallery-heading">
+            <h2 id="gallery-heading" className="text-2xl font-bold text-gray-900 mb-8 flex items-center gap-2">
+              <span className="w-1 h-6 bg-gold rounded-full" />
+              Dokumentasi Proyek
             </h2>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -229,11 +292,14 @@ export default async function ProjectDetailPage({ params }: Props) {
                 <div key={i} className="relative rounded-xl overflow-hidden group aspect-square">
                   <Image
                     src={img}
-                    alt={`${project.title} - Construction progress photo ${i + 2}`}
+                    alt={`${project.title} - Foto ${i + 2}`}
                     fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="object-cover group-hover:scale-110 transition-transform duration-700"
                     sizes="(max-width: 768px) 50vw, 25vw"
                   />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                    <span className="text-white text-sm font-medium">Lihat Foto</span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -242,8 +308,9 @@ export default async function ProjectDetailPage({ params }: Props) {
 
         {/* ===== RELATED PROJECTS ===== */}
         {relatedProjects.length > 0 && (
-          <section className="mt-24" aria-labelledby="related-heading">
-            <h2 id="related-heading" className="text-2xl font-bold text-gray-900 mb-8">
+          <section className="mt-20" aria-labelledby="related-heading">
+            <h2 id="related-heading" className="text-2xl font-bold text-gray-900 mb-8 flex items-center gap-2">
+              <span className="w-1 h-6 bg-gold rounded-full" />
               Proyek Terkait
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
@@ -254,24 +321,25 @@ export default async function ProjectDetailPage({ params }: Props) {
           </section>
         )}
 
-        {/* ===== CTA ===== */}
-        <div className="mt-16 text-center">
-          <Link
-            href="/proyek"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 transition group mb-4"
-            aria-label="Back to all projects"
-          >
-            <ChevronRight size={16} className="rotate-180 group-hover:-translate-x-1 transition-transform" aria-hidden="true" />
-            Back to All Projects
-          </Link>
-
-          <div className="mt-8">
+        {/* ===== CTA SECTION ===== */}
+        <div className="mt-20 bg-gradient-to-br from-red-600 to-red-700 rounded-3xl p-12 text-center text-white">
+          <h3 className="text-3xl font-bold mb-4">Tertarik dengan proyek serupa?</h3>
+          <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
+            Diskusikan kebutuhan proyek Anda dengan tim engineering kami. Gratis konsultasi awal.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/kontak"
-              className="inline-flex items-center gap-2 bg-red-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-red-700 transition shadow-lg shadow-red-600/20 hover:shadow-xl hover:-translate-y-0.5"
+              className="inline-flex items-center gap-2 bg-white text-red-600 px-8 py-4 rounded-xl font-semibold hover:bg-gray-100 transition shadow-lg hover:shadow-xl"
             >
-              Konsultasi Proyek Serupa
-              <ChevronRight size={18} aria-hidden="true" />
+              Konsultasi Sekarang
+              <ChevronRight size={18} />
+            </Link>
+            <Link
+              href="/proyek"
+              className="inline-flex items-center gap-2 bg-white/20 backdrop-blur text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/30 transition border border-white/30"
+            >
+              Lihat Proyek Lainnya
             </Link>
           </div>
         </div>
@@ -283,32 +351,35 @@ export default async function ProjectDetailPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
-  "@context": "https://schema.org",
-  "@type": "Article",
-  "headline": project.title,
-  "description": project.description,
-  "image": project.images?.[0]
-  ? `${BASE_URL}${project.images[0]}`
-  : `${BASE_URL}/images/project-placeholder.jpg`,
-  "author": {
-    "@type": "Organization",
-    "name": "PT Manggala Putra Persada",
-    "url": BASE_URL,
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "PT Manggala Putra Persada",
-    "logo": {
-      "@type": "ImageObject",
-      "url": `${BASE_URL}/images/logo-mpp.png`,
-    },
-  },
-  "datePublished": project.completionDate,
-  "keywords": [
-  project.category,
-  ...(project.scope || [])
-].join(", ")
-})
+            "@context": "https://schema.org",
+            "@type": "ConstructionProject",
+"name": project.title,
+"description": project.description,
+"location": project.location || "Indonesia",
+"image": project.images?.[0]
+              ? `${BASE_URL}${project.images[0]}`
+              : `${BASE_URL}/images/project-placeholder.jpg`,
+            "author": {
+              "@type": "Organization",
+              "name": "PT Manggala Putra Persada",
+              "url": BASE_URL,
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "PT Manggala Putra Persada",
+              "logo": {
+                "@type": "ImageObject",
+                "url": `${BASE_URL}/logo-mp.png`,
+              },
+            },
+            "datePublished": project.completionDate,
+            "keywords": [
+              project.category,
+              ...(project.scope || [])
+            ].join(", "),
+            "spatialCoverage": project.location,
+            "locationCreated": project.location
+          })
         }}
       />
     </article>

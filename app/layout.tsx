@@ -8,15 +8,15 @@ export const viewport: Viewport = {
   maximumScale: 5,
   userScalable: true,
   colorScheme: "light",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#b91c1c" },
+    { media: "(prefers-color-scheme: dark)", color: "#7f1d1d" },
+  ],
 }
 
 export const metadata: Metadata = {
   // ===== BASE =====
   metadataBase: new URL("https://mppindo.com"),
-  themeColor: [
-  { media: "(prefers-color-scheme: light)", color: "#b91c1c" },
-  { media: "(prefers-color-scheme: dark)", color: "#7f1d1d" },
-],
   title: {
     default: "MPP Engineering - Kontraktor Konstruksi Engineering-Led di Indonesia",
     template: "%s | MPP Engineering",

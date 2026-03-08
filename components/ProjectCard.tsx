@@ -3,11 +3,9 @@ import Image from "next/image"
 import { 
   Calendar, 
   MapPin, 
-  HardHat,
   ChevronRight,
   Award,
-  Clock,
-  Users
+  Clock
 } from "lucide-react"
 import type { Project } from "@/lib/projects"
 
@@ -33,11 +31,10 @@ export default function ProjectCard({
   location,
   completionDate,
   client,
-  value,
   duration,
   scope = [],
   featured = false,
-}: Project) {
+}: Project)
   return (
     <Link 
       href={`/proyek/${slug}`} 
@@ -137,18 +134,12 @@ export default function ProjectCard({
           )}
 
           {/* Project Stats (optional) */}
-          {(client || value) && (
+          {client && (
             <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 gap-4">
               {client && (
                 <div>
                   <p className="text-xs text-gray-400">Client</p>
                   <p className="text-sm font-medium text-gray-900 truncate">{client}</p>
-                </div>
-              )}
-              {value && (
-                <div>
-                  <p className="text-xs text-gray-400">Project Value</p>
-                  <p className="text-sm font-medium text-green-600">{value}</p>
                 </div>
               )}
             </div>

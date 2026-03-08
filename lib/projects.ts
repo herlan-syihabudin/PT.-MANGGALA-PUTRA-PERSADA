@@ -8,11 +8,10 @@ export type Project = {
   location?: string
   completionDate?: string
   client?: string
-  value?: string
   duration?: string
   scope?: string[]
   featured?: boolean
-  pdfUrl?: string   // ⬅ TAMBAH INI
+  pdfUrl?: string
 }
 
 export const projects: Project[] = [

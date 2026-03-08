@@ -9,7 +9,7 @@ import { mepServiceSchema } from "@/lib/schema/mep"
 
 export const metadata: Metadata = {
   title: "MEP Engineering Services | Mechanical Electrical Plumbing | MPP Engineering",
-  description: "Professional Mechanical, Electrical, and Plumbing (MEP) engineering and installation services in Indonesia for industrial & commercial projects. HVAC, electrical distribution, plumbing, fire protection, and commissioning.",
+  description: "Jasa instalasi Mechanical Electrical Plumbing (MEP) untuk proyek industri, gudang, pabrik, dan bangunan komersial di Indonesia. Pekerjaan meliputi instalasi listrik, HVAC, plumbing, dan fire protection system.",
   keywords: "kontraktor MEP, mechanical electrical plumbing, instalasi listrik industri, HVAC contractor, fire protection system, plumbing system, MEP engineering indonesia",
   openGraph: {
   title: "MEP Engineering Services | PT Manggala Putra Persada",
@@ -65,17 +65,21 @@ export default function MEPPage() {
               <span className="block text-gold">(MEP) Engineering</span>
             </h1>
             <p className="mt-6 text-lg text-gray-600 max-w-2xl">
-              Professional MEP engineering and installation services for
-              industrial, commercial, and building projects in Indonesia,
-              delivered with coordinated design, safe execution, and
-              full compliance with technical standards.
+              Layanan Mechanical, Electrical, dan Plumbing (MEP) untuk
+proyek industri, bangunan komersial, gudang, dan fasilitas
+lainnya di Indonesia.
+
+Pekerjaan meliputi instalasi sistem listrik, HVAC,
+plumbing, serta sistem proteksi kebakaran yang
+dilaksanakan sesuai gambar kerja, spesifikasi teknis,
+dan standar konstruksi yang berlaku.
             </p>
           </div>
 
           {/* IMAGE */}
           <div className="relative h-[240px] md:h-[320px] rounded-2xl overflow-hidden bg-gray-200 shadow-xl">
             <Image
-              src="/projects/mep-hero.jpg"
+              src="/images/insights/mep-installation-industrial.jpg"
               alt="Mechanical Electrical Plumbing MEP contractor for industrial and commercial buildings in Indonesia"
               fill
               priority
@@ -99,10 +103,14 @@ export default function MEPPage() {
               MEP Scope of Work
             </h2>
             <p className="text-gray-700 leading-relaxed pl-4">
-              Our Mechanical, Electrical, and Plumbing services include
-              engineering coordination, installation, testing, and
-              commissioning of building systems to ensure safety,
-              functionality, energy efficiency, and long-term reliability.
+              Pekerjaan MEP mencakup instalasi sistem mechanical,
+electrical, dan plumbing pada bangunan sesuai gambar
+teknis serta kebutuhan operasional bangunan.
+
+Setiap instalasi dilakukan dengan koordinasi antar
+disiplin engineering untuk memastikan sistem dapat
+berfungsi dengan baik, aman, serta mudah dalam
+pengoperasian dan perawatan.
             </p>
           </section>
 
@@ -113,11 +121,11 @@ export default function MEPPage() {
             </h2>
             <ul className="space-y-2 text-gray-700 pl-4">
               {[
-                "HVAC systems (Split, VRV / VRF, Chilled Water)",
-                "Ventilation and exhaust systems",
-                "Industrial air handling units (AHU)",
-                "Mechanical equipment installation & piping",
-              ].map((item, i) => (
+"Sistem HVAC (Split AC, VRV/VRF, Chilled Water)",
+"Sistem ventilasi dan exhaust",
+"Instalasi Air Handling Unit (AHU)",
+"Instalasi equipment mechanical dan piping"
+].map((item, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-gold rounded-full mt-2.5" />
                   <span>{item}</span>
@@ -154,12 +162,12 @@ export default function MEPPage() {
             </h2>
             <ul className="space-y-2 text-gray-700 pl-4">
               {[
-                "Clean water & wastewater systems",
-                "Storm water drainage systems",
-                "Fire hydrant & sprinkler systems",
-                "Fire pump and water storage systems",
-                "Testing & commissioning of fire systems",
-              ].map((item, i) => (
+"Sistem air bersih dan air kotor",
+"Sistem drainase dan air hujan",
+"Sistem hydrant dan sprinkler",
+"Instalasi fire pump dan water tank",
+"Testing dan commissioning sistem fire protection"
+].map((item, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-gold rounded-full mt-2.5" />
                   <span>{item}</span>
@@ -174,11 +182,14 @@ export default function MEPPage() {
               Engineering Coordination & Commissioning
             </h2>
             <p className="text-gray-700 leading-relaxed pl-4">
-              All MEP works are closely coordinated with architectural and
-              structural elements to avoid clashes and ensure smooth
-              installation. Systems are tested and commissioned before
-              handover to verify performance and compliance with project
-              requirements.
+              Seluruh pekerjaan MEP dikoordinasikan dengan desain
+arsitektur dan struktur bangunan untuk menghindari
+benturan instalasi di lapangan.
+
+Sebelum serah terima proyek, seluruh sistem dilakukan
+pengujian dan commissioning untuk memastikan sistem
+dapat beroperasi sesuai dengan fungsi dan standar
+proyek.
             </p>
           </section>
 
@@ -221,12 +232,12 @@ export default function MEPPage() {
             </h3>
             <ul className="space-y-2 text-sm text-gray-700">
               {[
-                "Integrated engineering coordination",
-                "Experienced MEP engineering team",
-                "Strict quality & safety standards",
-                "Testing & commissioning included",
-                "Full compliance with SNI & regulations",
-              ].map((item, i) => (
+"Perencanaan dan koordinasi engineering MEP",
+"Tim pelaksana dengan pengalaman instalasi MEP",
+"Pengendalian kualitas dan keselamatan kerja",
+"Pengujian sistem sebelum serah terima proyek",
+"Pelaksanaan sesuai standar teknis dan regulasi"
+].map((item, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-gold rounded-full mt-1.5" />
                   <span>{item}</span>

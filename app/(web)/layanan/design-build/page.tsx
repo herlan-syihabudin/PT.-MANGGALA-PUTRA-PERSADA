@@ -77,7 +77,7 @@ dari tahap perencanaan hingga serah terima pekerjaan.
           {/* IMAGE */}
           <div className="relative h-[240px] md:h-[320px] rounded-2xl overflow-hidden bg-gray-200 shadow-xl">
             <Image
-              src="/images/design-build-construction-site.jpg"
+              src="/insigths/images/design-build-construction-site.jpg"
               alt="Design build contractor industrial construction project Indonesia"
               fill
               priority

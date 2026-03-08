@@ -34,7 +34,7 @@ export default function ProjectCard({
   duration,
   scope = [],
   featured = false,
-}: Project)
+}: Project) {
   return (
     <Link 
       href={`/proyek/${slug}`} 

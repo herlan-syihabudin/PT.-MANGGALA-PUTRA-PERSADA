@@ -8,11 +8,11 @@ import { faqByService } from "@/lib/faq-layanan"
 import { designBuildServiceSchema } from "@/lib/schema/design-build"
 
 export const metadata: Metadata = {
-  title: "Design & Build Construction Services | MPP Engineering",
+  title: "Design & Build Contractor Indonesia | PT Manggala Putra Persada",
   description: "Integrated design and build construction services in Indonesia. Single responsibility system for industrial & commercial projects. Engineering, planning, and execution under one roof.",
   keywords: "design build kontraktor, jasa konstruksi design build, kontraktor industrial indonesia, epc contractor, engineering procurement construction",
   openGraph: {
-  title: "Design & Build Construction Services | PT Manggala Putra Persada",
+  title: "Design & Build Contractor Indonesia | PT Manggala Putra Persada",
   description: "Integrated design and build construction services for industrial and commercial projects.",
   url: "https://mppindo.com/layanan/design-build",
   siteName: "PT Manggala Putra Persada",
@@ -63,11 +63,15 @@ export default function DesignBuildPage() {
               <span className="block text-gold">Construction Services</span>
             </h1>
             <p className="mt-6 text-lg text-gray-600 max-w-2xl">
-              Integrated design and build construction services in Indonesia,
-              delivering engineering, construction planning, and execution
-              under a single responsibility system to ensure efficiency,
-              quality, and cost certainty from concept to handover.
-            </p>
+Layanan konstruksi Design & Build yang mengintegrasikan
+perencanaan engineering, perencanaan konstruksi, dan
+pelaksanaan proyek dalam satu sistem tanggung jawab.
+
+Pendekatan ini membantu menjaga koordinasi antar disiplin,
+mengurangi potensi perubahan desain di lapangan, serta
+memastikan pelaksanaan proyek berjalan lebih efisien
+dari tahap perencanaan hingga serah terima pekerjaan.
+</p>
           </div>
 
           {/* IMAGE */}
@@ -97,12 +101,15 @@ export default function DesignBuildPage() {
               Design & Build Project Approach
             </h2>
             <p className="text-gray-700 leading-relaxed pl-4">
-              Our design & build approach integrates engineering design,
-              construction planning, and site execution within one coordinated
-              team. This method minimizes interface risks, shortens project
-              duration, and ensures consistency between design intent and
-              construction output.
-            </p>
+Pendekatan Design & Build memungkinkan proses perencanaan
+engineering dan pelaksanaan konstruksi dilakukan secara
+terintegrasi dalam satu tim.
+
+Dengan sistem ini, koordinasi antara perencana, engineer,
+dan tim pelaksana dapat dilakukan sejak tahap awal proyek
+sehingga meminimalkan risiko perubahan desain saat
+pelaksanaan konstruksi.
+</p>
           </section>
 
           <section>
@@ -133,12 +140,15 @@ export default function DesignBuildPage() {
               Engineering Coordination & Constructability
             </h2>
             <p className="text-gray-700 leading-relaxed pl-4">
-              All engineering disciplines are coordinated from early stages
-              to avoid clashes and constructability issues. Design decisions
-              are continuously reviewed to optimize performance, cost, and
-              buildability while maintaining compliance with applicable
-              standards and regulations.
-            </p>
+Koordinasi antar disiplin engineering dilakukan sejak tahap
+awal perencanaan untuk memastikan desain dapat dilaksanakan
+dengan baik di lapangan.
+
+Setiap keputusan desain ditinjau dari aspek teknis,
+metode pelaksanaan, serta efisiensi biaya agar proses
+konstruksi dapat berjalan lebih efektif dan sesuai
+dengan standar teknis yang berlaku.
+</p>
           </section>
 
           <section>
@@ -147,11 +157,14 @@ export default function DesignBuildPage() {
               Cost, Schedule & Risk Control
             </h2>
             <p className="text-gray-700 leading-relaxed pl-4">
-              Through early contractor involvement and integrated planning,
-              project risks are identified and mitigated upfront. This enables
-              better cost certainty, realistic scheduling, and efficient
-              resource allocation throughout the project lifecycle.
-            </p>
+Dalam proyek konstruksi, pengendalian biaya, jadwal,
+dan risiko menjadi bagian penting dari proses pelaksanaan.
+
+Melalui perencanaan yang matang serta koordinasi sejak
+tahap awal proyek, potensi risiko teknis dapat diidentifikasi
+lebih awal sehingga jadwal pekerjaan dan penggunaan sumber
+daya dapat dikelola secara lebih efektif.
+</p>
           </section>
 
         </div>
@@ -194,10 +207,10 @@ export default function DesignBuildPage() {
             <ul className="space-y-2 text-sm text-gray-700">
               {[
                 "Single point of responsibility",
-                "Integrated engineering and execution team",
-                "Reduced coordination and interface risk",
-                "Optimized cost and project duration",
-                "Clear communication and accountability",
+                "Koordinasi engineering dan tim pelaksana terintegrasi",
+                "Mengurangi risiko perubahan desain saat konstruksi",
+                "Pengendalian biaya dan durasi proyek lebih optimal",
+                "Koordinasi proyek lebih jelas dan terstruktur",
               ].map((item, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-gold rounded-full mt-1.5" />
@@ -213,7 +226,7 @@ export default function DesignBuildPage() {
               hover:from-red-700 hover:to-red-800 transition-all shadow-lg shadow-red-600/20 
               hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 group"
           >
-            <span>Konsultasi Proyek Design & Build</span>
+            <span>Diskusikan Proyek Anda</span>
             <ChevronRight size={18} className="inline ml-2 group-hover:translate-x-1 transition-transform" />
           </Link>
 

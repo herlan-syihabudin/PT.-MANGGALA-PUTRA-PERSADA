@@ -367,12 +367,12 @@ export default async function ProjectDetailPage({ params }: Props) {
   : `${BASE_URL}/images/project-placeholder.jpg`,
 
 "endDate": project.completionDate,
-            "endDate": project.completionDate,
-            "contractor": {
-              "@type": "Organization",
-              "name": "PT Manggala Putra Persada",
-              "url": BASE_URL
-            },
+
+"contractor": {
+  "@type": "Organization",
+  "name": "PT Manggala Putra Persada",
+  "url": BASE_URL
+},
             ...(project.client && {
               "client": {
                 "@type": "Organization",

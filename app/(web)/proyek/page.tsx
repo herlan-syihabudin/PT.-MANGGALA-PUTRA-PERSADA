@@ -29,18 +29,21 @@ export default function ProyekPage() {
         {/* HEADER */}
         <div className="max-w-3xl">
           <span className="text-gold font-semibold text-sm tracking-wider uppercase mb-2 block">
-            Portfolio
-          </span>
-          <h1 className="text-4xl md:text-5xl font-black mb-6 leading-tight">
-            100+ Industrial & Commercial Projects
-            <span className="block text-gold text-2xl md:text-3xl mt-2">
-              Delivered with Engineering-Led Execution
-            </span>
-          </h1>
-          <p className="text-lg text-gray-600">
-            Engineering-led construction projects delivered across industrial,
-            manufacturing, warehousing, and commercial sectors in Indonesia.
-          </p>
+  Portofolio Proyek
+</span>
+
+<h1 className="text-4xl md:text-5xl font-black mb-6 leading-tight">
+  Proyek Industri & Komersial
+  <span className="block text-gold text-2xl md:text-3xl mt-2">
+    Dengan Pendekatan & Eksekusi Konstruksi Terstruktur
+  </span>
+</h1>
+
+<p className="text-lg text-gray-600">
+  Berbagai proyek konstruksi industri, manufaktur, pergudangan, dan fasilitas komersial
+  yang kami kerjakan di berbagai wilayah Indonesia dengan pendekatan engineering
+  yang terencana dan pelaksanaan konstruksi yang terkontrol.
+</p>
         </div>
 
         {/* FILTERS */}
@@ -51,29 +54,30 @@ export default function ProyekPage() {
         </div>
 
         {/* AUTHORITY STATS */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16 mb-20">
-          <Stat label="Projects Delivered" value="100+" />
-          <Stat label="Industrial Clients" value="50+" />
-          <Stat label="Years Experience" value="15+" />
-          <Stat label="Provinces Covered" value="12+" />
-        </div>
+<div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16 mb-20">
+  <Stat label="Jenis Proyek" value="Industrial & Warehouse" />
+<Stat label="Pendekatan Proyek" value="Engineering Led" />
+<Stat label="Metode Pelaksanaan" value="Design & Build" />
+<Stat label="Wilayah Layanan" value="Indonesia" />
+</div>
 
         {/* ===== 🌟 LINK KE HALAMAN TAHAPAN - TARO SINI ===== */}
         <div className="mb-16 bg-gradient-to-r from-gold/5 to-transparent rounded-2xl p-8 border border-gold/10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-2">
-                Ingin Tahu Bagaimana Kami Mengeksekusi Proyek?
+                Ingin Mengetahui Proses Pelaksanaan Proyek Kami?
               </h2>
               <p className="text-gray-600">
-                Pelajari 7 tahapan pelaksanaan proyek kami yang terstruktur dan terukur.
+                Tahapan perencanaan & pelaksanaan konstruksi
+yang matang di setiap proyek.
               </p>
             </div>
             <Link
               href="/proyek/tahapan"
               className="inline-flex items-center gap-3 bg-white text-gold px-6 py-3 rounded-xl font-semibold border-2 border-gold/20 hover:bg-gold hover:text-white hover:border-gold transition-all group whitespace-nowrap shadow-sm"
             >
-              <span>Lihat 7 Tahapan Proyek</span>
+              <span>Lihat Tahapan Proyek</span>
               <ArrowRight size={18} className="group-hover:translate-x-1 transition" />
             </Link>
           </div>

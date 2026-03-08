@@ -29,7 +29,7 @@ export const projects: Project[] = [
     category: "Industrial Facility",
     title: "Manufacturing Plant Construction",
     description:
-      "Civil and structural construction works for industrial production facilities, executed with engineering calculations, quality control, and strict safety compliance.",
+"Pekerjaan konstruksi sipil dan struktur untuk fasilitas produksi industri, meliputi pekerjaan pondasi, struktur beton, serta elemen pendukung bangunan sesuai gambar kerja dan spesifikasi teknis.",
     scope: [
       "Civil works",
       "Structural concrete",

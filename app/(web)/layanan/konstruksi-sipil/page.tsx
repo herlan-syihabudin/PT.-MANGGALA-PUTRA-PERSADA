@@ -9,7 +9,7 @@ import { civilServiceSchema } from "@/lib/schema/konstruksi-sipil"
 
 export const metadata: Metadata = {
   title: "Civil & Structural Construction Engineering | MPP Engineering",
-  description: "Engineering-led civil and structural construction services in Indonesia. Reinforced concrete, foundations, and structural systems for industrial & commercial projects with strict quality control.",
+  description: "Jasa konstruksi sipil dan struktur untuk proyek industri, gudang, pabrik, dan bangunan komersial di Indonesia. Pekerjaan meliputi pekerjaan tanah, pondasi, beton bertulang, dan struktur bangunan sesuai standar konstruksi.",
   keywords: "kontraktor sipil, konstruksi struktur, jasa pondasi, beton bertulang, konstruksi pabrik, civil contractor indonesia, earthworks, foundation contractor",
   openGraph: {
   title: "Civil & Structural Construction Engineering | PT Manggala Putra Persada",
@@ -65,24 +65,25 @@ export default function KonstruksiSipilPage() {
               <span className="block text-gold">Construction Engineering</span>
             </h1>
             <p className="mt-6 text-lg text-gray-600 max-w-2xl">
-              Engineering-led civil and structural construction services for
-              industrial, commercial, and residential projects in Indonesia,
-              delivered with strict quality control, safety compliance, and
-              disciplined project execution.
+              Layanan konstruksi sipil dan struktur untuk proyek industri,
+komersial, dan bangunan lainnya di Indonesia. 
+
+Pekerjaan meliputi pekerjaan tanah, pondasi, struktur beton
+bertulang, hingga pekerjaan struktur bangunan yang dilaksanakan
+sesuai gambar kerja, spesifikasi teknis, serta standar konstruksi
+yang berlaku.
             </p>
           </div>
 
           {/* IMAGE */}
-          <div className="relative h-[240px] md:h-[320px] rounded-2xl overflow-hidden bg-gray-200 shadow-xl">
-            <Image
-              src="/projects/civil-hero.jpg"
-              alt="Civil and structural construction contractor for industrial and commercial buildings in Indonesia"
-              fill
-              priority
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover hover:scale-105 transition-transform duration-700"
-            />
-          </div>
+          <div className="relative h-80 rounded-xl overflow-hidden mt-6">
+<Image
+src="/images/insights/civil-structure-construction.jpg"
+alt="Pekerjaan struktur beton bertulang pada proyek konstruksi"
+fill
+className="object-cover"
+/>
+</div>
 
         </div>
       </div>
@@ -99,11 +100,14 @@ export default function KonstruksiSipilPage() {
               Civil & Structural Scope of Work
             </h2>
             <p className="text-gray-700 leading-relaxed pl-4">
-              Our civil and structural construction services cover the execution
-              of reinforced concrete and structural works in accordance with
-              approved drawings, specifications, and engineering standards.
-              We focus on structural integrity, constructability, and long-term
-              performance of each building and facility.
+              Pekerjaan konstruksi sipil dan struktur mencakup pelaksanaan
+pondasi, struktur beton bertulang, serta elemen struktur bangunan
+lainnya berdasarkan gambar kerja, spesifikasi teknis, dan standar
+engineering yang berlaku.
+
+Setiap pekerjaan dilaksanakan dengan memperhatikan kualitas
+struktur, metode pelaksanaan di lapangan, serta ketahanan
+bangunan untuk penggunaan jangka panjang.
             </p>
           </section>
 
@@ -114,13 +118,13 @@ export default function KonstruksiSipilPage() {
             </h2>
             <ul className="space-y-2 text-gray-700 pl-4">
               {[
-                "Site preparation, earthworks, and excavation",
-                "Foundation systems (shallow & deep foundations)",
-                "Reinforced concrete structures",
-                "Structural framing, slabs, and retaining walls",
-                "Structural repair, strengthening, and retrofit works",
-                "Compliance with SNI and project technical specifications",
-              ].map((item, i) => (
+"Pekerjaan persiapan lahan dan pekerjaan tanah",
+"Pekerjaan pondasi (pondasi dangkal dan pondasi dalam)",
+"Pekerjaan struktur beton bertulang",
+"Pekerjaan kolom, balok, slab, dan retaining wall",
+"Pekerjaan perkuatan dan perbaikan struktur",
+"Pekerjaan konstruksi sesuai standar SNI dan spesifikasi proyek"
+].map((item, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-gold rounded-full mt-2.5" />
                   <span>{item}</span>
@@ -135,11 +139,13 @@ export default function KonstruksiSipilPage() {
               Engineering Supervision & Quality Control
             </h2>
             <p className="text-gray-700 leading-relaxed pl-4">
-              All civil and structural works are executed under engineering
-              supervision and supported by method statements, inspection and
-              test plans (ITP), and systematic quality control procedures.
-              This ensures dimensional accuracy, structural safety, and
-              durability throughout the project lifecycle.
+              Seluruh pekerjaan sipil dan struktur dilaksanakan dengan
+pengawasan teknis serta prosedur quality control yang jelas.
+
+Dokumen seperti metode kerja, inspection & test plan (ITP),
+serta pemeriksaan kualitas pekerjaan dilakukan secara
+berkala untuk memastikan hasil pekerjaan sesuai dengan
+gambar kerja dan spesifikasi proyek.
             </p>
           </section>
 
@@ -155,23 +161,23 @@ export default function KonstruksiSipilPage() {
             <ul className="space-y-3 text-sm text-gray-700">
               <li className="flex items-start gap-2">
                 <Building2 size={18} className="text-gold flex-shrink-0 mt-0.5" />
-                <span>Industrial facilities & factories</span>
+                <span>Fasilitas industri dan pabrik</span>
               </li>
               <li className="flex items-start gap-2">
                 <Building2 size={18} className="text-gold flex-shrink-0 mt-0.5" />
-                <span>Commercial buildings</span>
+                <span>Bangunan komersial</span>
               </li>
               <li className="flex items-start gap-2">
                 <Home size={18} className="text-gold flex-shrink-0 mt-0.5" />
-                <span>Residential developments</span>
+                <span>Perumahan dan hunian</span>
               </li>
               <li className="flex items-start gap-2">
                 <Warehouse size={18} className="text-gold flex-shrink-0 mt-0.5" />
-                <span>Warehouses & logistics centers</span>
+                <span>Gudang dan pusat logistik</span>
               </li>
               <li className="flex items-start gap-2">
                 <Mountain size={18} className="text-gold flex-shrink-0 mt-0.5" />
-                <span>Infrastructure support structures</span>
+                <span>Struktur pendukung infrastruktur</span>
               </li>
             </ul>
           </div>
@@ -182,12 +188,12 @@ export default function KonstruksiSipilPage() {
             </h3>
             <ul className="space-y-2 text-sm text-gray-700">
               {[
-                "Engineering-led execution",
-                "Structured project management",
-                "Strict quality & HSE control",
-                "Cost and schedule discipline",
-                "Clear reporting & accountability",
-              ].map((item, i) => (
+"Pelaksanaan pekerjaan berbasis engineering",
+"Perencanaan metode kerja yang jelas",
+"Pengendalian kualitas dan keselamatan kerja",
+"Pengendalian biaya dan jadwal pekerjaan",
+"Pelaporan progres pekerjaan secara terstruktur"
+].map((item, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-gold rounded-full mt-1.5" />
                   <span>{item}</span>

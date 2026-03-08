@@ -8,8 +8,9 @@ import { faqByService } from "@/lib/faq-layanan"
 import { fitOutServiceSchema } from "@/lib/schema/fit-out"
 
 export const metadata: Metadata = {
-  title: "Interior & Fit-Out Construction Services | MPP Engineering",
-  description: "Engineering-oriented interior and fit-out construction services in Indonesia for offices, commercial spaces, and industrial facilities. Quality finishing, MEP coordination, and durable materials.",
+  title: "Interior & Fit-Out Construction Services | PT Manggala Putra Persada",
+  description: "Interior dan fit-out contractor untuk kantor, area komersial, dan fasilitas industri di Indonesia. 
+Pekerjaan meliputi partisi, plafon, lantai, finishing interior, serta koordinasi dengan sistem MEP.",
   keywords: "kontraktor interior jakarta, jasa fit out kantor, interior komersial, fit out industrial, partisi gypsum, plafon akustik, lantai vinyl, kontraktor interior indonesia",
   openGraph: {
   title: "Interior & Fit-Out Construction Services | PT Manggala Putra Persada",
@@ -65,23 +66,26 @@ export default function FitOutPage() {
               <span className="block text-gold">Construction Services</span>
             </h1>
             <p className="mt-6 text-lg text-gray-600 max-w-2xl">
-              Engineering-oriented interior and fit-out construction services
-              for offices, commercial spaces, and industrial facilities in
-              Indonesia, delivered with functional planning, durable materials,
-              and high-quality finishing.
-            </p>
+Layanan konstruksi interior dan fit-out untuk kantor,
+area komersial, serta fasilitas industri di Indonesia.
+Pekerjaan dilakukan berdasarkan gambar kerja dan kebutuhan
+fungsi ruang, dengan penggunaan material yang tepat,
+koordinasi teknis yang baik, serta hasil finishing
+yang rapi dan berkualitas.
+</p>
           </div>
 
           {/* IMAGE */}
           <div className="relative h-[240px] md:h-[320px] rounded-2xl overflow-hidden bg-gray-200 shadow-xl">
             <Image
-              src="/projects/fitout-hero.jpg"
-              alt="Interior and fit out contractor for office, commercial, and industrial facilities in Indonesia"
+              src="/images/insights/interior-fitout-office-indonesia.jpg"
+              alt="Pekerjaan interior dan fit out kantor modern di Indonesia"
               fill
               priority
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover hover:scale-105 transition-transform duration-700"
             />
+            <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent"></div>
           </div>
 
         </div>
@@ -99,11 +103,13 @@ export default function FitOutPage() {
               Interior & Fit-Out Scope of Work
             </h2>
             <p className="text-gray-700 leading-relaxed pl-4">
-              Our interior and fit-out services cover the execution of internal
-              building works based on approved layouts, technical drawings, and
-              functional requirements. Each space is constructed to support
-              operational efficiency, user comfort, and long-term durability.
-            </p>
+Pekerjaan interior dan fit-out meliputi pelaksanaan pekerjaan
+ruang dalam bangunan berdasarkan layout, gambar teknis,
+dan spesifikasi yang telah disetujui. Setiap ruang
+dibangun dengan mempertimbangkan fungsi operasional,
+kenyamanan pengguna, serta ketahanan material
+untuk penggunaan jangka panjang.
+</p>
           </section>
 
           <section>
@@ -113,13 +119,13 @@ export default function FitOutPage() {
             </h2>
             <ul className="space-y-2 text-gray-700 pl-4">
               {[
-                "Partition systems (gypsum, glass, panel)",
-                "Ceiling systems (gypsum, metal, acoustic)",
-                "Flooring works (vinyl, tile, epoxy, raised floor)",
-                "Wall finishes, coating, and painting works",
-                "Custom joinery and built-in furniture",
-                "Interior lighting and architectural elements",
-              ].map((item, i) => (
+"Partisi ruangan (gypsum, kaca, panel)",
+"Sistem plafon (gypsum, metal, acoustic ceiling)",
+"Pekerjaan lantai (vinyl, tile, epoxy, raised floor)",
+"Finishing dinding, coating, dan pengecatan",
+"Pembuatan furniture built-in dan joinery",
+"Pemasangan lighting interior dan elemen arsitektural",
+].map((item, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-gold rounded-full mt-2.5" />
                   <span>{item}</span>
@@ -134,11 +140,13 @@ export default function FitOutPage() {
               Coordination with MEP & Structural Systems
             </h2>
             <p className="text-gray-700 leading-relaxed pl-4">
-              All fit-out works are closely coordinated with MEP and structural
-              systems to ensure seamless integration of lighting, HVAC,
-              electrical outlets, fire protection, and technical equipment
-              without compromising design intent or building functionality.
-            </p>
+Seluruh pekerjaan fit-out dikoordinasikan dengan sistem
+MEP dan struktur bangunan untuk memastikan instalasi
+pencahayaan, HVAC, instalasi listrik, sistem proteksi
+kebakaran, serta peralatan teknis lainnya dapat
+terintegrasi dengan baik tanpa mengganggu fungsi
+bangunan maupun desain ruang.
+</p>
           </section>
 
           <section>
@@ -147,11 +155,13 @@ export default function FitOutPage() {
               Quality Control & Finishing Standards
             </h2>
             <p className="text-gray-700 leading-relaxed pl-4">
-              Finishing quality is controlled through material approval,
-              mock-ups, and systematic inspections. This process ensures clean
-              detailing, consistency, and compliance with approved samples,
-              specifications, and project standards.
-            </p>
+Kualitas finishing dikontrol melalui proses persetujuan
+material, pembuatan mock-up, serta inspeksi pekerjaan
+secara berkala di lapangan. Proses ini memastikan
+hasil pekerjaan rapi, konsisten, dan sesuai dengan
+spesifikasi material serta standar proyek yang telah
+ditetapkan.
+</p>
           </section>
 
         </div>
@@ -193,12 +203,12 @@ export default function FitOutPage() {
             </h3>
             <ul className="space-y-2 text-sm text-gray-700">
               {[
-                "Engineering-oriented and functional approach",
-                "Clean detailing and high finishing quality",
-                "Integrated coordination with MEP systems",
-                "Controlled schedule and site execution",
-                "Clear documentation and project handover",
-              ].map((item, i) => (
+"Pendekatan pekerjaan berbasis engineering dan fungsi ruang",
+"Detail finishing rapi dan standar kualitas terkontrol",
+"Koordinasi pekerjaan dengan sistem MEP",
+"Pengendalian jadwal dan pelaksanaan di lapangan",
+"Dokumentasi proyek dan proses serah terima yang jelas",
+].map((item, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-gold rounded-full mt-1.5" />
                   <span>{item}</span>

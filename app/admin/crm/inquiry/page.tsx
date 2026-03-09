@@ -238,17 +238,6 @@ export default async function InquiryPage() {
                         Detail
                       </Link>
 
-                      {!i.converted_project_id && 
-                       i.status !== "won" && 
-                       i.status !== "lost" && (
-                        <Link
-                          href={`/admin/crm/inquiry/${i.inquiry_id}/assign`}
-                          className="text-xs text-amber-600 hover:text-amber-800"
-                        >
-                          Assign
-                        </Link>
-                      )}
-
                       {/* CONVERT BUTTON - UNTUK STATUS YANG BISA DI-CONVERT */}
                       {!i.converted_project_id && 
                        (i.status === "proposal" || i.status === "negotiation") && (

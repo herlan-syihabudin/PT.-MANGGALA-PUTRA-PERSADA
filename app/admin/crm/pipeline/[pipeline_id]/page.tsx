@@ -15,7 +15,7 @@ import {
   AlertCircle,
   Clock,
   User,
-  Users, // ← TAMBAH INI
+  Users,
   Mail,
   Phone,
   Building,
@@ -53,19 +53,16 @@ type Deal = {
   project_id?: string
   created_at: string
   updated_at: string
-  last_activity_at: string // Untuk aging yang akurat
+  last_activity_at: string
   status?: string
   probability: number
   aging_days: number
-  // Commercial
   discount_percent?: number
-  gross_margin?: number // READ ONLY - dari RAB
+  gross_margin?: number
   payment_terms?: string
-  // Risk
   competitor?: string
   risk_flags?: string[]
   win_probability?: number
-  // Metadata
   assigned_to?: string
   assigned_name?: string
   source?: string
@@ -83,7 +80,12 @@ type ActivityLog = {
   metadata?: any
 }
 
-// ================= CONFIG =================
+// ================= CONSTANTS =================
+const AGING_THRESHOLDS = {
+  warning: 14,
+  critical: 30,
+}
+
 const STAGE_CONFIG: Record<string, { label: string; color: string; bgColor: string; textColor: string; borderColor: string }> = {
   "FOLLOW UP": {
     label: "Follow Up",
@@ -122,7 +124,7 @@ const STAGE_CONFIG: Record<string, { label: string; color: string; bgColor: stri
   },
 }
 
-// ================= HELPER =================
+// ================= HELPERS =================
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -143,9 +145,19 @@ function formatDate(date: string): string {
 }
 
 function getAgingStatus(days: number): "normal" | "warning" | "critical" {
-  if (days > 30) return "critical"
-  if (days > 14) return "warning"
+  if (days > AGING_THRESHOLDS.critical) return "critical"
+  if (days > AGING_THRESHOLDS.warning) return "warning"
   return "normal"
+}
+
+function getWinPercentage(deal: Deal): number {
+  return deal.win_probability || Math.round(deal.probability * 100)
+}
+
+function getWinColor(percentage: number): string {
+  if (percentage >= 70) return "bg-emerald-500"
+  if (percentage >= 40) return "bg-amber-500"
+  return "bg-rose-500"
 }
 
 // ================= MAIN COMPONENT =================
@@ -164,25 +176,30 @@ export default function DealDetailPage({
 
   // ================= FETCH DEAL =================
   useEffect(() => {
-    if (!params.pipeline_id) return notFound()
+    if (!params?.pipeline_id) {
+      notFound()
+      return
+    }
 
     const fetchDeal = async () => {
       setLoading(true)
       try {
-        // Fetch deal detail
-        const res = await fetch(`/api/crm/pipeline/${params.pipeline_id}`)
-        if (!res.ok) throw new Error("Failed to fetch deal")
-        const json = await res.json()
-        setDeal(json)
+        const [dealRes, activityRes] = await Promise.all([
+          fetch(`/api/crm/pipeline/${params.pipeline_id}`, { cache: "no-store" }),
+          fetch(`/api/crm/pipeline/${params.pipeline_id}/activities`, { cache: "no-store" }),
+        ])
 
-        // Fetch activity logs
-        const activityRes = await fetch(`/api/crm/pipeline/${params.pipeline_id}/activities`)
+        if (!dealRes.ok) throw new Error("Failed to fetch deal")
+
+        const dealData = await dealRes.json()
+        setDeal(dealData)
+
         if (activityRes.ok) {
-          const activityJson = await activityRes.json()
-          setActivities(activityJson)
+          const activityData = await activityRes.json()
+          setActivities(activityData)
         }
       } catch (e) {
-        console.error("Error fetch deal", e)
+        console.error(e)
         toast.error("Gagal memuat data deal")
       } finally {
         setLoading(false)
@@ -190,7 +207,7 @@ export default function DealDetailPage({
     }
 
     fetchDeal()
-  }, [params.pipeline_id])
+  }, [params?.pipeline_id])
 
   // ================= ADD NOTE =================
   const addNote = async () => {
@@ -209,14 +226,14 @@ export default function DealDetailPage({
       if (!res.ok) throw new Error()
 
       const newActivity = await res.json()
-      setActivities([newActivity, ...activities])
+      setActivities(prev => [newActivity, ...prev])
       
       // Update last activity timestamp untuk aging
-      setDeal({
-        ...deal,
+      setDeal(prev => prev ? {
+        ...prev,
         last_activity_at: new Date().toISOString(),
         aging_days: 0,
-      })
+      } : prev)
       
       setNoteText("")
       setShowNoteModal(false)
@@ -228,6 +245,7 @@ export default function DealDetailPage({
 
   // ================= CONVERT TO PROJECT =================
   const convertToProject = async () => {
+    if (converting) return
     if (!deal) return
 
     // ✅ LOCK: Only DEAL stage can convert
@@ -266,7 +284,7 @@ export default function DealDetailPage({
           customer_id: deal.customer_id,
           project_name: deal.project_name,
           project_value: deal.final_value,
-          rab_id: deal.rab_id, // ✅ Kirim RAB ID untuk di-copy
+          rab_id: deal.rab_id,
         }),
       })
 
@@ -277,10 +295,10 @@ export default function DealDetailPage({
       }
 
       // Update local state with project_id
-      setDeal({
-        ...deal,
+      setDeal(prev => prev ? {
+        ...prev,
         project_id: result.project_id,
-      })
+      } : prev)
 
       // Add activity log
       const activityRes = await fetch(`/api/crm/pipeline/${deal.pipeline_id}/activities`, {
@@ -294,7 +312,7 @@ export default function DealDetailPage({
 
       if (activityRes.ok) {
         const newActivity = await activityRes.json()
-        setActivities([newActivity, ...activities])
+        setActivities(prev => [newActivity, ...prev])
       }
 
       toast.success("Deal berhasil dikonversi ke project")
@@ -334,6 +352,8 @@ export default function DealDetailPage({
 
   const stageConfig = STAGE_CONFIG[deal.stage]
   const agingStatus = getAgingStatus(deal.aging_days)
+  const winPercentage = getWinPercentage(deal)
+  const winColor = getWinColor(winPercentage)
 
   // ================= RENDER =================
   return (
@@ -351,14 +371,14 @@ export default function DealDetailPage({
               </button>
               <div>
                 <h1 className="text-2xl lg:text-3xl font-light tracking-tight">
-                  {deal.project_name}
+                  {deal.project_name || `${deal.customer_name} Project` || deal.pipeline_id}
                 </h1>
+                <p className="text-sm text-slate-300">
+                  {deal.customer_name} • {deal.pipeline_id}
+                </p>
                 <div className="flex items-center gap-3 mt-2">
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${stageConfig.bgColor} ${stageConfig.textColor} border ${stageConfig.borderColor}`}>
                     {stageConfig.label}
-                  </span>
-                  <span className="text-sm text-slate-300">
-                    ID: {deal.pipeline_id}
                   </span>
                 </div>
               </div>
@@ -547,18 +567,12 @@ export default function DealDetailPage({
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-2 bg-slate-100 rounded-full">
                         <div
-                          className={`h-2 rounded-full ${
-                            (deal.win_probability || deal.probability * 100) >= 70
-                              ? "bg-emerald-500"
-                              : (deal.win_probability || deal.probability * 100) >= 40
-                              ? "bg-amber-500"
-                              : "bg-rose-500"
-                          }`}
-                          style={{ width: `${deal.win_probability || deal.probability * 100}%` }}
+                          className={`h-2 rounded-full ${winColor}`}
+                          style={{ width: `${winPercentage}%` }}
                         />
                       </div>
                       <span className="text-sm font-medium text-slate-700">
-                        {deal.win_probability || Math.round(deal.probability * 100)}%
+                        {winPercentage}%
                       </span>
                     </div>
                   </div>
@@ -713,18 +727,12 @@ export default function DealDetailPage({
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-2 bg-slate-100 rounded-full">
                       <div
-                        className={`h-2 rounded-full ${
-                          (deal.win_probability || deal.probability * 100) >= 70
-                            ? "bg-emerald-500"
-                            : (deal.win_probability || deal.probability * 100) >= 40
-                            ? "bg-amber-500"
-                            : "bg-rose-500"
-                        }`}
-                        style={{ width: `${deal.win_probability || deal.probability * 100}%` }}
+                        className={`h-2 rounded-full ${winColor}`}
+                        style={{ width: `${winPercentage}%` }}
                       />
                     </div>
                     <span className="text-sm font-medium text-slate-700">
-                      {deal.win_probability || Math.round(deal.probability * 100)}%
+                      {winPercentage}%
                     </span>
                   </div>
                 </div>
@@ -796,7 +804,6 @@ export default function DealDetailPage({
                 </button>
                 <button
                   onClick={() => {
-                    // Email simulation
                     toast.success("Email draft prepared")
                   }}
                   className="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"

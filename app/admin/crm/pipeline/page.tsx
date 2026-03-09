@@ -76,7 +76,21 @@ type Stats = {
   wonProjects: number
 }
 
-// ================= CONFIG =================
+// ================= CONSTANTS =================
+const AGING_THRESHOLDS = {
+  warning: 14,
+  critical: 30,
+}
+
+const BAR_COLOR: Record<string, string> = {
+  slate: "bg-slate-600",
+  blue: "bg-blue-600",
+  amber: "bg-amber-600",
+  emerald: "bg-emerald-600",
+  rose: "bg-rose-600",
+}
+
+// ================= STAGE CONFIG =================
 const STAGE_CONFIG: Record<string, StageConfig> = {
   "FOLLOW UP": {
     label: "Follow Up",
@@ -130,27 +144,12 @@ const STAGE_CONFIG: Record<string, StageConfig> = {
   },
 }
 
-// ON GOING dihapus dari pipeline, pindah ke project management
-const AGING_THRESHOLDS = {
-  warning: 14,
-  critical: 30,
-}
-
 // ================= HELPER FUNCTIONS =================
 function getStageFromInquiry(i: any): Deal['stage'] {
-  // Lost check first
   if (i.status === "lost") return "LOST"
-  
-  // Deal = proposal approved
   if (i.proposal_status === "approved") return "DEAL"
-  
-  // Negosiasi = proposal sent
   if (i.proposal_status === "sent") return "NEGOSIASI"
-  
-  // Penawaran = RAB exists
   if (i.converted_rab_id) return "PENAWARAN"
-  
-  // Default = Follow Up
   return "FOLLOW UP"
 }
 
@@ -204,12 +203,11 @@ export default function CRMPipelinePage() {
     const fetchData = async () => {
       setLoading(true)
       try {
-        const res = await fetch("/api/crm/inquiry?limit=2000")
+        const res = await fetch("/api/crm/pipeline?limit=2000")
         const json = await res.json()
 
         const mapped = (json.data || []).map((i: any) => {
           const stage = getStageFromInquiry(i)
-          // Proposal value > inquiry value jika ada
           const proposalValue = i.proposal_value || 0
           const estimatedValue = i.estimasi_nilai || 0
           const finalValue = proposalValue > 0 ? proposalValue : estimatedValue
@@ -251,7 +249,6 @@ export default function CRMPipelinePage() {
   const filteredData = useMemo(() => {
     return data
       .filter((d) => {
-        // Search filter
         if (searchTerm) {
           const term = searchTerm.toLowerCase()
           return (
@@ -263,13 +260,11 @@ export default function CRMPipelinePage() {
         return true
       })
       .filter((d) => {
-        // Stage filter
         if (stageFilter === "all") return true
         if (stageFilter === "active") return d.stage !== "LOST"
         return d.stage === stageFilter
       })
       .filter((d) => {
-        // Date range filter
         if (dateRange.start && new Date(d.updated_at) < new Date(dateRange.start)) return false
         if (dateRange.end && new Date(d.updated_at) > new Date(dateRange.end)) return false
         return true
@@ -304,9 +299,8 @@ export default function CRMPipelinePage() {
   // ================= STATISTICS =================
   const stats = useMemo<Stats>(() => {
     const activeDeals = filteredData.filter(d => d.stage !== "LOST")
-    const totalPipeline = filteredData
-  .filter(d => d.stage !== "LOST")
-  .reduce((s, d) => s + d.final_value, 0)
+    
+    const totalPipeline = activeDeals.reduce((s, d) => s + d.final_value, 0)
     
     const weightedRevenue = filteredData.reduce(
       (s, d) => s + (d.final_value * d.probability), 0
@@ -320,12 +314,12 @@ export default function CRMPipelinePage() {
     const wonProjects = filteredData.filter(d => d.project_id).length
 
     const totalClosed = filteredData.filter(d => 
-  d.stage === "DEAL" || d.stage === "LOST"
-).length
+      d.stage === "DEAL" || d.stage === "LOST"
+    ).length
 
-const conversionRate = totalClosed > 0
-  ? (dealCount / totalClosed) * 100
-  : 0
+    const conversionRate = totalClosed > 0
+      ? (dealCount / totalClosed) * 100
+      : 0
 
     const avgDealSize = dealCount > 0 ? dealValue / dealCount : 0
     const pipelineHealth = totalPipeline > 0 
@@ -415,6 +409,31 @@ const conversionRate = totalClosed > 0
     return aging
   }, [filteredData])
 
+  // ================= EXPORT FUNCTION =================
+  const exportToCSV = () => {
+    const headers = ['Project', 'Customer', 'Stage', 'Value', 'Probability', 'Aging (Days)']
+    const csvData = filteredData.map(d => [
+      d.project_name,
+      d.customer_name,
+      d.stage,
+      d.final_value,
+      `${Math.round(d.probability * 100)}%`,
+      d.aging_days
+    ])
+    
+    const csvContent = [headers, ...csvData]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n')
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `pipeline-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    window.URL.revokeObjectURL(url)
+  }
+
   // ================= LOADING STATE =================
   if (loading) {
     return (
@@ -472,10 +491,7 @@ const conversionRate = totalClosed > 0
 
               {/* Export Button */}
               <button
-                onClick={() => {
-                  // Implement export to Excel
-                  alert("Export feature coming soon!")
-                }}
+                onClick={exportToCSV}
                 className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl transition border border-white/10"
               >
                 <Download size={20} className="text-slate-300" />
@@ -835,14 +851,6 @@ function KanbanView({
       })}
     </div>
   )
-}
-
-const BAR_COLOR: Record<string, string> = {
-  slate: "bg-slate-600",
-  blue: "bg-blue-600",
-  amber: "bg-amber-600",
-  emerald: "bg-emerald-600",
-  rose: "bg-rose-600",
 }
 
 // ================= ANALYTICS VIEW =================

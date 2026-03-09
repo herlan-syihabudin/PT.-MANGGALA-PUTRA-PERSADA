@@ -41,6 +41,7 @@ interface Customer {
   notes: string
   created_at: string
   created_by: string
+  total_inquiries?: number
 }
 
 // ==================== HELPERS ====================
@@ -96,33 +97,51 @@ export async function GET(req: Request) {
     
     const sortOrder = searchParams.get("sortOrder") === "desc" ? "desc" : "asc"
 
-    const res = await withRetry(() => sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2:P`,
-    }))
+    const [custRes, inqRes] = await Promise.all([
+  withRetry(() => sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${SHEET_NAME}!A2:P`,
+  })),
+  withRetry(() => sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `CRM_INQUIRY!A2:Z`,
+  }))
+])
 
-    const rows = res.data.values || []
+const rows = custRes.data.values || []
+const inquiryRows = inqRes.data.values || []
+
     
     let customers: Customer[] = rows
       .filter(isCustomerRow)
-      .map((r) => ({
-        customer_id: r[0],
-        company_name: r[1],
-        customer_type: r[2],
-        pic_name: r[3],
-        pic_position: r[4] || "",
-        email: r[5] || "",
-        phone: r[6] || "",
-        npwp: r[7] || "",
-        address: r[8] || "",
-        city: r[9] || "",
-        province: r[10] || "",
-        postal_code: r[11] || "",
-        status: r[12] || "Active",
-        notes: r[13] || "",
-        created_at: r[14] || "",
-        created_by: r[15] || "",
-      }))
+      .map((r) => {
+
+  const customer_id = r[0]
+
+  const total_inquiries = inquiryRows.filter(
+    (i) => i[2] === customer_id
+  ).length
+
+  return {
+    customer_id,
+    company_name: r[1],
+    customer_type: r[2],
+    pic_name: r[3],
+    pic_position: r[4] || "",
+    email: r[5] || "",
+    phone: r[6] || "",
+    npwp: r[7] || "",
+    address: r[8] || "",
+    city: r[9] || "",
+    province: r[10] || "",
+    postal_code: r[11] || "",
+    status: r[12] || "Active",
+    notes: r[13] || "",
+    created_at: r[14] || "",
+    created_by: r[15] || "",
+    total_inquiries
+  }
+})
 
     // Apply filters
     if (search) {

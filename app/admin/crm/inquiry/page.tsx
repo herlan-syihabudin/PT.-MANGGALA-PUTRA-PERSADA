@@ -16,6 +16,7 @@ type Inquiry = {
   estimasi_nilai: number | null
   sumber: string
   assigned_to: string
+  assigned_name?: string
   status: "new" | "survey" | "estimating" | "boq_created" | "proposal" | "negotiation" | "won" | "lost"
   prioritas: string
   lokasi: string

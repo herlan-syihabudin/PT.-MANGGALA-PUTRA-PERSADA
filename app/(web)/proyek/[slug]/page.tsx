@@ -1,4 +1,3 @@
-"use client"
 
 import { notFound } from "next/navigation"
 import { projects, type Project } from "@/lib/projects"
@@ -240,18 +239,14 @@ export default async function ProjectDetailPage({ params }: Props) {
               <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                 <h3 className="font-bold text-gray-900 mb-4">Bagikan Proyek</h3>
                 <div className="flex gap-2">
-                  <button 
-                    onClick={() => {
-                      navigator.clipboard.writeText(`${BASE_URL}/proyek/${project.slug}`)
-                      alert('Link disalin!')
-                    }}
-                    className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                    title="Salin link"
-                    aria-label="Salin link proyek"
-                  >
-                    <Share2 size={16} aria-hidden="true" />
-                  </button>
-                  <a 
+                  <a
+  href={`${BASE_URL}/proyek/${project.slug}`}
+  className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+  title="Buka link proyek"
+  aria-label="Buka link proyek"
+>
+  <Share2 size={16} aria-hidden="true" />
+</a> 
                     href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(`${BASE_URL}/proyek/${project.slug}`)}&text=${encodeURIComponent(project.title)}`}
                     target="_blank"
                     rel="noopener noreferrer"

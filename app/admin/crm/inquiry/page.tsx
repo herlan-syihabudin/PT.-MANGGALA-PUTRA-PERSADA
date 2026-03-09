@@ -16,7 +16,7 @@ type Inquiry = {
   estimasi_nilai: number | null
   sumber: string
   assigned_to: string
-  status: "new" | "survey" | "estimating" | "sent" | "won" | "lost"
+  status: "new" | "survey" | "estimating" | "boq_created" | "proposal" | "negotiation" | "won" | "lost"
   prioritas: string
   lokasi: string
   catatan: string
@@ -37,7 +37,9 @@ type InquiryResponse = {
     new: number
     survey: number
     estimating: number
-    sent: number
+    boq_created: number
+    proposal: number
+    negotiation: number
     won: number
     lost: number
     pipeline_value: number
@@ -77,7 +79,9 @@ async function fetchInquiry(): Promise<InquiryResponse> {
         new: 0,
         survey: 0,
         estimating: 0,
-        sent: 0,
+        boq_created: 0,
+        proposal: 0,
+        negotiation: 0,
         won: 0,
         lost: 0,
         pipeline_value: 0,
@@ -89,7 +93,6 @@ async function fetchInquiry(): Promise<InquiryResponse> {
     }
   }
 }
-
 
 /* ================= HELPER ================= */
 
@@ -124,7 +127,7 @@ export default async function InquiryPage() {
 
         <Link
           href="/admin/crm/inquiry/create"
-          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+          className="px-4 py-2 bg-slate-800 text-white text-sm rounded-lg hover:bg-slate-700 transition"
         >
           + Tambah Inquiry
         </Link>
@@ -144,8 +147,16 @@ export default async function InquiryPage() {
         <KPI label="New" value={summary.new} />
         <KPI label="Survey" value={summary.survey} />
         <KPI label="Estimating" value={summary.estimating} />
-        <KPI label="Sent" value={summary.sent} />
-        <KPI label="Avg Deal Value" value={formatCurrency(summary.avg_deal_value)} highlight="purple" />
+        <KPI label="BOQ" value={summary.boq_created} />
+        <KPI label="Proposal" value={summary.proposal} />
+      </div>
+
+      {/* KPI BARIS 3 */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <KPI label="Negotiation" value={summary.negotiation} />
+        <KPI label="Avg Deal" value={formatCurrency(summary.avg_deal_value)} highlight="purple" />
+        <KPI label="Pipeline Value" value={formatCurrency(summary.pipeline_value)} highlight="blue" />
+        <div /> {/* Spacer */}
       </div>
 
       {/* TABLE */}
@@ -187,7 +198,7 @@ export default async function InquiryPage() {
                   <td className="p-3 font-medium">
                     <Link 
                       href={`/admin/crm/inquiry/${i.inquiry_id}`}
-                      className="hover:text-blue-600 hover:underline"
+                      className="hover:text-slate-600 hover:underline"
                     >
                       {i.customer_name || "-"}
                     </Link>
@@ -208,7 +219,7 @@ export default async function InquiryPage() {
                   <td className="p-3">
                     {i.assigned_to ? (
                       <span className="inline-flex items-center px-2 py-1 bg-gray-100 rounded-md text-xs">
-                        {i.assigned_to}
+                        {i.assigned_name ?? i.assigned_to}
                       </span>
                     ) : "-"}
                   </td>
@@ -221,12 +232,14 @@ export default async function InquiryPage() {
                     <div className="flex items-center justify-center gap-2">
                       <Link
                         href={`/admin/crm/inquiry/${i.inquiry_id}`}
-                        className="text-xs text-blue-600 hover:text-blue-800"
+                        className="text-xs text-slate-600 hover:text-slate-800"
                       >
                         Detail
                       </Link>
 
-                      {i.status !== "won" && i.status !== "lost" && (
+                      {!i.converted_project_id && 
+                       i.status !== "won" && 
+                       i.status !== "lost" && (
                         <Link
                           href={`/admin/crm/inquiry/${i.inquiry_id}/assign`}
                           className="text-xs text-amber-600 hover:text-amber-800"
@@ -235,22 +248,23 @@ export default async function InquiryPage() {
                         </Link>
                       )}
 
-                      {/* CONVERT BUTTON - SESUAI LOGIC API */}
-{!i.converted_project_id && i.status === "sent" && (
-  <ConvertButton inquiry_id={i.inquiry_id} />
-)}
+                      {/* CONVERT BUTTON - UNTUK STATUS YANG BISA DI-CONVERT */}
+                      {!i.converted_project_id && 
+                       (i.status === "proposal" || i.status === "negotiation") && (
+                        <ConvertButton inquiry_id={i.inquiry_id} />
+                      )}
 
-{i.converted_project_id && (
-  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-    Converted
-  </span>
-)}
+                      {i.converted_project_id && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                          Converted
+                        </span>
+                      )}
 
-{i.status === "lost" && !i.converted_project_id && (
-  <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
-    Lost
-  </span>
-)}
+                      {i.status === "lost" && !i.converted_project_id && (
+                        <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
+                          Lost
+                        </span>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -260,15 +274,8 @@ export default async function InquiryPage() {
         </table>
       </div>
 
-      {/* PIPELINE VALUE & PAGINATION INFO */}
+      {/* PAGINATION INFO */}
       <div className="flex justify-between items-center text-sm">
-        <div className="text-gray-600">
-          Total Pipeline Value:
-          <span className="font-semibold ml-2 text-blue-600">
-            {formatCurrency(summary.pipeline_value)}
-          </span>
-        </div>
-
         <div className="text-gray-500">
           Page {page} of {totalPages}
         </div>
@@ -309,7 +316,9 @@ function StatusBadge({ status }: { status: Inquiry["status"] }) {
     new: { color: "bg-gray-100 text-gray-700", label: "New" },
     survey: { color: "bg-blue-100 text-blue-700", label: "Survey" },
     estimating: { color: "bg-amber-100 text-amber-700", label: "Estimating" },
-    sent: { color: "bg-indigo-100 text-indigo-700", label: "Sent" },
+    boq_created: { color: "bg-purple-100 text-purple-700", label: "BOQ" },
+    proposal: { color: "bg-indigo-100 text-indigo-700", label: "Proposal" },
+    negotiation: { color: "bg-orange-100 text-orange-700", label: "Negotiation" },
     won: { color: "bg-green-100 text-green-700", label: "WON" },
     lost: { color: "bg-red-100 text-red-700", label: "Lost" },
   }

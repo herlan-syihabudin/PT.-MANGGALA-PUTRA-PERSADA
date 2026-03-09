@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { debounce } from "lodash"
 import { v4 as uuidv4 } from "uuid"
 
 type Customer = {
@@ -79,18 +78,22 @@ const PRIORITY_OPTIONS = [
   { value: "urgent", label: "Urgent" },
 ] as const
 
-// Type guards
-const isCustomer = (data: any): data is Customer => {
-  return data && typeof data.customer_id === 'string'
-}
-
-const isEmployee = (data: any): data is Employee => {
-  return data && typeof data.employee_id === 'string'
-}
+const ESTIMATION_COMMISSION_RATE = 0.05 // 5%
 
 // Sanitize input
 const sanitizeInput = (input: string): string => {
-  return input.replace(/[<>{}]/g, '')
+  return input
+    .replace(/<[^>]*>?/gm, "")
+    .replace(/[{}]/g, "")
+    .trim()
+}
+
+// Generate ID dengan fallback
+const generateRequestId = (): string => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+  return uuidv4()
 }
 
 export default function CreateInquiryPage() {
@@ -125,10 +128,10 @@ export default function CreateInquiryPage() {
   })
 
   // Mock auth - ganti dengan auth context real
-  const user = {
-    id: "current-user-id",
-    email: "user@company.com"
-  }
+  const user = useMemo(() => ({
+  id: "current-user-id",
+  email: "user@company.com"
+}), [])
 
   /* ========== LOAD DATA with Caching ========== */
   useEffect(() => {
@@ -203,24 +206,6 @@ export default function CreateInquiryPage() {
     }
   }, [])
 
-  /* ========== DEBOUNCED SEARCH ========== */
-  const debouncedSearch = useMemo(
-    () => debounce((value: string, callback: (results: Customer[]) => void) => {
-      const filtered = customers.filter(c => 
-        c.company_name.toLowerCase().includes(value.toLowerCase()) ||
-        c.email?.toLowerCase().includes(value.toLowerCase())
-      )
-      callback(filtered)
-    }, 300),
-    [customers]
-  )
-
-  // Cleanup debounce
-  useEffect(() => {
-    return () => {
-      debouncedSearch.cancel()
-    }
-  }, [debouncedSearch])
 
   /* ========== FORMAT RUPIAH ========== */
   const formatRupiah = useCallback((value: number): string => {
@@ -337,7 +322,7 @@ export default function CreateInquiryPage() {
         created_at: new Date().toISOString(),
       }
 
-      const requestId = `inq-${uuidv4()}`
+      const requestId = generateRequestId()
 
       const res = await fetch("/api/crm/inquiry", {
         method: "POST",
@@ -386,7 +371,7 @@ export default function CreateInquiryPage() {
   const estimatorList = useMemo(() => {
     return employees.filter((emp) => {
       const dept = emp.department?.toLowerCase() || ""
-      const jab = (emp as any).jabatan?.toLowerCase() || ""
+      const jab = emp.jabatan?.toLowerCase() || ""
 
       return (
         dept === "engineering" ||
@@ -697,7 +682,9 @@ export default function CreateInquiryPage() {
                 <div className="bg-gray-800 rounded-lg p-3">
                   <div className="text-xs text-gray-400">Est. Komisi</div>
                   <div className="text-sm font-medium text-white mt-1">
-                    {form.estimasi_nilai ? formatRupiah(form.estimasi_nilai * 0.05) : '-'}
+                    {form.estimasi_nilai 
+                      ? formatRupiah(form.estimasi_nilai * ESTIMATION_COMMISSION_RATE) 
+                      : '-'}
                   </div>
                 </div>
               </div>

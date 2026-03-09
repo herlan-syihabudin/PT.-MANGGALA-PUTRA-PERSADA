@@ -43,7 +43,7 @@ export const projects: Project[] = [
       "/projects/steel-1.jpg",
       "/projects/steel-2.jpg",
       "/projects/steel-3.jpg",
-      "/projects/steel-4.jpg",
+      "/projects/steel-structure-erection-1.jpg",
       "/projects/steel-5.jpg",
     ],
     category: "Steel Structure",

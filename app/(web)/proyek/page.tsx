@@ -75,7 +75,7 @@ yang matang di setiap proyek.
             </div>
             <Link
               href="/proyek/tahapan"
-              className="inline-flex items-center gap-3 bg-white text-gold px-6 py-3 rounded-xl font-semibold border-2 border-gold/20 hover:bg-gold hover:text-white hover:border-gold transition-all group whitespace-nowrap shadow-sm"
+              className="inline-flex items-center gap-3 bg-red-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-700 transition-all group whitespace-nowrap shadow-sm"
             >
               <span>Lihat Tahapan Proyek</span>
               <ArrowRight size={18} className="group-hover:translate-x-1 transition" />

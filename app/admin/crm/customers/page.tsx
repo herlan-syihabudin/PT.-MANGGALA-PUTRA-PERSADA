@@ -192,23 +192,29 @@ export default function CustomerListPage() {
     fetchCustomers()
   }, [fetchCustomers])
 
-  // ================= FETCH CUSTOMER STATS =================
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setStatsError(null)
-        const res = await fetch("/api/crm/customers/stats")
-        if (!res.ok) throw new Error("Gagal memuat statistik")
-        const data = await res.json()
-        // setStats(data)
-      } catch (e: any) {
-        console.error("Failed fetch stats", e)
-        setStatsError(e.message)
-        toast.error("Gagal memuat statistik customer")
+ // ================= FETCH CUSTOMER STATS =================
+useEffect(() => {
+  const fetchStats = async () => {
+    try {
+      setStatsError(null)
+      const res = await fetch("/api/crm/customers/stats")
+      
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.message || "Gagal memuat statistik")
       }
+      
+      const data = await res.json()
+      // setStats(data) // Kalau mau pake state terpisah
+    } catch (e: any) {
+      console.error("Failed fetch stats", e)
+      setStatsError(e.message)
+      toast.error("Gagal memuat statistik customer")
     }
-    fetchStats()
-  }, [])
+  }
+  
+  fetchStats()
+}, [])
 
   // ================= STATISTICS =================
   const stats = useMemo<CustomerStats>(() => {

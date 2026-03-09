@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { google } from "googleapis"
+import { randomUUID } from "crypto"
 
 export const dynamic = "force-dynamic"
 
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic"
 const requiredEnv = ["GOOGLE_CLIENT_EMAIL", "GOOGLE_PRIVATE_KEY", "GSHEET_CRM_ID"] as const
 for (const key of requiredEnv) {
   if (!process.env[key]) {
-    console.warn(`[CRM_INQUIRY] Missing env var: ${key}`)
+    throw new Error(`[CRM_INQUIRY] Missing required env var: ${key}`)
   }
 }
 
@@ -22,6 +23,7 @@ const auth = new google.auth.JWT(
 const sheets = google.sheets({ version: "v4", auth })
 const SHEET_ID = process.env.GSHEET_CRM_ID!
 const SHEET_NAME = "CRM_INQUIRY"
+const RETRYABLE = [408, 429, 502, 503]
 
 /* ========== COLUMN MAPPING ========== */
 
@@ -87,6 +89,19 @@ interface InquirySummary {
 
 /* ========== HELPERS ========== */
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
+  try {
+    return await fn()
+  } catch (error: any) {
+    const code = Number(error.code || error.response?.status)
+    if (retries > 0 && RETRYABLE.includes(code)) {
+      await new Promise(r => setTimeout(r, 1000 * (4 - retries)))
+      return withRetry(fn, retries - 1)
+    }
+    throw error
+  }
+}
+
 const VALID_STATUS: InquiryStatus[] = [
   "new",
   "survey",
@@ -108,11 +123,14 @@ const STATUS_TRANSITIONS: Record<InquiryStatus, InquiryStatus[]> = {
 const normalize = (val: unknown) =>
   String(val ?? "").replace(/\s+/g, "").trim()
 
-function sanitize(value: unknown): string {
-  return String(value ?? "")
-    .replace(/^[=+\-@]/, "") // prevent formula injection
-    .replace(/[<>]/g, "")
-    .trim()
+function sanitize(value: unknown, allowHtml = false): string {
+  if (!value) return ""
+  let str = String(value).trim()
+  if (!allowHtml) {
+    str = str.replace(/[<>]/g, "") // hapus < > untuk keamanan
+  }
+  // Prevent formula injection
+  return str.replace(/^[=+\-@]/, "")
 }
 
 const parseDate = (val?: string) => {
@@ -121,9 +139,15 @@ const parseDate = (val?: string) => {
   return Number.isNaN(ts) ? 0 : ts
 }
 
-function mapRowToInquiry(row: any[]): Inquiry {
-  const rawBudget = String(row[COLUMNS.ESTIMASI_NILAI] || "").replace(/[^\d]/g, "")
+function parseNumber(val: unknown): number | null {
+  if (!val) return null
+  const cleaned = String(val).replace(/[^\d]/g, "")
+  if (!cleaned) return null
+  const num = Number(cleaned)
+  return Number.isNaN(num) ? null : num
+}
 
+function mapRowToInquiry(row: any[]): Inquiry {
   const statusRaw = String(row[COLUMNS.STATUS] || "new")
     .toLowerCase()
     .trim()
@@ -139,7 +163,7 @@ function mapRowToInquiry(row: any[]): Inquiry {
     customer_name: row[COLUMNS.CUSTOMER_NAME] || "",
     nama_pekerjaan: row[COLUMNS.NAMA_PEKERJAAN] || "",
     layanan: row[COLUMNS.LAYANAN] || "",
-    estimasi_nilai: rawBudget ? Number(rawBudget) : null,
+    estimasi_nilai: parseNumber(row[COLUMNS.ESTIMASI_NILAI]),
     sumber: row[COLUMNS.SUMBER] || "",
     assigned_to: row[COLUMNS.ASSIGNED_TO] || "",
     status,
@@ -228,22 +252,12 @@ export async function GET(req: Request) {
       }
     }
 
-    const res = await sheets.spreadsheets.values.get({
+    const res = await withRetry(() => sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A2:S`,
-    })
+    }))
 
-    if (!res.data.values) {
-      console.warn("[CRM_INQUIRY] No data in sheet")
-      return NextResponse.json({
-        data: [],
-        summary: calculateSummary([]),
-        page: 1,
-        totalPages: 0,
-      })
-    }
-
-    const rows = res.data.values.filter((r) => r[COLUMNS.INQUIRY_ID])
+    const rows = (res.data.values || []).filter((r) => r[COLUMNS.INQUIRY_ID])
     let data: Inquiry[] = rows.map(mapRowToInquiry)
 
     if (filterCustomerId) {
@@ -277,7 +291,7 @@ export async function GET(req: Request) {
   }
 }
 
-/* ========== POST (HARDENED) ========== */
+/* ========== POST ========== */
 
 export async function POST(req: Request) {
   try {
@@ -286,6 +300,13 @@ export async function POST(req: Request) {
     if (!body.customer_id || !String(body.customer_id).trim()) {
       return NextResponse.json(
         { message: "Customer ID wajib diisi" },
+        { status: 400 }
+      )
+    }
+
+    if (!body.customer_name || !String(body.customer_name).trim()) {
+      return NextResponse.json(
+        { message: "Nama customer wajib diisi" },
         { status: 400 }
       )
     }
@@ -304,15 +325,12 @@ export async function POST(req: Request) {
       )
     }
 
-    const inquiryId = `INQ-${Date.now()}`
+    const inquiryId = `INQ-${randomUUID()}`
     const now = new Date().toISOString()
     const today = new Date().toISOString().split("T")[0]
 
-    const budget = body.estimasi_nilai
-      ? Number(String(body.estimasi_nilai).replace(/[^\d]/g, ""))
-      : ""
-
-    const createdBy = "MARKETING" // nanti ganti session user
+    const budget = parseNumber(body.estimasi_nilai)
+    const createdBy = "MARKETING" // TODO: from session
 
     const values = [[
       inquiryId,
@@ -321,7 +339,7 @@ export async function POST(req: Request) {
       sanitize(body.customer_name),
       sanitize(body.nama_pekerjaan),
       sanitize(body.layanan),
-      budget,
+      budget || "",
       sanitize(body.sumber),
       sanitize(body.assigned_to),
       "new",
@@ -336,12 +354,12 @@ export async function POST(req: Request) {
       "",
     ]]
 
-    await sheets.spreadsheets.values.append({
+    await withRetry(() => sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A:S`,
       valueInputOption: "RAW",
       requestBody: { values },
-    })
+    }))
 
     return NextResponse.json({
       success: true,
@@ -361,7 +379,7 @@ export async function POST(req: Request) {
   }
 }
 
-/* ========== PUT (HARDENED) ========== */
+/* ========== PUT ========== */
 
 export async function PUT(req: Request) {
   try {
@@ -377,36 +395,23 @@ export async function PUT(req: Request) {
 
     const body = await req.json()
 
-    const res = await sheets.spreadsheets.values.get({
+    const res = await withRetry(() => sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A2:S`,
-    })
+    }))
 
-    if (!res.data.values) {
-      return NextResponse.json(
-        { message: "Data tidak ditemukan" },
-        { status: 404 }
-      )
-    }
+    const rows = res.data.values || []
+    const rowIndex = rows.findIndex(r => r[COLUMNS.INQUIRY_ID] === inquiryId)
 
-    let rowIndex = -1
-    let existingRow: any[] = []
-
-    for (let i = 0; i < res.data.values.length; i++) {
-      if (res.data.values[i][COLUMNS.INQUIRY_ID] === inquiryId) {
-        rowIndex = i + 2
-        existingRow = res.data.values[i]
-        break
-      }
-    }
-
-    if (rowIndex === -1 || !existingRow.length) {
+    if (rowIndex === -1) {
       return NextResponse.json(
         { message: "Inquiry tidak ditemukan" },
         { status: 404 }
       )
     }
 
+    const sheetRowNumber = rowIndex + 2
+    const existingRow = rows[rowIndex]
     const existingInquiry = mapRowToInquiry(existingRow)
 
     if (existingInquiry.converted_project_id) {
@@ -445,10 +450,6 @@ export async function PUT(req: Request) {
       }
     }
 
-    const budget = body.estimasi_nilai
-      ? Number(String(body.estimasi_nilai).replace(/[^\d]/g, ""))
-      : existingInquiry.estimasi_nilai
-
     const mergedInquiry: Inquiry = {
       inquiry_id: existingInquiry.inquiry_id,
       tanggal_masuk: body.tanggal_masuk || existingInquiry.tanggal_masuk,
@@ -456,7 +457,7 @@ export async function PUT(req: Request) {
       customer_name: body.customer_name ? sanitize(body.customer_name) : existingInquiry.customer_name,
       nama_pekerjaan: body.nama_pekerjaan ? sanitize(body.nama_pekerjaan) : existingInquiry.nama_pekerjaan,
       layanan: body.layanan ? sanitize(body.layanan) : existingInquiry.layanan,
-      estimasi_nilai: typeof budget === "number" ? budget : existingInquiry.estimasi_nilai,
+      estimasi_nilai: body.estimasi_nilai ? parseNumber(body.estimasi_nilai) : existingInquiry.estimasi_nilai,
       sumber: body.sumber ? sanitize(body.sumber) : existingInquiry.sumber,
       assigned_to: body.assigned_to ? sanitize(body.assigned_to) : existingInquiry.assigned_to,
       status: body.status ? body.status.toLowerCase() as InquiryStatus : existingInquiry.status,
@@ -466,21 +467,19 @@ export async function PUT(req: Request) {
       converted_rab_id: body.converted_rab_id ? sanitize(body.converted_rab_id) : existingInquiry.converted_rab_id,
       converted_project_id: body.converted_project_id ? sanitize(body.converted_project_id) : existingInquiry.converted_project_id,
       created_at: existingInquiry.created_at,
-      created_by: existingInquiry.created_by, // LOCKED
+      created_by: existingInquiry.created_by,
       stage: body.stage ? sanitize(body.stage) : existingInquiry.stage,
       converted_proposal_id: body.converted_proposal_id
         ? sanitize(body.converted_proposal_id)
         : existingInquiry.converted_proposal_id,
     }
 
-    const values = [rowFromInquiry(mergedInquiry)]
-
-    await sheets.spreadsheets.values.update({
+    await withRetry(() => sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A${rowIndex}:S${rowIndex}`,
+      range: `${SHEET_NAME}!A${sheetRowNumber}:S${sheetRowNumber}`,
       valueInputOption: "RAW",
-      requestBody: { values },
-    })
+      requestBody: { values: [rowFromInquiry(mergedInquiry)] }
+    }))
 
     return NextResponse.json({
       success: true,
@@ -513,36 +512,23 @@ export async function DELETE(req: Request) {
       )
     }
 
-    const res = await sheets.spreadsheets.values.get({
+    const res = await withRetry(() => sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A2:S`,
-    })
+    }))
 
-    if (!res.data.values) {
-      return NextResponse.json(
-        { message: "Data tidak ditemukan" },
-        { status: 404 }
-      )
-    }
+    const rows = res.data.values || []
+    const rowIndex = rows.findIndex(r => r[COLUMNS.INQUIRY_ID] === inquiryId)
 
-    let rowIndex = -1
-    let existingRow: any[] = []
-
-    for (let i = 0; i < res.data.values.length; i++) {
-      if (res.data.values[i][COLUMNS.INQUIRY_ID] === inquiryId) {
-        rowIndex = i + 2
-        existingRow = res.data.values[i]
-        break
-      }
-    }
-
-    if (rowIndex === -1 || !existingRow.length) {
+    if (rowIndex === -1) {
       return NextResponse.json(
         { message: "Inquiry tidak ditemukan" },
         { status: 404 }
       )
     }
 
+    const sheetRowNumber = rowIndex + 2
+    const existingRow = rows[rowIndex]
     const existingInquiry = mapRowToInquiry(existingRow)
 
     if (existingInquiry.converted_project_id) {
@@ -558,14 +544,12 @@ export async function DELETE(req: Request) {
       stage: "DELETED",
     }
 
-    const values = [rowFromInquiry(deletedInquiry)]
-
-    await sheets.spreadsheets.values.update({
+    await withRetry(() => sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A${rowIndex}:S${rowIndex}`,
+      range: `${SHEET_NAME}!A${sheetRowNumber}:S${sheetRowNumber}`,
       valueInputOption: "RAW",
-      requestBody: { values },
-    })
+      requestBody: { values: [rowFromInquiry(deletedInquiry)] }
+    }))
 
     return NextResponse.json({
       success: true,

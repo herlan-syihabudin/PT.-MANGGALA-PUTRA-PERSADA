@@ -32,9 +32,13 @@ const ACTIVITY_COLUMNS = {
   NEW_VALUE: 5,   // F
   CREATED_AT: 6,  // G
   CREATED_BY: 7,  // H
+  MODULE,
+REFERENCE_ID
 } as const
 
-const RETRYABLE_CODES = [408, 429, 502, 503] as const
+const RETRYABLE_CODES = [408, 429, 502, 503]
+
+if (retries > 0 && RETRYABLE_CODES.includes(Number(code))) {
 
 /* ================= ENVIRONMENT VALIDATION ================= */
 function validateEnvironment() {
@@ -56,7 +60,7 @@ validateEnvironment()
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL,
   undefined,
-  process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+  (process.env.GOOGLE_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
   ["https://www.googleapis.com/auth/spreadsheets"]
 )
 
@@ -92,7 +96,8 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   try {
     return await fn()
   } catch (error: any) {
-    if (retries > 0 && RETRYABLE_CODES.includes(error.code)) {
+    const code = error.code || error.response?.status
+    if (retries > 0 && RETRYABLE_CODES.includes(code)) {
       const delay = 1000 * (4 - retries)
       await new Promise(resolve => setTimeout(resolve, delay))
       return withRetry(fn, retries - 1)
@@ -155,7 +160,8 @@ export async function appendActivity(params: ActivityParams): Promise<{ success:
       429: "Terlalu banyak request",
     }
 
-    const userMessage = errorMessages[error.code] || "Gagal mencatat aktivitas"
+    const code = error.code || error.response?.status
+const userMessage = errorMessages[code] || "Gagal mencatat aktivitas"
     
     // Return error tapi jangan throw
     return { 
@@ -208,9 +214,9 @@ export async function logAssignmentChange(
   return appendActivity({
     inquiry_id,
     type: "ASSIGNMENT_CHANGE",
-    description: `Penugasan berubah dari ${oldAssignee} ke ${newAssignee}`,
-    old_value: oldAssignee,
-    new_value: newAssignee,
+    description: `Penugasan berubah dari ${oldAssignee || 'unassigned'} ke ${newAssignee || 'unassigned'}`,
+    old_value: oldAssignee || 'unassigned',
+    new_value: newAssignee || 'unassigned',
     created_by
   })
 }
@@ -221,12 +227,60 @@ export async function logValueChange(
   newValue: number,
   created_by?: string
 ) {
+  const formatter = new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0
+  })
+
   return appendActivity({
     inquiry_id,
     type: "VALUE_CHANGE",
-    description: `Nilai berubah dari ${oldValue} ke ${newValue}`,
+    description: `Nilai berubah dari ${formatter.format(oldValue)} ke ${formatter.format(newValue)}`,
     old_value: oldValue,
     new_value: newValue,
+    created_by
+  })
+}
+
+export async function logRABCreated(
+  inquiry_id: string,
+  rab_id: string,
+  created_by?: string
+) {
+  return appendActivity({
+    inquiry_id,
+    type: "RAB_CREATED",
+    description: `RAB dibuat dengan ID: ${rab_id}`,
+    new_value: rab_id,
+    created_by
+  })
+}
+
+export async function logProposalCreated(
+  inquiry_id: string,
+  proposal_id: string,
+  created_by?: string
+) {
+  return appendActivity({
+    inquiry_id,
+    type: "PROPOSAL_CREATED",
+    description: `Proposal dibuat dengan ID: ${proposal_id}`,
+    new_value: proposal_id,
+    created_by
+  })
+}
+
+export async function logProjectCreated(
+  inquiry_id: string,
+  project_id: string,
+  created_by?: string
+) {
+  return appendActivity({
+    inquiry_id,
+    type: "PROJECT_CREATED",
+    description: `Project dibuat dengan ID: ${project_id}`,
+    new_value: project_id,
     created_by
   })
 }

@@ -4,6 +4,14 @@ import { google } from "googleapis"
 
 export const dynamic = "force-dynamic"
 
+/* ================= ENVIRONMENT VALIDATION ================= */
+const requiredEnv = ['GOOGLE_CLIENT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'GSHEET_CRM_ID'] as const
+for (const env of requiredEnv) {
+  if (!process.env[env]) {
+    throw new Error(`Missing environment variable: ${env}`)
+  }
+}
+
 /* ================= AUTH ================= */
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL,
@@ -13,13 +21,16 @@ const auth = new google.auth.JWT(
 )
 
 const sheets = google.sheets({ version: "v4", auth })
-
 const SHEET_ID = process.env.GSHEET_CRM_ID!
 const SHEET_NAME = "CRM_INQUIRY"
+const RETRYABLE = [408, 429, 502, 503]
 
 /* ================= CONSTANTS ================= */
-const VALID_STATUS = ["new", "survey", "estimating", "sent", "won", "lost"] as const
+const VALID_STATUS = ["new", "survey", "estimating", "boq_created", "proposal", "negotiation", "won", "lost"] as const
 type InquiryStatus = typeof VALID_STATUS[number]
+
+const VALID_STAGES = ["FOLLOW UP", "PENAWARAN", "NEGOSIASI", "DEAL", "LOST"] as const
+type PipelineStage = typeof VALID_STAGES[number]
 
 const COLUMNS = {
   INQUIRY_ID: 0,
@@ -46,12 +57,37 @@ const COLUMNS = {
 /* ================= HELPERS ================= */
 const normalize = (val: any) => String(val || "").replace(/[\s-]/g, "").trim()
 
-function getStageFromInquiry(i: any): string {
+async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
+  try {
+    return await fn()
+  } catch (error: any) {
+    const code = Number(error.code || error.response?.status)
+    if (retries > 0 && RETRYABLE.includes(code)) {
+      await new Promise(r => setTimeout(r, 1000 * (4 - retries)))
+      return withRetry(fn, retries - 1)
+    }
+    throw error
+  }
+}
+
+const logger = {
+  error: (context: string, error: any, meta = {}) => 
+    console.error(JSON.stringify({ timestamp: new Date().toISOString(), level: 'error', context, error: { message: error?.message, code: error?.code }, ...meta })),
+  info: (context: string, meta = {}) => 
+    console.log(JSON.stringify({ timestamp: new Date().toISOString(), level: 'info', context, ...meta }))
+}
+
+function getStageFromInquiry(i: any): PipelineStage {
   if (i.status === "lost") return "LOST"
-  if (i.proposal_status === "approved") return "DEAL"
-  if (i.proposal_status === "sent") return "NEGOSIASI"
+  if (i.status === "won") return "DEAL"
+  if (i.converted_proposal_id) return "NEGOSIASI"
   if (i.converted_rab_id) return "PENAWARAN"
   return "FOLLOW UP"
+}
+
+function getAgingDays(date: string): number {
+  const diff = Date.now() - new Date(date).getTime()
+  return Math.floor(diff / (1000 * 60 * 60 * 24))
 }
 
 function mapRowToDeal(row: any[]): any {
@@ -67,16 +103,24 @@ function mapRowToDeal(row: any[]): any {
     status,
     converted_rab_id: rabId,
     converted_proposal_id: proposalId,
-    proposal_status: "draft", // TODO: ambil dari proposal API
   })
   
   // Probability based on stage
-  const probabilityMap: Record<string, number> = {
+  const probabilityMap: Record<PipelineStage, number> = {
     "FOLLOW UP": 0.2,
     "PENAWARAN": 0.5,
     "NEGOSIASI": 0.7,
     "DEAL": 1.0,
     "LOST": 0,
+  }
+  
+  // Generate project name with fallback
+  let projectName = row[COLUMNS.NAMA_PEKERJAAN] || ""
+  if (!projectName && row[COLUMNS.CUSTOMER_NAME]) {
+    projectName = `${row[COLUMNS.CUSTOMER_NAME]} Project`
+  }
+  if (!projectName) {
+    projectName = inquiryId
   }
   
   return {
@@ -87,7 +131,7 @@ function mapRowToDeal(row: any[]): any {
     customer_email: "", // TODO: ambil dari customer API
     customer_phone: "", // TODO: ambil dari customer API
     customer_address: row[COLUMNS.LOKASI] || "",
-    project_name: row[COLUMNS.NAMA_PEKERJAAN] || "Untitled Project",
+    project_name: projectName,
     project_location: row[COLUMNS.LOKASI] || "",
     stage,
     estimated_value: estimasi,
@@ -102,7 +146,7 @@ function mapRowToDeal(row: any[]): any {
     last_activity_at: row[COLUMNS.CREATED_AT] || row[COLUMNS.TANGGAL_MASUK] || new Date().toISOString(),
     status,
     probability: probabilityMap[stage] || 0,
-    aging_days: 0, // akan dihitung di frontend
+    aging_days: getAgingDays(row[COLUMNS.CREATED_AT] || row[COLUMNS.TANGGAL_MASUK] || new Date().toISOString()),
     source: row[COLUMNS.SUMBER] || "",
     priority: row[COLUMNS.PRIORITAS] || "normal",
     notes: row[COLUMNS.CATATAN] || "",
@@ -110,13 +154,29 @@ function mapRowToDeal(row: any[]): any {
   }
 }
 
+/* ================= VALID STAGE TRANSITION ================= */
+const validTransitions: Record<PipelineStage, PipelineStage[]> = {
+  "FOLLOW UP": ["PENAWARAN"],
+  "PENAWARAN": ["NEGOSIASI"],
+  "NEGOSIASI": ["DEAL", "LOST"],
+  "DEAL": [],
+  "LOST": [],
+}
+
+/* ================= LOCK RAB ================= */
+async function lockRAB(rabId: string) {
+  // TODO: Implement RAB locking
+  logger.info('RAB locked', { rabId })
+  return true
+}
+
 /* ================= GET DEAL ================= */
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const inquiryId = params.id
+    const { id: inquiryId } = await params
 
     if (!inquiryId) {
       return NextResponse.json(
@@ -126,10 +186,10 @@ export async function GET(
     }
 
     // Ambil dari Google Sheets
-    const res = await sheets.spreadsheets.values.get({
+    const res = await withRetry(() => sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A2:S`,
-    })
+    }))
 
     const rows = (res.data.values || []).filter(r => r[COLUMNS.INQUIRY_ID])
 
@@ -147,15 +207,19 @@ export async function GET(
     const row = rows[rowIndex]
     const deal = mapRowToDeal(row)
 
-    // TODO: Fetch additional data from:
-    // - Customer API untuk email/phone
-    // - RAB API untuk gross_margin
-    // - Proposal API untuk proposal_status & proposal_value
+    logger.info('GET Deal Success', { inquiryId })
 
     return NextResponse.json(deal)
 
-  } catch (error) {
-    console.error("GET Deal Error:", error)
+  } catch (error: any) {
+    const { id } = await params
+    logger.error('GET Deal Error', error, { inquiryId: id })
+
+    const status = error.code || error.response?.status
+    if ([404, 403, 429, 503].includes(status)) {
+      return NextResponse.json({ message: error.message }, { status })
+    }
+
     return NextResponse.json(
       { message: "Gagal load deal" },
       { status: 500 }
@@ -163,40 +227,40 @@ export async function GET(
   }
 }
 
-/* ================= VALID STAGE TRANSITION ================= */
-const validTransitions: Record<string, string[]> = {
-  "FOLLOW UP": ["PENAWARAN"],
-  "PENAWARAN": ["NEGOSIASI"],
-  "NEGOSIASI": ["DEAL", "LOST"],
-  "DEAL": [],
-  "LOST": [],
-}
-
-/* ================= LOCK RAB ================= */
-async function lockRAB(rabId: string) {
-  // TODO: Implement RAB locking
-  console.log("RAB locked:", rabId)
-  return true
-}
-
 /* ================= PATCH - UPDATE STAGE ================= */
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: inquiryId } = await params
     const body = await req.json()
     const { stage } = body
 
+    // Validate stage
+    if (!stage) {
+      return NextResponse.json(
+        { message: "Stage wajib diisi" },
+        { status: 400 }
+      )
+    }
+
+    if (!VALID_STAGES.includes(stage as PipelineStage)) {
+      return NextResponse.json(
+        { message: "Stage tidak valid" },
+        { status: 400 }
+      )
+    }
+
     // First get existing deal
-    const getRes = await sheets.spreadsheets.values.get({
+    const getRes = await withRetry(() => sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A2:S`,
-    })
+    }))
 
     const rows = (getRes.data.values || []).filter(r => r[COLUMNS.INQUIRY_ID])
     const rowIndex = rows.findIndex((r) =>
-      normalize(r[COLUMNS.INQUIRY_ID]) === normalize(params.id)
+      normalize(r[COLUMNS.INQUIRY_ID]) === normalize(inquiryId)
     )
 
     if (rowIndex === -1) {
@@ -212,10 +276,7 @@ export async function PATCH(
     // ===============================
     // VALID STAGE TRANSITION
     // ===============================
-    if (
-      stage &&
-      !validTransitions[existingDeal.stage]?.includes(stage)
-    ) {
+    if (!validTransitions[existingDeal.stage as PipelineStage]?.includes(stage as PipelineStage)) {
       return NextResponse.json(
         {
           message: `Transisi tidak valid: dari ${existingDeal.stage} ke ${stage}`,
@@ -234,27 +295,19 @@ export async function PATCH(
       )
     }
 
-    if (
-      stage === "NEGOSIASI" &&
-      existingDeal.proposal_status !== "sent"
-    ) {
+    if (stage === "NEGOSIASI" && existingDeal.proposal_status !== "sent") {
       return NextResponse.json(
         {
-          message:
-            "Proposal harus sudah dikirim sebelum NEGOSIASI",
+          message: "Proposal harus sudah dikirim sebelum NEGOSIASI",
         },
         { status: 400 }
       )
     }
 
-    if (
-      stage === "DEAL" &&
-      existingDeal.proposal_status !== "approved"
-    ) {
+    if (stage === "DEAL" && existingDeal.proposal_status !== "approved") {
       return NextResponse.json(
         {
-          message:
-            "Proposal harus disetujui sebelum DEAL",
+          message: "Proposal harus disetujui sebelum DEAL",
         },
         { status: 400 }
       )
@@ -283,30 +336,42 @@ export async function PATCH(
     
     const newStatus = statusMap[stage] || existingDeal.status
     
-    await sheets.spreadsheets.values.update({
+    await withRetry(() => sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!J${actualRowNumber}`, // Kolom STATUS
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[newStatus]],
       },
-    })
+    }))
 
     // Get updated data
-    const updatedRes = await sheets.spreadsheets.values.get({
+    const updatedRes = await withRetry(() => sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A${actualRowNumber}:S${actualRowNumber}`,
-    })
+    }))
 
     const updatedRow = updatedRes.data.values?.[0] || []
     const updatedDeal = mapRowToDeal(updatedRow)
 
+    logger.info('PATCH Deal Success', { inquiryId, stage })
+
     return NextResponse.json(updatedDeal)
 
-  } catch (error) {
-    console.error("PATCH ERROR:", error)
+  } catch (error: any) {
+    const { id } = await params
+    logger.error('PATCH Deal Error', error, { inquiryId: id })
+
+    const status = error.code || error.response?.status
+    if ([404, 403, 429, 503].includes(status)) {
+      return NextResponse.json(
+        { success: false, message: error.message },
+        { status }
+      )
+    }
+
     return NextResponse.json(
-      { message: "Gagal update deal" },
+      { success: false, message: "Gagal update deal" },
       { status: 500 }
     )
   }

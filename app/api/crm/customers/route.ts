@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { google } from "googleapis"
-import { randomUUID } from "crypto"
 
 export const dynamic = "force-dynamic"
 
@@ -21,6 +20,7 @@ const auth = new google.auth.JWT(
 const sheets = google.sheets({ version: "v4", auth })
 const SHEET_ID = process.env.GSHEET_CRM_ID!
 const SHEET_NAME = "CUSTOMERS"
+const INQUIRY_SHEET = "CRM_INQUIRY"
 const RETRYABLE = [408, 429, 502, 503]
 
 // ==================== TYPES ====================
@@ -44,10 +44,59 @@ interface Customer {
   total_inquiries?: number
 }
 
+// ==================== CONSTANTS ====================
+const CUSTOMER_COLS = {
+  ID: 0,
+  COMPANY: 1,
+  TYPE: 2,
+  PIC_NAME: 3,
+  PIC_POS: 4,
+  EMAIL: 5,
+  PHONE: 6,
+  NPWP: 7,
+  ADDRESS: 8,
+  CITY: 9,
+  PROVINCE: 10,
+  POSTAL: 11,
+  STATUS: 12,
+  NOTES: 13,
+  CREATED_AT: 14,
+  CREATED_BY: 15,
+} as const
+
+const INQUIRY_COLS = {
+  ID: 0,
+  INQUIRY_ID: 1,
+  CUSTOMER_ID: 2, // Kolom ke-3 adalah customer_id
+  // ... kolom lainnya
+} as const
+
 // ==================== HELPERS ====================
 const logger = {
-  error: (context: string, error: any, meta = {}) => console.error(JSON.stringify({ timestamp: new Date().toISOString(), level: 'error', context, error: { message: error?.message, code: error?.code }, ...meta })),
-  info: (context: string, meta = {}) => console.log(JSON.stringify({ timestamp: new Date().toISOString(), level: 'info', context, ...meta }))
+  error: (context: string, error: any, meta = {}) =>
+    console.error(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'error',
+      context,
+      error: { message: error?.message, code: error?.code },
+      ...meta
+    })),
+
+  warn: (context: string, meta = {}) =>
+    console.warn(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'warn',
+      context,
+      ...meta
+    })),
+
+  info: (context: string, meta = {}) =>
+    console.log(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'info',
+      context,
+      ...meta
+    }))
 }
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
@@ -97,51 +146,57 @@ export async function GET(req: Request) {
     
     const sortOrder = searchParams.get("sortOrder") === "desc" ? "desc" : "asc"
 
-    const [custRes, inqRes] = await Promise.all([
-  withRetry(() => sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range: `${SHEET_NAME}!A2:P`,
-  })),
-  withRetry(() => sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range: `CRM_INQUIRY!A2:Z`,
-  }))
-])
+    // Fetch customers and inquiries in parallel with error handling
+    const [custRes, inqRes] = await Promise.allSettled([
+      withRetry(() => sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: `${SHEET_NAME}!A2:P`,
+      })),
+      withRetry(() => sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: `${INQUIRY_SHEET}!A2:C`, // Cukup ambil kolom A-C
+      }))
+    ])
 
-const rows = custRes.data.values || []
-const inquiryRows = inqRes.data.values || []
-
+    // Handle customers data
+    const rows = custRes.status === 'fulfilled' ? custRes.value.data.values || [] : []
     
+    // Handle inquiries data
+    let inquiryRows: any[] = []
+    if (inqRes.status === 'fulfilled') {
+      inquiryRows = inqRes.value.data.values || []
+    } else {
+      logger.warn('Failed to fetch inquiries', inqRes.reason)
+    }
+
     let customers: Customer[] = rows
       .filter(isCustomerRow)
       .map((r) => {
+        const customer_id = r[CUSTOMER_COLS.ID]
+        const total_inquiries = inquiryRows.filter(
+          (i) => i[INQUIRY_COLS.CUSTOMER_ID] === customer_id
+        ).length
 
-  const customer_id = r[0]
-
-  const total_inquiries = inquiryRows.filter(
-    (i) => i[2] === customer_id
-  ).length
-
-  return {
-    customer_id,
-    company_name: r[1],
-    customer_type: r[2],
-    pic_name: r[3],
-    pic_position: r[4] || "",
-    email: r[5] || "",
-    phone: r[6] || "",
-    npwp: r[7] || "",
-    address: r[8] || "",
-    city: r[9] || "",
-    province: r[10] || "",
-    postal_code: r[11] || "",
-    status: r[12] || "Active",
-    notes: r[13] || "",
-    created_at: r[14] || "",
-    created_by: r[15] || "",
-    total_inquiries
-  }
-})
+        return {
+          customer_id,
+          company_name: r[CUSTOMER_COLS.COMPANY],
+          customer_type: r[CUSTOMER_COLS.TYPE],
+          pic_name: r[CUSTOMER_COLS.PIC_NAME],
+          pic_position: r[CUSTOMER_COLS.PIC_POS] || "",
+          email: r[CUSTOMER_COLS.EMAIL] || "",
+          phone: r[CUSTOMER_COLS.PHONE] || "",
+          npwp: r[CUSTOMER_COLS.NPWP] || "",
+          address: r[CUSTOMER_COLS.ADDRESS] || "",
+          city: r[CUSTOMER_COLS.CITY] || "",
+          province: r[CUSTOMER_COLS.PROVINCE] || "",
+          postal_code: r[CUSTOMER_COLS.POSTAL] || "",
+          status: r[CUSTOMER_COLS.STATUS] || "Active",
+          notes: r[CUSTOMER_COLS.NOTES] || "",
+          created_at: r[CUSTOMER_COLS.CREATED_AT] || "",
+          created_by: r[CUSTOMER_COLS.CREATED_BY] || "",
+          total_inquiries
+        }
+      })
 
     // Apply filters
     if (search) {
@@ -230,7 +285,26 @@ export async function POST(req: Request) {
     const exists = (checkRes.data.values || []).some(r => (r[0] || "").toLowerCase().trim() === name)
     if (exists) return NextResponse.json({ message: "Perusahaan sudah terdaftar" }, { status: 409 })
 
-    const customer_id = `CUST-${Date.now()}-${randomUUID().slice(0,4)}`
+    // Get all existing customer IDs to generate next number
+    const existing = await withRetry(() =>
+      sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: `${SHEET_NAME}!A2:A`,
+      })
+    )
+
+    const idRows = existing.data.values || []
+    const numbers = idRows
+      .map(r => {
+        const id = r[0] || ""
+        const num = parseInt(id.replace("CUST-", ""), 10)
+        return isNaN(num) ? 0 : num
+      })
+      .filter(n => n > 0)
+
+    const nextNumber = numbers.length > 0 ? Math.max(...numbers) + 1 : 1
+    const customer_id = `CUST-${String(nextNumber).padStart(6, "0")}` // 6 digit untuk aman
+    
     const created_at = new Date().toISOString()
     const created_by = "admin" // TODO: from session
 

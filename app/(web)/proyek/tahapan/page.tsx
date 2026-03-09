@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ChevronLeft } from "lucide-react"
+import { ChevronLeft, Timer, Sparkles, Trophy } from "lucide-react"
 import ProjectExecutionFlow, { steps } from "../ProjectExecutionFlow"
 
 export const metadata: Metadata = {
@@ -43,7 +43,7 @@ export default function TahapanPage() {
         </div>
       </div>
 
-      {/* Hero Section untuk halaman tahapan */}
+      {/* Hero Section */}
       <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white py-16">
         <div className="max-w-7xl mx-auto px-6">
           <div className="max-w-3xl">
@@ -61,14 +61,45 @@ export default function TahapanPage() {
               Kami menerapkan 7 tahapan kerja yang terencana untuk memastikan kualitas, 
               ketepatan waktu, dan kepuasan klien.
             </p>
+
+            {/* Quick Stats - Dipindah dari component */}
+            <div className="flex flex-wrap gap-6 mt-8 border-t border-white/10 pt-8">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gold/20 flex items-center justify-center">
+                  <Timer size={20} className="text-gold" />
+                </div>
+                <div>
+                  <div className="font-bold text-xl">7 Tahapan</div>
+                  <div className="text-sm text-gray-400">Terstruktur</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gold/20 flex items-center justify-center">
+                  <Sparkles size={20} className="text-gold" />
+                </div>
+                <div>
+                  <div className="font-bold text-xl">100% QC</div>
+                  <div className="text-sm text-gray-400">di Setiap Fase</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gold/20 flex items-center justify-center">
+                  <Trophy size={20} className="text-gold" />
+                </div>
+                <div>
+                  <div className="font-bold text-xl">Terjamin</div>
+                  <div className="text-sm text-gray-400">Hasil Akhir</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Project Execution Flow Component */}
+      {/* Project Execution Flow Component - TANPA JUDUL */}
       <ProjectExecutionFlow />
 
-      {/* Call to Action - Kembali ke portofolio */}
+      {/* Call to Action */}
       <div className="max-w-7xl mx-auto px-6 pb-24">
         <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-lg">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
@@ -87,7 +118,7 @@ export default function TahapanPage() {
         </div>
       </div>
 
-      {/* Schema Markup untuk halaman ini */}
+      {/* Schema Markup */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

@@ -32,13 +32,10 @@ const ACTIVITY_COLUMNS = {
   NEW_VALUE: 5,   // F
   CREATED_AT: 6,  // G
   CREATED_BY: 7,  // H
-  MODULE,
-REFERENCE_ID
 } as const
 
 const RETRYABLE_CODES = [408, 429, 502, 503]
 
-if (retries > 0 && RETRYABLE_CODES.includes(Number(code))) {
 
 /* ================= ENVIRONMENT VALIDATION ================= */
 function validateEnvironment() {
@@ -97,7 +94,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
     return await fn()
   } catch (error: any) {
     const code = error.code || error.response?.status
-    if (retries > 0 && RETRYABLE_CODES.includes(code)) {
+    if (retries > 0 && RETRYABLE_CODES.includes(Number(code))) {
       const delay = 1000 * (4 - retries)
       await new Promise(resolve => setTimeout(resolve, delay))
       return withRetry(fn, retries - 1)

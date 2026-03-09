@@ -3,13 +3,19 @@ import { google } from "googleapis"
 
 export const dynamic = "force-dynamic"
 
-// ==================== ENVIRONMENT ====================
-const requiredEnv = ['GOOGLE_CLIENT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'GSHEET_CRM_ID'] as const
-for (const env of requiredEnv) {
-  if (!process.env[env]) throw new Error(`Missing ${env}`)
+/* ================= ENVIRONMENT VALIDATION ================= */
+function validateEnvironment() {
+  const required = ['GOOGLE_CLIENT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'GSHEET_CRM_ID'] as const
+  const missing = required.filter(key => !process.env[key])
+  
+  if (missing.length > 0) {
+    throw new Error(`Missing environment variables: ${missing.join(', ')}`)
+  }
 }
 
-// ==================== GOOGLE SHEETS ====================
+validateEnvironment()
+
+/* ================= GOOGLE AUTH ================= */
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL,
   undefined,
@@ -18,13 +24,15 @@ const auth = new google.auth.JWT(
 )
 
 const sheets = google.sheets({ version: "v4", auth })
+
+/* ================= CONFIG ================= */
 const SHEET_ID = process.env.GSHEET_CRM_ID!
 const SHEET_NAME = "CUSTOMERS"
 const HEADER_ROWS = 1
 const ROW_OFFSET = HEADER_ROWS + 1
-const RETRYABLE = [408, 429, 502, 503]
+const RETRYABLE_CODES = [408, 429, 502, 503] as const
 
-// ==================== TYPES ====================
+/* ================= TYPES ================= */
 interface Customer {
   customer_id: string
   company_name: string
@@ -44,19 +52,38 @@ interface Customer {
   created_by: string
 }
 
-// ==================== HELPERS ====================
+/* ================= HELPERS ================= */
 const logger = {
-  error: (context: string, error: any, meta = {}) => console.error(JSON.stringify({ timestamp: new Date().toISOString(), level: 'error', context, error: { message: error?.message, code: error?.code }, ...meta })),
-  info: (context: string, meta = {}) => console.log(JSON.stringify({ timestamp: new Date().toISOString(), level: 'info', context, ...meta }))
+  error: (context: string, error: any, metadata: any = {}) => {
+    console.error(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'error',
+      context,
+      error: {
+        message: error?.message,
+        stack: error?.stack,
+        code: error?.code
+      },
+      ...metadata
+    }))
+  },
+  info: (context: string, metadata: any = {}) => {
+    console.log(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'info',
+      context,
+      ...metadata
+    }))
+  }
 }
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   try {
     return await fn()
   } catch (error: any) {
-    const code = error.code || error.response?.status
-    if (retries > 0 && RETRYABLE.includes(code)) {
-      await new Promise(r => setTimeout(r, 1000 * (4 - retries)))
+    if (retries > 0 && RETRYABLE_CODES.includes(error.code)) {
+      const delay = 1000 * (4 - retries)
+      await new Promise(resolve => setTimeout(resolve, delay))
       return withRetry(fn, retries - 1)
     }
     throw error
@@ -64,199 +91,310 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
 }
 
 async function getAllRows() {
-  const res = await withRetry(() => sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range: `${SHEET_NAME}!A2:P`,
-  }))
+  const res = await withRetry(() => 
+    sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!A2:P`,
+    })
+  )
   return res.data.values || []
 }
 
-const validate = {
-  email: (e: string) => !e || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e),
-  phone: (p: string) => {
-    if (!p) return true
-    const digits = p.replace(/\D/g, '')
-    return digits.length >= 10 && digits.length <= 15
-  },
-  npwp: (n: string) => !n || [0, 15].includes(n.replace(/\D/g, '').length)
+function validateEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+function validatePhone(phone: string): boolean {
+  const digits = phone.replace(/\D/g, '')
+  return digits.length >= 10 && digits.length <= 15
+}
+
+function validateNPWP(npwp: string): boolean {
+  const digits = npwp.replace(/\D/g, '')
+  return digits.length === 15 || digits.length === 0
+}
+
+function isCustomerRow(row: any[]): row is string[] {
+  return row && row.length >= 16 && row[0]
 }
 
 function mapRowToCustomer(row: string[]): Customer {
   return {
-    customer_id: row[0] || "",
-    company_name: row[1] || "",
-    customer_type: row[2] || "",
-    pic_name: row[3] || "",
-    pic_position: row[4] || "",
-    email: row[5] || "",
-    phone: row[6] || "",
-    npwp: row[7] || "",
-    address: row[8] || "",
-    city: row[9] || "",
-    province: row[10] || "",
-    postal_code: row[11] || "",
+    customer_id: row[0],
+    company_name: row[1],
+    customer_type: row[2],
+    pic_name: row[3],
+    pic_position: row[4],
+    email: row[5],
+    phone: row[6],
+    npwp: row[7],
+    address: row[8],
+    city: row[9],
+    province: row[10],
+    postal_code: row[11],
     status: row[12] || "Active",
     notes: row[13] || "",
-    created_at: row[14] || "",
-    created_by: row[15] || "",
+    created_at: row[14],
+    created_by: row[15],
   }
 }
 
-// ==================== GET ====================
+/* =====================================================
+   GET : CUSTOMER DETAIL
+===================================================== */
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ customer_id: string }> }
+  { params }: { params: { customer_id: string } }
 ) {
   try {
-    const { customer_id } = await params
     const rows = await getAllRows()
-    
-    const row = rows.find(r => r[0] === customer_id)
-    if (!row) {
-      return NextResponse.json({ message: "Customer tidak ditemukan" }, { status: 404 })
+
+    const row = rows.find(
+      (r) => r[0] && r[0] === params.customer_id
+    )
+
+    if (!row || !isCustomerRow(row)) {
+      return NextResponse.json(
+        { message: "Customer tidak ditemukan" },
+        { status: 404 }
+      )
     }
 
-    logger.info('GET Success', { customer_id })
-    return NextResponse.json(mapRowToCustomer(row), {
-      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' }
+    const customer = mapRowToCustomer(row)
+
+    logger.info('GET Customer Detail Success', { customerId: params.customer_id })
+
+    return NextResponse.json(customer, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120'
+      }
     })
 
   } catch (error: any) {
-    logger.error('GET Failed', error)
-    const status = error.code || error.response?.status
-    if ([404, 403, 429].includes(status)) {
-      return NextResponse.json({ message: error.message }, { status })
+    logger.error('GET Customer Detail', error, { customerId: params.customer_id })
+
+    const errorMap: Record<number, { message: string; status: number }> = {
+      404: { message: "Sheet tidak ditemukan", status: 404 },
+      403: { message: "Akses ke Google Sheets ditolak", status: 403 },
+      429: { message: "Terlalu banyak request, coba lagi", status: 429 },
     }
-    return NextResponse.json({ message: "Gagal mengambil data" }, { status: 500 })
+
+    const errorResponse = errorMap[error.code]
+    if (errorResponse) {
+      return NextResponse.json(
+        { message: errorResponse.message },
+        { status: errorResponse.status }
+      )
+    }
+
+    return NextResponse.json(
+      { message: "Gagal mengambil data customer" },
+      { status: 500 }
+    )
   }
 }
 
-// ==================== PUT ====================
+/* =====================================================
+   PUT : UPDATE CUSTOMER
+===================================================== */
 export async function PUT(
   req: Request,
-  { params }: { params: Promise<{ customer_id: string }> }
+  { params }: { params: { customer_id: string } }
 ) {
   try {
-    const { customer_id } = await params
     const body = await req.json()
     const rows = await getAllRows()
 
-    const rowIndex = rows.findIndex(r => r[0] === customer_id)
+    const rowIndex = rows.findIndex(
+      (r) => r[0] === params.customer_id
+    )
+
     if (rowIndex === -1) {
-      return NextResponse.json({ message: "Customer tidak ditemukan" }, { status: 404 })
+      return NextResponse.json(
+        { message: "Customer tidak ditemukan" },
+        { status: 404 }
+      )
     }
 
-    // Validation
-    if (!body.company_name?.trim()) return NextResponse.json({ message: "Nama perusahaan wajib diisi" }, { status: 400 })
-    if (!body.pic_name?.trim()) return NextResponse.json({ message: "Nama PIC wajib diisi" }, { status: 400 })
-    if (!body.phone?.trim()) return NextResponse.json({ message: "Nomor telepon wajib diisi" }, { status: 400 })
-    if (!validate.email(body.email)) return NextResponse.json({ message: "Format email tidak valid" }, { status: 400 })
-    if (!validate.phone(body.phone)) return NextResponse.json({ message: "Nomor telepon harus 10-15 digit" }, { status: 400 })
-    if (!validate.npwp(body.npwp)) return NextResponse.json({ message: "NPWP harus 15 digit" }, { status: 400 })
+    // Validasi input
+    if (!body.company_name?.trim()) {
+      return NextResponse.json(
+        { message: "Nama perusahaan wajib diisi" },
+        { status: 400 }
+      )
+    }
 
-    // Check duplicate name (excluding current)
-    const name = body.company_name.toLowerCase().trim()
-    const duplicate = rows.some((r, i) => 
-      i !== rowIndex && (r[1] || "").toLowerCase().trim() === name
-    )
-    if (duplicate) return NextResponse.json({ message: "Nama perusahaan sudah digunakan" }, { status: 409 })
+    if (!body.pic_name?.trim()) {
+      return NextResponse.json(
+        { message: "Nama PIC wajib diisi" },
+        { status: 400 }
+      )
+    }
 
-    const existing = rows[rowIndex]
+    if (!body.phone?.trim()) {
+      return NextResponse.json(
+        { message: "Nomor telepon wajib diisi" },
+        { status: 400 }
+      )
+    }
+
+    if (body.email && !validateEmail(body.email)) {
+      return NextResponse.json(
+        { message: "Format email tidak valid" },
+        { status: 400 }
+      )
+    }
+
+    if (!validatePhone(body.phone)) {
+      return NextResponse.json(
+        { message: "Nomor telepon harus 10-15 digit" },
+        { status: 400 }
+      )
+    }
+
+    if (body.npwp && !validateNPWP(body.npwp)) {
+      return NextResponse.json(
+        { message: "NPWP harus 15 digit" },
+        { status: 400 }
+      )
+    }
+
+    const existingRow = rows[rowIndex]
+    const sheetRowNumber = rowIndex + ROW_OFFSET
+
+    // Partial update - merge dengan data existing
     const updatedValues = [
-      customer_id,
-      body.company_name?.trim() ?? existing[1],
-      body.customer_type ?? existing[2] ?? "",
-      body.pic_name?.trim() ?? existing[3],
-      body.pic_position ?? existing[4] ?? "",
-      body.email?.trim() ?? existing[5] ?? "",
-      body.phone?.trim() ?? existing[6],
-      body.npwp ?? existing[7] ?? "",
-      body.address ?? existing[8] ?? "",
-      body.city ?? existing[9] ?? "",
-      body.province ?? existing[10] ?? "",
-      body.postal_code ?? existing[11] ?? "",
-      body.status ?? existing[12] ?? "Active",
-      body.notes ?? existing[13] ?? "",
-      existing[14], // keep created_at
-      existing[15], // keep created_by
+      params.customer_id,
+      body.company_name?.trim() ?? existingRow[1],
+      body.customer_type ?? existingRow[2],
+      body.pic_name?.trim() ?? existingRow[3],
+      body.pic_position ?? existingRow[4],
+      body.email?.trim() ?? existingRow[5],
+      body.phone?.trim() ?? existingRow[6],
+      body.npwp ?? existingRow[7],
+      body.address ?? existingRow[8],
+      body.city ?? existingRow[9],
+      body.province ?? existingRow[10],
+      body.postal_code ?? existingRow[11],
+      body.status ?? (existingRow[12] || "Active"),
+body.notes ?? (existingRow[13] || ""),
+      existingRow[14], // keep created_at
+      existingRow[15], // keep created_by
     ]
 
-    await withRetry(() => sheets.spreadsheets.values.update({
-      spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A${rowIndex + ROW_OFFSET}:P${rowIndex + ROW_OFFSET}`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: { values: [updatedValues] }
-    }))
+    await withRetry(() =>
+      sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `${SHEET_NAME}!A${sheetRowNumber}:P${sheetRowNumber}`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: { values: [updatedValues] },
+      })
+    )
 
-    logger.info('PUT Success', { customer_id })
-    return NextResponse.json({ success: true, message: "Customer berhasil diupdate" })
+    logger.info('PUT Customer Success', { customerId: params.customer_id })
+
+    return NextResponse.json({ 
+      success: true,
+      message: "Customer berhasil diupdate" 
+    })
 
   } catch (error: any) {
-    logger.error('PUT Failed', error)
-    const status = error.code || error.response?.status
-    if ([404, 403, 429].includes(status)) {
-      return NextResponse.json({ success: false, message: error.message }, { status })
+    logger.error('PUT Customer', error, { customerId: params.customer_id })
+
+    const errorMap: Record<number, { message: string; status: number }> = {
+      404: { message: "Sheet tidak ditemukan", status: 404 },
+      403: { message: "Akses ke Google Sheets ditolak", status: 403 },
+      429: { message: "Terlalu banyak request, coba lagi", status: 429 },
     }
-    return NextResponse.json({ success: false, message: "Gagal update customer" }, { status: 500 })
+
+    const errorResponse = errorMap[error.code]
+    if (errorResponse) {
+      return NextResponse.json(
+        { success: false, message: errorResponse.message },
+        { status: errorResponse.status }
+      )
+    }
+
+    return NextResponse.json(
+      { success: false, message: "Gagal update customer" },
+      { status: 500 }
+    )
   }
 }
 
-// ==================== DELETE ====================
+/* =====================================================
+   DELETE : SOFT DELETE (DEFAULT) + HARD DELETE OPTION
+===================================================== */
 export async function DELETE(
   req: Request,
-  { params }: { params: Promise<{ customer_id: string }> }
+  { params }: { params: { customer_id: string } }
 ) {
   try {
-    const { customer_id } = await params
     const { searchParams } = new URL(req.url)
     const hard = searchParams.get("hard") === "true"
 
     const rows = await getAllRows()
-    const rowIndex = rows.findIndex(r => r[0] === customer_id)
+
+    const rowIndex = rows.findIndex(
+      (r) => r[0] === params.customer_id
+    )
+
     if (rowIndex === -1) {
-      return NextResponse.json({ message: "Customer tidak ditemukan" }, { status: 404 })
+      return NextResponse.json(
+        { message: "Customer tidak ditemukan" },
+        { status: 404 }
+      )
     }
 
+    const sheetRowNumber = rowIndex + ROW_OFFSET
+
     if (hard) {
-      // Hard delete - remove entire row
-      await withRetry(() => sheets.spreadsheets.batchUpdate({
-        spreadsheetId: SHEET_ID,
-        requestBody: {
-          requests: [{
-            deleteDimension: {
-              range: {
-                sheetId: 0, // Assumes first sheet
-                dimension: "ROWS",
-                startIndex: rowIndex + HEADER_ROWS,
-                endIndex: rowIndex + HEADER_ROWS + 1
-              }
-            }
-          }]
-        }
-      }))
-      logger.info('DELETE Hard Success', { customer_id })
+      // Hard delete - clear semua data
+      await withRetry(() =>
+        sheets.spreadsheets.values.clear({
+          spreadsheetId: SHEET_ID,
+          range: `${SHEET_NAME}!A${sheetRowNumber}:P${sheetRowNumber}`,
+        })
+      )
+      logger.info('DELETE Customer Hard', { customerId: params.customer_id })
     } else {
-      // Soft delete - update status to Inactive
-      await withRetry(() => sheets.spreadsheets.values.update({
-        spreadsheetId: SHEET_ID,
-        range: `${SHEET_NAME}!M${rowIndex + ROW_OFFSET}`,
-        valueInputOption: "USER_ENTERED",
-        requestBody: { values: [["Inactive"]] }
-      }))
-      logger.info('DELETE Soft Success', { customer_id })
+      // Soft delete - update status jadi Inactive
+      await withRetry(() =>
+        sheets.spreadsheets.values.update({
+          spreadsheetId: SHEET_ID,
+          range: `${SHEET_NAME}!M${sheetRowNumber}`,
+          valueInputOption: "USER_ENTERED",
+          requestBody: { values: [["Inactive"]] },
+        })
+      )
+      logger.info('DELETE Customer Soft', { customerId: params.customer_id })
     }
 
     return NextResponse.json({ 
-      success: true, 
-      message: hard ? "Customer dihapus permanen" : "Customer dinonaktifkan" 
+      success: true,
+      message: hard ? "Customer dihapus permanen" : "Customer dinonaktifkan"
     })
 
   } catch (error: any) {
-    logger.error('DELETE Failed', error)
-    const status = error.code || error.response?.status
-    if ([404, 403, 429].includes(status)) {
-      return NextResponse.json({ success: false, message: error.message }, { status })
+    logger.error('DELETE Customer', error, { customerId: params.customer_id })
+
+    const errorMap: Record<number, { message: string; status: number }> = {
+      404: { message: "Sheet tidak ditemukan", status: 404 },
+      403: { message: "Akses ke Google Sheets ditolak", status: 403 },
+      429: { message: "Terlalu banyak request, coba lagi", status: 429 },
     }
-    return NextResponse.json({ success: false, message: "Gagal menghapus customer" }, { status: 500 })
+
+    const errorResponse = errorMap[error.code]
+    if (errorResponse) {
+      return NextResponse.json(
+        { success: false, message: errorResponse.message },
+        { status: errorResponse.status }
+      )
+    }
+
+    return NextResponse.json(
+      { success: false, message: "Gagal menghapus customer" },
+      { status: 500 }
+    )
   }
 }

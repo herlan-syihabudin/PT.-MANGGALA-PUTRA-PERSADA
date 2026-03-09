@@ -6,7 +6,12 @@ export const dynamic = "force-dynamic"
 
 /* ================= ENVIRONMENT VALIDATION ================= */
 function validateEnvironment() {
-  const required = ['GOOGLE_CLIENT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'GSHEET_CRM_ID'] as const
+  const required = [
+    'GOOGLE_CLIENT_EMAIL',
+    'GOOGLE_PRIVATE_KEY',
+    'GSHEET_CRM_ID',
+    'GSHEET_HR_ID' // TAMBAH VALIDASI
+  ] as const
   const missing = required.filter(key => !process.env[key])
   
   if (missing.length > 0) {
@@ -28,6 +33,7 @@ const auth = new google.auth.JWT(
 const sheets = google.sheets({ version: "v4", auth })
 
 const SHEET_ID = process.env.GSHEET_CRM_ID!
+const HR_SHEET_ID = process.env.GSHEET_HR_ID! // PASTI AMAN
 const SHEET_NAME = "CRM_INQUIRY"
 
 /* ================= CONSTANTS ================= */
@@ -45,7 +51,7 @@ const VALID_STATUS = [
 type InquiryStatus = typeof VALID_STATUS[number]
 
 const STATUS_TRANSITIONS: Record<InquiryStatus, InquiryStatus[]> = {
-   new: ["survey"],
+  new: ["survey"],
   survey: ["estimating"],
   estimating: ["boq_created"],
   boq_created: ["proposal"],
@@ -123,11 +129,15 @@ interface Inquiry {
   created_by: string
   stage: string
   converted_proposal_id: string
+  assigned_name?: string   // EXTENDED
+  assigned_divisi?: string // EXTENDED
+  assigned_jabatan?: string // EXTENDED
 }
 
 /* ================= HELPERS ================= */
 
-const normalize = (val: any) => String(val || "").replace(/[\s-]/g, "").trim()
+const normalize = (val: any) =>
+  String(val || "").trim().toLowerCase()
 
 const safeStatus = (status: any): InquiryStatus => {
   const normalized = String(status || "new").toLowerCase().trim()
@@ -191,7 +201,9 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   try {
     return await fn()
   } catch (error: any) {
-    if (retries > 0 && RETRYABLE_CODES.includes(error.code)) {
+    const code = error.code || error.response?.status
+
+if (retries > 0 && RETRYABLE_CODES.includes(code)) {
       const baseDelay = 1000 * Math.pow(2, 3 - retries)
       const jitter = Math.random() * 100
       const delay = Math.min(baseDelay + jitter, 10000)
@@ -235,18 +247,18 @@ const logger = {
 
 export async function GET(
   req: Request,
-  { params }: { params: { inquiry_id: string } }
+  { params }: { params: Promise<{ inquiry_id: string }> }
 ) {
   try {
-    const inquiryId = params.inquiry_id
+    const resolvedParams = await params
+    const inquiryId = resolvedParams.inquiry_id
 
-        /* ================= ESTIMATOR LIST ================= */
-
+    /* ================= ESTIMATOR LIST ================= */
     if (inquiryId === "estimators") {
-      const res = await sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
+      const res = await withRetry(() => sheets.spreadsheets.values.get({
+        spreadsheetId: HR_SHEET_ID, // PAKAI HR_SHEET_ID
         range: `EMPLOYEE_MASTER!A2:R`,
-      })
+      }))
 
       const rows = res.data.values || []
 
@@ -294,25 +306,24 @@ export async function GET(
     const data = mapRowToInquiry(row)
 
     /* ================= JOIN EMPLOYEE MASTER ================= */
+    if (data.assigned_to) {
+      const hrRes = await withRetry(() => sheets.spreadsheets.values.get({
+        spreadsheetId: HR_SHEET_ID,
+        range: `EMPLOYEE_MASTER!A2:R`,
+      }))
 
-if (data.assigned_to) {
-  const hrRes = await sheets.spreadsheets.values.get({
-    spreadsheetId: process.env.GSHEET_HR_ID!, // 🔥 HR DATABASE
-    range: `EMPLOYEE_MASTER!A2:R`,
-  })
+      const hrRows = hrRes.data.values || []
 
-  const hrRows = hrRes.data.values || []
+      const employee = hrRows.find(r =>
+        normalize(r[0]) === normalize(data.assigned_to)
+      )
 
-  const employee = hrRows.find(r =>
-    normalize(r[0]) === normalize(data.assigned_to)
-  )
-
-  if (employee) {
-    ;(data as any).assigned_name = employee[1]      // nama_lengkap
-    ;(data as any).assigned_divisi = employee[10]  // divisi
-    ;(data as any).assigned_jabatan = employee[11] // jabatan
-  }
-}
+      if (employee) {
+        data.assigned_name = employee[1]      // nama_lengkap
+        data.assigned_divisi = employee[10]  // divisi
+        data.assigned_jabatan = employee[11] // jabatan
+      }
+    }
 
     if (data.stage === "DELETED") {
       return NextResponse.json(
@@ -325,7 +336,8 @@ if (data.assigned_to) {
     return NextResponse.json(data)
 
   } catch (error: any) {
-    logger.error('GET Inquiry', error, { inquiryId: params.inquiry_id })
+    const { inquiry_id } = await params
+    logger.error('GET Inquiry', error, { inquiryId: inquiry_id })
 
     const errorMap: Record<number, { message: string; status: number }> = {
       404: { message: "Sheet tidak ditemukan", status: 404 },
@@ -355,10 +367,11 @@ if (data.assigned_to) {
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { inquiry_id: string } }
+  { params }: { params: Promise<{ inquiry_id: string }> }
 ) {
   try {
-    const inquiryId = params.inquiry_id
+    const resolvedParams = await params
+    const inquiryId = resolvedParams.inquiry_id
     const body = await req.json()
 
     if (!inquiryId) {
@@ -424,57 +437,50 @@ export async function PATCH(
 
     const currentStatus = safeStatus(existingData.status)
 
-let newStatus: InquiryStatus = currentStatus
+    let newStatus: InquiryStatus = currentStatus
 
-// Status transition validation
-if (body.status) {
-  const requestedStatus = safeStatus(body.status)
+    // Status transition validation
+    if (body.status) {
+      const requestedStatus = safeStatus(body.status)
 
-  // Kalau status-nya sama dengan yang sekarang, langsung lolos
-  if (requestedStatus !== currentStatus) {
-    const allowedTransitions = STATUS_TRANSITIONS[currentStatus]
+      if (requestedStatus !== currentStatus) {
+        const allowedTransitions = STATUS_TRANSITIONS[currentStatus]
 
-    if (!allowedTransitions.includes(requestedStatus)) {
+        if (!allowedTransitions.includes(requestedStatus)) {
+          return NextResponse.json(
+            { message: `Status tidak sesuai alur: dari ${currentStatus} hanya bisa ke ${allowedTransitions.join(", ")}` },
+            { status: 400 }
+          )
+        }
+      }
+
+      newStatus = requestedStatus
+    }
+
+    // Convert validation
+    const finalBoqId = body.converted_rab_id || existingData.converted_rab_id
+    const finalProposalId = body.converted_proposal_id || existingData.converted_proposal_id
+
+    if (newStatus === "boq_created" && !finalBoqId) {
       return NextResponse.json(
-        { message: `Status tidak sesuai alur: dari ${currentStatus} hanya bisa ke ${allowedTransitions.join(", ")}` },
+        { message: "Status hanya bisa BOQ_CREATED jika BOQ sudah dibuat" },
         { status: 400 }
       )
     }
-  }
 
-  newStatus = requestedStatus
-}
+    if (newStatus === "proposal" && !finalProposalId) {
+      return NextResponse.json(
+        { message: "Status hanya bisa PROPOSAL jika proposal sudah dibuat" },
+        { status: 400 }
+      )
+    }
 
-// Convert validation
-const finalBoqId =
-  body.converted_rab_id || existingData.converted_rab_id
-
-const finalProposalId =
-  body.converted_proposal_id || existingData.converted_proposal_id
-
-// 1️⃣ BOQ validation
-if (newStatus === "boq_created" && !finalBoqId) {
-  return NextResponse.json(
-    { message: "Status hanya bisa BOQ_CREATED jika BOQ sudah dibuat" },
-    { status: 400 }
-  )
-}
-
-// 2️⃣ Proposal validation
-if (newStatus === "proposal" && !finalProposalId) {
-  return NextResponse.json(
-    { message: "Status hanya bisa PROPOSAL jika proposal sudah dibuat" },
-    { status: 400 }
-  )
-}
-
-// 3️⃣ WON validation
-if (newStatus === "won" && !finalProposalId) {
-  return NextResponse.json(
-    { message: "Inquiry hanya bisa WON jika Proposal sudah dibuat" },
-    { status: 400 }
-  )
-}
+    if (newStatus === "won" && !finalProposalId) {
+      return NextResponse.json(
+        { message: "Inquiry hanya bisa WON jika Proposal sudah dibuat" },
+        { status: 400 }
+      )
+    }
 
     const actualRowNumber = rowIndex + ROW_OFFSET
 
@@ -486,13 +492,10 @@ if (newStatus === "won" && !finalProposalId) {
         mergedData.estimasi_nilai = value
           ? Number(String(value).replace(/[^\d]/g, ""))
           : null
-
       } else if (key === "status") {
         mergedData.status = safeStatus(value as string)
-
       } else if (key === "converted_project_id") {
         mergedData.converted_project_id = value as string
-
       } else if (key in mergedData) {
         (mergedData as any)[key] = value
       }
@@ -519,6 +522,7 @@ if (newStatus === "won" && !finalProposalId) {
         created_by: existingData.created_by || "System"
       })
     }
+    
     if (body.assigned_to && body.assigned_to !== oldAssigned) {
       await appendActivity({
         inquiry_id: inquiryId,
@@ -539,7 +543,8 @@ if (newStatus === "won" && !finalProposalId) {
     })
 
   } catch (error: any) {
-    logger.error('PATCH Inquiry', error, { inquiryId: params.inquiry_id })
+    const { inquiry_id } = await params
+    logger.error('PATCH Inquiry', error, { inquiryId: inquiry_id })
 
     const errorMap: Record<number, { message: string; status: number }> = {
       404: { message: "Sheet tidak ditemukan", status: 404 },

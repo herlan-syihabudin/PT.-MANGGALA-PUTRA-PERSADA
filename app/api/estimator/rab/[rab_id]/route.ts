@@ -1,26 +1,15 @@
 import { NextResponse } from "next/server"
 import { google } from "googleapis"
-import { nanoid } from "nanoid"
 
 export const dynamic = "force-dynamic"
 
-/* ================= ENVIRONMENT VALIDATION ================= */
-function validateEnvironment() {
-  const required = [
-    'GOOGLE_CLIENT_EMAIL', 
-    'GOOGLE_PRIVATE_KEY', 
-    'GSHEET_ESTIMATOR_ID'
-  ] as const
-  const missing = required.filter(key => !process.env[key])
-  
-  if (missing.length > 0) {
-    throw new Error(`Missing environment variables: ${missing.join(', ')}`)
-  }
+// ==================== ENVIRONMENT ====================
+const requiredEnv = ['GOOGLE_CLIENT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'GSHEET_ESTIMATOR_ID'] as const
+for (const env of requiredEnv) {
+  if (!process.env[env]) throw new Error(`Missing ${env}`)
 }
 
-validateEnvironment()
-
-/* ================= GOOGLE AUTH ================= */
+// ==================== GOOGLE SHEETS ====================
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL,
   undefined,
@@ -30,13 +19,13 @@ const auth = new google.auth.JWT(
 
 const sheets = google.sheets({ version: "v4", auth })
 const SHEET_ID = process.env.GSHEET_ESTIMATOR_ID!
-
 const RAB_PROJECT = "RAB_PROJECT"
 const RAB_ITEM = "RAB_ITEM"
+const RETRYABLE = [408, 429, 502, 503]
 
-/* ================= CONSTANTS ================= */
-const RAB_HEADER_COLUMNS = {
-  RAB_ID: 0,
+// ==================== CONSTANTS ====================
+const RAB_HEADER = {
+  ID: 0,
   INQUIRY_ID: 1,
   PROJECT_ID: 2,
   PROJECT_NAME: 3,
@@ -49,12 +38,12 @@ const RAB_HEADER_COLUMNS = {
   CREATED_AT: 10,
 } as const
 
-const RAB_ITEM_COLUMNS = {
-  ITEM_ID: 0,
+const RAB_ITEM_COLS = {
+  ID: 0,
   RAB_ID: 1,
   PROJECT_ID: 2,
   SCOPE: 3,
-  ITEM_NAME: 4,
+  NAME: 4,
   CATEGORY: 5,
   QTY: 6,
   UNIT: 7,
@@ -70,243 +59,184 @@ const RAB_ITEM_COLUMNS = {
 
 const VALID_STATUSES = ["Draft", "Approved", "Rejected", "Locked", "Deleted"] as const
 const STATUS_TRANSITIONS: Record<string, string[]> = {
-  "Draft": ["Draft", "Approved", "Rejected", "Deleted"],
-  "Approved": ["Approved", "Locked"],
-  "Rejected": ["Draft", "Deleted"],
-  "Locked": ["Locked"],
-  "Deleted": ["Deleted"],
+  Draft: ["Draft", "Approved", "Rejected", "Deleted"],
+  Approved: ["Approved", "Locked"],
+  Rejected: ["Draft", "Deleted"],
+  Locked: ["Locked"],
+  Deleted: ["Deleted"],
 }
 
-const RETRYABLE_CODES = [408, 429, 502, 503]
-
-/* ================= HELPERS ================= */
-function n(x: any) {
+// ==================== HELPERS ====================
+const n = (x: any): number => {
   const v = Number(x)
   return Number.isFinite(v) ? v : 0
 }
 
 const logger = {
-  error: (context: string, error: any, metadata: any = {}) => {
-    console.error(JSON.stringify({
-      timestamp: new Date().toISOString(),
-      level: 'error',
-      context,
-      error: {
-        message: error?.message,
-        stack: error?.stack,
-        code: error?.code
-      },
-      ...metadata
-    }))
-  },
-  info: (context: string, metadata: any = {}) => {
-    console.log(JSON.stringify({
-      timestamp: new Date().toISOString(),
-      level: 'info',
-      context,
-      ...metadata
-    }))
-  }
+  error: (context: string, error: any, meta = {}) => 
+    console.error(JSON.stringify({ timestamp: new Date().toISOString(), level: 'error', context, error: { message: error?.message, code: error?.code }, ...meta })),
+  info: (context: string, meta = {}) => 
+    console.log(JSON.stringify({ timestamp: new Date().toISOString(), level: 'info', context, ...meta }))
 }
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   try {
     return await fn()
   } catch (error: any) {
-    if (retries > 0 && RETRYABLE_CODES.includes(error.code)) {
-      const delay = 1000 * (4 - retries)
-      await new Promise(resolve => setTimeout(resolve, delay))
+    const code = Number(error.code || error.response?.status)
+    if (retries > 0 && RETRYABLE.includes(code)) {
+      await new Promise(r => setTimeout(r, 1000 * (4 - retries)))
       return withRetry(fn, retries - 1)
     }
     throw error
   }
 }
 
-// ===================== GET DETAIL RAB =====================
+// ==================== GET ====================
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ rab_id: string }> }
 ) {
+  let rab_id = ""
+  
   try {
-    const { rab_id } = await params
+    const resolvedParams = await params
+    rab_id = resolvedParams.rab_id
 
-    // ===== HEADER =====
-    const headerRes = await withRetry(() =>
-      sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: `${RAB_PROJECT}!A2:K`,
-      })
-    )
+    // Get header
+    const headerRes = await withRetry(() => sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${RAB_PROJECT}!A2:K`,
+    }))
 
     const headerRows = headerRes.data.values || []
-    const headerRowIndex = headerRows.findIndex(
-      r => r[RAB_HEADER_COLUMNS.RAB_ID] === rab_id
-    )
+    const headerIdx = headerRows.findIndex(r => r[RAB_HEADER.ID] === rab_id)
     
-    if (headerRowIndex === -1) {
-      return NextResponse.json(
-        { message: "RAB tidak ditemukan" },
-        { status: 404 }
-      )
+    if (headerIdx === -1) {
+      return NextResponse.json({ message: "RAB tidak ditemukan" }, { status: 404 })
     }
 
-    const headerRow = headerRows[headerRowIndex]
-    const headerRowNumber = headerRowIndex + 2
+    const headerRow = headerRows[headerIdx]
+    const headerRowNum = headerIdx + 2
 
-    // ===== ITEMS =====
-    const itemRes = await withRetry(() =>
-      sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: `${RAB_ITEM}!A2:P`,
-      })
-    )
+    // Get items
+    const itemRes = await withRetry(() => sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${RAB_ITEM}!A2:P`,
+    }))
 
-    const rows = itemRes.data.values || []
-    const items = rows
-      .filter(r => r[RAB_ITEM_COLUMNS.RAB_ID] === rab_id)
-      .filter(r => r[RAB_ITEM_COLUMNS.STATUS] !== "Deleted")
+    const items = (itemRes.data.values || [])
+      .filter(r => r[RAB_ITEM_COLS.RAB_ID] === rab_id && r[RAB_ITEM_COLS.STATUS] !== "Deleted")
       .map(r => ({
-        item_id: r[RAB_ITEM_COLUMNS.ITEM_ID] || "",
-        rab_id: r[RAB_ITEM_COLUMNS.RAB_ID] || "",
-        project_id: r[RAB_ITEM_COLUMNS.PROJECT_ID] || "",
-        scope: r[RAB_ITEM_COLUMNS.SCOPE] || "",
-        item_name: r[RAB_ITEM_COLUMNS.ITEM_NAME] || "",
-        category: r[RAB_ITEM_COLUMNS.CATEGORY] || "",
-        qty: n(r[RAB_ITEM_COLUMNS.QTY]),
-        unit: r[RAB_ITEM_COLUMNS.UNIT] || "",
-        material_price: n(r[RAB_ITEM_COLUMNS.MATERIAL_PRICE]),
-        labour_price: n(r[RAB_ITEM_COLUMNS.LABOUR_PRICE]),
-        unit_price: n(r[RAB_ITEM_COLUMNS.UNIT_PRICE]),
-        total_price: n(r[RAB_ITEM_COLUMNS.TOTAL_PRICE]),
-        status: r[RAB_ITEM_COLUMNS.STATUS] || "Draft",
-        created_by: r[RAB_ITEM_COLUMNS.CREATED_BY] || "",
-        created_at: r[RAB_ITEM_COLUMNS.CREATED_AT] || "",
-        updated_at: r[RAB_ITEM_COLUMNS.UPDATED_AT] || "",
+        item_id: r[RAB_ITEM_COLS.ID] || "",
+        rab_id: r[RAB_ITEM_COLS.RAB_ID] || "",
+        project_id: r[RAB_ITEM_COLS.PROJECT_ID] || "",
+        scope: r[RAB_ITEM_COLS.SCOPE] || "",
+        item_name: r[RAB_ITEM_COLS.NAME] || "",
+        category: r[RAB_ITEM_COLS.CATEGORY] || "",
+        qty: n(r[RAB_ITEM_COLS.QTY]),
+        unit: r[RAB_ITEM_COLS.UNIT] || "",
+        material_price: n(r[RAB_ITEM_COLS.MATERIAL_PRICE]),
+        labour_price: n(r[RAB_ITEM_COLS.LABOUR_PRICE]),
+        unit_price: n(r[RAB_ITEM_COLS.UNIT_PRICE]),
+        total_price: n(r[RAB_ITEM_COLS.TOTAL_PRICE]),
+        status: r[RAB_ITEM_COLS.STATUS] || "Draft",
+        created_by: r[RAB_ITEM_COLS.CREATED_BY] || "",
+        created_at: r[RAB_ITEM_COLS.CREATED_AT] || new Date().toISOString(),
+        updated_at: r[RAB_ITEM_COLS.UPDATED_AT] || "",
       }))
-      .sort((a, b) => a.created_at.localeCompare(b.created_at))
+      .sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""))
 
-    // Hitung total
-    const total_value = items.reduce((s, i) => s + n(i.total_price), 0)
+    // Calculate totals
+    const total_value = items.reduce((sum, i) => sum + i.total_price, 0)
     const total_items = items.length
 
-    // Update header dengan nilai terbaru
-    if (total_value !== n(headerRow[RAB_HEADER_COLUMNS.TOTAL_VALUE])) {
-      await withRetry(() =>
-        sheets.spreadsheets.values.update({
-          spreadsheetId: SHEET_ID,
-          range: `${RAB_PROJECT}!G${headerRowNumber}`,
-          valueInputOption: "USER_ENTERED",
-          requestBody: { values: [[total_value]] }
-        })
-      )
+    // Update header if needed
+    if (total_value !== n(headerRow[RAB_HEADER.TOTAL_VALUE])) {
+      await withRetry(() => sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `${RAB_PROJECT}!G${headerRowNum}`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: { values: [[total_value]] }
+      }))
     }
 
-    if (total_items !== n(headerRow[RAB_HEADER_COLUMNS.TOTAL_ITEMS])) {
-      await withRetry(() =>
-        sheets.spreadsheets.values.update({
-          spreadsheetId: SHEET_ID,
-          range: `${RAB_PROJECT}!F${headerRowNumber}`,
-          valueInputOption: "USER_ENTERED",
-          requestBody: { values: [[total_items]] }
-        })
-      )
+    if (total_items !== n(headerRow[RAB_HEADER.TOTAL_ITEMS])) {
+      await withRetry(() => sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `${RAB_PROJECT}!F${headerRowNum}`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: { values: [[total_items]] }
+      }))
     }
 
-    logger.info('GET RAB Detail Success', { rab_id, total_items, total_value })
+    logger.info('GET Success', { rab_id, total_items, total_value })
 
     return NextResponse.json({
       rab_id,
-      inquiry_id: headerRow[RAB_HEADER_COLUMNS.INQUIRY_ID] || null,
-      pipeline_id: headerRow[RAB_HEADER_COLUMNS.PIPELINE_ID] || null,
-      project_id: headerRow[RAB_HEADER_COLUMNS.PROJECT_ID],
-      project_name: headerRow[RAB_HEADER_COLUMNS.PROJECT_NAME],
-      customer_name: headerRow[RAB_HEADER_COLUMNS.CUSTOMER_NAME],
+      inquiry_id: headerRow[RAB_HEADER.INQUIRY_ID] || null,
+      pipeline_id: headerRow[RAB_HEADER.PIPELINE_ID] || null,
+      project_id: headerRow[RAB_HEADER.PROJECT_ID] || "",
+      project_name: headerRow[RAB_HEADER.PROJECT_NAME] || "",
+      customer_name: headerRow[RAB_HEADER.CUSTOMER_NAME] || "",
       total_items,
       total_value,
-      status: headerRow[RAB_HEADER_COLUMNS.STATUS] || "Draft",
-      created_by: headerRow[RAB_HEADER_COLUMNS.CREATED_BY] || "",
-      created_at: headerRow[RAB_HEADER_COLUMNS.CREATED_AT] || "",
+      status: headerRow[RAB_HEADER.STATUS] || "Draft",
+      created_by: headerRow[RAB_HEADER.CREATED_BY] || "",
+      created_at: headerRow[RAB_HEADER.CREATED_AT] || "",
       items,
     })
 
   } catch (error: any) {
-    logger.error('GET RAB Detail Error', error, { rab_id: params.rab_id })
-
-    const errorMap: Record<number, { message: string; status: number }> = {
-      404: { message: "Sheet tidak ditemukan", status: 404 },
-      403: { message: "Akses ke Google Sheets ditolak", status: 403 },
-      429: { message: "Terlalu banyak request, coba lagi", status: 429 },
+    logger.error('GET Failed', error, { rab_id })
+    const status = error.code || error.response?.status
+    if ([404, 403, 429].includes(status)) {
+      return NextResponse.json({ message: error.message }, { status })
     }
-
-    const errorResponse = errorMap[error.code]
-    if (errorResponse) {
-      return NextResponse.json(
-        { message: errorResponse.message },
-        { status: errorResponse.status }
-      )
-    }
-
-    return NextResponse.json(
-      { message: "Gagal mengambil data RAB" },
-      { status: 500 }
-    )
+    return NextResponse.json({ message: "Gagal mengambil data" }, { status: 500 })
   }
 }
 
-// ===================== UPDATE RAB HEADER =====================
+// ==================== PATCH ====================
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ rab_id: string }> }
 ) {
+  let rab_id: string
+  
   try {
-    const { rab_id } = await params
+    const resolvedParams = await params
+    rab_id = resolvedParams.rab_id
     const body = await req.json()
 
-    // Validasi input
+    // Validate input types
     if (body.project_name !== undefined && typeof body.project_name !== 'string') {
-      return NextResponse.json(
-        { message: "project_name harus string" },
-        { status: 400 }
-      )
+      return NextResponse.json({ message: "project_name harus string" }, { status: 400 })
     }
-
     if (body.customer_name !== undefined && typeof body.customer_name !== 'string') {
-      return NextResponse.json(
-        { message: "customer_name harus string" },
-        { status: 400 }
-      )
+      return NextResponse.json({ message: "customer_name harus string" }, { status: 400 })
     }
-
     if (body.status !== undefined && !VALID_STATUSES.includes(body.status as any)) {
-      return NextResponse.json(
-        { message: "Status tidak valid" },
-        { status: 400 }
-      )
+      return NextResponse.json({ message: "Status tidak valid" }, { status: 400 })
     }
 
-    // Cari baris header
-    const headerRes = await withRetry(() =>
-      sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: `${RAB_PROJECT}!A2:K`,
-      })
-    )
+    // Find header row
+    const headerRes = await withRetry(() => sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${RAB_PROJECT}!A2:K`,
+    }))
 
     const headerRows = headerRes.data.values || []
-    const idx = headerRows.findIndex(r => r[RAB_HEADER_COLUMNS.RAB_ID] === rab_id)
-
+    const idx = headerRows.findIndex(r => r[RAB_HEADER.ID] === rab_id)
     if (idx === -1) {
-      return NextResponse.json(
-        { message: "RAB tidak ditemukan" },
-        { status: 404 }
-      )
+      return NextResponse.json({ message: "RAB tidak ditemukan" }, { status: 404 })
     }
 
-    const rowNumber = idx + 2
+    const rowNum = idx + 2
     const currentRow = headerRows[idx]
 
-    // Validasi transisi status
-    const currentStatus = currentRow[RAB_HEADER_COLUMNS.STATUS] || "Draft"
+    // Validate status transition
+    const currentStatus = currentRow[RAB_HEADER.STATUS] || "Draft"
     if (body.status && body.status !== currentStatus) {
       if (!STATUS_TRANSITIONS[currentStatus]?.includes(body.status)) {
         return NextResponse.json(
@@ -316,42 +246,29 @@ export async function PATCH(
       }
     }
 
-    // Mapping kolom yang bisa di-update
+    // Prepare updates
     const updates: Record<number, any> = {}
-
-    if (body.project_name !== undefined)
-      updates[RAB_HEADER_COLUMNS.PROJECT_NAME] = body.project_name
-
-    if (body.customer_name !== undefined)
-      updates[RAB_HEADER_COLUMNS.CUSTOMER_NAME] = body.customer_name
-
-    if (body.status !== undefined)
-      updates[RAB_HEADER_COLUMNS.STATUS] = body.status
-
-    if (body.pipeline_id !== undefined)
-      updates[RAB_HEADER_COLUMNS.PIPELINE_ID] = body.pipeline_id
+    if (body.project_name !== undefined) updates[RAB_HEADER.PROJECT_NAME] = body.project_name
+    if (body.customer_name !== undefined) updates[RAB_HEADER.CUSTOMER_NAME] = body.customer_name
+    if (body.status !== undefined) updates[RAB_HEADER.STATUS] = body.status
+    if (body.pipeline_id !== undefined) updates[RAB_HEADER.PIPELINE_ID] = body.pipeline_id
 
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json(
-        { message: "Tidak ada data yang diupdate" },
-        { status: 400 }
-      )
+      return NextResponse.json({ message: "Tidak ada data yang diupdate" }, { status: 400 })
     }
 
-    // Update per kolom
-    for (const [colIndex, value] of Object.entries(updates)) {
-      const col = String.fromCharCode(65 + Number(colIndex))
-      await withRetry(() =>
-        sheets.spreadsheets.values.update({
-          spreadsheetId: SHEET_ID,
-          range: `${RAB_PROJECT}!${col}${rowNumber}`,
-          valueInputOption: "USER_ENTERED",
-          requestBody: { values: [[value]] }
-        })
-      )
+    // Apply updates
+    for (const [colIdx, value] of Object.entries(updates)) {
+      const col = String.fromCharCode(65 + Number(colIdx))
+      await withRetry(() => sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `${RAB_PROJECT}!${col}${rowNum}`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: { values: [[value]] }
+      }))
     }
 
-    logger.info('PATCH RAB Success', { rab_id, updates: Object.keys(updates) })
+    logger.info('PATCH Success', { rab_id, updates: Object.keys(updates) })
 
     return NextResponse.json({
       success: true,
@@ -360,102 +277,78 @@ export async function PATCH(
     })
 
   } catch (error: any) {
-    logger.error('PATCH RAB Error', error, { rab_id: params.rab_id })
-
-    const errorMap: Record<number, { message: string; status: number }> = {
-      404: { message: "Sheet tidak ditemukan", status: 404 },
-      403: { message: "Akses ke Google Sheets ditolak", status: 403 },
-      429: { message: "Terlalu banyak request, coba lagi", status: 429 },
+    logger.error('PATCH Failed', error, { rab_id })
+    const status = Number(error.code || error.response?.status)
+    if ([404, 403, 429].includes(status)) {
+      return NextResponse.json({ success: false, message: error.message }, { status })
     }
-
-    const errorResponse = errorMap[error.code]
-    if (errorResponse) {
-      return NextResponse.json(
-        { message: errorResponse.message },
-        { status: errorResponse.status }
-      )
-    }
-
-    return NextResponse.json(
-      { message: "Gagal update RAB" },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, message: "Gagal update RAB" }, { status: 500 })
   }
 }
 
-// ===================== DELETE RAB (SOFT DELETE) =====================
+// ==================== DELETE ====================
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ rab_id: string }> }
 ) {
+  let rab_id: string
+  
   try {
-    const { rab_id } = await params
+    const resolvedParams = await params
+    rab_id = resolvedParams.rab_id
 
-    // Cari baris header
-    const headerRes = await withRetry(() =>
-      sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: `${RAB_PROJECT}!A2:K`,
-      })
-    )
+    // Find header row
+    const headerRes = await withRetry(() => sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${RAB_PROJECT}!A2:K`,
+    }))
 
     const headerRows = headerRes.data.values || []
-    const idx = headerRows.findIndex(r => r[RAB_HEADER_COLUMNS.RAB_ID] === rab_id)
-
+    const idx = headerRows.findIndex(r => r[RAB_HEADER.ID] === rab_id)
     if (idx === -1) {
-      return NextResponse.json(
-        { message: "RAB tidak ditemukan" },
-        { status: 404 }
-      )
+      return NextResponse.json({ message: "RAB tidak ditemukan" }, { status: 404 })
     }
 
-    const rowNumber = idx + 2
+    const rowNum = idx + 2
     const currentRow = headerRows[idx]
 
-    // Cek apakah sudah di-approve
-    if (currentRow[RAB_HEADER_COLUMNS.STATUS] === "Approved") {
+    // Check if approved
+    if (currentRow[RAB_HEADER.STATUS] === "Approved") {
       return NextResponse.json(
         { message: "RAB yang sudah Approved tidak bisa dihapus" },
         { status: 403 }
       )
     }
 
-    // SOFT DELETE - ubah status jadi "Deleted"
-    await withRetry(() =>
-      sheets.spreadsheets.values.update({
-        spreadsheetId: SHEET_ID,
-        range: `${RAB_PROJECT}!H${rowNumber}`,
-        valueInputOption: "USER_ENTERED",
-        requestBody: { values: [["Deleted"]] }
-      })
-    )
+    // Soft delete header
+    await withRetry(() => sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range: `${RAB_PROJECT}!H${rowNum}`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [["Deleted"]] }
+    }))
 
-    // Cari semua items terkait
-    const itemRes = await withRetry(() =>
-      sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: `${RAB_ITEM}!A2:P`,
-      })
-    )
+    // Find and soft delete items
+    const itemRes = await withRetry(() => sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${RAB_ITEM}!A2:P`,
+    }))
 
     const itemRows = itemRes.data.values || []
     const itemIndices = itemRows
-      .map((r, i) => r[RAB_ITEM_COLUMNS.RAB_ID] === rab_id ? i + 2 : -1)
+      .map((r, i) => r[RAB_ITEM_COLS.RAB_ID] === rab_id ? i + 2 : -1)
       .filter(i => i !== -1)
 
-    // Soft delete semua items
     for (const itemRow of itemIndices) {
-      await withRetry(() =>
-        sheets.spreadsheets.values.update({
-          spreadsheetId: SHEET_ID,
-          range: `${RAB_ITEM}!M${itemRow}`,
-          valueInputOption: "USER_ENTERED",
-          requestBody: { values: [["Deleted"]] }
-        })
-      )
+      await withRetry(() => sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `${RAB_ITEM}!M${itemRow}`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: { values: [["Deleted"]] }
+      }))
     }
 
-    logger.info('DELETE RAB Success', { rab_id, items_deleted: itemIndices.length })
+    logger.info('DELETE Success', { rab_id, items_deleted: itemIndices.length })
 
     return NextResponse.json({
       success: true,
@@ -464,25 +357,11 @@ export async function DELETE(
     })
 
   } catch (error: any) {
-    logger.error('DELETE RAB Error', error, { rab_id: params.rab_id })
-
-    const errorMap: Record<number, { message: string; status: number }> = {
-      404: { message: "Sheet tidak ditemukan", status: 404 },
-      403: { message: "Akses ke Google Sheets ditolak", status: 403 },
-      429: { message: "Terlalu banyak request, coba lagi", status: 429 },
+    logger.error('DELETE Failed', error, { rab_id })
+    const status = error.code || error.response?.status
+    if ([404, 403, 429].includes(status)) {
+      return NextResponse.json({ success: false, message: error.message }, { status })
     }
-
-    const errorResponse = errorMap[error.code]
-    if (errorResponse) {
-      return NextResponse.json(
-        { message: errorResponse.message },
-        { status: errorResponse.status }
-      )
-    }
-
-    return NextResponse.json(
-      { message: "Gagal menghapus RAB" },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, message: "Gagal menghapus RAB" }, { status: 500 })
   }
 }

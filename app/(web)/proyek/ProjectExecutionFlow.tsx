@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import {
   ClipboardList,
@@ -158,8 +160,14 @@ export default function ProjectExecutionFlow() {
 
       <div className="relative max-w-7xl mx-auto px-6">
 
-        {/* STEPS GRID */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 xl:gap-8 auto-rows-fr">
+        {/* STEPS WRAPPER */}
+<div className="relative">
+
+  {/* Flow Line */}
+  <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-gray-200 via-gray-300 to-gray-200" />
+
+  {/* STEPS GRID */}
+  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 xl:gap-8 auto-rows-fr relative z-10">
           {steps.map((step, index) => {
             const Icon = step.icon
             const style = colorStyles[step.lightColor]
@@ -168,7 +176,7 @@ export default function ProjectExecutionFlow() {
               <div
                 id={`step-${step.number}`}
                 key={step.number}
-                className="group relative bg-white rounded-2xl border border-gray-200 p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:border-transparent overflow-hidden scroll-mt-24"
+                className="group relative bg-white rounded-2xl border border-gray-200 p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:border-gold/40 overflow-hidden scroll-mt-24"
               >
                 {/* Background Gradient on Hover */}
                 <div className={`
@@ -192,7 +200,7 @@ export default function ProjectExecutionFlow() {
                       className={`
                         w-14 h-14 rounded-xl flex items-center justify-center
                         ${style.bg} ${style.hoverBg}
-                        transition-all duration-300 group-hover:scale-110 group-hover:rotate-3
+                        transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:-translate-y-1
                         shadow-lg ${style.shadow}
                       `}
                     >
@@ -230,6 +238,7 @@ export default function ProjectExecutionFlow() {
             )
           })}
         </div>
+  </div>
 
         {/* BOTTOM CTA */}
         <div className="mt-16 text-center">

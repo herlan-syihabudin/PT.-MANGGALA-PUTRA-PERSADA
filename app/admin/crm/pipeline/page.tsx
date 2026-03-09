@@ -217,7 +217,11 @@ export default function CRMPipelinePage() {
             inquiry_id: i.inquiry_id,
             customer_id: i.customer_id,
             customer_name: i.customer_name || "-",
-            project_name: i.nama_pekerjaan || "Untitled Project",
+            project_name:
+  i.project_name ||
+  i.nama_pekerjaan ||
+  `${i.customer_name} Project` ||
+  i.inquiry_id,
             stage,
             estimated_value: estimatedValue,
             proposal_value: proposalValue,

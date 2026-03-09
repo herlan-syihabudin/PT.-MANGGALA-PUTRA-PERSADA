@@ -18,7 +18,7 @@ export const projects: Project[] = [
   {
     slug: "manufacturing-plant",
     images: [
-      "/projects/civil.jpg",
+      "/projects/manufacturing-plant-steel-structure-construction.jpg",
       "/projects/civil-1.jpg",
       "/projects/civil-2.jpg",
       "/projects/civil-3.jpg",

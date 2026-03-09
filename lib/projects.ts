@@ -22,7 +22,7 @@ export const projects: Project[] = [
       "/projects/civil-1.jpg",
       "/projects/civil-2.jpg",
       "/projects/civil-3.jpg",
-      "/projects/civil-structure-construction.jpg",
+      "/projects/civil-structure-construction-1.jpg",
       "/projects/civil-5.jpg",
     ],
     category: "Industrial Facility",

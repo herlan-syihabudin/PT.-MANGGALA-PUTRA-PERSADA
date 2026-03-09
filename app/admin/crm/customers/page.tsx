@@ -845,6 +845,39 @@ function KpiCard({
   percentage?: number
   format?: 'number' | 'currency'
 }) {
+
   const colorClasses = {
     slate: 'bg-slate-100 text-slate-600',
-    emerald: 'bg
+    emerald: 'bg-emerald-100 text-emerald-600',
+    blue: 'bg-blue-100 text-blue-600',
+    amber: 'bg-amber-100 text-amber-600',
+  }
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+      <div className="flex items-center justify-between mb-3">
+        <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
+          {icon}
+        </div>
+      </div>
+
+      <p className="text-sm text-slate-500">{title}</p>
+
+      <p className="text-2xl font-bold text-slate-800 mt-1">
+        {format === 'currency'
+          ? formatCurrency(value)
+          : value.toLocaleString()}
+      </p>
+
+      {subtitle && (
+        <p className="text-xs text-slate-400 mt-1">{subtitle}</p>
+      )}
+
+      {percentage !== undefined && (
+        <p className="text-xs text-slate-400 mt-1">
+          {percentage.toFixed(1)}%
+        </p>
+      )}
+    </div>
+  )
+}

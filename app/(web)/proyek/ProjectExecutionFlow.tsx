@@ -159,15 +159,9 @@ export default function ProjectExecutionFlow() {
       </div>
 
       <div className="relative max-w-7xl mx-auto px-6">
-
-        {/* STEPS WRAPPER */}
-<div className="relative">
-
-  {/* Flow Line */}
-  <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-gray-200 via-gray-300 to-gray-200" />
-
-  {/* STEPS GRID */}
-  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 xl:gap-8 auto-rows-fr relative z-10">
+        
+        {/* STEPS GRID */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 xl:gap-8 auto-rows-fr">
           {steps.map((step, index) => {
             const Icon = step.icon
             const style = colorStyles[step.lightColor]
@@ -238,7 +232,6 @@ export default function ProjectExecutionFlow() {
             )
           })}
         </div>
-  </div>
 
         {/* BOTTOM CTA */}
         <div className="mt-16 text-center">

@@ -1,3 +1,5 @@
+"use client"
+
 import { notFound } from "next/navigation"
 import { projects, type Project } from "@/lib/projects"
 import Image from "next/image"

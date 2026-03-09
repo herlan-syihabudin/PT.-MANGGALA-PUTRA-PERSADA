@@ -44,7 +44,7 @@ const RAB_HEADER_COLUMNS = {
   TOTAL_ITEMS: 5,
   TOTAL_VALUE: 6,
   STATUS: 7,
-  AKSI: 8,
+  PIPELINE_ID: 8,
   CREATED_BY: 9,
   CREATED_AT: 10,
 } as const
@@ -77,7 +77,7 @@ const STATUS_TRANSITIONS: Record<string, string[]> = {
   "Deleted": ["Deleted"],
 }
 
-const RETRYABLE_CODES = [408, 429, 502, 503] as const
+const RETRYABLE_CODES = [408, 429, 502, 503]
 
 /* ================= HELPERS ================= */
 function n(x: any) {
@@ -125,10 +125,10 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
 // ===================== GET DETAIL RAB =====================
 export async function GET(
   req: Request,
-  { params }: { params: { rab_id: string } }
+  { params }: { params: Promise<{ rab_id: string }> }
 ) {
   try {
-    const rab_id = params.rab_id
+    const { rab_id } = await params
 
     // ===== HEADER =====
     const headerRes = await withRetry(() =>
@@ -216,7 +216,8 @@ export async function GET(
 
     return NextResponse.json({
       rab_id,
-      inquiry_id: headerRow[RAB_HEADER_COLUMNS.INQUIRY_ID],
+      inquiry_id: headerRow[RAB_HEADER_COLUMNS.INQUIRY_ID] || null,
+      pipeline_id: headerRow[RAB_HEADER_COLUMNS.PIPELINE_ID] || null,
       project_id: headerRow[RAB_HEADER_COLUMNS.PROJECT_ID],
       project_name: headerRow[RAB_HEADER_COLUMNS.PROJECT_NAME],
       customer_name: headerRow[RAB_HEADER_COLUMNS.CUSTOMER_NAME],
@@ -255,10 +256,10 @@ export async function GET(
 // ===================== UPDATE RAB HEADER =====================
 export async function PATCH(
   req: Request,
-  { params }: { params: { rab_id: string } }
+  { params }: { params: Promise<{ rab_id: string }> }
 ) {
   try {
-    const rab_id = params.rab_id
+    const { rab_id } = await params
     const body = await req.json()
 
     // Validasi input
@@ -317,9 +318,18 @@ export async function PATCH(
 
     // Mapping kolom yang bisa di-update
     const updates: Record<number, any> = {}
-    if (body.project_name !== undefined) updates[RAB_HEADER_COLUMNS.PROJECT_NAME] = body.project_name
-    if (body.customer_name !== undefined) updates[RAB_HEADER_COLUMNS.CUSTOMER_NAME] = body.customer_name
-    if (body.status !== undefined) updates[RAB_HEADER_COLUMNS.STATUS] = body.status
+
+    if (body.project_name !== undefined)
+      updates[RAB_HEADER_COLUMNS.PROJECT_NAME] = body.project_name
+
+    if (body.customer_name !== undefined)
+      updates[RAB_HEADER_COLUMNS.CUSTOMER_NAME] = body.customer_name
+
+    if (body.status !== undefined)
+      updates[RAB_HEADER_COLUMNS.STATUS] = body.status
+
+    if (body.pipeline_id !== undefined)
+      updates[RAB_HEADER_COLUMNS.PIPELINE_ID] = body.pipeline_id
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(
@@ -376,10 +386,10 @@ export async function PATCH(
 // ===================== DELETE RAB (SOFT DELETE) =====================
 export async function DELETE(
   req: Request,
-  { params }: { params: { rab_id: string } }
+  { params }: { params: Promise<{ rab_id: string }> }
 ) {
   try {
-    const rab_id = params.rab_id
+    const { rab_id } = await params
 
     // Cari baris header
     const headerRes = await withRetry(() =>

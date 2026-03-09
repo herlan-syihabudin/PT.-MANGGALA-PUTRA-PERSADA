@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { ChevronLeft, Timer, Sparkles, Trophy } from "lucide-react"
-import ProjectExecutionFlow, { steps } from "../ProjectExecutionFlow"
+import ProjectExecutionFlow from "../ProjectExecutionFlow"
 
 export const metadata: Metadata = {
   title: "7 Tahapan Pelaksanaan Proyek Konstruksi Industri | MPP Engineering",
@@ -128,13 +128,43 @@ export default function TahapanPage() {
             "name": "7 Tahapan Pelaksanaan Proyek Konstruksi",
             "description": "Panduan tahapan pelaksanaan proyek konstruksi industri dari MPP Engineering",
             "totalTime": "PT6M",
-            "step": steps.map((step, index) => ({
-              "@type": "HowToStep",
-              "position": index + 1,
-              "name": step.title,
-              "text": step.description,
-              "url": `https://mppindo.com/proyek/tahapan#step-${step.number}`
-            }))
+            step: [
+  {
+    "@type": "HowToStep",
+    "position": 1,
+    "name": "Kick-Off Proyek & Analisis Kebutuhan"
+  },
+  {
+    "@type": "HowToStep",
+    "position": 2,
+    "name": "Survei Lapangan & Kajian Teknis"
+  },
+  {
+    "@type": "HowToStep",
+    "position": 3,
+    "name": "Perencanaan & Desain Teknis"
+  },
+  {
+    "@type": "HowToStep",
+    "position": 4,
+    "name": "Penyusunan Anggaran & Jadwal Proyek"
+  },
+  {
+    "@type": "HowToStep",
+    "position": 5,
+    "name": "Pengadaan Material & Pengendalian Mutu"
+  },
+  {
+    "@type": "HowToStep",
+    "position": 6,
+    "name": "Pelaksanaan Konstruksi & Instalasi"
+  },
+  {
+    "@type": "HowToStep",
+    "position": 7,
+    "name": "Pemeriksaan Akhir & Serah Terima"
+  }
+]
           })
         }}
       />

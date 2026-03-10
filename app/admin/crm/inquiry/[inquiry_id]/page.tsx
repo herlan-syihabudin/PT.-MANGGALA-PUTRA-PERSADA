@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
+import ActivityTimeline from "@/components/dashboard/ActivityTimeline"
 import {
   ArrowLeft,
   CheckCircle,
@@ -94,6 +95,7 @@ interface ActivityTabProps {
 interface DocumentsTabProps {
   inquiryId: string
 }
+
 
 // ================= MAIN COMPONENT =================
 export default function InquiryDetailPage() {
@@ -940,29 +942,33 @@ function OverviewTab({
       </div>
 
       {/* Right Column - Timeline & Stats */}
-      <div className="space-y-6">
-        <Card title="Timeline" icon={Calendar}>
-          <div className="space-y-4">
-            <TimelineItem
-              label="Created At"
-              value={data.created_at ? new Date(data.created_at).toLocaleString('id-ID') : '-'}
-              icon={Calendar}
-            />
-            <TimelineItem
-              label="Created By"
-              value={data.created_by || 'System'}
-              icon={User}
-            />
-          </div>
-        </Card>
+<div className="space-y-6">
 
-        <Card title="Quick Stats" icon={Activity}>
-          <div className="space-y-3">
-            <StatBar label="Data Completion" value={75} />
-            <StatBar label="Follow Up Progress" value={60} />
-          </div>
-        </Card>
-      </div>
+  <ActivityTimeline inquiryId={data.inquiry_id} />
+
+  <Card title="Timeline" icon={Calendar}>
+    <div className="space-y-4">
+      <TimelineItem
+        label="Created At"
+        value={data.created_at ? new Date(data.created_at).toLocaleString('id-ID') : '-'}
+        icon={Calendar}
+      />
+      <TimelineItem
+        label="Created By"
+        value={data.created_by || 'System'}
+        icon={User}
+      />
+    </div>
+  </Card>
+
+  <Card title="Quick Stats" icon={Activity}>
+    <div className="space-y-3">
+      <StatBar label="Data Completion" value={75} />
+      <StatBar label="Follow Up Progress" value={60} />
+    </div>
+  </Card>
+
+</div>
     </div>
   )
 }

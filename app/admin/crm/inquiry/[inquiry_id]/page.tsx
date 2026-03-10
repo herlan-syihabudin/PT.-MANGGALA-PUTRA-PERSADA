@@ -736,6 +736,7 @@ export default function InquiryDetailPage() {
 
     toast.success("Follow up dicatat")
     setShowFollowUpModal(false)
+    window.dispatchEvent(new Event("activity-updated"))
 
   } catch {
     toast.error("Gagal menyimpan follow up")
@@ -925,7 +926,7 @@ function OverviewTab({
         )}
       </div>
 
-      {/* Right Column - Timeline & Stats */}
+      {/* Right Column */}
 <div className="space-y-6">
 
   <Card title="Timeline" icon={Calendar}>
@@ -948,6 +949,11 @@ function OverviewTab({
       <StatBar label="Data Completion" value={75} />
       <StatBar label="Follow Up Progress" value={60} />
     </div>
+  </Card>
+
+  {/* TAMBAHAN BARU */}
+  <Card title="Recent Activity" icon={History}>
+    <RecentActivity inquiryId={data.inquiry_id} />
   </Card>
 
 </div>
@@ -1161,6 +1167,71 @@ function StatBar({ label, value }: any) {
           style={{ width: `${value}%` }}
         />
       </div>
+    </div>
+  )
+}
+
+function RecentActivity({ inquiryId }: { inquiryId: string }) {
+  const [activities, setActivities] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const load = async () => {
+    try {
+      const res = await fetch(`/api/crm/activity/${inquiryId}`)
+      if (!res.ok) throw new Error()
+
+      const data = await res.json()
+
+      setActivities(data.slice(0, 5))
+    } catch {
+      console.error("Failed load activity")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // load pertama
+  useEffect(() => {
+    load()
+  }, [inquiryId])
+
+  // reload ketika ada activity baru
+  useEffect(() => {
+    const reload = () => load()
+
+    window.addEventListener("activity-updated", reload)
+
+    return () => {
+      window.removeEventListener("activity-updated", reload)
+    }
+  }, [])
+
+  if (loading) {
+    return <p className="text-sm text-slate-400">Loading activity...</p>
+  }
+
+  if (activities.length === 0) {
+    return <p className="text-sm text-slate-400">Belum ada aktivitas</p>
+  }
+
+  return (
+    <div className="space-y-3">
+      {activities.map((a: any) => (
+        <div
+          key={a.id}
+          className="flex items-start gap-2 text-sm border-b border-slate-100 pb-2"
+        >
+          <Clock size={14} className="text-slate-400 mt-0.5" />
+
+          <div>
+            <p className="text-slate-700">{a.description}</p>
+
+            <p className="text-xs text-slate-400">
+              {new Date(a.created_at).toLocaleString("id-ID")}
+            </p>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

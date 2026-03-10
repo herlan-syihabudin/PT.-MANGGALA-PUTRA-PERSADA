@@ -362,6 +362,10 @@ export default function InquiryDetailPage() {
     const isStale = daysInPipeline > 30
     const needsFollowUp =
   daysInPipeline > 7
+    let leadHealth = "healthy"
+
+if (daysInPipeline > 30) leadHealth = "critical"
+else if (daysInPipeline > 14) leadHealth = "aging"
 
     let recommendation = "Monitor progress"
 
@@ -384,6 +388,7 @@ export default function InquiryDetailPage() {
       isStale,
       needsFollowUp,
       recommendation,
+      leadHealth,
     }
   }, [data])
 
@@ -586,6 +591,32 @@ export default function InquiryDetailPage() {
             </div>
           </div>
         </div>
+
+        <div className="bg-white border border-slate-200 rounded-xl p-5 mb-8 shadow-sm">
+  <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">
+    Lead Health
+  </p>
+
+  <div className="flex items-center gap-2">
+    {analytics?.leadHealth === "healthy" && (
+      <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-sm rounded-full">
+        🟢 Healthy Lead
+      </span>
+    )}
+
+    {analytics?.leadHealth === "aging" && (
+      <span className="px-3 py-1 bg-amber-100 text-amber-700 text-sm rounded-full">
+        🟡 Aging Lead
+      </span>
+    )}
+
+    {analytics?.leadHealth === "critical" && (
+      <span className="px-3 py-1 bg-rose-100 text-rose-700 text-sm rounded-full">
+        🔴 Critical Lead
+      </span>
+    )}
+  </div>
+</div>
         
         {/* Warning Banner - sama */}
         {analytics?.isStale && (

@@ -637,6 +637,24 @@ const bVal = b[sortBy] ?? 0
 
 },[filteredData])
 
+  const agingAnalysis = useMemo(() => {
+  const result = {
+    normal: { count: 0, value: 0 },
+    warning: { count: 0, value: 0 },
+    critical: { count: 0, value: 0 },
+  }
+
+  filteredData.forEach((d) => {
+    if (d.stage === "LOST") return
+
+    const status = getAgingStatus(d.aging_days)
+    result[status].count++
+    result[status].value += d.final_value
+  })
+
+  return result
+}, [filteredData])
+
   // ================= LOADING STATE =================
   if (loading) {
     return (
@@ -981,25 +999,6 @@ function HotDealsBoard({ data, onDealClick }: { data: Deal[]; onDealClick: (deal
       </div>
     )
   }
-
-  const agingAnalysis = useMemo(()=>{
-  const result={
-    normal:{count:0,value:0},
-    warning:{count:0,value:0},
-    critical:{count:0,value:0}
-  }
-
-  filteredData.forEach(d=>{
-    if(d.stage==="LOST") return
-
-    const status=getAgingStatus(d.aging_days)
-
-    result[status].count++
-    result[status].value+=d.final_value
-  })
-
-  return result
-},[filteredData])
 
   return (
     <div className="space-y-4">
@@ -1534,15 +1533,15 @@ function KanbanView({
 }
 
 // ================= ANALYTICS VIEW =================
-function AnalyticsView({ 
-  stats, 
-  stageDistribution, 
+function AnalyticsView({
+  stats,
+  stageDistribution,
   monthlyData,
-  agingAnalysis 
-}: { 
+  agingAnalysis
+}: {
   stats: Stats
   stageDistribution: Record<string, { count: number; value: number }>
-  monthlyData: Array<{ month: string; value: number; count: number }>
+  monthlyData: { month: string; value: number; count: number }[]
   agingAnalysis: Record<string, { count: number; value: number }>
 }) {
   return (
@@ -1557,15 +1556,17 @@ function AnalyticsView({
           <div className="space-y-4">
             {Object.entries(STAGE_CONFIG).map(([stage, config]) => {
               const data = stageDistribution[stage] || { count: 0, value: 0 }
-              const percentage = stats.totalPipeline > 0 
-                ? (data.value / stats.totalPipeline) * 100 
+              const percentage = stats.totalPipeline > 0
+                ? (data.value / stats.totalPipeline) * 100
                 : 0
 
               return (
                 <div key={stage}>
                   <div className="flex justify-between text-sm mb-1">
                     <span className={`font-medium ${config.textColor}`}>{config.label}</span>
-                    <span className="font-semibold text-slate-800">{formatCompactCurrency(data.value)}</span>
+                    <span className="font-semibold text-slate-800">
+                      {formatCompactCurrency(data.value)}
+                    </span>
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-2">
                     <div
@@ -1608,17 +1609,25 @@ function AnalyticsView({
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
             <p className="text-sm text-slate-600">Normal</p>
             <p className="text-xl font-bold text-slate-800">{agingAnalysis.normal.count}</p>
-            <p className="text-xs text-slate-500 mt-1">{formatCompactCurrency(agingAnalysis.normal.value)}</p>
+            <p className="text-xs text-slate-500 mt-1">
+              {formatCompactCurrency(agingAnalysis.normal.value)}
+            </p>
           </div>
+
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-sm text-amber-700">Warning (&gt;14h)</p>
+            <p className="text-sm text-amber-700">Warning (&gt;14 hari)</p>
             <p className="text-xl font-bold text-amber-700">{agingAnalysis.warning.count}</p>
-            <p className="text-xs text-amber-600 mt-1">{formatCompactCurrency(agingAnalysis.warning.value)}</p>
+            <p className="text-xs text-amber-600 mt-1">
+              {formatCompactCurrency(agingAnalysis.warning.value)}
+            </p>
           </div>
+
           <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg">
-            <p className="text-sm text-rose-700">Critical (&gt;30h)</p>
+            <p className="text-sm text-rose-700">Critical (&gt;30 hari)</p>
             <p className="text-xl font-bold text-rose-700">{agingAnalysis.critical.count}</p>
-            <p className="text-xs text-rose-600 mt-1">{formatCompactCurrency(agingAnalysis.critical.value)}</p>
+            <p className="text-xs text-rose-600 mt-1">
+              {formatCompactCurrency(agingAnalysis.critical.value)}
+            </p>
           </div>
         </div>
       </div>
@@ -1630,40 +1639,41 @@ function AnalyticsView({
             <Calendar size={18} className="text-slate-600" />
             Monthly Revenue Trend
           </h3>
+
           <div className="space-y-4">
-  {(() => {
-    const maxValue = Math.max(...monthlyData.map(d => d.value), 0)
+            {(() => {
+              const maxValue = Math.max(...monthlyData.map((d) => d.value), 0)
 
-    return monthlyData.map((item) => {
-      const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0
+              return monthlyData.map((item) => {
+                const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0
 
-      return (
-                <div key={item.month}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-medium text-slate-600">{item.month}</span>
-                    <span className="text-slate-800 font-semibold">
-                      {formatCompactCurrency(item.value)}
-                    </span>
+                return (
+                  <div key={item.month}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="font-medium text-slate-600">{item.month}</span>
+                      <span className="text-slate-800 font-semibold">
+                        {formatCompactCurrency(item.value)}
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-3">
+                      <div
+                        className="bg-gradient-to-r from-slate-600 to-slate-500 h-3 rounded-full"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                    <div className="text-xs text-slate-400 mt-1">
+                      {item.count} deals
+                    </div>
                   </div>
-                  <div className="w-full bg-slate-100 rounded-full h-3">
-                    <div
-                      className="bg-gradient-to-r from-slate-600 to-slate-500 h-3 rounded-full"
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                  <div className="text-xs text-slate-400 mt-1">
-                    {item.count} deals
-                  </div>
-                </div>
-              )
-            })}
+                )
+              })
+            })()}
           </div>
         </div>
       )}
     </div>
-    )
-  })
-})()}
+  )
+}
 
 // ================= KPI CARD =================
 function KpiCard({ 

@@ -126,8 +126,7 @@ export async function GET(
     return NextResponse.json(activities)
 
   } catch (error: any) {
-    logger.error('Failed to fetch activities', error, { inquiry_id })
-    })
+  logger.error('Failed to fetch activities', error, { inquiry_id })
 
     const status = error.code || error.response?.status
     if ([404, 403, 429, 503].includes(status)) {

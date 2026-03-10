@@ -65,7 +65,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
     return await fn()
   } catch (error: any) {
     const code = error.code || error.response?.status
-    if (retries > 0 && RETRYABLE_CODES.includes(Number(code))) {
+    if (retries > 0 && (RETRYABLE_CODES as readonly number[]).includes(Number(code))) {
       const delay = 1000 * (4 - retries)
       await new Promise(resolve => setTimeout(resolve, delay))
       return withRetry(fn, retries - 1)

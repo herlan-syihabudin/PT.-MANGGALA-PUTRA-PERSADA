@@ -1205,6 +1205,7 @@ function StatBar({ label, value }: any) {
 function RecentActivity({ inquiryId }: { inquiryId: string }) {
   const [activities, setActivities] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [lastContact, setLastContact] = useState<Date | null>(null)
 
   const load = async () => {
     try {
@@ -1214,6 +1215,10 @@ function RecentActivity({ inquiryId }: { inquiryId: string }) {
       const data = await res.json()
 
       setActivities(data.slice(0, 5))
+
+if (data.length > 0) {
+  setLastContact(new Date(data[0].created_at))
+}
     } catch {
       console.error("Failed load activity")
     } finally {
@@ -1245,7 +1250,19 @@ function RecentActivity({ inquiryId }: { inquiryId: string }) {
     return <p className="text-sm text-slate-400">Belum ada aktivitas</p>
   }
 
-  return (
+    return (
+  <div>
+
+    {lastContact && (
+  <p className="text-xs text-slate-400 mb-3">
+    Last contact • {lastContact.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric"
+    })}
+  </p>
+)}
+
     <div className="space-y-3">
       {activities.map((a: any) => (
         <div

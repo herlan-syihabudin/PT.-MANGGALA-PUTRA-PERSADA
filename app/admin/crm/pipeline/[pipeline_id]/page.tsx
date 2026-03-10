@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo, useCallback, useRef } from "react"
 import { notFound, useRouter } from "next/navigation"
 import Link from "next/link"
 import {
@@ -28,8 +28,18 @@ import {
   History,
   Download,
   Send,
+  Heart,
+  Activity,
+  Zap,
+  Target,
+  Flame,
+  Thermometer,
+  Brain,
+  Sparkles,
+  Bell,
 } from "lucide-react"
 import { toast } from "sonner"
+import { motion, AnimatePresence } from "framer-motion"
 
 // ================= TYPES =================
 type Deal = {
@@ -69,21 +79,27 @@ type Deal = {
   priority?: string
   notes?: string
   last_followup?: string
+  health_score?: number
+  health_trend?: "up" | "down" | "stable"
+  risk_level?: "low" | "medium" | "high"
+  next_best_action?: string
 }
 
 type ActivityLog = {
   id: string
-  type: "note" | "call" | "email" | "meeting" | "status_change"
+  type: "note" | "call" | "email" | "meeting" | "status_change" | "system"
   description: string
   user: string
   timestamp: string
   metadata?: any
 }
 
+type ActivityType = "call" | "email" | "meeting" | "note"
+
 // ================= CONSTANTS =================
 const AGING_THRESHOLDS = {
-  warning: 14,
-  critical: 30,
+  warning: 7,
+  critical: 14,
 }
 
 const STAGE_CONFIG: Record<string, { label: string; color: string; bgColor: string; textColor: string; borderColor: string }> = {
@@ -124,6 +140,24 @@ const STAGE_CONFIG: Record<string, { label: string; color: string; bgColor: stri
   },
 }
 
+const ACTIVITY_ICONS = {
+  call: Phone,
+  email: Mail,
+  meeting: Users,
+  note: MessageSquare,
+  status_change: RefreshCcw,
+  system: Activity,
+}
+
+const ACTIVITY_COLORS = {
+  call: "text-blue-600 bg-blue-100",
+  email: "text-emerald-600 bg-emerald-100",
+  meeting: "text-purple-600 bg-purple-100",
+  note: "text-slate-600 bg-slate-100",
+  status_change: "text-amber-600 bg-amber-100",
+  system: "text-slate-400 bg-slate-100",
+}
+
 // ================= HELPERS =================
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("id-ID", {
@@ -144,6 +178,21 @@ function formatDate(date: string): string {
   })
 }
 
+function formatRelativeTime(date: string): string {
+  const now = new Date()
+  const past = new Date(date)
+  const diffMs = now.getTime() - past.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+
+  if (diffMins < 1) return "Baru saja"
+  if (diffMins < 60) return `${diffMins} menit lalu`
+  if (diffHours < 24) return `${diffHours} jam lalu`
+  if (diffDays < 7) return `${diffDays} hari lalu`
+  return formatDate(date)
+}
+
 function getAgingStatus(days: number): "normal" | "warning" | "critical" {
   if (days > AGING_THRESHOLDS.critical) return "critical"
   if (days > AGING_THRESHOLDS.warning) return "warning"
@@ -160,6 +209,122 @@ function getWinColor(percentage: number): string {
   return "bg-rose-500"
 }
 
+// ================= AI HEALTH SCORE ENGINE =================
+function calculateHealthScore(deal: Deal, activities: ActivityLog[]): {
+  score: number
+  factors: { name: string; score: number; impact: number }[]
+  risk: "low" | "medium" | "high"
+  nextAction: string
+  temperature: "hot" | "warm" | "cold"
+} {
+  let score = 50 // Base score
+  const factors = []
+  
+  // Factor 1: Stage & Probability (max 20)
+  const stageScore = deal.probability * 20
+  factors.push({ name: "Stage & Probability", score: stageScore, impact: 20 })
+  score += stageScore
+  
+  // Factor 2: Recent Activity (max 15)
+  const lastActivity = deal.last_activity_at ? new Date(deal.last_activity_at) : new Date(deal.created_at)
+  const daysSinceActivity = Math.floor((Date.now() - lastActivity.getTime()) / (1000 * 60 * 60 * 24))
+  
+  let activityScore = 0
+  if (daysSinceActivity <= 3) activityScore = 15
+  else if (daysSinceActivity <= 7) activityScore = 10
+  else if (daysSinceActivity <= 14) activityScore = 5
+  else activityScore = 0
+  
+  factors.push({ name: "Recent Activity", score: activityScore, impact: 15 })
+  score += activityScore
+  
+  // Factor 3: Activity Frequency (max 15)
+  const oneMonthAgo = new Date()
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
+  
+  const recentActivities = activities.filter(a => new Date(a.timestamp) > oneMonthAgo).length
+  
+  let frequencyScore = 0
+  if (recentActivities >= 5) frequencyScore = 15
+  else if (recentActivities >= 3) frequencyScore = 12
+  else if (recentActivities >= 1) frequencyScore = 8
+  else frequencyScore = 0
+  
+  factors.push({ name: "Activity Frequency", score: frequencyScore, impact: 15 })
+  score += frequencyScore
+  
+  // Factor 4: Documents Completed (max 15)
+  let docScore = 0
+  if (deal.rab_id) docScore += 5
+  if (deal.proposal_id) docScore += 5
+  if (deal.proposal_status === "approved") docScore += 5
+  else if (deal.proposal_status === "sent") docScore += 3
+  
+  factors.push({ name: "Documents", score: docScore, impact: 15 })
+  score += docScore
+  
+  // Factor 5: Value (max 15)
+  let valueScore = 0
+  if (deal.final_value >= 1_000_000_000) valueScore = 15
+  else if (deal.final_value >= 500_000_000) valueScore = 12
+  else if (deal.final_value >= 100_000_000) valueScore = 8
+  else if (deal.final_value >= 50_000_000) valueScore = 5
+  else valueScore = 2
+  
+  factors.push({ name: "Deal Value", score: valueScore, impact: 15 })
+  score += valueScore
+  
+  // Factor 6: Assignment (max 10)
+  const assignScore = deal.assigned_to ? 10 : 0
+  factors.push({ name: "Assigned Team", score: assignScore, impact: 10 })
+  score += assignScore
+  
+  // Factor 7: Competition (max 10)
+  let competitionScore = 10
+  if (deal.competitor) competitionScore = 5
+  if (deal.risk_flags?.includes("strong_competitor")) competitionScore = 0
+  
+  factors.push({ name: "Competition", score: competitionScore, impact: 10 })
+  score += competitionScore
+  
+  // Normalize score to 0-100
+  const finalScore = Math.min(100, Math.max(0, Math.round(score)))
+  
+  // Determine risk level
+  let risk: "low" | "medium" | "high" = "low"
+  if (finalScore < 40) risk = "high"
+  else if (finalScore < 70) risk = "medium"
+  
+  // Determine temperature
+  let temperature: "hot" | "warm" | "cold" = "cold"
+  if (finalScore >= 75) temperature = "hot"
+  else if (finalScore >= 50) temperature = "warm"
+  
+  // Generate next best action
+  let nextAction = ""
+  if (daysSinceActivity > 7) {
+    nextAction = "⚠️ Follow up segera - sudah 7 hari tanpa kontak"
+  } else if (!deal.rab_id && deal.stage === "FOLLOW UP") {
+    nextAction = "📊 Siapkan RAB untuk lanjut ke tahap penawaran"
+  } else if (!deal.proposal_id && deal.rab_id) {
+    nextAction = "📄 Buat proposal berdasarkan RAB yang sudah ada"
+  } else if (deal.proposal_status === "sent" && !deal.proposal_status === "approved") {
+    nextAction = "🤝 Follow up untuk mendapatkan persetujuan proposal"
+  } else if (deal.probability > 0.7) {
+    nextAction = "🔥 High probability deal - fokus untuk closing"
+  } else {
+    nextAction = "📈 Monitor progress secara reguler"
+  }
+  
+  return {
+    score: finalScore,
+    factors,
+    risk,
+    nextAction,
+    temperature,
+  }
+}
+
 // ================= MAIN COMPONENT =================
 export default function DealDetailPage({
   params,
@@ -171,8 +336,10 @@ export default function DealDetailPage({
   const [activities, setActivities] = useState<ActivityLog[]>([])
   const [loading, setLoading] = useState(true)
   const [converting, setConverting] = useState(false)
-  const [showNoteModal, setShowNoteModal] = useState(false)
-  const [noteText, setNoteText] = useState("")
+  const [showActivityModal, setShowActivityModal] = useState(false)
+  const [activityType, setActivityType] = useState<ActivityType>("call")
+  const [activityNotes, setActivityNotes] = useState("")
+  const [healthScore, setHealthScore] = useState<any>(null)
 
   // ================= FETCH DEAL =================
   useEffect(() => {
@@ -209,17 +376,33 @@ export default function DealDetailPage({
     fetchDeal()
   }, [params?.pipeline_id])
 
-  // ================= ADD NOTE =================
-  const addNote = async () => {
-    if (!noteText.trim() || !deal) return
+  // ================= CALCULATE HEALTH SCORE =================
+  useEffect(() => {
+    if (deal && activities) {
+      const health = calculateHealthScore(deal, activities)
+      setHealthScore(health)
+      
+      // Update deal dengan health score
+      setDeal(prev => prev ? {
+        ...prev,
+        health_score: health.score,
+        risk_level: health.risk,
+        next_best_action: health.nextAction,
+      } : prev)
+    }
+  }, [deal, activities])
+
+  // ================= ADD ACTIVITY =================
+  const addActivity = async () => {
+    if (!activityNotes.trim() || !deal) return
 
     try {
       const res = await fetch(`/api/crm/pipeline/${deal.pipeline_id}/activities`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          type: "note",
-          description: noteText,
+          type: activityType,
+          description: activityNotes,
         }),
       })
 
@@ -232,14 +415,15 @@ export default function DealDetailPage({
       setDeal(prev => prev ? {
         ...prev,
         last_activity_at: new Date().toISOString(),
+        last_followup: new Date().toISOString(),
         aging_days: 0,
       } : prev)
       
-      setNoteText("")
-      setShowNoteModal(false)
-      toast.success("Catatan ditambahkan")
+      setActivityNotes("")
+      setShowActivityModal(false)
+      toast.success(`${activityType} berhasil dicatat`)
     } catch {
-      toast.error("Gagal menambah catatan")
+      toast.error("Gagal mencatat aktivitas")
     }
   }
 
@@ -301,19 +485,7 @@ export default function DealDetailPage({
       } : prev)
 
       // Add activity log
-      const activityRes = await fetch(`/api/crm/pipeline/${deal.pipeline_id}/activities`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "status_change",
-          description: `Deal dikonversi ke project: ${result.project_id}`,
-        }),
-      })
-
-      if (activityRes.ok) {
-        const newActivity = await activityRes.json()
-        setActivities(prev => [newActivity, ...prev])
-      }
+      await addSystemActivity(`Deal dikonversi ke project: ${result.project_id}`)
 
       toast.success("Deal berhasil dikonversi ke project")
       router.push(`/admin/project/${result.project_id}`)
@@ -321,6 +493,29 @@ export default function DealDetailPage({
       toast.error(error.message || "Gagal konversi ke project")
     } finally {
       setConverting(false)
+    }
+  }
+
+  // ================= ADD SYSTEM ACTIVITY =================
+  const addSystemActivity = async (description: string) => {
+    if (!deal) return
+    
+    try {
+      const res = await fetch(`/api/crm/pipeline/${deal.pipeline_id}/activities`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "system",
+          description,
+        }),
+      })
+
+      if (res.ok) {
+        const newActivity = await res.json()
+        setActivities(prev => [newActivity, ...prev])
+      }
+    } catch (e) {
+      console.error("Failed to add system activity", e)
     }
   }
 
@@ -335,6 +530,14 @@ export default function DealDetailPage({
     if (!deal?.rab_id) return
     router.push(`/admin/estimator/rab/${deal.rab_id}`)
   }
+
+  // ================= CHECK FOLLOW UP NEEDED =================
+  const needsFollowUp = useMemo(() => {
+    if (!deal) return false
+    const lastActivity = deal.last_activity_at ? new Date(deal.last_activity_at) : new Date(deal.created_at)
+    const daysSince = Math.floor((Date.now() - lastActivity.getTime()) / (1000 * 60 * 60 * 24))
+    return daysSince > AGING_THRESHOLDS.warning
+  }, [deal])
 
   // ================= LOADING =================
   if (loading) {
@@ -380,12 +583,48 @@ export default function DealDetailPage({
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${stageConfig.bgColor} ${stageConfig.textColor} border ${stageConfig.borderColor}`}>
                     {stageConfig.label}
                   </span>
+                  
+                  {/* Health Score Badge */}
+                  {healthScore && (
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1
+                      ${healthScore.score >= 75 ? 'bg-emerald-100 text-emerald-700' :
+                        healthScore.score >= 50 ? 'bg-amber-100 text-amber-700' :
+                        'bg-rose-100 text-rose-700'}`}
+                    >
+                      <Heart size={12} className={
+                        healthScore.score >= 75 ? 'fill-emerald-500 text-emerald-500' :
+                        healthScore.score >= 50 ? 'fill-amber-500 text-amber-500' :
+                        'fill-rose-500 text-rose-500'
+                      } />
+                      Health: {healthScore.score}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons - Only what's allowed */}
+            {/* Action Buttons */}
             <div className="flex gap-2">
+              {/* Follow Up Button - muncul jika perlu follow up */}
+              {needsFollowUp && (
+                <button
+                  onClick={() => setShowActivityModal(true)}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 animate-pulse"
+                >
+                  <Bell size={16} />
+                  Follow Up Needed!
+                </button>
+              )}
+
+              {/* Activity Button */}
+              <button
+                onClick={() => setShowActivityModal(true)}
+                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-white/10"
+              >
+                <Phone size={16} />
+                Log Activity
+              </button>
+
               {deal.stage === "DEAL" && !deal.project_id && (
                 <button
                   onClick={convertToProject}
@@ -419,6 +658,143 @@ export default function DealDetailPage({
           </div>
         </div>
       </div>
+
+      {/* AI Health Dashboard */}
+      {healthScore && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-4 mb-6">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm"
+          >
+            <div className="flex items-start gap-3 mb-4">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Brain size={18} className="text-purple-600" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">AI DEAL HEALTH</p>
+                <p className="font-medium text-slate-800">
+                  {healthScore.nextAction}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Health Score Gauge */}
+              <div className="col-span-1">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-slate-600">Health Score</span>
+                  <span className={`text-lg font-bold ${
+                    healthScore.score >= 75 ? 'text-emerald-600' :
+                    healthScore.score >= 50 ? 'text-amber-600' :
+                    'text-rose-600'
+                  }`}>
+                    {healthScore.score}
+                  </span>
+                </div>
+                <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${
+                      healthScore.score >= 75 ? 'bg-emerald-500' :
+                      healthScore.score >= 50 ? 'bg-amber-500' :
+                      'bg-rose-500'
+                    }`}
+                    style={{ width: `${healthScore.score}%` }}
+                  />
+                </div>
+                <p className="text-xs text-slate-400 mt-1 capitalize">
+                  {healthScore.temperature} • {healthScore.risk} risk
+                </p>
+              </div>
+
+              {/* Temperature */}
+              <div className="col-span-1">
+                <p className="text-xs text-slate-400 mb-1">Deal Temperature</p>
+                <div className="flex items-center gap-2">
+                  {healthScore.temperature === "hot" && (
+                    <>
+                      <Flame className="text-rose-500" size={20} />
+                      <span className="font-semibold text-rose-600">HOT DEAL</span>
+                    </>
+                  )}
+                  {healthScore.temperature === "warm" && (
+                    <>
+                      <Thermometer className="text-amber-500" size={20} />
+                      <span className="font-semibold text-amber-600">WARM DEAL</span>
+                    </>
+                  )}
+                  {healthScore.temperature === "cold" && (
+                    <>
+                      <Thermometer className="text-slate-400" size={20} />
+                      <span className="font-semibold text-slate-500">COLD DEAL</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Risk Level */}
+              <div className="col-span-1">
+                <p className="text-xs text-slate-400 mb-1">Risk Level</p>
+                <div className="flex items-center gap-2">
+                  <Shield size={18} className={
+                    healthScore.risk === "low" ? "text-emerald-500" :
+                    healthScore.risk === "medium" ? "text-amber-500" :
+                    "text-rose-500"
+                  } />
+                  <span className={`font-semibold ${
+                    healthScore.risk === "low" ? "text-emerald-600" :
+                    healthScore.risk === "medium" ? "text-amber-600" :
+                    "text-rose-600"
+                  }`}>
+                    {healthScore.risk.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Key Factors */}
+              <div className="col-span-1">
+                <p className="text-xs text-slate-400 mb-1">Top Factors</p>
+                <div className="space-y-1">
+                  {healthScore.factors.slice(0, 2).map((f: any, i: number) => (
+                    <div key={i} className="flex items-center gap-1 text-xs">
+                      <div className={`w-1.5 h-1.5 rounded-full ${
+                        f.score / f.impact > 0.7 ? 'bg-emerald-500' :
+                        f.score / f.impact > 0.3 ? 'bg-amber-500' : 'bg-rose-500'
+                      }`} />
+                      <span className="text-slate-600">{f.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Follow Up Reminder */}
+      {needsFollowUp && (
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6"
+        >
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 shadow-sm">
+            <AlertCircle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
+            <div className="flex-1">
+              <h3 className="font-semibold text-amber-800">Follow Up Needed</h3>
+              <p className="text-sm text-amber-700">
+                Belum ada aktivitas selama {deal.aging_days} hari. Segera lakukan follow up untuk menjaga deal tetap hangat.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowActivityModal(true)}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Log Activity
+            </button>
+          </div>
+        </motion.div>
+      )}
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -507,7 +883,7 @@ export default function DealDetailPage({
               </div>
             </div>
 
-            {/* Commercial Section - PREMIUM */}
+            {/* Commercial Section */}
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
               <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
                 <DollarSign size={18} className="text-slate-500" />
@@ -665,18 +1041,19 @@ export default function DealDetailPage({
               </div>
             )}
 
-            {/* Activity Log */}
+            {/* Activity Timeline */}
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-semibold text-slate-800 flex items-center gap-2">
                   <History size={18} className="text-slate-500" />
-                  Activity Log
+                  Activity Timeline
                 </h3>
                 <button
-                  onClick={() => setShowNoteModal(true)}
-                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-medium transition-colors"
+                  onClick={() => setShowActivityModal(true)}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1"
                 >
-                  + Add Note
+                  <Phone size={12} />
+                  Log Activity
                 </button>
               </div>
 
@@ -684,30 +1061,37 @@ export default function DealDetailPage({
                 {activities.length === 0 ? (
                   <p className="text-center text-slate-400 py-4">No activity yet</p>
                 ) : (
-                  activities.map((activity) => (
-                    <div key={activity.id} className="flex gap-3 p-3 bg-slate-50 rounded-lg">
-                      <div className="flex-shrink-0">
-                        {activity.type === "note" && <MessageSquare size={16} className="text-slate-500" />}
-                        {activity.type === "call" && <Phone size={16} className="text-green-500" />}
-                        {activity.type === "email" && <Mail size={16} className="text-blue-500" />}
-                        {activity.type === "meeting" && <Users size={16} className="text-purple-500" />}
-                        {activity.type === "status_change" && <RefreshCcw size={16} className="text-amber-500" />}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-slate-800">{activity.description}</p>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
-                          <span className="flex items-center gap-1">
-                            <User size={12} />
-                            {activity.user}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock size={12} />
-                            {formatDate(activity.timestamp)}
-                          </span>
+                  activities.map((activity, index) => {
+                    const Icon = ACTIVITY_ICONS[activity.type] || MessageSquare
+                    const colorClass = ACTIVITY_COLORS[activity.type] || "text-slate-600 bg-slate-100"
+                    
+                    return (
+                      <motion.div
+                        key={activity.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="flex gap-3 p-3 bg-slate-50 rounded-lg"
+                      >
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full ${colorClass} flex items-center justify-center`}>
+                          <Icon size={14} />
                         </div>
-                      </div>
-                    </div>
-                  ))
+                        <div className="flex-1">
+                          <p className="text-sm text-slate-800">{activity.description}</p>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
+                            <span className="flex items-center gap-1">
+                              <User size={12} />
+                              {activity.user || "System"}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock size={12} />
+                              {formatRelativeTime(activity.timestamp)}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )
+                  })
                 )}
               </div>
             </div>
@@ -749,7 +1133,7 @@ export default function DealDetailPage({
                     </span>
                     {deal.last_followup && (
                       <span className="text-xs text-slate-400">
-                        Last activity: {formatDate(deal.last_activity_at || deal.last_followup)}
+                        Last: {formatRelativeTime(deal.last_activity_at || deal.last_followup)}
                       </span>
                     )}
                   </div>
@@ -757,6 +1141,34 @@ export default function DealDetailPage({
                     Berdasarkan aktivitas terakhir
                   </p>
                 </div>
+
+                {/* Health Score Factor Breakdown */}
+                {healthScore && (
+                  <div className="pt-3 border-t border-slate-100">
+                    <p className="text-xs font-medium text-slate-500 mb-2">Health Factors</p>
+                    <div className="space-y-2">
+                      {healthScore.factors.slice(0, 4).map((factor: any, i: number) => (
+                        <div key={i}>
+                          <div className="flex justify-between text-xs mb-0.5">
+                            <span className="text-slate-600">{factor.name}</span>
+                            <span className="font-medium text-slate-700">
+                              {Math.round(factor.score)}/{factor.impact}
+                            </span>
+                          </div>
+                          <div className="w-full h-1.5 bg-slate-100 rounded-full">
+                            <div
+                              className={`h-1.5 rounded-full ${
+                                factor.score / factor.impact > 0.7 ? 'bg-emerald-500' :
+                                factor.score / factor.impact > 0.3 ? 'bg-amber-500' : 'bg-rose-500'
+                              }`}
+                              style={{ width: `${(factor.score / factor.impact) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -789,11 +1201,11 @@ export default function DealDetailPage({
               <h3 className="font-semibold text-slate-800 mb-4">Quick Actions</h3>
               <div className="space-y-2">
                 <button
-                  onClick={() => setShowNoteModal(true)}
+                  onClick={() => setShowActivityModal(true)}
                   className="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                 >
-                  <MessageSquare size={16} />
-                  Add Note
+                  <Phone size={16} />
+                  Log Call / Meeting
                 </button>
                 <button
                   onClick={() => window.print()}
@@ -804,7 +1216,7 @@ export default function DealDetailPage({
                 </button>
                 <button
                   onClick={() => {
-                    toast.success("Email draft prepared")
+                    window.location.href = `mailto:${deal.customer_email}?subject=Proposal%20${deal.project_name}`
                   }}
                   className="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                 >
@@ -817,37 +1229,87 @@ export default function DealDetailPage({
         </div>
       </div>
 
-      {/* Add Note Modal */}
-      {showNoteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">Add Note</h3>
-            <textarea
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              rows={4}
-              className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-slate-400 focus:border-transparent"
-              placeholder="Tulis catatan..."
-              autoFocus
-            />
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setShowNoteModal(false)}
-                className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={addNote}
-                disabled={!noteText.trim()}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium disabled:opacity-50"
-              >
-                Save Note
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Activity Modal */}
+      <AnimatePresence>
+        {showActivityModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+            onClick={() => setShowActivityModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-slate-800">Log Activity</h2>
+                <button onClick={() => setShowActivityModal(false)} className="p-1 hover:bg-slate-100 rounded">
+                  <ArrowLeft size={20} className="text-slate-400" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Activity Type */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-2">
+                    Activity Type
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: "call", label: "Call", icon: Phone },
+                      { value: "email", label: "Email", icon: Mail },
+                      { value: "meeting", label: "Meeting", icon: Users },
+                    ].map((type) => {
+                      const Icon = type.icon
+                      return (
+                        <button
+                          key={type.value}
+                          onClick={() => setActivityType(type.value as ActivityType)}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium capitalize transition-colors flex flex-col items-center gap-1
+                            ${activityType === type.value 
+                              ? 'bg-slate-800 text-white' 
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        >
+                          <Icon size={16} />
+                          {type.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-2">
+                    Notes
+                  </label>
+                  <textarea
+                    value={activityNotes}
+                    onChange={(e) => setActivityNotes(e.target.value)}
+                    rows={4}
+                    className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-slate-400 focus:border-transparent"
+                    placeholder="Tulis hasil aktivitas..."
+                    autoFocus
+                  />
+                </div>
+
+                <button
+                  onClick={addActivity}
+                  disabled={!activityNotes.trim()}
+                  className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Save Activity
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

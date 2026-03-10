@@ -855,38 +855,48 @@ const bVal = b[sortBy] ?? 0
         </div>
 
         {/* Risk Alerts */}
-        {riskAnalysis.alerts.length > 0 && (
-          <div className="space-y-3">
-            {riskAnalysis.alerts.map((alert, idx) => (
-              <div
-                key={idx}
-                className={`rounded-xl p-4 flex items-start gap-3 shadow-sm ${
-                  alert.severity === 'high' 
-                    ? 'bg-rose-50 border border-rose-200' 
-                    : 'bg-amber-50 border border-amber-200'
-                }`}
-              >
-                {alert.severity === 'high' ? (
-                  <AlertCircle className="text-rose-600 flex-shrink-0 mt-0.5" size={20} />
-                ) : (
-                  <AlertTriangle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
-                )}
-                <div>
-                  <h3 className={`font-semibold ${
-                    alert.severity === 'high' ? 'text-rose-800' : 'text-amber-800'
-                  }`}>
-                    Pipeline Risk Detected
-                  </h3>
-                  <p className={`text-sm ${
-                    alert.severity === 'high' ? 'text-rose-700' : 'text-amber-700'
-                  }`}>
-                    {alert.message}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+{riskAnalysis.alerts.length > 0 && (
+  <div className="grid md:grid-cols-2 gap-3">
+    {riskAnalysis.alerts.map((alert, idx) => (
+      <div
+        key={idx}
+        className={`rounded-xl p-4 flex items-start gap-3 shadow-sm ${
+          alert.severity === 'high'
+            ? 'bg-rose-50 border border-rose-200'
+            : 'bg-amber-50 border border-amber-200'
+        }`}
+      >
+        {alert.severity === 'high' ? (
+          <AlertCircle className="text-rose-600 flex-shrink-0 mt-0.5" size={20} />
+        ) : (
+          <AlertTriangle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
         )}
+
+        <div>
+          <h3
+            className={`font-semibold ${
+              alert.severity === 'high'
+                ? 'text-rose-800'
+                : 'text-amber-800'
+            }`}
+          >
+            Pipeline Risk Detected
+          </h3>
+
+          <p
+            className={`text-sm ${
+              alert.severity === 'high'
+                ? 'text-rose-700'
+                : 'text-amber-700'
+            }`}
+          >
+            {alert.message}
+          </p>
+        </div>
+      </div>
+    ))}
+  </div>
+)}
 
         {/* BOARD */}
 {activeTab === 'board' && (

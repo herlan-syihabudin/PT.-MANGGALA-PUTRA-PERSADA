@@ -817,9 +817,9 @@ const momentum = useMemo(() => {
   </ul>
 </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
               {/* Health Score Gauge */}
-              <div className="col-span-1">
+              <div className="col-span-1 h-full flex flex-col justify-center">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-slate-600">Health Score</span>
                   <span className={`text-lg font-bold ${
@@ -846,7 +846,7 @@ const momentum = useMemo(() => {
               </div>
 
               {/* Temperature */}
-              <div className="col-span-1">
+              <div className="col-span-1 h-full flex flex-col justify-center">
                 <p className="text-xs text-slate-400 mb-1">Deal Temperature</p>
                 <div className="flex items-center gap-2">
                   {healthScore.temperature === "hot" && (
@@ -871,7 +871,7 @@ const momentum = useMemo(() => {
               </div>
 
               {/* Risk Level */}
-              <div className="col-span-1">
+              <div className="col-span-1 h-full flex flex-col justify-center">
                 <p className="text-xs text-slate-400 mb-1">Risk Level</p>
                 <div className="flex items-center gap-2">
                   <Shield size={18} className={
@@ -890,10 +890,10 @@ const momentum = useMemo(() => {
               </div>
 
               {/* Top Factors */}
-              <div className="col-span-1">
+              <div className="col-span-1 h-full flex flex-col justify-center">
                 <p className="text-xs text-slate-400 mb-1">Top Factors</p>
                 <div className="space-y-1">
-                  {topFactors.map((factor, i) => (
+                  {topFactors.slice(0,3).map((factor, i) => (
                     <div key={i} className="flex items-center gap-1 text-xs">
                       <div className={`w-1.5 h-1.5 rounded-full ${
                         factor.score / factor.impact > 0.7 ? 'bg-emerald-500' :

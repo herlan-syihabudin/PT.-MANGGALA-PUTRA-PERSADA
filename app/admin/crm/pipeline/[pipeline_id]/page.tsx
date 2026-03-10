@@ -817,7 +817,7 @@ const momentum = useMemo(() => {
   </ul>
 </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Health Score Gauge */}
               <div className="col-span-1 h-full flex flex-col justify-center">
                 <div className="flex items-center justify-between mb-2">

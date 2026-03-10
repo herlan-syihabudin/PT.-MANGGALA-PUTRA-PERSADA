@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo, useCallback } from "react"
+import { useEffect, useState, useMemo, useRef } from "react"
 import { notFound, useRouter } from "next/navigation"
 import Link from "next/link"
 import {
@@ -176,6 +176,53 @@ const ACTIVITY_CONFIG: Record<ActivityType, { icon: typeof Phone; color: string;
 }
 
 // ================= HELPERS =================
+
+function generateSuggestedActions(deal: Deal, daysSince: number) {
+  const actions = []
+
+  if (daysSince > 3) {
+    actions.push("Follow up via call atau WhatsApp")
+  }
+
+  if (deal.proposal_status === "sent") {
+    actions.push("Kirim reminder approval proposal")
+  }
+
+  if (deal.stage === "NEGOSIASI") {
+    actions.push("Schedule meeting negosiasi harga")
+  }
+
+  if (!deal.assigned_to) {
+    actions.push("Assign deal ke sales owner")
+  }
+
+  return actions.slice(0, 3)
+}
+
+function getDealAgeProgress(days: number) {
+  const percent = Math.min(100, (days / 30) * 100)
+
+  let color = "bg-emerald-500"
+
+  if (days > 14) color = "bg-rose-500"
+  else if (days > 7) color = "bg-amber-500"
+
+  return { percent, color }
+}
+
+function getDealMomentum(activities: ActivityLog[]) {
+  const sevenDaysAgo = new Date()
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+  const recent = activities.filter(
+    a => new Date(a.timestamp) > sevenDaysAgo
+  ).length
+
+  if (recent >= 3) return "active"
+  if (recent >= 1) return "moderate"
+  return "stalled"
+}
+
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -350,6 +397,7 @@ export default function DealDetailPage({
   const router = useRouter()
   const [deal, setDeal] = useState<Deal | null>(null)
   const [activities, setActivities] = useState<ActivityLog[]>([])
+  const prevDealRef = useRef<Deal | null>(null)
   const [loading, setLoading] = useState(true)
   const [converting, setConverting] = useState(false)
   const [showActivityModal, setShowActivityModal] = useState(false)
@@ -402,6 +450,45 @@ export default function DealDetailPage({
 
     return () => controller.abort()
   }, [params.pipeline_id])
+
+  useEffect(() => {
+  if (!deal) return
+
+  const prev = prevDealRef.current
+
+  if (!prev) {
+    prevDealRef.current = deal
+    return
+  }
+
+  // Stage berubah
+  if (prev.stage !== deal.stage) {
+    fetch(`/api/crm/pipeline/${deal.pipeline_id}/activities`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "system",
+        description: `Stage berubah: ${prev.stage} → ${deal.stage}`,
+        user: "System",
+      }),
+    })
+  }
+
+  // Proposal berubah
+  if (prev.proposal_status !== deal.proposal_status && deal.proposal_status) {
+    fetch(`/api/crm/pipeline/${deal.pipeline_id}/activities`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "system",
+        description: `Proposal status: ${deal.proposal_status}`,
+        user: "System",
+      }),
+    })
+  }
+
+  prevDealRef.current = deal
+}, [deal])
 
   // ================= CALCULATE HEALTH SCORE =================
   const healthScore = useMemo(() => {
@@ -670,6 +757,18 @@ export default function DealDetailPage({
                 </p>
               </div>
             </div>
+            <div className="mt-3">
+  <p className="text-xs text-slate-400 mb-1">Suggested Actions</p>
+
+  <ul className="space-y-1">
+    {generateSuggestedActions(deal, daysSinceLastActivity).map((action, i) => (
+      <li key={i} className="text-sm text-slate-600 flex items-center gap-2">
+        <div className="w-1.5 h-1.5 bg-purple-500 rounded-full" />
+        {action}
+      </li>
+    ))}
+  </ul>
+</div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Health Score Gauge */}
@@ -1122,7 +1221,7 @@ export default function DealDetailPage({
                       agingStatus === "warning" ? "bg-amber-100 text-amber-700" :
                       "bg-slate-100 text-slate-600"
                     }`}>
-                      {deal.aging_days} hari
+                      {daysSinceLastActivity} hari
                     </span>
                     {deal.last_followup && (
                       <span className="text-xs text-slate-400">
@@ -1134,6 +1233,30 @@ export default function DealDetailPage({
                     Berdasarkan aktivitas terakhir
                   </p>
                 </div>
+
+                {/* Deal Age Progress */}
+<div>
+  <p className="text-xs text-slate-400 mb-1">Deal Age Progress</p>
+
+  {(() => {
+    const age = getDealAgeProgress(daysSinceLastActivity)
+
+    return (
+      <>
+        <div className="w-full h-2 bg-slate-100 rounded-full">
+          <div
+            className={`h-2 rounded-full ${age.color}`}
+            style={{ width: `${age.percent}%` }}
+          />
+        </div>
+
+        <p className="text-xs text-slate-400 mt-1">
+          {daysSinceLastActivity} hari sejak aktivitas terakhir
+        </p>
+      </>
+    )
+  })()}
+</div>
 
                 {/* Health Score Factor Breakdown */}
                 {healthScore && (

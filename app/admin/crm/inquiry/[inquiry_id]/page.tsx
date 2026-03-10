@@ -102,6 +102,7 @@ export default function InquiryDetailPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'documents'>('overview')
   const [isEditMode, setIsEditMode] = useState(false)
   const [editedData, setEditedData] = useState<Partial<InquiryData>>({})
+  const [lastContact, setLastContact] = useState<Date | null>(null)
   
   const [showFollowUpModal, setShowFollowUpModal] = useState(false)
   
@@ -135,6 +136,35 @@ export default function InquiryDetailPage() {
 
     load()
   }, [inquiry_id])
+
+  useEffect(() => {
+  const loadLastContact = async () => {
+    try {
+      const res = await fetch(`/api/crm/activity/${inquiry_id}`)
+      if (!res.ok) return
+
+      const data = await res.json()
+
+      if (data.length > 0) {
+        setLastContact(new Date(data[0].created_at))
+      }
+    } catch {
+      console.error("Failed load last contact")
+    }
+  }
+
+  loadLastContact()
+}, [inquiry_id])
+
+  const daysSinceContact = useMemo(() => {
+  if (!lastContact) return null
+
+  const diff =
+    (Date.now() - lastContact.getTime()) /
+    (1000 * 60 * 60 * 24)
+
+  return Math.floor(diff)
+}, [lastContact])
 
   // ================= LOAD ESTIMATORS =================
   useEffect(() => {
@@ -219,25 +249,42 @@ export default function InquiryDetailPage() {
 
   // ================= UPDATE STATUS =================
   const updateStatus = async (newStatus: string) => {
-    try {
-      setIsUpdating(true)
+  try {
+    setIsUpdating(true)
 
-      const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+    const res = await fetch(`/api/crm/inquiry/${inquiry_id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    })
+
+    if (!res.ok) throw new Error()
+
+    // update local state
+    setData(prev => (prev ? { ...prev, status: newStatus } : prev))
+
+    // ✅ AUTO LOG ACTIVITY
+    await fetch(`/api/crm/activity/${inquiry_id}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        type: "system",
+        description: `Status berubah menjadi ${newStatus}`
       })
+    })
 
-      if (!res.ok) throw new Error()
+    // refresh activity widget
+    window.dispatchEvent(new Event("activity-updated"))
 
-      toast.success(`Status berhasil diubah ke ${newStatus}`)
-      setData(prev => (prev ? { ...prev, status: newStatus } : prev))
-    } catch {
-      toast.error("Gagal ubah status")
-    } finally {
-      setIsUpdating(false)
-    }
+    toast.success(`Status berhasil diubah ke ${newStatus}`)
+  } catch {
+    toast.error("Gagal ubah status")
+  } finally {
+    setIsUpdating(false)
   }
+}
 
   // ================= UPDATE INQUIRY (dengan debounce) =================
   const updateInquiry = useCallback(async () => {
@@ -353,6 +400,13 @@ export default function InquiryDetailPage() {
       qualityScore * 0.4 +
       (daysInPipeline < 14 ? 20 : 10)
     )
+    let dealTemperature = "cold"
+
+if (probability >= 80 && daysInPipeline < 30) {
+  dealTemperature = "hot"
+} else if (probability >= 50) {
+  dealTemperature = "warm"
+}
 
     const expectedRevenue = data.estimasi_nilai
       ? Math.round(data.estimasi_nilai * (probability / 100))
@@ -381,6 +435,7 @@ else if (daysInPipeline > 14) leadHealth = "aging"
     return {
       daysInPipeline,
       probability,
+      dealTemperature,
       qualityScore,
       dealScore,
       expectedRevenue,
@@ -617,6 +672,51 @@ else if (daysInPipeline > 14) leadHealth = "aging"
     )}
   </div>
 </div>
+
+        <div className="bg-white border border-slate-200 rounded-xl p-5 mb-8 shadow-sm">
+  <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">
+    Deal Temperature
+  </p>
+
+  {analytics?.dealTemperature === "hot" && (
+    <span className="px-3 py-1 bg-rose-100 text-rose-700 text-sm rounded-full">
+      🔥 HOT DEAL
+    </span>
+  )}
+
+  {analytics?.dealTemperature === "warm" && (
+    <span className="px-3 py-1 bg-amber-100 text-amber-700 text-sm rounded-full">
+      🟡 WARM DEAL
+    </span>
+  )}
+
+  {analytics?.dealTemperature === "cold" && (
+    <span className="px-3 py-1 bg-slate-100 text-slate-700 text-sm rounded-full">
+      ❄ COLD DEAL
+    </span>
+  )}
+</div>
+        
+        {daysSinceContact && daysSinceContact > 7 && (
+  <motion.div
+    initial={{ opacity: 0, y: -10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="bg-rose-50 border border-rose-200 rounded-xl p-4 mb-6 flex items-start gap-3"
+  >
+    <AlertTriangle className="text-rose-600 mt-0.5" size={18} />
+
+    <div>
+      <p className="font-semibold text-rose-700">
+        Follow Up Needed
+      </p>
+
+      <p className="text-sm text-rose-600">
+        Tidak ada contact selama {daysSinceContact} hari.
+        Segera lakukan follow up ke customer.
+      </p>
+    </div>
+  </motion.div>
+)}
         
         {/* Warning Banner - sama */}
         {analytics?.isStale && (
@@ -1269,7 +1369,11 @@ if (data.length > 0) {
           key={a.id}
           className="flex items-start gap-2 text-sm border-b border-slate-100 pb-2"
         >
-          <Clock size={14} className="text-slate-400 mt-0.5" />
+          {a.type === "call" && <Phone size={14} className="text-blue-500 mt-0.5" />}
+{a.type === "email" && <Mail size={14} className="text-emerald-500 mt-0.5" />}
+{a.type === "meeting" && <Users size={14} className="text-purple-500 mt-0.5" />}
+{a.type === "system" && <Activity size={14} className="text-slate-400 mt-0.5" />}
+{!a.type && <Clock size={14} className="text-slate-400 mt-0.5" />}
 
           <div>
             <p className="text-slate-700">{a.description}</p>

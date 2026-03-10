@@ -67,14 +67,6 @@ interface Estimator {
   divisi?: string
 }
 
-interface ActivityLog {
-  id: string
-  type: 'note' | 'call' | 'email' | 'meeting' | 'status_change'
-  description: string
-  user: string
-  timestamp: string
-}
-
 // ================= PROPS TYPES =================
 interface OverviewTabProps {
   data: InquiryData
@@ -87,10 +79,6 @@ interface OverviewTabProps {
   loadingEstimators: boolean
 }
 
-interface ActivityTabProps {
-  activities: ActivityLog[]
-  onAddFollowUp: () => void
-}
 
 interface DocumentsTabProps {
   inquiryId: string
@@ -114,7 +102,7 @@ export default function InquiryDetailPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'documents'>('overview')
   const [isEditMode, setIsEditMode] = useState(false)
   const [editedData, setEditedData] = useState<Partial<InquiryData>>({})
-  const [activities, setActivities] = useState<ActivityLog[]>([])
+  
   const [showFollowUpModal, setShowFollowUpModal] = useState(false)
   
   // Estimator state
@@ -138,15 +126,6 @@ export default function InquiryDetailPage() {
         setData(json)
         setEditedData(json)
         
-        setActivities([
-          {
-            id: '1',
-            type: 'note',
-            description: 'Inquiry dibuat',
-            user: json.created_by || 'System',
-            timestamp: json.created_at || new Date().toISOString()
-          }
-        ])
       } catch {
         toast.error("Gagal load detail inquiry")
       } finally {
@@ -365,7 +344,7 @@ export default function InquiryDetailPage() {
     if (data.prioritas?.toLowerCase() === "medium") qualityScore += 10
 
     if (data.assigned_to) qualityScore += 5
-    if (activities.length >= 2) qualityScore += 5
+    qualityScore += 5
 
     qualityScore = Math.min(100, qualityScore)
 
@@ -382,7 +361,7 @@ export default function InquiryDetailPage() {
     const isAging = daysInPipeline > 14
     const isStale = daysInPipeline > 30
     const needsFollowUp =
-      daysInPipeline > 7 && activities.length < 2
+  daysInPipeline > 7
 
     let recommendation = "Monitor progress"
 
@@ -406,13 +385,7 @@ export default function InquiryDetailPage() {
       needsFollowUp,
       recommendation,
     }
-  }, [data, activities])
-
-  // Cari assigned employee name untuk display
-  const assignedEmployee = useMemo(() => {
-    if (!data?.assigned_to || !estimators.length) return null
-    return estimators.find(e => e.employee_id === data.assigned_to)
-  }, [data?.assigned_to, estimators])
+  }, [data])
 
   if (loading) {
     return (
@@ -659,39 +632,38 @@ export default function InquiryDetailPage() {
         </div>
 
         {/* Tab Content */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-          >
-            {activeTab === 'overview' && (
-              <OverviewTab 
-                data={data} 
-                isEditMode={isEditMode}
-                editedData={editedData}
-                setEditedData={setEditedData}
-                onSave={updateInquiry}
-                isUpdating={isUpdating}
-                estimators={estimators}
-                loadingEstimators={loadingEstimators}
-              />
-            )}
+<AnimatePresence mode="wait">
+  <motion.div
+    key={activeTab}
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{ duration: 0.2 }}
+  >
 
-            {activeTab === 'activity' && (
-              <ActivityTab 
-                activities={activities}
-                onAddFollowUp={() => setShowFollowUpModal(true)}
-              />
-            )}
+    {activeTab === 'overview' && (
+      <OverviewTab 
+        data={data} 
+        isEditMode={isEditMode}
+        editedData={editedData}
+        setEditedData={setEditedData}
+        onSave={updateInquiry}
+        isUpdating={isUpdating}
+        estimators={estimators}
+        loadingEstimators={loadingEstimators}
+      />
+    )}
 
-            {activeTab === 'documents' && (
-              <DocumentsTab inquiryId={data.inquiry_id} />
-            )}
-          </motion.div>
-        </AnimatePresence>
+    {activeTab === 'activity' && (
+      <ActivityTimeline inquiryId={data.inquiry_id} />
+    )}
+
+    {activeTab === 'documents' && (
+      <DocumentsTab inquiryId={data.inquiry_id} />
+    )}
+
+  </motion.div>
+</AnimatePresence>
 
         {/* Convert Section */}
         <div className="mt-8 bg-white border border-slate-200 rounded-xl p-6 sticky bottom-4 shadow-lg backdrop-blur-sm bg-white/90">
@@ -746,17 +718,29 @@ export default function InquiryDetailPage() {
         {showFollowUpModal && (
           <FollowUpModal
             onClose={() => setShowFollowUpModal(false)}
-            onSave={(type: string, notes: string) => {
-              setActivities(prev => [{
-                id: Date.now().toString(),
-                type: type as any,
-                description: notes,
-                user: 'Current User',
-                timestamp: new Date().toISOString()
-              }, ...prev])
-              setShowFollowUpModal(false)
-              toast.success("Follow up dicatat")
-            }}
+            onSave={async (type: string, notes: string) => {
+  try {
+
+    const res = await fetch(`/api/crm/activity/${data.inquiry_id}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        type,
+        description: notes
+      })
+    })
+
+    if (!res.ok) throw new Error()
+
+    toast.success("Follow up dicatat")
+    setShowFollowUpModal(false)
+
+  } catch {
+    toast.error("Gagal menyimpan follow up")
+  }
+}}
           />
         )}
       </AnimatePresence>
@@ -944,8 +928,6 @@ function OverviewTab({
       {/* Right Column - Timeline & Stats */}
 <div className="space-y-6">
 
-  <ActivityTimeline inquiryId={data.inquiry_id} />
-
   <Card title="Timeline" icon={Calendar}>
     <div className="space-y-4">
       <TimelineItem
@@ -973,54 +955,6 @@ function OverviewTab({
   )
 }
 
-function ActivityTab({ activities, onAddFollowUp }: ActivityTabProps) {
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="font-semibold text-slate-800">Activity History</h2>
-        <button
-          onClick={onAddFollowUp}
-          className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-colors"
-        >
-          Add Follow Up
-        </button>
-      </div>
-
-      <div className="space-y-4">
-        {activities.length > 0 ? (
-          activities.map((activity: ActivityLog, index: number) => (
-            <motion.div
-              key={activity.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="flex gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100"
-            >
-              <ActivityIcon type={activity.type} />
-              <div className="flex-1">
-                <p className="font-medium text-slate-800">{activity.description}</p>
-                <div className="flex items-center gap-4 mt-2 text-sm text-slate-500">
-                  <span className="flex items-center gap-1">
-                    <User size={14} />
-                    {activity.user}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock size={14} />
-                    {new Date(activity.timestamp).toLocaleString('id-ID')}
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-          ))
-        ) : (
-          <p className="text-center text-slate-400 py-8">
-            Belum ada activity
-          </p>
-        )}
-      </div>
-    </div>
-  )
-}
 
 function DocumentsTab({ inquiryId }: DocumentsTabProps) {
   return (
@@ -1200,16 +1134,6 @@ function TimelineItem({ label, value, icon: Icon }: any) {
   )
 }
 
-function ActivityIcon({ type }: { type: string }) {
-  const icons = {
-    note: <FileText size={20} className="text-slate-600" />,
-    call: <Phone size={20} className="text-slate-600" />,
-    email: <Mail size={20} className="text-slate-600" />,
-    meeting: <Users size={20} className="text-slate-600" />,
-    status_change: <RefreshCw size={20} className="text-slate-600" />,
-  }
-  return icons[type as keyof typeof icons] || <Activity size={20} className="text-slate-600" />
-}
 
 function PriorityBadge({ priority }: { priority: string }) {
   const colors = {

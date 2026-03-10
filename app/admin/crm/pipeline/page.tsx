@@ -1304,9 +1304,9 @@ function RiskDashboard({
               <p className="text-sm text-slate-600">Risk Factors</p>
               <ul className="mt-2 space-y-2">
                 <li className="text-xs text-slate-500 flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-rose-500 rounded-full" />
-                  Aging > 30 hari: {data.filter(d => d.aging_days > 30).length} deals
-                </li>
+  <div className="w-1.5 h-1.5 bg-rose-500 rounded-full" />
+  Aging &gt; 30 hari: {data.filter(d => d.aging_days > 30).length} deals
+</li>
                 <li className="text-xs text-slate-500 flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
                   Probabilitas rendah: {data.filter(d => d.probability < 0.3).length} deals

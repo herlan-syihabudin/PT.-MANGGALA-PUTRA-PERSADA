@@ -812,6 +812,38 @@ const bVal = b[sortBy] ?? 0
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        {/* Pipeline Header */}
+<div className="flex items-center justify-between mb-4">
+
+  <h2 className="text-lg font-semibold text-slate-800">
+    Sales Pipeline
+  </h2>
+
+  {/* View Mode Selector */}
+  <div className="flex gap-2">
+    {[
+      { id: 'board', label: '🔥 Hot Board', icon: Flame },
+      { id: 'table', label: 'Table', icon: FileText },
+      { id: 'kanban', label: 'Kanban', icon: Briefcase },
+      { id: 'chart', label: 'Analytics', icon: PieChart }
+    ].map((mode) => (
+      <button
+        key={mode.id}
+        onClick={() => setViewMode(mode.id as any)}
+        className={`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
+          viewMode === mode.id
+            ? 'bg-slate-800 text-white'
+            : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+        }`}
+      >
+        <mode.icon size={16} />
+        {mode.label}
+      </button>
+    ))}
+  </div>
+
+</div>
         
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -883,80 +915,59 @@ const bVal = b[sortBy] ?? 0
           </div>
         )}
 
-        {/* Content based on active tab */}
-        {activeTab === 'pipeline' && (
-          <>
-            {viewMode === 'table' && (
-              <TableView 
-                data={filteredData}
-                onRowClick={(deal) => router.push(`/admin/crm/pipeline/${deal.pipeline_id}`)}
-              />
-            )}
+        {/* PIPELINE TAB */}
+{activeTab === 'pipeline' && (
+  <>
+    {viewMode === 'table' && (
+      <TableView 
+        data={filteredData}
+        onRowClick={(deal) => router.push(`/admin/crm/pipeline/${deal.pipeline_id}`)}
+      />
+    )}
 
-            {viewMode === 'kanban' && (
-              <KanbanView 
-                stages={STAGE_CONFIG}
-                distribution={stageDistribution}
-                data={filteredData}
-                onDealClick={(deal) => router.push(`/admin/crm/pipeline/${deal.pipeline_id}`)}
-              />
-            )}
+    {viewMode === 'kanban' && (
+      <KanbanView 
+        stages={STAGE_CONFIG}
+        distribution={stageDistribution}
+        data={filteredData}
+        onDealClick={(deal) => router.push(`/admin/crm/pipeline/${deal.pipeline_id}`)}
+      />
+    )}
 
-            {viewMode === 'chart' && (
-              <AnalyticsView 
-                stats={stats}
-                stageDistribution={stageDistribution}
-                monthlyData={monthlyData}
-                agingAnalysis={agingAnalysis}
-              />
-            )}
+    {viewMode === 'chart' && (
+      <AnalyticsView 
+        stats={stats}
+        stageDistribution={stageDistribution}
+        monthlyData={monthlyData}
+        agingAnalysis={agingAnalysis}
+      />
+    )}
 
-            {viewMode === 'board' && (
-              <HotDealsBoard 
-                data={filteredData}
-                onDealClick={(deal) => router.push(`/admin/crm/pipeline/${deal.pipeline_id}`)}
-              />
-            )}
+    {viewMode === 'board' && (
+      <HotDealsBoard 
+        data={filteredData}
+        onDealClick={(deal) => router.push(`/admin/crm/pipeline/${deal.pipeline_id}`)}
+      />
+    )}
+  </>
+)}
 
-            {/* View Mode Selector */}
-            <div className="flex justify-end gap-2">
-              {[
-                { id: 'board', label: '🔥 Hot Board', icon: Flame },
-                { id: 'table', label: 'Table', icon: FileText },
-                { id: 'kanban', label: 'Kanban', icon: Briefcase },
-                { id: 'chart', label: 'Analytics', icon: PieChart }
-              ].map((mode) => (
-                <button
-                  key={mode.id}
-                  onClick={() => setViewMode(mode.id as any)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
-                    viewMode === mode.id
-                      ? 'bg-slate-800 text-white'
-                      : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-                  }`}
-                >
-                  <mode.icon size={16} />
-                  {mode.label}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+{/* INTELLIGENCE TAB */}
+{activeTab === 'intelligence' && (
+  <IntelligenceDashboard
+    stats={stats}
+    revenueDrivers={revenueDrivers}
+    followUpTasks={followUpTasks}
+  />
+)}
 
-        {activeTab === 'intelligence' && (
-          <IntelligenceDashboard
-            stats={stats}
-            revenueDrivers={revenueDrivers}
-            followUpTasks={followUpTasks}
-          />
-        )}
-
-        {activeTab === 'risks' && (
-          <RiskDashboard
-            data={filteredData}
-            riskAnalysis={riskAnalysis}
-          />
-        )}
+{/* RISK TAB */}
+{activeTab === 'risks' && (
+  <RiskDashboard
+    data={filteredData}
+    riskAnalysis={riskAnalysis}
+  />
+)}
 
         {/* Summary Footer */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-wrap justify-between items-center text-sm shadow-sm">
@@ -1118,7 +1129,7 @@ function IntelligenceDashboard({
               Tidak ada follow-up yang diperlukan saat ini
             </p>
           ) : (
-            <div className="space-y-3">
+            <div className="grid md:grid-cols-2 gap-3">
               {followUpTasks.slice(0, 5).map((task) => (
                 <div key={task.deal_id} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
                   <div className={`p-1.5 rounded-full ${
@@ -1194,7 +1205,7 @@ function IntelligenceDashboard({
             <Target size={18} className="text-slate-600" />
             Quick Stats
           </h3>
-          <div className="space-y-3">
+          <div className="grid md:grid-cols-2 gap-3">
             <div className="flex justify-between text-sm">
               <span className="text-slate-500">Avg Deal Size</span>
               <span className="font-medium text-slate-800">{formatCompactCurrency(stats.avgDealSize)}</span>

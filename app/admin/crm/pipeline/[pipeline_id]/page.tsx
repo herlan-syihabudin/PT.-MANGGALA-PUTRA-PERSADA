@@ -177,6 +177,13 @@ const ACTIVITY_CONFIG: Record<ActivityType, { icon: typeof Phone; color: string;
 
 // ================= HELPERS =================
 
+function getSuggestedStage(deal: Deal, daysSince: number) {
+  if (deal.proposal_status === "approved") return "DEAL"
+  if (deal.proposal_status === "sent" && daysSince > 3) return "NEGOSIASI"
+  if (daysSince > 14) return "LOST"
+  return null
+}
+
 function generateSuggestedActions(deal: Deal, daysSince: number) {
   const actions = []
 
@@ -199,6 +206,20 @@ function generateSuggestedActions(deal: Deal, daysSince: number) {
   return actions.slice(0, 3)
 }
 
+function estimateClosingDate(deal: Deal) {
+  const stageDays = {
+    "FOLLOW UP": 30,
+    "PENAWARAN": 20,
+    "NEGOSIASI": 10,
+    "DEAL": 0,
+    "LOST": 0,
+  }
+
+  const created = new Date(deal.created_at)
+  created.setDate(created.getDate() + stageDays[deal.stage])
+  return created
+}
+
 function getDealAgeProgress(days: number) {
   const percent = Math.min(100, (days / 30) * 100)
 
@@ -211,15 +232,17 @@ function getDealAgeProgress(days: number) {
 }
 
 function getDealMomentum(activities: ActivityLog[]) {
-  const sevenDaysAgo = new Date()
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  if (!activities.length) return "stalled"
 
-  const recent = activities.filter(
-    a => new Date(a.timestamp) > sevenDaysAgo
-  ).length
+  // activity terbaru
+  const lastActivity = new Date(activities[0].timestamp)
 
-  if (recent >= 3) return "active"
-  if (recent >= 1) return "moderate"
+  const diffDays = Math.floor(
+    (Date.now() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)
+  )
+
+  if (diffDays <= 2) return "active"
+  if (diffDays <= 7) return "moderate"
   return "stalled"
 }
 
@@ -349,6 +372,20 @@ function calculateHealthScore(deal: Deal, activities: ActivityLog[]): HealthScor
   
   factors.push({ name: "Competition", score: competitionScore, impact: 10 })
   score += competitionScore
+
+  // Factor 8: Deal Aging
+let agingScore = 10
+
+if (deal.aging_days > 14) agingScore = 0
+else if (deal.aging_days > 7) agingScore = 5
+
+factors.push({
+  name: "Deal Aging",
+  score: agingScore,
+  impact: 10,
+})
+
+score += agingScore
   
   // Normalize score to 0-100
   const finalScore = Math.min(100, Math.max(0, Math.round(score)))
@@ -498,6 +535,16 @@ export default function DealDetailPage({
     return null
   }, [deal, activities])
 
+  // ================= DEAL MOMENTUM =================
+const momentum = useMemo(() => {
+  return getDealMomentum(activities)
+}, [activities])
+
+  const velocity = useMemo(() => {
+  if (!deal || deal.aging_days === 0) return 0
+  return activities.length / deal.aging_days
+}, [activities, deal])
+
   // ================= CHECK FOLLOW UP NEEDED =================
   const daysSinceLastActivity = useMemo(() => {
     if (!deal) return 0
@@ -520,7 +567,7 @@ export default function DealDetailPage({
         body: JSON.stringify({
           type: activityType,
           description: activityNotes,
-          user: "Current User", // TODO: ganti dengan user dari session
+          user: "Admin", // TODO: ganti dengan user dari session
         }),
       })
 
@@ -541,7 +588,7 @@ export default function DealDetailPage({
       
       setActivityNotes("")
       setShowActivityModal(false)
-      toast.success(`${activityType} berhasil dicatat`)
+      toast.success("Activity berhasil dicatat")
     } catch {
       toast.error("Gagal mencatat aktivitas")
     }
@@ -1198,20 +1245,56 @@ export default function DealDetailPage({
                 Deal Analytics
               </h3>
               <div className="space-y-4">
+                {/* Probability */}
+  <div>
+    <p className="text-xs text-slate-400 mb-1">Probability</p>
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-2 bg-slate-100 rounded-full">
+        <div
+          className={`h-2 rounded-full ${winColor}`}
+          style={{ width: `${winPercentage}%` }}
+        />
+      </div>
+      <span className="text-sm font-medium text-slate-700">
+        {winPercentage}%
+      </span>
+    </div>
+  </div>
+
+  {/* Velocity */}
+  <div>
+    <p className="text-xs text-slate-400 mb-1">Velocity</p>
+    <p className="text-sm font-semibold text-slate-700">
+      {velocity.toFixed(2)} activity/day
+    </p>
+  </div>
+
                 <div>
-                  <p className="text-xs text-slate-400 mb-1">Probability</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-2 bg-slate-100 rounded-full">
-                      <div
-                        className={`h-2 rounded-full ${winColor}`}
-                        style={{ width: `${winPercentage}%` }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium text-slate-700">
-                      {winPercentage}%
-                    </span>
-                  </div>
-                </div>
+  <p className="text-xs text-slate-400 mb-1">Momentum</p>
+
+  {momentum === "active" && (
+    <span className="text-emerald-600 font-semibold flex items-center gap-1">
+      ⚡ ACTIVE
+    </span>
+  )}
+
+  {momentum === "moderate" && (
+    <span className="text-amber-600 font-semibold flex items-center gap-1">
+      ⚠ MODERATE
+    </span>
+  )}
+
+  {momentum === "stalled" && (
+    <span className="text-rose-600 font-semibold flex items-center gap-1">
+      ❄ STALLED
+    </span>
+  )}
+</div>
+                {momentum === "stalled" && (
+  <p className="text-xs text-rose-500 mt-1">
+    Tidak ada aktivitas dalam 7 hari
+  </p>
+)}
 
                 <div>
                   <p className="text-xs text-slate-400 mb-1">Aging</p>
@@ -1304,11 +1387,18 @@ export default function DealDetailPage({
                   <p className="text-sm text-slate-700">{formatDate(deal.last_activity_at || deal.updated_at)}</p>
                 </div>
                 {deal.last_followup && (
-                  <div>
-                    <p className="text-xs text-slate-400">Last Follow Up</p>
-                    <p className="text-sm text-slate-700">{formatDate(deal.last_followup)}</p>
-                  </div>
-                )}
+  <div>
+    <p className="text-xs text-slate-400">Last Follow Up</p>
+    <p className="text-sm text-slate-700">{formatDate(deal.last_followup)}</p>
+  </div>
+)}
+
+<div>
+  <p className="text-xs text-slate-400">Expected Close</p>
+  <p className="text-sm text-slate-700">
+    {formatDate(estimateClosingDate(deal).toISOString())}
+  </p>
+</div>
               </div>
             </div>
 

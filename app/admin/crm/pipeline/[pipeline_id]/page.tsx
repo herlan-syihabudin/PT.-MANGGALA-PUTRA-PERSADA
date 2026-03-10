@@ -324,7 +324,7 @@ function calculateHealthScore(deal: Deal, activities: ActivityLog[]): HealthScor
     nextAction = "📊 Siapkan RAB untuk lanjut ke tahap penawaran"
   } else if (!deal.proposal_id && deal.rab_id) {
     nextAction = "📄 Buat proposal berdasarkan RAB yang sudah ada"
-  } else if (deal.proposal_status === "sent" && deal.proposal_status !== "approved") {
+  } else if (deal.proposal_status === "sent") {
     nextAction = "🤝 Follow up untuk mendapatkan persetujuan proposal"
   } else if (deal.probability > PROBABILITY_THRESHOLDS.high) {
     nextAction = "🔥 High probability deal - fokus untuk closing"
@@ -545,7 +545,7 @@ export default function DealDetailPage({
   if (!deal) return notFound()
 
   const stageConfig = STAGE_CONFIG[deal.stage]
-  const agingStatus = getAgingStatus(deal.aging_days)
+  const agingStatus = getAgingStatus(daysSinceLastActivity)
   const winPercentage = getWinPercentage(deal)
   const winColor = getWinColor(winPercentage)
   const topFactors = healthScore ? getTopFactors(healthScore.factors) : []

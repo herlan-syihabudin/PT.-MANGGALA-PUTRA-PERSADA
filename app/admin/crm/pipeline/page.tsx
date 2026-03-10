@@ -280,9 +280,10 @@ export default function CRMPipelinePage() {
   const [temperatureFilter, setTemperatureFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<keyof Deal>("priority_score")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
-  const [viewMode, setViewMode] = useState<"table" | "kanban" | "chart" | "board">("board")
   const [showFilters, setShowFilters] = useState(false)
-  const [activeTab, setActiveTab] = useState<"pipeline" | "intelligence" | "risks">("pipeline")
+  const [activeTab, setActiveTab] = useState<
+  "board" | "table" | "kanban" | "chart" | "intelligence" | "risks"
+>("board")
 
   // ================= FETCH DATA =================
   useEffect(() => {
@@ -787,10 +788,13 @@ const bVal = b[sortBy] ?? 0
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
           <div className="flex overflow-x-auto">
             {[
-              { id: 'pipeline', label: 'Pipeline', icon: BarChart3 },
-              { id: 'intelligence', label: 'AI Intelligence', icon: Zap },
-              { id: 'risks', label: 'Risk Detector', icon: Shield },
-            ].map((tab) => {
+  { id: 'board', label: 'Hot Board', icon: Flame },
+  { id: 'table', label: 'Table', icon: FileText },
+  { id: 'kanban', label: 'Kanban', icon: Briefcase },
+  { id: 'chart', label: 'Analytics', icon: PieChart },
+  { id: 'intelligence', label: 'AI Intelligence', icon: Zap },
+  { id: 'risks', label: 'Risk Detector', icon: Shield },
+].map((tab) => {
               const Icon = tab.icon
               return (
                 <button
@@ -813,37 +817,6 @@ const bVal = b[sortBy] ?? 0
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-        {/* Pipeline Header */}
-<div className="flex items-center justify-between mb-4">
-
-  <h2 className="text-lg font-semibold text-slate-800">
-    Sales Pipeline
-  </h2>
-
-  {/* View Mode Selector */}
-  <div className="flex gap-2">
-    {[
-      { id: 'board', label: '🔥 Hot Board', icon: Flame },
-      { id: 'table', label: 'Table', icon: FileText },
-      { id: 'kanban', label: 'Kanban', icon: Briefcase },
-      { id: 'chart', label: 'Analytics', icon: PieChart }
-    ].map((mode) => (
-      <button
-        key={mode.id}
-        onClick={() => setViewMode(mode.id as any)}
-        className={`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
-          viewMode === mode.id
-            ? 'bg-slate-800 text-white'
-            : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-        }`}
-      >
-        <mode.icon size={16} />
-        {mode.label}
-      </button>
-    ))}
-  </div>
-
-</div>
         
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -915,41 +888,40 @@ const bVal = b[sortBy] ?? 0
           </div>
         )}
 
-        {/* PIPELINE TAB */}
-{activeTab === 'pipeline' && (
-  <>
-    {viewMode === 'table' && (
-      <TableView 
-        data={filteredData}
-        onRowClick={(deal) => router.push(`/admin/crm/pipeline/${deal.pipeline_id}`)}
-      />
-    )}
+        {/* BOARD */}
+{activeTab === 'board' && (
+  <HotDealsBoard
+    data={filteredData}
+    onDealClick={(deal) => router.push(`/admin/crm/pipeline/${deal.pipeline_id}`)}
+  />
+)}
 
-    {viewMode === 'kanban' && (
-      <KanbanView 
-        stages={STAGE_CONFIG}
-        distribution={stageDistribution}
-        data={filteredData}
-        onDealClick={(deal) => router.push(`/admin/crm/pipeline/${deal.pipeline_id}`)}
-      />
-    )}
+{/* TABLE */}
+{activeTab === 'table' && (
+  <TableView
+    data={filteredData}
+    onRowClick={(deal) => router.push(`/admin/crm/pipeline/${deal.pipeline_id}`)}
+  />
+)}
 
-    {viewMode === 'chart' && (
-      <AnalyticsView 
-        stats={stats}
-        stageDistribution={stageDistribution}
-        monthlyData={monthlyData}
-        agingAnalysis={agingAnalysis}
-      />
-    )}
+{/* KANBAN */}
+{activeTab === 'kanban' && (
+  <KanbanView
+    stages={STAGE_CONFIG}
+    distribution={stageDistribution}
+    data={filteredData}
+    onDealClick={(deal) => router.push(`/admin/crm/pipeline/${deal.pipeline_id}`)}
+  />
+)}
 
-    {viewMode === 'board' && (
-      <HotDealsBoard 
-        data={filteredData}
-        onDealClick={(deal) => router.push(`/admin/crm/pipeline/${deal.pipeline_id}`)}
-      />
-    )}
-  </>
+{/* ANALYTICS */}
+{activeTab === 'chart' && (
+  <AnalyticsView
+    stats={stats}
+    stageDistribution={stageDistribution}
+    monthlyData={monthlyData}
+    agingAnalysis={agingAnalysis}
+  />
 )}
 
 {/* INTELLIGENCE TAB */}

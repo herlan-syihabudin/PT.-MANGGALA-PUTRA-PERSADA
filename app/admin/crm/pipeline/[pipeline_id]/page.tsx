@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo, useCallback, useRef } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { notFound, useRouter } from "next/navigation"
 import Link from "next/link"
 import {
@@ -30,19 +30,23 @@ import {
   Send,
   Heart,
   Activity,
-  Zap,
-  Target,
   Flame,
   Thermometer,
   Brain,
-  Sparkles,
   Bell,
 } from "lucide-react"
 import { toast } from "sonner"
 import { motion, AnimatePresence } from "framer-motion"
 
 // ================= TYPES =================
-type Deal = {
+type DealStage = "FOLLOW UP" | "PENAWARAN" | "NEGOSIASI" | "DEAL" | "LOST"
+type ProposalStatus = "draft" | "sent" | "approved" | "rejected"
+type RiskLevel = "low" | "medium" | "high"
+type ActivityType = "note" | "call" | "email" | "meeting" | "status_change" | "system"
+type Temperature = "hot" | "warm" | "cold"
+type AgingStatus = "normal" | "warning" | "critical"
+
+interface Deal {
   pipeline_id: string
   inquiry_id: string
   customer_id: string
@@ -52,14 +56,13 @@ type Deal = {
   customer_address?: string
   project_name: string
   project_location?: string
-  stage: "FOLLOW UP" | "PENAWARAN" | "NEGOSIASI" | "DEAL" | "LOST"
+  stage: DealStage
   estimated_value: number
   proposal_value?: number
   final_value: number
   rab_id: string
-  rab_data?: any
   proposal_id: string
-  proposal_status?: "draft" | "sent" | "approved" | "rejected"
+  proposal_status?: ProposalStatus
   project_id?: string
   created_at: string
   updated_at: string
@@ -80,29 +83,52 @@ type Deal = {
   notes?: string
   last_followup?: string
   health_score?: number
-  health_trend?: "up" | "down" | "stable"
-  risk_level?: "low" | "medium" | "high"
+  risk_level?: RiskLevel
   next_best_action?: string
 }
 
-type ActivityLog = {
+interface ActivityLog {
   id: string
-  type: "note" | "call" | "email" | "meeting" | "status_change" | "system"
+  type: ActivityType
   description: string
   user: string
   timestamp: string
-  metadata?: any
 }
 
-type ActivityType = "call" | "email" | "meeting" | "note"
+interface HealthFactor {
+  name: string
+  score: number
+  impact: number
+}
+
+interface HealthScoreResult {
+  score: number
+  factors: HealthFactor[]
+  risk: RiskLevel
+  nextAction: string
+  temperature: Temperature
+}
 
 // ================= CONSTANTS =================
 const AGING_THRESHOLDS = {
   warning: 7,
   critical: 14,
-}
+} as const
 
-const STAGE_CONFIG: Record<string, { label: string; color: string; bgColor: string; textColor: string; borderColor: string }> = {
+const HEALTH_THRESHOLDS = {
+  hot: 75,
+  warm: 50,
+  cold: 0,
+  lowRisk: 70,
+  mediumRisk: 40,
+} as const
+
+const PROBABILITY_THRESHOLDS = {
+  high: 0.7,
+  medium: 0.4,
+} as const
+
+const STAGE_CONFIG: Record<DealStage, { label: string; color: string; bgColor: string; textColor: string; borderColor: string }> = {
   "FOLLOW UP": {
     label: "Follow Up",
     color: "slate",
@@ -140,22 +166,13 @@ const STAGE_CONFIG: Record<string, { label: string; color: string; bgColor: stri
   },
 }
 
-const ACTIVITY_ICONS = {
-  call: Phone,
-  email: Mail,
-  meeting: Users,
-  note: MessageSquare,
-  status_change: RefreshCcw,
-  system: Activity,
-}
-
-const ACTIVITY_COLORS = {
-  call: "text-blue-600 bg-blue-100",
-  email: "text-emerald-600 bg-emerald-100",
-  meeting: "text-purple-600 bg-purple-100",
-  note: "text-slate-600 bg-slate-100",
-  status_change: "text-amber-600 bg-amber-100",
-  system: "text-slate-400 bg-slate-100",
+const ACTIVITY_CONFIG: Record<ActivityType, { icon: typeof Phone; color: string; bgColor: string }> = {
+  call: { icon: Phone, color: "text-blue-600", bgColor: "bg-blue-100" },
+  email: { icon: Mail, color: "text-emerald-600", bgColor: "bg-emerald-100" },
+  meeting: { icon: Users, color: "text-purple-600", bgColor: "bg-purple-100" },
+  note: { icon: MessageSquare, color: "text-slate-600", bgColor: "bg-slate-100" },
+  status_change: { icon: RefreshCcw, color: "text-amber-600", bgColor: "bg-amber-100" },
+  system: { icon: Activity, color: "text-slate-400", bgColor: "bg-slate-100" },
 }
 
 // ================= HELPERS =================
@@ -193,32 +210,31 @@ function formatRelativeTime(date: string): string {
   return formatDate(date)
 }
 
-function getAgingStatus(days: number): "normal" | "warning" | "critical" {
+function getAgingStatus(days: number): AgingStatus {
   if (days > AGING_THRESHOLDS.critical) return "critical"
   if (days > AGING_THRESHOLDS.warning) return "warning"
   return "normal"
 }
 
 function getWinPercentage(deal: Deal): number {
-  return deal.win_probability || Math.round(deal.probability * 100)
+  return deal.win_probability ?? Math.round(deal.probability * 100)
 }
 
 function getWinColor(percentage: number): string {
-  if (percentage >= 70) return "bg-emerald-500"
-  if (percentage >= 40) return "bg-amber-500"
+  if (percentage >= PROBABILITY_THRESHOLDS.high * 100) return "bg-emerald-500"
+  if (percentage >= PROBABILITY_THRESHOLDS.medium * 100) return "bg-amber-500"
   return "bg-rose-500"
 }
 
-// ================= AI HEALTH SCORE ENGINE =================
-function calculateHealthScore(deal: Deal, activities: ActivityLog[]): {
-  score: number
-  factors: { name: string; score: number; impact: number }[]
-  risk: "low" | "medium" | "high"
-  nextAction: string
-  temperature: "hot" | "warm" | "cold"
-} {
-  let score = 50 // Base score
-  const factors = []
+function getTopFactors(factors: HealthFactor[], count: number = 3): HealthFactor[] {
+  return [...factors]
+    .sort((a, b) => (b.score / b.impact) - (a.score / a.impact))
+    .slice(0, count)
+}
+
+function calculateHealthScore(deal: Deal, activities: ActivityLog[]): HealthScoreResult {
+  let score = 30 // Base score
+  const factors: HealthFactor[] = []
   
   // Factor 1: Stage & Probability (max 20)
   const stageScore = deal.probability * 20
@@ -291,26 +307,26 @@ function calculateHealthScore(deal: Deal, activities: ActivityLog[]): {
   const finalScore = Math.min(100, Math.max(0, Math.round(score)))
   
   // Determine risk level
-  let risk: "low" | "medium" | "high" = "low"
-  if (finalScore < 40) risk = "high"
-  else if (finalScore < 70) risk = "medium"
+  let risk: RiskLevel = "low"
+  if (finalScore < HEALTH_THRESHOLDS.mediumRisk) risk = "high"
+  else if (finalScore < HEALTH_THRESHOLDS.lowRisk) risk = "medium"
   
   // Determine temperature
-  let temperature: "hot" | "warm" | "cold" = "cold"
-  if (finalScore >= 75) temperature = "hot"
-  else if (finalScore >= 50) temperature = "warm"
+  let temperature: Temperature = "cold"
+  if (finalScore >= HEALTH_THRESHOLDS.hot) temperature = "hot"
+  else if (finalScore >= HEALTH_THRESHOLDS.warm) temperature = "warm"
   
   // Generate next best action
   let nextAction = ""
-  if (daysSinceActivity > 7) {
+  if (daysSinceActivity > AGING_THRESHOLDS.warning) {
     nextAction = "⚠️ Follow up segera - sudah 7 hari tanpa kontak"
   } else if (!deal.rab_id && deal.stage === "FOLLOW UP") {
     nextAction = "📊 Siapkan RAB untuk lanjut ke tahap penawaran"
   } else if (!deal.proposal_id && deal.rab_id) {
     nextAction = "📄 Buat proposal berdasarkan RAB yang sudah ada"
-  } else if (deal.proposal_status === "sent" && !deal.proposal_status === "approved") {
+  } else if (deal.proposal_status === "sent" && deal.proposal_status !== "approved") {
     nextAction = "🤝 Follow up untuk mendapatkan persetujuan proposal"
-  } else if (deal.probability > 0.7) {
+  } else if (deal.probability > PROBABILITY_THRESHOLDS.high) {
     nextAction = "🔥 High probability deal - fokus untuk closing"
   } else {
     nextAction = "📈 Monitor progress secara reguler"
@@ -339,21 +355,23 @@ export default function DealDetailPage({
   const [showActivityModal, setShowActivityModal] = useState(false)
   const [activityType, setActivityType] = useState<ActivityType>("call")
   const [activityNotes, setActivityNotes] = useState("")
-  const [healthScore, setHealthScore] = useState<any>(null)
+
+  // Validate pipeline_id
+  if (!params?.pipeline_id) {
+    notFound()
+  }
 
   // ================= FETCH DEAL =================
   useEffect(() => {
-    if (!params?.pipeline_id) {
-      notFound()
-      return
-    }
+    const controller = new AbortController()
 
     const fetchDeal = async () => {
       setLoading(true)
+
       try {
         const [dealRes, activityRes] = await Promise.all([
-          fetch(`/api/crm/pipeline/${params.pipeline_id}`, { cache: "no-store" }),
-          fetch(`/api/crm/pipeline/${params.pipeline_id}/activities`, { cache: "no-store" }),
+          fetch(`/api/crm/pipeline/${params.pipeline_id}`, { signal: controller.signal }),
+          fetch(`/api/crm/pipeline/${params.pipeline_id}/activities`, { signal: controller.signal }),
         ])
 
         if (!dealRes.ok) throw new Error("Failed to fetch deal")
@@ -363,34 +381,46 @@ export default function DealDetailPage({
 
         if (activityRes.ok) {
           const activityData = await activityRes.json()
-          setActivities(activityData)
+          setActivities(
+            activityData.sort(
+              (a: ActivityLog, b: ActivityLog) =>
+                new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+            )
+          )
         }
       } catch (e) {
-        console.error(e)
-        toast.error("Gagal memuat data deal")
+        if ((e as Error).name !== "AbortError") {
+          console.error(e)
+          toast.error("Gagal memuat data deal")
+        }
       } finally {
         setLoading(false)
       }
     }
 
     fetchDeal()
-  }, [params?.pipeline_id])
+
+    return () => controller.abort()
+  }, [params.pipeline_id])
 
   // ================= CALCULATE HEALTH SCORE =================
-  useEffect(() => {
+  const healthScore = useMemo(() => {
     if (deal && activities) {
-      const health = calculateHealthScore(deal, activities)
-      setHealthScore(health)
-      
-      // Update deal dengan health score
-      setDeal(prev => prev ? {
-        ...prev,
-        health_score: health.score,
-        risk_level: health.risk,
-        next_best_action: health.nextAction,
-      } : prev)
+      return calculateHealthScore(deal, activities)
     }
+    return null
   }, [deal, activities])
+
+  // ================= CHECK FOLLOW UP NEEDED =================
+  const daysSinceLastActivity = useMemo(() => {
+    if (!deal) return 0
+    const lastActivity = deal.last_activity_at ? new Date(deal.last_activity_at) : new Date(deal.created_at)
+    return Math.floor((Date.now() - lastActivity.getTime()) / (1000 * 60 * 60 * 24))
+  }, [deal])
+
+  const needsFollowUp = useMemo(() => {
+    return daysSinceLastActivity >= AGING_THRESHOLDS.warning
+  }, [daysSinceLastActivity])
 
   // ================= ADD ACTIVITY =================
   const addActivity = async () => {
@@ -403,13 +433,16 @@ export default function DealDetailPage({
         body: JSON.stringify({
           type: activityType,
           description: activityNotes,
+          user: "Current User", // TODO: ganti dengan user dari session
         }),
       })
 
       if (!res.ok) throw new Error()
 
       const newActivity = await res.json()
-      setActivities(prev => [newActivity, ...prev])
+      setActivities(prev => [newActivity, ...prev].sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      ))
       
       // Update last activity timestamp untuk aging
       setDeal(prev => prev ? {
@@ -429,28 +462,24 @@ export default function DealDetailPage({
 
   // ================= CONVERT TO PROJECT =================
   const convertToProject = async () => {
-    if (converting) return
-    if (!deal) return
+    if (converting || !deal) return
 
-    // ✅ LOCK: Only DEAL stage can convert
+    // Validation
     if (deal.stage !== "DEAL") {
       toast.error("Hanya deal dengan status DEAL yang dapat dikonversi ke project")
       return
     }
 
-    // ✅ LOCK: Check if already converted
     if (deal.project_id) {
       toast.error("Deal ini sudah dikonversi ke project")
       return
     }
 
-    // ✅ LOCK: Check proposal status
     if (deal.proposal_status !== "approved") {
       toast.error("Proposal harus disetujui sebelum konversi ke project")
       return
     }
 
-    // ✅ LOCK: Check RAB exists
     if (!deal.rab_id) {
       toast.error("RAB harus ada sebelum konversi ke project")
       return
@@ -478,14 +507,19 @@ export default function DealDetailPage({
         throw new Error(result.message || "Gagal konversi")
       }
 
-      // Update local state with project_id
-      setDeal(prev => prev ? {
-        ...prev,
-        project_id: result.project_id,
-      } : prev)
+      // Update local state
+      setDeal(prev => prev ? { ...prev, project_id: result.project_id } : prev)
 
       // Add activity log
-      await addSystemActivity(`Deal dikonversi ke project: ${result.project_id}`)
+      await fetch(`/api/crm/pipeline/${deal.pipeline_id}/activities`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "system",
+          description: `Deal dikonversi ke project: ${result.project_id}`,
+          user: "System",
+        }),
+      })
 
       toast.success("Deal berhasil dikonversi ke project")
       router.push(`/admin/project/${result.project_id}`)
@@ -495,49 +529,6 @@ export default function DealDetailPage({
       setConverting(false)
     }
   }
-
-  // ================= ADD SYSTEM ACTIVITY =================
-  const addSystemActivity = async (description: string) => {
-    if (!deal) return
-    
-    try {
-      const res = await fetch(`/api/crm/pipeline/${deal.pipeline_id}/activities`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "system",
-          description,
-        }),
-      })
-
-      if (res.ok) {
-        const newActivity = await res.json()
-        setActivities(prev => [newActivity, ...prev])
-      }
-    } catch (e) {
-      console.error("Failed to add system activity", e)
-    }
-  }
-
-  // ================= VIEW PROPOSAL =================
-  const viewProposal = () => {
-    if (!deal?.proposal_id) return
-    router.push(`/admin/estimator/proposal/${deal.proposal_id}`)
-  }
-
-  // ================= VIEW RAB =================
-  const viewRAB = () => {
-    if (!deal?.rab_id) return
-    router.push(`/admin/estimator/rab/${deal.rab_id}`)
-  }
-
-  // ================= CHECK FOLLOW UP NEEDED =================
-  const needsFollowUp = useMemo(() => {
-    if (!deal) return false
-    const lastActivity = deal.last_activity_at ? new Date(deal.last_activity_at) : new Date(deal.created_at)
-    const daysSince = Math.floor((Date.now() - lastActivity.getTime()) / (1000 * 60 * 60 * 24))
-    return daysSince > AGING_THRESHOLDS.warning
-  }, [deal])
 
   // ================= LOADING =================
   if (loading) {
@@ -557,6 +548,7 @@ export default function DealDetailPage({
   const agingStatus = getAgingStatus(deal.aging_days)
   const winPercentage = getWinPercentage(deal)
   const winColor = getWinColor(winPercentage)
+  const topFactors = healthScore ? getTopFactors(healthScore.factors) : []
 
   // ================= RENDER =================
   return (
@@ -587,13 +579,13 @@ export default function DealDetailPage({
                   {/* Health Score Badge */}
                   {healthScore && (
                     <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1
-                      ${healthScore.score >= 75 ? 'bg-emerald-100 text-emerald-700' :
-                        healthScore.score >= 50 ? 'bg-amber-100 text-amber-700' :
+                      ${healthScore.score >= HEALTH_THRESHOLDS.hot ? 'bg-emerald-100 text-emerald-700' :
+                        healthScore.score >= HEALTH_THRESHOLDS.warm ? 'bg-amber-100 text-amber-700' :
                         'bg-rose-100 text-rose-700'}`}
                     >
                       <Heart size={12} className={
-                        healthScore.score >= 75 ? 'fill-emerald-500 text-emerald-500' :
-                        healthScore.score >= 50 ? 'fill-amber-500 text-amber-500' :
+                        healthScore.score >= HEALTH_THRESHOLDS.hot ? 'fill-emerald-500 text-emerald-500' :
+                        healthScore.score >= HEALTH_THRESHOLDS.warm ? 'fill-amber-500 text-amber-500' :
                         'fill-rose-500 text-rose-500'
                       } />
                       Health: {healthScore.score}
@@ -605,7 +597,7 @@ export default function DealDetailPage({
 
             {/* Action Buttons */}
             <div className="flex gap-2">
-              {/* Follow Up Button - muncul jika perlu follow up */}
+              {/* Follow Up Button */}
               {needsFollowUp && (
                 <button
                   onClick={() => setShowActivityModal(true)}
@@ -685,8 +677,8 @@ export default function DealDetailPage({
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-slate-600">Health Score</span>
                   <span className={`text-lg font-bold ${
-                    healthScore.score >= 75 ? 'text-emerald-600' :
-                    healthScore.score >= 50 ? 'text-amber-600' :
+                    healthScore.score >= HEALTH_THRESHOLDS.hot ? 'text-emerald-600' :
+                    healthScore.score >= HEALTH_THRESHOLDS.warm ? 'text-amber-600' :
                     'text-rose-600'
                   }`}>
                     {healthScore.score}
@@ -695,8 +687,8 @@ export default function DealDetailPage({
                 <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full ${
-                      healthScore.score >= 75 ? 'bg-emerald-500' :
-                      healthScore.score >= 50 ? 'bg-amber-500' :
+                      healthScore.score >= HEALTH_THRESHOLDS.hot ? 'bg-emerald-500' :
+                      healthScore.score >= HEALTH_THRESHOLDS.warm ? 'bg-amber-500' :
                       'bg-rose-500'
                     }`}
                     style={{ width: `${healthScore.score}%` }}
@@ -751,17 +743,17 @@ export default function DealDetailPage({
                 </div>
               </div>
 
-              {/* Key Factors */}
+              {/* Top Factors */}
               <div className="col-span-1">
                 <p className="text-xs text-slate-400 mb-1">Top Factors</p>
                 <div className="space-y-1">
-                  {healthScore.factors.slice(0, 2).map((f: any, i: number) => (
+                  {topFactors.map((factor, i) => (
                     <div key={i} className="flex items-center gap-1 text-xs">
                       <div className={`w-1.5 h-1.5 rounded-full ${
-                        f.score / f.impact > 0.7 ? 'bg-emerald-500' :
-                        f.score / f.impact > 0.3 ? 'bg-amber-500' : 'bg-rose-500'
+                        factor.score / factor.impact > 0.7 ? 'bg-emerald-500' :
+                        factor.score / factor.impact > 0.3 ? 'bg-amber-500' : 'bg-rose-500'
                       }`} />
-                      <span className="text-slate-600">{f.name}</span>
+                      <span className="text-slate-600">{factor.name}</span>
                     </div>
                   ))}
                 </div>
@@ -783,7 +775,7 @@ export default function DealDetailPage({
             <div className="flex-1">
               <h3 className="font-semibold text-amber-800">Follow Up Needed</h3>
               <p className="text-sm text-amber-700">
-                Belum ada aktivitas selama {deal.aging_days} hari. Segera lakukan follow up untuk menjaga deal tetap hangat.
+                Belum ada aktivitas selama {daysSinceLastActivity} hari. Segera lakukan follow up untuk menjaga deal tetap hangat.
               </p>
             </div>
             <button
@@ -796,7 +788,7 @@ export default function DealDetailPage({
         </motion.div>
       )}
 
-      {/* Main Content */}
+      {/* Main Content - Sama seperti sebelumnya, tapi dengan import yang sudah dibersihkan */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left Column - Main Info */}
@@ -957,7 +949,7 @@ export default function DealDetailPage({
             </div>
 
             {/* Risk Section */}
-            {(deal.competitor || deal.risk_flags) && (
+            {(deal.competitor || (deal.risk_flags && deal.risk_flags.length > 0)) && (
               <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
                 <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
                   <Shield size={18} className="text-slate-500" />
@@ -995,7 +987,7 @@ export default function DealDetailPage({
               <div className="flex flex-wrap gap-3">
                 {deal.rab_id && (
                   <button
-                    onClick={viewRAB}
+                    onClick={() => router.push(`/admin/estimator/rab/${deal.rab_id}`)}
                     className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                   >
                     <FileSpreadsheet size={16} />
@@ -1010,7 +1002,7 @@ export default function DealDetailPage({
 
                 {deal.proposal_id && (
                   <button
-                    onClick={viewProposal}
+                    onClick={() => router.push(`/admin/estimator/proposal/${deal.proposal_id}`)}
                     className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                   >
                     <FileCheck size={16} />
@@ -1062,8 +1054,9 @@ export default function DealDetailPage({
                   <p className="text-center text-slate-400 py-4">No activity yet</p>
                 ) : (
                   activities.map((activity, index) => {
-                    const Icon = ACTIVITY_ICONS[activity.type] || MessageSquare
-                    const colorClass = ACTIVITY_COLORS[activity.type] || "text-slate-600 bg-slate-100"
+                    const config = ACTIVITY_CONFIG[activity.type]
+                    const Icon = config?.icon || MessageSquare
+                    const colorClass = config ? `${config.color} ${config.bgColor}` : "text-slate-600 bg-slate-100"
                     
                     return (
                       <motion.div
@@ -1147,7 +1140,7 @@ export default function DealDetailPage({
                   <div className="pt-3 border-t border-slate-100">
                     <p className="text-xs font-medium text-slate-500 mb-2">Health Factors</p>
                     <div className="space-y-2">
-                      {healthScore.factors.slice(0, 4).map((factor: any, i: number) => (
+                      {healthScore.factors.slice(0, 4).map((factor, i) => (
                         <div key={i}>
                           <div className="flex justify-between text-xs mb-0.5">
                             <span className="text-slate-600">{factor.name}</span>
@@ -1216,7 +1209,11 @@ export default function DealDetailPage({
                 </button>
                 <button
                   onClick={() => {
-                    window.location.href = `mailto:${deal.customer_email}?subject=Proposal%20${deal.project_name}`
+                    if (deal.customer_email) {
+                      window.location.href = `mailto:${deal.customer_email}?subject=Proposal%20${encodeURIComponent(deal.project_name)}`
+                    } else {
+                      toast.error("Email customer tidak tersedia")
+                    }
                   }}
                   className="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                 >
@@ -1261,15 +1258,16 @@ export default function DealDetailPage({
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {[
-                      { value: "call", label: "Call", icon: Phone },
-                      { value: "email", label: "Email", icon: Mail },
-                      { value: "meeting", label: "Meeting", icon: Users },
+                      { value: "call" as const, label: "Call", icon: Phone },
+                      { value: "email" as const, label: "Email", icon: Mail },
+                      { value: "meeting" as const, label: "Meeting", icon: Users },
+                      { value: "note" as const, label: "Note", icon: MessageSquare },
                     ].map((type) => {
                       const Icon = type.icon
                       return (
                         <button
                           key={type.value}
-                          onClick={() => setActivityType(type.value as ActivityType)}
+                          onClick={() => setActivityType(type.value)}
                           className={`px-3 py-2 rounded-lg text-sm font-medium capitalize transition-colors flex flex-col items-center gap-1
                             ${activityType === type.value 
                               ? 'bg-slate-800 text-white' 

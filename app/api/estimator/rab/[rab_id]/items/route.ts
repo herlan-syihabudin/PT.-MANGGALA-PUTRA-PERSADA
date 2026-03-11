@@ -52,20 +52,21 @@ const RAB_HEADER_COLUMNS = {
 const RAB_ITEM_COLUMNS = {
   ITEM_ID: 0,
   RAB_ID: 1,
-  PROJECT_ID: 2,
-  SCOPE: 3,
+  SCOPE: 2,
+  CATEGORY: 3,
   ITEM_NAME: 4,
-  CATEGORY: 5,
-  QTY: 6,
-  UNIT: 7,
-  MATERIAL_PRICE: 8,
-  LABOUR_PRICE: 9,
+  QTY: 5,
+  UNIT: 6,
+  MATERIAL_PRICE: 7,
+  LABOUR_PRICE: 8,
+  EQUIPMENT_PRICE: 9,
   UNIT_PRICE: 10,
   TOTAL_PRICE: 11,
   STATUS: 12,
   CREATED_BY: 13,
   CREATED_AT: 14,
   UPDATED_AT: 15,
+  NOTES: 16,
 } as const
 
 const RETRYABLE_CODES = [408, 429, 502, 503] as const
@@ -156,12 +157,16 @@ async function recalcHeader(rab_id: string) {
   const itemRes = await withRetry(() =>
     sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${RAB_ITEM}!A2:P`,
+      range: `${RAB_ITEM}!A2:QP`,
     })
   )
   
   const rows = itemRes.data.values || []
-  const items = rows.filter((r) => r[RAB_ITEM_COLUMNS.RAB_ID] === rab_id)
+  const items = rows.filter(
+  (r) =>
+    r[RAB_ITEM_COLUMNS.RAB_ID] === rab_id &&
+    r[RAB_ITEM_COLUMNS.STATUS] !== "Deleted"
+)
 
   const total_items = items.length
   const total_value = items.reduce((s, r) => s + n(r[RAB_ITEM_COLUMNS.TOTAL_PRICE]), 0)
@@ -214,7 +219,6 @@ export async function GET(
       .map((r) => ({
         item_id: r[RAB_ITEM_COLUMNS.ITEM_ID] || "",
         rab_id: r[RAB_ITEM_COLUMNS.RAB_ID] || "",
-        project_id: r[RAB_ITEM_COLUMNS.PROJECT_ID] || "",
         scope: r[RAB_ITEM_COLUMNS.SCOPE] || "",
         item_name: r[RAB_ITEM_COLUMNS.ITEM_NAME] || "",
         category: r[RAB_ITEM_COLUMNS.CATEGORY] || "",
@@ -285,16 +289,15 @@ export async function POST(
     }
 
     const {
-      project_id,
-      scope = "",
-      item_name,
-      category = "",
-      qty = 0,
-      unit = "",
-      material_price = 0,
-      labour_price = 0,
-      created_by = "System"
-    } = body
+  scope = "",
+  item_name,
+  category = "",
+  qty = 0,
+  unit = "",
+  material_price = 0,
+  labour_price = 0,
+  created_by = "System"
+} = body
 
   
 
@@ -334,27 +337,28 @@ export async function POST(
     await withRetry(() =>
       sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_ID,
-        range: `${RAB_ITEM}!A:P`,
+        range: `${RAB_ITEM}!A:Q`,
         valueInputOption: "USER_ENTERED",
         requestBody: {
           values: [[
-            item_id,
-            rab_id,
-            project_id || "",
-            scope,
-            item_name,
-            category,
-            qty,
-            unit,
-            material_price,
-            labour_price,
-            unit_price,
-            total_price,
-            "Draft",
-            created_by,
-            now,
-            now,
-          ]]
+  item_id,
+  rab_id,
+  scope,
+  category,
+  item_name,
+  qty,
+  unit,
+  material_price,
+  labour_price,
+  0,
+  unit_price,
+  total_price,
+  "Draft",
+  created_by,
+  now,
+  now,
+  ""
+]]
         }
       })
     )
@@ -366,23 +370,22 @@ export async function POST(
     return NextResponse.json({
       message: "Item berhasil dibuat",
       item: {
-        item_id,
-        rab_id,
-        project_id,
-        scope,
-        item_name,
-        category,
-        qty,
-        unit,
-        material_price,
-        labour_price,
-        unit_price,
-        total_price,
-        status: "Draft",
-        created_by,
-        created_at: now,
-        updated_at: now,
-      },
+  item_id,
+  rab_id,
+  scope,
+  item_name,
+  category,
+  qty,
+  unit,
+  material_price,
+  labour_price,
+  unit_price,
+  total_price,
+  status: "Draft",
+  created_by,
+  created_at: now,
+  updated_at: now,
+},
       summary
     })
 
@@ -417,7 +420,7 @@ export async function PUT(
 ) {
   try {
     const rab_id = params.rab_id
-    const { project_id, created_by = "System", items } = await req.json()
+    const { created_by = "System", items } = await req.json()
 
     // Cek status RAB
     const status = await checkRABStatus(rab_id)
@@ -463,23 +466,24 @@ export async function PUT(
         const total_price = qty * unit_price
 
         return [
-          "ITEM-" + nanoid(8).toUpperCase(),
-          rab_id,
-          project_id || "",
-          scope,
-          item_name,
-          category,
-          qty,
-          unit,
-          material_price,
-          labour_price,
-          unit_price,
-          total_price,
-          "Draft",
-          by,
-          now,
-          now,
-        ]
+  "ITEM-" + nanoid(8).toUpperCase(),
+  rab_id,
+  scope,
+  category,
+  item_name,
+  qty,
+  unit,
+  material_price,
+  labour_price,
+  0,
+  unit_price,
+  total_price,
+  "Draft",
+  by,
+  now,
+  now,
+  ""
+]
       })
       .filter(Boolean)
 
@@ -493,7 +497,7 @@ export async function PUT(
     await withRetry(() =>
       sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_ID,
-        range: `${RAB_ITEM}!A:P`,
+        range: `${RAB_ITEM}!A:Q`,
         valueInputOption: "USER_ENTERED",
         requestBody: { values },
       })

@@ -198,7 +198,7 @@ export async function POST(req: Request) {
     const sheetId = process.env.GSHEET_CRM_ID!
 
     /* ===== VALIDASI PIPELINE ===== */
-    const pipelineRes = await withRetry(
+    const pipelineRes: any = await withRetry(
       () => sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
         range: `${SALES_PIPELINE}!A2:S`,
@@ -270,7 +270,7 @@ export async function POST(req: Request) {
     }
 
     /* ===== DOUBLE-CHECK ANTI RACE CONDITION ===== */
-    const latestCheck = await withRetry(
+    const latestCheck: any = await withRetry(
       () => sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
         range: `${SALES_PIPELINE}!S${rowNumber}`, // Column S = PROPOSAL_ID

@@ -82,6 +82,9 @@ interface Deal {
   priority?: string
   notes?: string
   last_followup?: string
+  next_follow_up_date?: string
+follow_up_type?: string
+follow_up_notes?: string
   health_score?: number
   risk_level?: RiskLevel
   next_best_action?: string
@@ -553,8 +556,13 @@ const momentum = useMemo(() => {
   }, [deal])
 
   const needsFollowUp = useMemo(() => {
-    return daysSinceLastActivity >= AGING_THRESHOLDS.warning
-  }, [daysSinceLastActivity])
+  if (!deal?.next_follow_up_date) return false
+
+  const today = new Date()
+  const followDate = new Date(deal.next_follow_up_date)
+
+  return followDate <= today
+}, [deal])
 
   // ================= ADD ACTIVITY =================
   const addActivity = async () => {
@@ -1406,6 +1414,43 @@ const momentum = useMemo(() => {
                 )}
               </div>
             </div>
+
+            {/* Next Follow Up */}
+{deal.next_follow_up_date && (
+  <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+    <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+      <Bell size={18} className="text-slate-500" />
+      Next Follow Up
+    </h3>
+
+    <div className="space-y-2">
+      <div>
+        <p className="text-xs text-slate-400">Date</p>
+        <p className="text-sm font-medium text-slate-800">
+          {formatDate(deal.next_follow_up_date)}
+        </p>
+      </div>
+
+      {deal.follow_up_type && (
+        <div>
+          <p className="text-xs text-slate-400">Type</p>
+          <p className="text-sm text-slate-700">
+            {deal.follow_up_type}
+          </p>
+        </div>
+      )}
+
+      {deal.follow_up_notes && (
+        <div>
+          <p className="text-xs text-slate-400">Notes</p>
+          <p className="text-sm text-slate-600">
+            {deal.follow_up_notes}
+          </p>
+        </div>
+      )}
+    </div>
+  </div>
+)}
 
             {/* Timeline */}
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">

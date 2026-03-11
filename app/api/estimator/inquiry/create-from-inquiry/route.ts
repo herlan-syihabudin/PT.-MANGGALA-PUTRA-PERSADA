@@ -106,10 +106,10 @@ function safeParseNumber(value: any): number {
   return isNaN(num) ? 0 : num
 }
 
-function generateRABId(): string {
-  const timestamp = Date.now()
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
-  return `RAB-${timestamp}-${random}`
+function generateRABId() {
+  const date = new Date().toISOString().slice(0,10).replace(/-/g,'')
+  const random = Math.random().toString(36).substring(2,6).toUpperCase()
+  return `RAB-${date}-${random}`
 }
 
 /* ================= LOGGER ================= */
@@ -211,18 +211,19 @@ export async function POST(req: Request) {
     const rows = inquiryRes.data.values || []
     
     // Cari row index
-    const rowIndex = rows.findIndex((r) => r[INQUIRY_COLUMNS.ID] === inquiry_id)
-    const actualRow = rowIndex + 2 // +2 karena header + index 0-based
+const rowIndex = rows.findIndex((r) => r[INQUIRY_COLUMNS.ID] === inquiry_id)
 
-    if (rowIndex === -1) {
-      logger.warn(`[${requestId}] Inquiry not found`, { inquiry_id })
-      return NextResponse.json(
-        { error: "Inquiry tidak ditemukan" },
-        { status: 404 }
-      )
-    }
+if (rowIndex === -1) {
+  logger.warn(`[${requestId}] Inquiry not found`, { inquiry_id })
+  return NextResponse.json(
+    { error: "Inquiry tidak ditemukan" },
+    { status: 404 }
+  )
+}
 
-    const inquiryRow = rows[rowIndex]
+// Hitung row di sheet (karena header di baris 1)
+const actualRow = rowIndex + 2
+const inquiryRow = rows[rowIndex]
 
     /* ============================
        2️⃣ CEK DUPLIKAT RAB

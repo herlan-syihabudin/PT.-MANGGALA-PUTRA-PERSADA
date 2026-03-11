@@ -915,13 +915,13 @@ const momentum = useMemo(() => {
               />
             </div>
             <span className="text-xs font-medium text-slate-600">
-              {healthScore.probability}%
-            </span>
+  {winPercentage}%
+</span>
           </div>
 
           <p className="text-xs text-slate-500 mt-1">
-            Win probability {healthScore.probability}%
-          </p>
+  Win probability {winPercentage}%
+</p>
         </div>
       </div>
 

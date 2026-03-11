@@ -676,36 +676,66 @@ async function reload() {
   const router = useRouter()
 
   async function handleGenerateProposal() {
+  // Validasi input
+  if (!project_id) {
+    toast.error("Project ID tidak ditemukan")
+    return
+  }
+
+  if (!rab_id) {
+    toast.error("RAB ID tidak ditemukan")
+    return
+  }
+
+  // Confirmation dialog
+  if (!confirm("Yakin ingin generate proposal dari RAB ini?")) {
+    return
+  }
+
   try {
-    const res = await fetch("/api/crm/proposal", {  // Sesuaikan endpoint
+    const res = await fetch("/api/crm/proposal/create", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         inquiry_id: project_id,  // ✅ project_id = inquiry_id
         rab_id: rab_id,
-        total_value: sellTotal,   // ✅ sellTotal (bukan sellToa)
+        total_value: sellTotal,
+        created_by: "Estimator",  // Optional: track who created
       }),
     })
 
     const result = await res.json()
-    
+
     if (!res.ok) {
-      toast.error(result.message || result.error || "Gagal membuat proposal")
+      // Handle specific error codes
+      if (res.status === 409) {
+        toast.error(`Proposal sudah ada: ${result.proposal_id}`)
+        // Offer to open existing proposal
+        if (confirm("Buka proposal yang sudah ada?")) {
+          router.push(`/admin/crm/proposal/${result.proposal_id}`)
+        }
+        return
+      }
+      
+      toast.error(result.error || result.message || "Gagal membuat proposal")
       return
     }
 
     toast.success("Proposal berhasil dibuat")
     
-    // Redirect ke halaman proposal
+    // Redirect to the new proposal
     if (result.proposal_id) {
       router.push(`/admin/crm/proposal/${result.proposal_id}`)
     } else {
+      // Fallback: go to proposals list
       router.push(`/admin/crm/proposal?inquiry_id=${project_id}`)
     }
     
-  } catch (err) {
+  } catch (err: any) {
     console.error("Generate proposal error:", err)
-    toast.error("Terjadi kesalahan saat generate proposal")
+    toast.error(err?.message || "Terjadi kesalahan saat generate proposal")
   }
 }
 

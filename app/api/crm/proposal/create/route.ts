@@ -108,6 +108,12 @@ export async function POST(req: Request) {
         { status: 400 }
       )
     }
+    if (!rab_id) {
+  return NextResponse.json(
+    { message: "rab_id wajib diisi" },
+    { status: 400 }
+  )
+}
 
     logger.info('Create Proposal requested', { pipeline_id, rab_id })
 
@@ -148,12 +154,12 @@ export async function POST(req: Request) {
 
     // Cek stage harus "PENAWARAN" atau "NEGOSIASI"
     const currentStage = pipelineRow[PIPELINE_COLUMNS.STAGE] || ""
-    if (!["PENAWARAN", "NEGOSIASI"].includes(currentStage)) {
-      return NextResponse.json(
-        { message: `Pipeline dengan stage ${currentStage} tidak bisa dibuat proposal` },
-        { status: 400 }
-      )
-    }
+    if (currentStage !== "PENAWARAN") {
+  return NextResponse.json(
+    { message: `Proposal hanya bisa dibuat saat stage PENAWARAN` },
+    { status: 400 }
+  )
+}
 
     /* ================= CREATE PROPOSAL ================= */
     const proposal_id = "PRP-" + nanoid(6).toUpperCase()
@@ -168,7 +174,7 @@ export async function POST(req: Request) {
           values: [[
             proposal_id,
             pipeline_id,
-            rab_id || "",
+            rab_id,
             total_value || 0,
             "DRAFT",
             created_at
@@ -188,7 +194,7 @@ export async function POST(req: Request) {
         requestBody: {
           values: [[
             "NEGOSIASI",                          // STAGE di D
-            pipelineRow[PIPELINE_COLUMNS.ESTIMATED_VALUE] || 0,  // ESTIMATED_VALUE di E
+            total_value || 0,  // ESTIMATED_VALUE di E
             rab_id || pipelineRow[PIPELINE_COLUMNS.RAB_ID] || "", // RAB_ID di F
             proposal_id,                          // PROPOSAL_ID di G
             pipelineRow[PIPELINE_COLUMNS.CREATED_AT] || created_at, // CREATED_AT di H

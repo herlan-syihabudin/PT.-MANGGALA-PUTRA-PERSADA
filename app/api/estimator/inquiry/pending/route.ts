@@ -97,7 +97,7 @@ function safeParseNumber(value: any): number {
 }
 
 function isValidRow(row: any[]): boolean {
-  return row && row.length >= 19 && !!row[COLUMNS.INQUIRY_ID]
+  return row && !!row[COLUMNS.INQUIRY_ID]
 }
 
 function isNotConverted(row: any[]): boolean {

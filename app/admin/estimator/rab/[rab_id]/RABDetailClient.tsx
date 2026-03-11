@@ -676,29 +676,38 @@ async function reload() {
   const router = useRouter()
 
   async function handleGenerateProposal() {
-    try {
-      const res = await fetch("/api/crm/proposal/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-  inquiry_id: project_id,
-  rab_id: rab_id,
-  total_value: sellTotal,
-}),
-      })
+  try {
+    const res = await fetch("/api/crm/proposal", {  // Sesuaikan endpoint
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        inquiry_id: project_id,  // ✅ project_id = inquiry_id
+        rab_id: rab_id,
+        total_value: sellTotal,   // ✅ sellTotal (bukan sellToa)
+      }),
+    })
 
-      const result = await res.json()
-      if (!res.ok) {
-        toast.error(result.message || "Gagal membuat proposal")
-        return
-      }
-
-      toast.success("Proposal berhasil dibuat")
-      router.push(`/admin/crm/proposal/${result.proposal_id}`)
-    } catch (err) {
-      toast.error("Terjadi kesalahan saat generate proposal")
+    const result = await res.json()
+    
+    if (!res.ok) {
+      toast.error(result.message || result.error || "Gagal membuat proposal")
+      return
     }
+
+    toast.success("Proposal berhasil dibuat")
+    
+    // Redirect ke halaman proposal
+    if (result.proposal_id) {
+      router.push(`/admin/crm/proposal/${result.proposal_id}`)
+    } else {
+      router.push(`/admin/crm/proposal?inquiry_id=${project_id}`)
+    }
+    
+  } catch (err) {
+    console.error("Generate proposal error:", err)
+    toast.error("Terjadi kesalahan saat generate proposal")
   }
+}
 
   // Enhanced Excel validation
   const validateExcelRow = (row: any, index: number): { valid: boolean; errors: string[] } => {
@@ -928,12 +937,13 @@ const ws = wb.Sheets[sheetName]
       </Link>
 
       <button
-        onClick={handleGenerateProposal}
-        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
-      >
-        <FileText size={14}/>
-        Generate Proposal
-      </button>
+  onClick={handleGenerateProposal}
+  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+  disabled={!project_id || !rab_id}
+>
+  <FileText size={14}/>
+  Generate Proposal
+</button>
 
     </div>
   </div>

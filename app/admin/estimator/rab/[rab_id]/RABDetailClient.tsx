@@ -36,7 +36,6 @@ import { toast } from "sonner"
 export type RabItem = {
   item_id: string
   rab_id: string
-  project_id: string
   scope: string
   item_name: string
   category: string

@@ -10,43 +10,62 @@ type Inquiry = {
   estimasi_nilai: number
   tanggal_masuk: string
   prioritas?: string
+  layanan?: string
+  status?: string
+}
+
+type ApiResponse = {
+  data: Inquiry[]
+  pagination?: {
+    page: number
+    limit: number
+    total: number
+    pages: number
+  }
+  summary?: {
+    total_estimasi: number
+    avg_estimasi: number
+    by_layanan: Record<string, number>
+  }
 }
 
 async function fetchPending(): Promise<Inquiry[]> {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000")
+
   try {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL ||
-      "http://localhost:3000"
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
 
     const res = await fetch(
       `${baseUrl}/api/estimator/inquiry/pending`,
       {
         cache: "no-store",
+        signal: controller.signal,
       }
     )
 
+    clearTimeout(timeoutId)
+
     if (!res.ok) {
-      console.error(
-        `Failed to fetch pending inquiries: ${res.status}`
-      )
-
-      if (res.status === 404) {
-        notFound()
-      }
-
+      if (res.status === 404) notFound()
+      if (res.status === 429) return []
       throw new Error(`Failed to fetch: ${res.status}`)
     }
 
-    const json = await res.json()
+    const json: ApiResponse = await res.json()
+    return Array.isArray(json?.data) ? json.data : []
+  } catch (error: any) {
+    if (error.name === "AbortError") {
+      console.error("[ToEstimatePage] Request timeout")
+      return []
+    }
 
-    return json.data || []   // 🔥 INI FIXNYA
-
-  } catch (error) {
-    console.error(
-      "Error fetching pending inquiries:",
-      error
-    )
-    throw error
+    console.error("[ToEstimatePage] Error fetching pending inquiries:", error)
+    return []
   }
 }
 
@@ -60,4 +79,9 @@ export default async function ToEstimatePage() {
       </div>
     </div>
   )
+}
+
+export const metadata = {
+  title: "To Estimate - Pending Inquiries",
+  description: "List of inquiries pending for estimation",
 }

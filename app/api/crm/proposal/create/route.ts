@@ -22,11 +22,11 @@ const PROPOSAL_COLUMNS = {
 } as const
 
 const PIPELINE_COLUMNS = {
-  PIPELINE_ID: 0,   // CRM_INQUIRY
-  RAB_ID: 13,       // converted_rab_id
-  CREATED_AT: 15,   // created_at
-  STAGE: 17,        // stage
-  PROPOSAL_ID: 18   // converted_proposal_id
+  PIPELINE_ID: 0,
+  RAB_ID: 13,
+  CREATED_AT: 15,
+  STAGE: 17,
+  PROPOSAL_ID: 19
 } as const
 
 const ALLOWED_STAGES = ["PENAWARAN", "NEGOSIASI"] as const
@@ -201,7 +201,7 @@ export async function POST(req: Request) {
     const pipelineRes: any = await withRetry(
       () => sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
-        range: `${SALES_PIPELINE}!A2:S`,
+        range: `${SALES_PIPELINE}!A2:T`,
       }),
       3,
       'fetch-pipeline'
@@ -273,7 +273,7 @@ export async function POST(req: Request) {
     const latestCheck: any = await withRetry(
       () => sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
-        range: `${SALES_PIPELINE}!S${rowNumber}`, // Column S = PROPOSAL_ID
+        range: `${SALES_PIPELINE}!T${rowNumber}`, // Column S = PROPOSAL_ID
       }),
       2,
       'double-check'

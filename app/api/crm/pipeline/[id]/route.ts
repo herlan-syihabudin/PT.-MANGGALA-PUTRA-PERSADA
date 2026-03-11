@@ -52,6 +52,10 @@ const COLUMNS = {
   CREATED_BY: 16,
   STAGE: 17,
   CONVERTED_PROPOSAL_ID: 18,
+
+  NEXT_FOLLOW_UP_DATE: 19,
+  FOLLOW_UP_TYPE: 20,
+  FOLLOW_UP_NOTES: 21,
 } as const
 
 /* ================= HELPERS ================= */
@@ -151,6 +155,9 @@ function mapRowToDeal(row: any[]): any {
     priority: row[COLUMNS.PRIORITAS] || "normal",
     notes: row[COLUMNS.CATATAN] || "",
     assigned_to: row[COLUMNS.ASSIGNED_TO] || "",
+    next_follow_up_date: row[COLUMNS.NEXT_FOLLOW_UP_DATE] || "",
+follow_up_type: row[COLUMNS.FOLLOW_UP_TYPE] || "",
+follow_up_notes: row[COLUMNS.FOLLOW_UP_NOTES] || "",
   }
 }
 
@@ -188,7 +195,7 @@ export async function GET(
     // Ambil dari Google Sheets
     const res = await withRetry(() => sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2:S`,
+      range: `${SHEET_NAME}!A2:V`,
     }))
 
     const rows = (res.data.values || []).filter(r => r[COLUMNS.INQUIRY_ID])
@@ -255,7 +262,7 @@ export async function PATCH(
     // First get existing deal
     const getRes = await withRetry(() => sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2:S`,
+      range: `${SHEET_NAME}!A2:V`,
     }))
 
     const rows = (getRes.data.values || []).filter(r => r[COLUMNS.INQUIRY_ID])
@@ -348,7 +355,7 @@ export async function PATCH(
     // Get updated data
     const updatedRes = await withRetry(() => sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A${actualRowNumber}:S${actualRowNumber}`,
+      range: `${SHEET_NAME}!A${actualRowNumber}:V${actualRowNumber}`,
     }))
 
     const updatedRow = updatedRes.data.values?.[0] || []
@@ -375,4 +382,42 @@ export async function PATCH(
       { status: 500 }
     )
   }
+}
+
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  const body = await req.json()
+
+  const { next_follow_up_date, follow_up_type, follow_up_notes } = body
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${SHEET_NAME}!A2:V`,
+  })
+
+  const rows = res.data.values || []
+
+  const rowIndex = rows.findIndex(
+    (r) => normalize(r[COLUMNS.INQUIRY_ID]) === normalize(id)
+  )
+
+  if (rowIndex === -1) {
+    return NextResponse.json({ message: "Deal tidak ditemukan" }, { status: 404 })
+  }
+
+  const actualRow = rowIndex + 2
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: `${SHEET_NAME}!T${actualRow}:V${actualRow}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[next_follow_up_date, follow_up_type, follow_up_notes]],
+    },
+  })
+
+  return NextResponse.json({ success: true })
 }

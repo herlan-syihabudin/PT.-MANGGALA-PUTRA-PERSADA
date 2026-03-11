@@ -209,6 +209,23 @@ function generateSuggestedActions(deal: Deal, daysSince: number) {
   return actions.slice(0, 3)
 }
 
+function autoFollowUpSuggestion(deal: Deal) {
+
+  if (!deal.next_follow_up_date && deal.stage === "PENAWARAN") {
+    return "Follow up proposal dalam 3 hari"
+  }
+
+  if (deal.aging_days > 7) {
+    return "Hubungi client kembali"
+  }
+
+  if (deal.stage === "NEGOSIASI") {
+    return "Schedule meeting negosiasi"
+  }
+
+  return null
+}
+
 function estimateClosingDate(deal: Deal) {
   const stageDays = {
     "FOLLOW UP": 30,
@@ -428,6 +445,50 @@ score += agingScore
   }
 }
 
+function calculateAIDealScore(
+  deal: Deal,
+  healthScore: number,
+  activities: ActivityLog[]
+) {
+
+  let score = 0
+
+  // 1️⃣ Health score weight (40)
+  score += healthScore * 0.4
+
+  // 2️⃣ Probability weight (20)
+  score += deal.probability * 100 * 0.2
+
+  // 3️⃣ Activity weight (15)
+  const activityScore = Math.min(activities.length * 3, 15)
+  score += activityScore
+
+  // 4️⃣ Aging penalty (15)
+  let agingPenalty = 0
+
+  if (deal.aging_days > 14) agingPenalty = 15
+  else if (deal.aging_days > 7) agingPenalty = 8
+
+  score -= agingPenalty
+
+  // 5️⃣ Deal value weight (10)
+  if (deal.final_value > 1_000_000_000) score += 10
+  else if (deal.final_value > 500_000_000) score += 6
+  else score += 3
+
+  const finalScore = Math.max(0, Math.min(100, Math.round(score)))
+
+  let confidence = "LOW"
+
+  if (finalScore > 75) confidence = "HIGH"
+  else if (finalScore > 50) confidence = "MEDIUM"
+
+  return {
+    score: finalScore,
+    confidence
+  }
+}
+
 // ================= MAIN COMPONENT =================
 export default function DealDetailPage({
   params,
@@ -443,6 +504,10 @@ export default function DealDetailPage({
   const [showActivityModal, setShowActivityModal] = useState(false)
   const [activityType, setActivityType] = useState<ActivityType>("call")
   const [activityNotes, setActivityNotes] = useState("")
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false)
+const [followUpDate, setFollowUpDate] = useState("")
+const [followUpType, setFollowUpType] = useState("")
+const [followUpNotes, setFollowUpNotes] = useState("")
 
   // Validate pipeline_id
   if (!params?.pipeline_id) {
@@ -538,6 +603,21 @@ export default function DealDetailPage({
     return null
   }, [deal, activities])
 
+  const autoFollowUp = useMemo(() => {
+  if (!deal) return null
+  return autoFollowUpSuggestion(deal)
+}, [deal])
+
+  const aiDealScore = useMemo(() => {
+  if (!deal || !healthScore) return null
+
+  return calculateAIDealScore(
+    deal,
+    healthScore.score,
+    activities
+  )
+}, [deal, healthScore, activities])
+  
   // ================= DEAL MOMENTUM =================
 const momentum = useMemo(() => {
   return getDealMomentum(activities)
@@ -601,6 +681,46 @@ const momentum = useMemo(() => {
       toast.error("Gagal mencatat aktivitas")
     }
   }
+
+  const saveFollowUp = async () => {
+  if (!deal) return
+
+  try {
+    const res = await fetch(`/api/crm/pipeline/${deal.pipeline_id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        next_follow_up_date: followUpDate,
+        follow_up_type: followUpType,
+        follow_up_notes: followUpNotes
+      })
+    })
+
+    if (!res.ok) throw new Error()
+
+    setDeal(prev => prev ? {
+      ...prev,
+      next_follow_up_date: followUpDate,
+      follow_up_type: followUpType,
+      follow_up_notes: followUpNotes
+    } : prev)
+
+    toast.success("Follow up updated")
+    await fetch(`/api/crm/pipeline/${deal.pipeline_id}/activities`, {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({
+type: "system",
+description: `Follow up dijadwalkan: ${followUpType} pada ${followUpDate}`,
+user: "System"
+})
+})
+    setShowFollowUpModal(false)
+
+  } catch {
+    toast.error("Failed update follow up")
+  }
+}
 
   // ================= CONVERT TO PROJECT =================
   const convertToProject = async () => {
@@ -736,6 +856,12 @@ const momentum = useMemo(() => {
                 </div>
               </div>
             </div>
+
+            {autoFollowUp && (
+<p className="text-xs text-purple-600 mt-1">
+💡 {autoFollowUp}
+</p>
+)}
 
             {/* Action Buttons */}
             <div className="flex gap-2">
@@ -1286,9 +1412,32 @@ const momentum = useMemo(() => {
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
               <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
                 <TrendingUp size={18} className="text-slate-500" />
+                
                 Deal Analytics
               </h3>
               <div className="space-y-4">
+                {aiDealScore && (
+<div>
+<p className="text-xs text-slate-400 mb-1">AI Deal Score</p>
+
+<div className="flex items-center justify-between">
+
+<span className="text-lg font-bold text-slate-800">
+{aiDealScore.score}/100
+</span>
+
+<span className={`text-xs px-2 py-1 rounded-full
+${aiDealScore.confidence === "HIGH"
+? "bg-emerald-100 text-emerald-700"
+: aiDealScore.confidence === "MEDIUM"
+? "bg-amber-100 text-amber-700"
+: "bg-rose-100 text-rose-700"}`}>
+{aiDealScore.confidence}
+</span>
+
+</div>
+</div>
+)}
                 {/* Probability */}
   <div>
     <p className="text-xs text-slate-400 mb-1">Probability</p>
@@ -1418,10 +1567,25 @@ const momentum = useMemo(() => {
             {/* Next Follow Up */}
 {deal.next_follow_up_date && (
   <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-    <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-      <Bell size={18} className="text-slate-500" />
-      Next Follow Up
-    </h3>
+
+    <div className="flex justify-between items-center mb-4">
+      <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+        <Bell size={18} className="text-slate-500" />
+        Next Follow Up
+      </h3>
+
+      <button
+        onClick={() => {
+          setFollowUpDate(deal.next_follow_up_date || "")
+          setFollowUpType(deal.follow_up_type || "")
+          setFollowUpNotes(deal.follow_up_notes || "")
+          setShowFollowUpModal(true)
+        }}
+        className="text-xs text-blue-600 hover:underline"
+      >
+        Edit
+      </button>
+    </div>
 
     <div className="space-y-2">
       <div>
@@ -1449,6 +1613,7 @@ const momentum = useMemo(() => {
         </div>
       )}
     </div>
+
   </div>
 )}
 
@@ -1520,7 +1685,46 @@ const momentum = useMemo(() => {
         </div>
       </div>
 
-      {/* Activity Modal */}
+      {/* Follow Up Modal */}
+      {showFollowUpModal && (
+<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+<div className="bg-white rounded-xl p-6 w-[400px] space-y-4">
+
+<h2 className="text-lg font-semibold">Set Follow Up</h2>
+
+<input
+type="date"
+value={followUpDate}
+onChange={(e)=>setFollowUpDate(e.target.value)}
+className="w-full border rounded-lg p-2"
+/>
+
+<input
+placeholder="Type (call / meeting / email)"
+value={followUpType}
+onChange={(e)=>setFollowUpType(e.target.value)}
+className="w-full border rounded-lg p-2"
+/>
+
+<textarea
+placeholder="Notes"
+value={followUpNotes}
+onChange={(e)=>setFollowUpNotes(e.target.value)}
+className="w-full border rounded-lg p-2"
+/>
+
+<button
+onClick={saveFollowUp}
+className="w-full bg-slate-800 text-white py-2 rounded-lg"
+>
+Save Follow Up
+</button>
+
+</div>
+</div>
+)}
+
+  {/* Activity Modal */}
       <AnimatePresence>
         {showActivityModal && (
           <motion.div

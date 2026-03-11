@@ -6,7 +6,6 @@ export const dynamic = "force-dynamic"
 export type RabItem = {
   item_id: string
   rab_id: string
-  project_id: string
   scope: string
   item_name: string
   category: string

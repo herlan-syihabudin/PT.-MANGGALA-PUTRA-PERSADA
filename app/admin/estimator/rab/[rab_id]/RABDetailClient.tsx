@@ -681,10 +681,10 @@ async function reload() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          pipeline_id: project_id,
-          rab_id: rab_id,
-          total_value: sellTotal,
-        }),
+  inquiry_id: project_id,
+  rab_id: rab_id,
+  total_value: sellTotal,
+}),
       })
 
       const result = await res.json()

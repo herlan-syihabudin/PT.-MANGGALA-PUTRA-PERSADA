@@ -567,6 +567,43 @@ async function reload() {
     }
   }
 
+  async function addEmptyRow(afterItem: RabItem) {
+  if (lockMode) return
+
+  try {
+    const res = await fetch(`/api/estimator/rab/${rab_id}/items`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        scope: afterItem.scope || "",
+        item_name: "",
+        category: "",
+        qty: 1,
+        unit: "",
+        material_price: 0,
+        labour_price: 0,
+        created_by: "Estimator",
+      }),
+    })
+
+    if (!res.ok) {
+      toast.error("Gagal menambah item")
+      return
+    }
+
+    const result = await res.json()
+
+    setData((prev) => ({
+      ...prev,
+      items: [...prev.items, result.item],
+    }))
+
+  } catch {
+    toast.error("Error tambah item")
+  }
+}
 
   async function copyItem(item: RabItem) {
     if (lockMode) {
@@ -1313,6 +1350,14 @@ const ws = wb.Sheets[sheetName]
                           {!lockMode && (
                             <td className="p-2.5">
                               <div className="flex items-center justify-center gap-2">
+                                <button
+  className="p-1.5 border border-slate-200 rounded-lg hover:bg-emerald-50 transition"
+  onClick={() => addEmptyRow(it)}
+  title="Tambah item baru"
+>
+  <Plus size={14} className="text-emerald-600" />
+</button>
+                                
                                 <button
                                   className="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition disabled:opacity-50"
                                   onClick={() => copyItem(it)}

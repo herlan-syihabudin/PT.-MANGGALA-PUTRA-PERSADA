@@ -787,127 +787,163 @@ const momentum = useMemo(() => {
 
       {/* AI Health Dashboard */}
       {healthScore && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-4 mb-6">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm"
-          >
-            <div className="flex items-start gap-3 mb-4">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Brain size={18} className="text-purple-600" />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">AI DEAL HEALTH</p>
-                <p className="font-medium text-slate-800">
-                  {healthScore.nextAction}
-                </p>
-              </div>
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-4 mb-6">
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm"
+    >
+      {/* AI Recommendation - Full Width */}
+      <div className="flex items-start gap-3 mb-6 pb-4 border-b border-slate-100">
+        <div className="p-2 bg-purple-100 rounded-lg">
+          <Brain size={18} className="text-purple-600" />
+        </div>
+        <div className="flex-1">
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
+            AI RECOMMENDATION
+          </p>
+          <p className="font-medium text-slate-800">{healthScore.nextAction}</p>
+        </div>
+      </div>
+
+      {/* Suggested Actions - Optional, bisa dihapus atau dipindah */}
+      <div className="mb-4">
+        <p className="text-xs text-slate-400 mb-1">Suggested Actions</p>
+        <ul className="space-y-1">
+          {generateSuggestedActions(deal, daysSinceLastActivity).map((action, i) => (
+            <li key={i} className="text-sm text-slate-600 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-purple-500 rounded-full" />
+              {action}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Grid 2 Kolom untuk Lead Health & Deal Temperature */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        {/* Lead Health */}
+        <div className="bg-slate-50 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              Lead Health
+            </p>
+            <Heart
+              size={16}
+              className={
+                healthScore.score >= HEALTH_THRESHOLDS.hot
+                  ? "text-emerald-500 fill-emerald-500"
+                  : healthScore.score >= HEALTH_THRESHOLDS.warm
+                  ? "text-amber-500 fill-amber-500"
+                  : "text-rose-500 fill-rose-500"
+              }
+            />
+          </div>
+
+          <p className="text-sm font-semibold text-slate-800 mb-2">
+            {healthScore.score >= HEALTH_THRESHOLDS.hot
+              ? "Healthy Lead"
+              : healthScore.score >= HEALTH_THRESHOLDS.warm
+              ? "Moderate Lead"
+              : "Critical Lead"}
+          </p>
+
+          <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mb-1">
+            <div
+              className={`h-full rounded-full ${
+                healthScore.score >= HEALTH_THRESHOLDS.hot
+                  ? "bg-emerald-500"
+                  : healthScore.score >= HEALTH_THRESHOLDS.warm
+                  ? "bg-amber-500"
+                  : "bg-rose-500"
+              }`}
+              style={{ width: `${healthScore.score}%` }}
+            />
+          </div>
+
+          <p className="text-xs text-slate-500">
+            Score {healthScore.score} • {healthScore.risk} risk
+          </p>
+        </div>
+
+        {/* Deal Temperature */}
+        <div className="bg-slate-50 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              Deal Temperature
+            </p>
+            {healthScore.temperature === "hot" && (
+              <Flame size={16} className="text-rose-500" />
+            )}
+            {healthScore.temperature === "warm" && (
+              <Thermometer size={16} className="text-amber-500" />
+            )}
+            {healthScore.temperature === "cold" && (
+              <Thermometer size={16} className="text-slate-400" />
+            )}
+          </div>
+
+          <p className="text-sm font-semibold mb-1">
+            {healthScore.temperature === "hot" && (
+              <span className="text-rose-600">Hot Deal</span>
+            )}
+            {healthScore.temperature === "warm" && (
+              <span className="text-amber-600">Warm Deal</span>
+            )}
+            {healthScore.temperature === "cold" && (
+              <span className="text-slate-600">Cold Deal</span>
+            )}
+          </p>
+
+          <div className="flex items-center gap-2 mt-2">
+            <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full ${
+                  healthScore.temperature === "hot"
+                    ? "bg-rose-500"
+                    : healthScore.temperature === "warm"
+                    ? "bg-amber-500"
+                    : "bg-slate-400"
+                }`}
+                style={{
+                  width:
+                    healthScore.temperature === "hot"
+                      ? "100%"
+                      : healthScore.temperature === "warm"
+                      ? "60%"
+                      : "30%",
+                }}
+              />
             </div>
-            <div className="mt-3">
-  <p className="text-xs text-slate-400 mb-1">Suggested Actions</p>
+            <span className="text-xs font-medium text-slate-600">
+              {healthScore.probability}%
+            </span>
+          </div>
 
-  <ul className="space-y-1">
-    {generateSuggestedActions(deal, daysSinceLastActivity).map((action, i) => (
-      <li key={i} className="text-sm text-slate-600 flex items-center gap-2">
-        <div className="w-1.5 h-1.5 bg-purple-500 rounded-full" />
-        {action}
-      </li>
-    ))}
-  </ul>
-</div>
+          <p className="text-xs text-slate-500 mt-1">
+            Win probability {healthScore.probability}%
+          </p>
+        </div>
+      </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Health Score Gauge */}
-              <div className="col-span-1 h-full flex flex-col justify-center">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-slate-600">Health Score</span>
-                  <span className={`text-lg font-bold ${
-                    healthScore.score >= HEALTH_THRESHOLDS.hot ? 'text-emerald-600' :
-                    healthScore.score >= HEALTH_THRESHOLDS.warm ? 'text-amber-600' :
-                    'text-rose-600'
-                  }`}>
-                    {healthScore.score}
-                  </span>
-                </div>
-                <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${
-                      healthScore.score >= HEALTH_THRESHOLDS.hot ? 'bg-emerald-500' :
-                      healthScore.score >= HEALTH_THRESHOLDS.warm ? 'bg-amber-500' :
-                      'bg-rose-500'
-                    }`}
-                    style={{ width: `${healthScore.score}%` }}
-                  />
-                </div>
-                <p className="text-xs text-slate-400 mt-1 capitalize">
-                  {healthScore.temperature} • {healthScore.risk} risk
-                </p>
-              </div>
-
-              {/* Temperature */}
-              <div className="col-span-1 h-full flex flex-col justify-center">
-                <p className="text-xs text-slate-400 mb-1">Deal Temperature</p>
-                <div className="flex items-center gap-2">
-                  {healthScore.temperature === "hot" && (
-                    <>
-                      <Flame className="text-rose-500" size={20} />
-                      <span className="font-semibold text-rose-600">HOT DEAL</span>
-                    </>
-                  )}
-                  {healthScore.temperature === "warm" && (
-                    <>
-                      <Thermometer className="text-amber-500" size={20} />
-                      <span className="font-semibold text-amber-600">WARM DEAL</span>
-                    </>
-                  )}
-                  {healthScore.temperature === "cold" && (
-                    <>
-                      <Thermometer className="text-slate-400" size={20} />
-                      <span className="font-semibold text-slate-500">COLD DEAL</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Risk Level */}
-              <div className="col-span-1 h-full flex flex-col justify-center">
-                <p className="text-xs text-slate-400 mb-1">Risk Level</p>
-                <div className="flex items-center gap-2">
-                  <Shield size={18} className={
-                    healthScore.risk === "low" ? "text-emerald-500" :
-                    healthScore.risk === "medium" ? "text-amber-500" :
-                    "text-rose-500"
-                  } />
-                  <span className={`font-semibold ${
-                    healthScore.risk === "low" ? "text-emerald-600" :
-                    healthScore.risk === "medium" ? "text-amber-600" :
-                    "text-rose-600"
-                  }`}>
-                    {healthScore.risk.toUpperCase()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Top Factors */}
-              <div className="col-span-1 h-full flex flex-col justify-center">
-                <p className="text-xs text-slate-400 mb-1">Top Factors</p>
-                <div className="space-y-1">
-                  {topFactors.slice(0,3).map((factor, i) => (
-                    <div key={i} className="flex items-center gap-1 text-xs">
-                      <div className={`w-1.5 h-1.5 rounded-full ${
-                        factor.score / factor.impact > 0.7 ? 'bg-emerald-500' :
-                        factor.score / factor.impact > 0.3 ? 'bg-amber-500' : 'bg-rose-500'
-                      }`} />
-                      <span className="text-slate-600">{factor.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
+      {/* Top Factors - Opsional, bisa dihapus jika tidak diperlukan */}
+      {topFactors.length > 0 && (
+        <div className="mt-4 pt-3 border-t border-slate-100">
+          <p className="text-xs text-slate-400 mb-2">Key Factors</p>
+          <div className="flex flex-wrap gap-2">
+            {topFactors.map((factor, i) => (
+              <span
+                key={i}
+                className="px-2 py-1 bg-slate-100 text-slate-600 rounded-full text-xs"
+              >
+                {factor.name}
+              </span>
+            ))}
+          </div>
         </div>
       )}
+    </motion.div>
+  </div>
+)}
 
       {/* Follow Up Reminder */}
       {needsFollowUp && (

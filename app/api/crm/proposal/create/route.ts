@@ -26,7 +26,7 @@ const PIPELINE_COLUMNS = {
   RAB_ID: 13,
   CREATED_AT: 15,
   STAGE: 17,
-  PROPOSAL_ID: 19
+  PROPOSAL_ID: 18
 } as const
 
 const ALLOWED_STAGES = ["PENAWARAN", "NEGOSIASI"] as const
@@ -201,7 +201,7 @@ export async function POST(req: Request) {
     const pipelineRes: any = await withRetry(
       () => sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
-        range: `${SALES_PIPELINE}!A2:T`,
+        range: `${SALES_PIPELINE}!A2:V`, 
       }),
       3,
       'fetch-pipeline'
@@ -273,7 +273,7 @@ export async function POST(req: Request) {
     const latestCheck: any = await withRetry(
       () => sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
-        range: `${SALES_PIPELINE}!T${rowNumber}`, // Column S = PROPOSAL_ID
+        range: `${SALES_PIPELINE}!S${rowNumber}`, // Column S = PROPOSAL_ID
       }),
       2,
       'double-check'
@@ -322,26 +322,26 @@ export async function POST(req: Request) {
     )
 
     /* ===== UPDATE PIPELINE (BATCH UPDATE) ===== */
-    await withRetry(
-      () => sheets.spreadsheets.values.batchUpdate({
-        spreadsheetId: sheetId,
-        requestBody: {
-          data: [
-            {
-              range: `${SALES_PIPELINE}!R${rowNumber}`, // STAGE
-              values: [["NEGOSIASI"]],
-            },
-            {
-              range: `${SALES_PIPELINE}!S${rowNumber}`, // PROPOSAL_ID
-              values: [[proposal_id]],
-            }
-          ],
-          valueInputOption: "USER_ENTERED",
+await withRetry(
+  () => sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: sheetId,
+    requestBody: {
+      data: [
+        {
+          range: `${SALES_PIPELINE}!R${rowNumber}`, // ✅ R = STAGE
+          values: [["NEGOSIASI"]],
+        },
+        {
+          range: `${SALES_PIPELINE}!S${rowNumber}`, // ✅ S = PROPOSAL_ID
+          values: [[proposal_id]],
         }
-      }),
-      3,
-      'update-pipeline'
-    )
+      ],
+      valueInputOption: "USER_ENTERED",
+    }
+  }),
+  3,
+  'update-pipeline'
+)
 
     const duration = Date.now() - startTime
     logger.info(`[${requestId}] Proposal created successfully`, { 

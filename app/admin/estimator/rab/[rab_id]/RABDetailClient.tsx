@@ -688,7 +688,6 @@ async function reload() {
       })
 
       const result = await res.json()
-
       if (!res.ok) {
         toast.error(result.message || "Gagal membuat proposal")
         return

@@ -24,6 +24,7 @@ export type RabItem = {
 export type RabResponse = {
   rab_id?: string
   project_id: string
+  inquiry_id?: string   // ✅ TAMBAH
   header?: any
   summary: { total_items: number; total_value: number }
   items: RabItem[]
@@ -48,21 +49,23 @@ async function fetchRAB(rab_id: string): Promise<RabResponse> {
   const raw = await res.json()
 
   return {
-    rab_id: raw.rab_id,
-    project_id: raw.project_id ?? "",
-    header: {
-      status: raw.status || "DRAFT",
-      created_by: raw.created_by || "System",
-      created_at: raw.created_at || new Date().toISOString(),
-      customer_name: raw.customer_name || "-",
-      project_name: raw.project_name || "Untitled",
-    },
-    summary: {
-      total_items: raw.total_items ?? raw.items?.length ?? 0,
-      total_value: raw.total_value ?? 0,
-    },
-    items: Array.isArray(raw.items) ? raw.items : [],
-  }
+  rab_id: raw.rab_id,
+  project_id: raw.project_id ?? "",
+  inquiry_id: raw.inquiry_id ?? "",
+  header: {
+    inquiry_id: raw.inquiry_id ?? "",
+    status: raw.status || "DRAFT",
+    created_by: raw.created_by || "System",
+    created_at: raw.created_at || new Date().toISOString(),
+    customer_name: raw.customer_name || "-",
+    project_name: raw.project_name || "Untitled",
+  },
+  summary: {
+    total_items: raw.total_items ?? raw.items?.length ?? 0,
+    total_value: raw.total_value ?? 0,
+  },
+  items: Array.isArray(raw.items) ? raw.items : [],
+}
 }
 
 export default async function Page({

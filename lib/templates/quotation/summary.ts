@@ -1,4 +1,4 @@
-export function summaryTemplate(summary: any[], total: any) {
+export function summaryTemplate(summary: any[], total: number) {
   // Format angka ke Rupiah
   const formatIDR = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -377,6 +377,4 @@ function numberToWords(num: number): string {
   if (num < 1000000000) return `${numberToWords(Math.floor(num / 1000000))} Juta ${numberToWords(num % 1000000)}`.trim()
   
   return num.toString()
-}
-`
 }

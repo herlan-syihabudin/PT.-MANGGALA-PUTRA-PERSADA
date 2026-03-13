@@ -1,18 +1,24 @@
-import {coverTemplate} from "./cover"
-import {summaryTemplate} from "./summary"
-import {breakdownTemplate} from "./breakdown"
+import { coverTemplate } from "./cover"
+import { summaryTemplate } from "./summary"
+import { breakdownTemplate } from "./breakdown"
 
-export function quotationTemplate(data:any){
+export function quotationTemplate(data: any) {
+
+const summary = data.summary || []
+const items = data.items || []
+const total = data.total_value || 0
 
 return `
 
 <html>
 
+<head>
+
 <style>
 
 body{
 font-family:Arial;
-margin:40px;
+margin:0;
 }
 
 .page{
@@ -32,18 +38,19 @@ padding:6px;
 
 </style>
 
+</head>
+
 <body>
 
 ${coverTemplate(data)}
 
-${summaryTemplate(data.summary,data.total_value)}
+${summaryTemplate(summary,total)}
 
-${breakdownTemplate(data.items)}
+${breakdownTemplate(items)}
 
 </body>
 
 </html>
 
 `
-
 }

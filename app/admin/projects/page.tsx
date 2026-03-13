@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useState, useMemo } from "react"
+import type { ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import {
   Building2,
@@ -245,6 +246,8 @@ export default function ProjectListPage() {
   const [page, setPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [fullscreen, setFullscreen] = useState(false)
+  const [totalPages, setTotalPages] = useState(1)
+const [totalItems, setTotalItems] = useState(0)
 
   // ================= COLUMN VISIBILITY =================
   const [columns, setColumns] = useState({
@@ -264,39 +267,77 @@ export default function ProjectListPage() {
   })
 
   // ================= FETCH PROJECTS =================
-  const fetchProjects = async (showRefresh = false) => {
-    if (showRefresh) setRefreshing(true)
-    try {
-      const res = await fetch("/api/projects", { cache: "no-store" })
-      const data = await res.json()
-
-      // Enhance with mock data (replace with actual API later)
-      const enhanced = (data || []).map((p: Project) => ({
-        ...p,
-        manager: ["Budi", "Ani", "Cahyo", "Dewi", "Eka"][Math.floor(Math.random() * 5)],
-        priority: ["low", "medium", "high", "critical"][Math.floor(Math.random() * 4)] as any,
-        tags: ["vip", "urgent", "revisi", "approval"].filter(() => Math.random() > 0.7),
-        attachments: Math.floor(Math.random() * 5),
-        comments: Math.floor(Math.random() * 10),
-        last_activity: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-      }))
-
-      setProjects(enhanced)
-
-      // Set value range for filter
-      const maxValue = Math.max(...enhanced.map((p: Project) => p.nilai_kontrak), 0)
-      setValueRange({ min: 0, max: maxValue })
-    } catch (e) {
-      console.error("Failed fetch projects", e)
-    } finally {
-      setLoading(false)
-      if (showRefresh) setRefreshing(false)
+const fetchProjects = async (showRefresh = false) => {
+  if (showRefresh) setRefreshing(true)
+  try {
+    // Pakai endpoint yang benar dengan pagination
+    const url = new URL("/api/project", window.location.origin)
+    url.searchParams.set("page", page.toString())
+    url.searchParams.set("limit", rowsPerPage.toString())
+    
+    if (filterStatus.length > 0) {
+      url.searchParams.set("status", filterStatus.join(","))
     }
+    
+    if (filterType.length > 0) {
+      url.searchParams.set("type", filterType.join(","))
+    }
+
+    const res = await fetch(url.toString(), { 
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+      }
+    })
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}))
+      throw new Error(error.error || `HTTP ${res.status}`)
+    }
+
+    const data = await res.json()
+    
+    // Handle response format (array langsung atau { data, pagination })
+    const projectsData = Array.isArray(data) ? data : data.data || []
+    
+    // Enhance dengan data yang konsisten (tanpa mock random)
+    const enhanced = projectsData.map((p: any) => ({
+  ...p,
+  client: p.client || p.customer?.company_name || "-",
+  manager: p.manager || "Unassigned",
+  priority: p.priority || "medium",
+  tags: p.tags || [],
+  attachments: p.attachments || 0,
+  comments: p.comments || 0,
+  last_activity: p.last_activity || p.updated_at || p.created_at,
+}))
+
+    setProjects(enhanced)
+    
+    // Update pagination info jika ada
+    if (data.pagination) {
+      setTotalPages(data.pagination.totalPages)
+      setTotalItems(data.pagination.total)
+    }
+
+    // Set value range for filter
+    const maxValue = enhanced.length
+  ? Math.max(...enhanced.map((p: Project) => p.nilai_kontrak))
+  : 0
+    setValueRange({ min: 0, max: maxValue })
+    
+  } catch (e) {
+    console.error("Failed fetch projects", e)
+    alert(e instanceof Error ? e.message : "Gagal memuat data")
+  } finally {
+    setLoading(false)
+    if (showRefresh) setRefreshing(false)
   }
+}
 
   useEffect(() => {
-    fetchProjects()
-  }, [])
+  fetchProjects()
+}, [page, rowsPerPage])
 
   // ================= STATISTICS =================
   const stats = useMemo<ProjectStats>(() => {
@@ -353,7 +394,9 @@ export default function ProjectListPage() {
       byType,
       byPriority,
       progress: {
-        average: projects.length ? totalProgress / projects.length : 0,
+        average: projects.length 
+  ? Math.round(totalProgress / projects.length)
+  : 0,
         onTrack,
         delayed,
         stuck,
@@ -440,7 +483,7 @@ export default function ProjectListPage() {
     return filteredProjects.slice(start, start + rowsPerPage)
   }, [filteredProjects, page, rowsPerPage])
 
-  const totalPages = Math.ceil(filteredProjects.length / rowsPerPage)
+  const localTotalPages = Math.ceil(filteredProjects.length / rowsPerPage)
 
   // ================= SELECTION =================
   const toggleSelect = (id: string) => {
@@ -772,7 +815,7 @@ export default function ProjectListPage() {
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <Icon size={16} className={filterStatus.includes(key) ? config.label.split(" ")[1] : "text-gray-400"} />
+                  <Icon size={16} className={filterStatus.includes(key) ? "text-red-600" : "text-gray-400"} />
                   <span className="text-xs font-medium">{stat.count}</span>
                 </div>
                 <p className="text-sm font-semibold mt-2">{config.label}</p>
@@ -962,13 +1005,13 @@ export default function ProjectListPage() {
               >
                 Previous
               </button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              {Array.from({ length: Math.min(5, localTotalPages) }, (_, i) => {
                 let pageNum = page
                 if (page <= 3) pageNum = i + 1
-                else if (page >= totalPages - 2) pageNum = totalPages - 4 + i
+                else if (page >= localTotalPages - 2) pageNum = localTotalPages - 4 + i
                 else pageNum = page - 2 + i
 
-                if (pageNum > 0 && pageNum <= totalPages) {
+                if (pageNum > 0 && pageNum <= localTotalPages) {
                   return (
                     <button
                       key={pageNum}
@@ -984,8 +1027,8 @@ export default function ProjectListPage() {
                 return null
               })}
               <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
+                onClick={() => setPage((p) => Math.min(localTotalPages, p + 1))}
+                disabled={page === localTotalPages}
                 className="px-3 py-1 border rounded-lg disabled:opacity-50 hover:bg-gray-50"
               >
                 Next
@@ -1369,7 +1412,7 @@ function KanbanView({
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <div className={`p-2 rounded-lg ${config.bgColor}`}>
-                  <Icon size={16} className={config.label.split(" ")[1]} />
+                  <Icon size={16} className="text-gray-600" />
                 </div>
                 <h3 className="font-semibold">{config.label}</h3>
               </div>
@@ -1534,7 +1577,7 @@ function KpiCard({
   title: string
   value: number
   subtitle?: string
-  icon: React.ReactNode
+  icon: ReactNode
   color: string
   format?: "number" | "currency"
   trend?: number

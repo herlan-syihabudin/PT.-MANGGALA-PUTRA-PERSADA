@@ -458,22 +458,22 @@ async function reload() {
 
     // ✅ PERBAIKI NORMALISASI - pastikan inquiry_id terbaca
     const normalized: RabResponse = {
-      rab_id: raw.rab_id,
-      project_id: raw.project_id ?? "",
-      header: {
-        inquiry_id: raw.inquiry_id || raw.project_id || "", // ✅ Coba baca dari berbagai sumber
-        status: raw.status,
-        created_by: raw.created_by,
-        created_at: raw.created_at,
-        customer_name: raw.customer_name,
-        project_name: raw.project_name,
-      },
-      summary: {
-        total_items: raw.total_items ?? raw.items?.length ?? 0,
-        total_value: raw.total_value ?? 0,
-      },
-      items: raw.items ?? [],
-    }
+  rab_id: raw.rab_id,
+  project_id: raw.project_id ?? "",
+  header: {
+    inquiry_id: raw.inquiry_id ?? "",
+    status: raw.status,
+    created_by: raw.created_by,
+    created_at: raw.created_at,
+    customer_name: raw.customer_name,
+    project_name: raw.project_name,
+  },
+  summary: {
+    total_items: raw.total_items ?? raw.items?.length ?? 0,
+    total_value: raw.total_value ?? 0,
+  },
+  items: raw.items ?? [],
+}
 
     setData(normalized)
     toast.success("Data berhasil direfresh")

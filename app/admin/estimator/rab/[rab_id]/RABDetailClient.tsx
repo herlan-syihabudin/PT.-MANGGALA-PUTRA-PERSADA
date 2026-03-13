@@ -678,41 +678,24 @@ async function reload() {
   const router = useRouter()
 
   async function handleGenerateProposal() {
-  // ✅ TAMBAHKAN LOGGING UNTUK DEBUG
-  console.log("=== DEBUG GENERATE PROPOSAL ===")
-  console.log("project_id:", project_id)
-  console.log("rab_id:", rab_id)
-  console.log("data.header:", data.header)
-  console.log("inquiry_id from header:", data.header?.inquiry_id)
-  console.log("sellTotal:", sellTotal)
-
-  if (!project_id) {
-    toast.error("Project ID tidak ditemukan")
-    return
-  }
 
   if (!rab_id) {
     toast.error("RAB ID tidak ditemukan")
     return
   }
 
-  // ✅ COBA BACA INQUIRY_ID DARI BEBERAPA SUMBER
-  const inquiryId = data.header?.inquiry_id || project_id || data.project_id
+  const inquiryId = data.header?.inquiry_id
 
   if (!inquiryId) {
-    toast.error("Inquiry ID tidak ditemukan. CRM belum terhubung.")
+    toast.error("Inquiry belum terhubung ke CRM")
     return
   }
 
-  console.log("Final inquiryId yang akan dikirim:", inquiryId)
-
-  if (!confirm(`Yakin ingin generate proposal dari RAB ini?\nInquiry ID: ${inquiryId}`)) {
-    return
-  }
+  if (!confirm("Generate proposal dari RAB ini?")) return
 
   try {
-    // ✅ PASTIKAN ENDPOINT BENAR
-    const res = await fetch("/api/crm/proposal", {  // Ganti dari "/api/crm/proposal/create"
+
+    const res = await fetch("/api/crm/proposal/create", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -726,31 +709,32 @@ async function reload() {
     })
 
     const result = await res.json()
-    console.log("Response dari API:", result)
 
     if (!res.ok) {
+
       if (res.status === 409) {
         toast.error(`Proposal sudah ada: ${result.proposal_id}`)
+
         if (confirm("Buka proposal yang sudah ada?")) {
           router.push(`/admin/crm/proposal/${result.proposal_id}`)
         }
+
         return
       }
-      toast.error(result.error || result.message || "Gagal membuat proposal")
+
+      toast.error(result.error || "Gagal membuat proposal")
       return
     }
 
     toast.success("Proposal berhasil dibuat")
 
-    if (result.proposal_id) {
-      router.push(`/admin/crm/proposal/${result.proposal_id}`)
-    } else {
-      router.push(`/admin/crm/proposal?inquiry_id=${inquiryId}`)
-    }
+    router.push(`/admin/crm/proposal/${result.proposal_id}`)
 
-  } catch (err: any) {
-    console.error("Generate proposal error:", err)
-    toast.error(err?.message || "Terjadi kesalahan saat generate proposal")
+  } catch (err:any) {
+
+    console.error(err)
+    toast.error("Terjadi kesalahan saat generate proposal")
+
   }
 }
 
@@ -983,8 +967,7 @@ const ws = wb.Sheets[sheetName]
 
       <button
   onClick={handleGenerateProposal}
-  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
-  disabled={!data.header?.inquiry_id && !project_id}  // ✅ Juga cek project_id sebagai fallback
+  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
 >
   <FileText size={14}/>
   Generate Proposal

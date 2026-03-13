@@ -4,7 +4,13 @@ import { google } from "googleapis"
 export const dynamic = "force-dynamic"
 
 // ===== ENVIRONMENT VALIDATION =====
-const REQUIRED_ENV = ['GOOGLE_CLIENT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'GSHEET_PROJECT_ID'] as const
+const REQUIRED_ENV = [
+  'GOOGLE_CLIENT_EMAIL', 
+  'GOOGLE_PRIVATE_KEY', 
+  'GSHEET_PROJECT_ID',
+  'GSHEET_CRM_ID'
+] as const
+
 for (const env of REQUIRED_ENV) {
   if (!process.env[env]) {
     console.error(`Missing environment variable: ${env}`)
@@ -27,8 +33,10 @@ const auth = new google.auth.JWT(
 
 const sheets = google.sheets({ version: "v4", auth })
 
-// Sheet constants
-const SHEET_ID = process.env.GSHEET_PROJECT_ID!
+// Sheet constants - PASTIKAN SEMUA TERDEFINISI
+const PROJECT_SHEET_ID = process.env.GSHEET_PROJECT_ID!  // Untuk PROJECT MASTER & PROGRESS
+const CRM_SHEET_ID = process.env.GSHEET_CRM_ID!          // Untuk CUSTOMERS
+
 const PROJECT_SHEET = "PROJECT MASTER"
 const CUSTOMER_SHEET = "CUSTOMERS"
 const PROGRESS_SHEET = "PROJECT_SCOPE_PROGRESS"
@@ -78,16 +86,16 @@ export async function GET(req: Request) {
 
     const [projectRes, customerRes, progressRes] = await Promise.all([
       sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: `${PROJECT_SHEET}!A2:J`, // Skip header
+        spreadsheetId: PROJECT_SHEET_ID,
+        range: `${PROJECT_SHEET}!A2:J`,
       }),
       sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: `${CUSTOMER_SHEET}!A2:P`, // Skip header
+        spreadsheetId: CRM_SHEET_ID,
+        range: `${CUSTOMER_SHEET}!A2:P`,
       }),
       sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: `${PROGRESS_SHEET}!A2:F`, // Skip header
+        spreadsheetId: PROJECT_SHEET_ID,
+        range: `${PROGRESS_SHEET}!A2:F`,
       }),
     ])
 
@@ -124,10 +132,9 @@ export async function GET(req: Request) {
           const interior = toNumber(r[4])
 
           const scopes = [mep, civil, steel, interior].filter(v => v > 0)
-
-const overall = scopes.length === 0
-  ? 0
-  : Math.round(scopes.reduce((a,b)=>a+b,0) / scopes.length)
+          const overall = scopes.length === 0
+            ? 0
+            : Math.round(scopes.reduce((a, b) => a + b, 0) / scopes.length)
 
           return [
             normalize(r[0]), // project_id
@@ -260,42 +267,39 @@ export async function POST(req: Request) {
     }
 
     // Generate project_id
-    // Generate project_id
-const date = new Date()
-const y = date.getFullYear()
-const m = String(date.getMonth()+1).padStart(2,'0')
-const d = String(date.getDate()).padStart(2,'0')
-
-const project_id = project_code || `PRJ-${y}${m}${d}-${Math.floor(Math.random()*900+100)}`
-
-const created_at = new Date().toISOString()
+    const date = new Date()
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    const project_id = project_code || `PRJ-${y}${m}${d}-${Math.floor(Math.random() * 900 + 100)}`
+    const created_at = new Date().toISOString()
 
     logger.info(`[${requestId}] Creating project`, { project_id, project_name })
 
-    // Insert ke PROJECT MASTER
+    // ✅ FIX: Pakai PROJECT_SHEET_ID
     await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: PROJECT_SHEET_ID,
       range: `${PROJECT_SHEET}!A:J`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-  project_id,
-  project_name,
-  customer_id,
-  lokasi || "",
-  toNumber(nilai_kontrak),   // ✅ FIX
-  start_date,
-  end_date || "",
-  status,
-  created_at,
-  project_type,
-]],
+          project_id,
+          project_name,
+          customer_id,
+          lokasi || "",
+          toNumber(nilai_kontrak),
+          start_date,
+          end_date || "",
+          status,
+          created_at,
+          project_type,
+        ]],
       },
     })
 
-    // Insert ke PROGRESS sheet (init 0)
+    // ✅ FIX: Progress sheet juga di PROJECT_SHEET_ID
     await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: PROJECT_SHEET_ID,
       range: `${PROGRESS_SHEET}!A:F`,
       valueInputOption: "USER_ENTERED",
       requestBody: {

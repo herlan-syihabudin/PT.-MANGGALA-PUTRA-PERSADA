@@ -33,7 +33,7 @@ const RAB_HEADER = {
   TOTAL_ITEMS: 5,
   TOTAL_VALUE: 6,
   STATUS: 7,
-  ACTION: 8,
+  PIPELINE_ID: 8,
   CREATED_BY: 9,
   CREATED_AT: 10,
 } as const
@@ -41,21 +41,20 @@ const RAB_HEADER = {
 const RAB_ITEM_COLS = {
   ID: 0,
   RAB_ID: 1,
-  SCOPE: 2,
-  CATEGORY: 3,
+  PROJECT_ID: 2,
+  SCOPE: 3,
   NAME: 4,
-  QTY: 5,
-  UNIT: 6,
-  MATERIAL_PRICE: 7,
-  LABOUR_PRICE: 8,
-  EQUIPMENT_PRICE: 9,
+  CATEGORY: 5,
+  QTY: 6,
+  UNIT: 7,
+  MATERIAL_PRICE: 8,
+  LABOUR_PRICE: 9,
   UNIT_PRICE: 10,
   TOTAL_PRICE: 11,
   STATUS: 12,
   CREATED_BY: 13,
   CREATED_AT: 14,
   UPDATED_AT: 15,
-  NOTES: 16,
 } as const
 
 const VALID_STATUSES = ["Draft", "Approved", "Rejected", "Locked", "Deleted"] as const
@@ -123,14 +122,15 @@ export async function GET(
     // Get items
     const itemRes = await withRetry(() => sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${RAB_ITEM}!A2:Q`,
+      range: `${RAB_ITEM}!A2:P`,
     }))
 
     const items = (itemRes.data.values || [])
-  .filter(r => r[RAB_ITEM_COLS.RAB_ID] === rab_id && r[RAB_ITEM_COLS.STATUS] !== "Deleted")
-  .map(r => ({
-    item_id: r[RAB_ITEM_COLS.ID] || "",
-    rab_id: r[RAB_ITEM_COLS.RAB_ID] || "",
+      .filter(r => r[RAB_ITEM_COLS.RAB_ID] === rab_id && r[RAB_ITEM_COLS.STATUS] !== "Deleted")
+      .map(r => ({
+        item_id: r[RAB_ITEM_COLS.ID] || "",
+        rab_id: r[RAB_ITEM_COLS.RAB_ID] || "",
+        project_id: r[RAB_ITEM_COLS.PROJECT_ID] || "",
         scope: r[RAB_ITEM_COLS.SCOPE] || "",
         item_name: r[RAB_ITEM_COLS.NAME] || "",
         category: r[RAB_ITEM_COLS.CATEGORY] || "",
@@ -173,18 +173,19 @@ export async function GET(
     logger.info('GET Success', { rab_id, total_items, total_value })
 
     return NextResponse.json({
-  rab_id,
-  inquiry_id: headerRow[RAB_HEADER.INQUIRY_ID] || null,
-  project_id: headerRow[RAB_HEADER.PROJECT_ID] || "",
-  project_name: headerRow[RAB_HEADER.PROJECT_NAME] || "",
-  customer_name: headerRow[RAB_HEADER.CUSTOMER_NAME] || "",
-  total_items,
-  total_value,
-  status: headerRow[RAB_HEADER.STATUS] || "Draft",
-  created_by: headerRow[RAB_HEADER.CREATED_BY] || "",
-  created_at: headerRow[RAB_HEADER.CREATED_AT] || "",
-  items,
-})
+      rab_id,
+      inquiry_id: headerRow[RAB_HEADER.INQUIRY_ID] || null,
+      pipeline_id: headerRow[RAB_HEADER.PIPELINE_ID] || null,
+      project_id: headerRow[RAB_HEADER.PROJECT_ID] || "",
+      project_name: headerRow[RAB_HEADER.PROJECT_NAME] || "",
+      customer_name: headerRow[RAB_HEADER.CUSTOMER_NAME] || "",
+      total_items,
+      total_value,
+      status: headerRow[RAB_HEADER.STATUS] || "Draft",
+      created_by: headerRow[RAB_HEADER.CREATED_BY] || "",
+      created_at: headerRow[RAB_HEADER.CREATED_AT] || "",
+      items,
+    })
 
   } catch (error: any) {
     logger.error('GET Failed', error, { rab_id })
@@ -250,8 +251,7 @@ export async function PATCH(
     if (body.project_name !== undefined) updates[RAB_HEADER.PROJECT_NAME] = body.project_name
     if (body.customer_name !== undefined) updates[RAB_HEADER.CUSTOMER_NAME] = body.customer_name
     if (body.status !== undefined) updates[RAB_HEADER.STATUS] = body.status
-    if (body.action !== undefined)
-  updates[RAB_HEADER.ACTION] = body.action
+    if (body.pipeline_id !== undefined) updates[RAB_HEADER.PIPELINE_ID] = body.pipeline_id
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ message: "Tidak ada data yang diupdate" }, { status: 400 })
@@ -331,7 +331,7 @@ export async function DELETE(
     // Find and soft delete items
     const itemRes = await withRetry(() => sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${RAB_ITEM}!A2:Q`,
+      range: `${RAB_ITEM}!A2:P`,
     }))
 
     const itemRows = itemRes.data.values || []

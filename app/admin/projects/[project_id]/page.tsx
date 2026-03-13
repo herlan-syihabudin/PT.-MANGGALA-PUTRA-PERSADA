@@ -49,10 +49,10 @@ type Project = {
 
 type ScopeProgress = {
   project_id: string
-  mep: number
-  civil: number
-  steel: number
-  interior: number
+  mep_progress: number
+  civil_progress: number
+  steel_progress: number
+  interior_progress: number
   updated_at: string | null
 }
 
@@ -498,11 +498,11 @@ export default async function ProjectDetailPage({
   }
 
   const scopes = [
-    { label: "MEP", value: scopeSafe.mep },
-    { label: "Civil", value: scopeSafe.civil },
-    { label: "Steel", value: scopeSafe.steel },
-    { label: "Interior", value: scopeSafe.interior },
-  ]
+  { label: "MEP", value: scopeSafe.mep_progress },
+  { label: "Civil", value: scopeSafe.civil_progress },
+  { label: "Steel", value: scopeSafe.steel_progress },
+  { label: "Interior", value: scopeSafe.interior_progress },
+]
 
   const activeScopes = scopes.filter((s) => s.value > 0)
   const divisor = activeScopes.length || scopes.length

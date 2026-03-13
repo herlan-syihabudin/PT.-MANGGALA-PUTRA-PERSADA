@@ -679,25 +679,19 @@ async function reload() {
 
   const router = useRouter()
 
-  async function handleGenerateProposal() {
-    console.log("=== DEBUG RAB DATA ===")
+  // Di function handleGenerateProposal, ganti endpoint:
+
+async function handleGenerateProposal() {
+  console.log("=== DEBUG RAB DATA ===")
   console.log("Full data:", data)
-  console.log("Header:", data?.header)
   console.log("inquiry_id in header:", data?.header?.inquiry_id)
-  console.log("inquiry_id in root:", data?.inquiry_id)
-  console.log("project_id:", project_id)
-  console.log("rab_id:", rab_id)
 
   if (!rab_id) {
     toast.error("RAB ID tidak ditemukan")
     return
   }
 
-  // ambil inquiry id dari header
-  const inquiryId =
-    data?.header?.inquiry_id ||
-    data?.inquiry_id ||
-    ""
+  const inquiryId = data?.header?.inquiry_id || data?.inquiry_id || ""
 
   if (!inquiryId) {
     toast.error("Inquiry belum terhubung ke CRM")
@@ -707,12 +701,10 @@ async function reload() {
   if (!confirm("Generate proposal dari RAB ini?")) return
 
   try {
-
-    const res = await fetch("/api/crm/proposal/create", {
+    // ✅ SEKARANG PAKAI ENDPOINT YANG BENAR
+    const res = await fetch("/api/crm/proposal", {  // TANPA "/create"
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         inquiry_id: inquiryId,
         rab_id: rab_id,
@@ -724,30 +716,23 @@ async function reload() {
     const result = await res.json()
 
     if (!res.ok) {
-
       if (res.status === 409) {
         toast.error(`Proposal sudah ada: ${result.proposal_id}`)
-
         if (confirm("Buka proposal yang sudah ada?")) {
           router.push(`/admin/crm/proposal/${result.proposal_id}`)
         }
-
         return
       }
-
       toast.error(result.error || "Gagal membuat proposal")
       return
     }
 
     toast.success("Proposal berhasil dibuat")
-
     router.push(`/admin/crm/proposal/${result.proposal_id}`)
 
-  } catch (err:any) {
-
+  } catch (err: any) {
     console.error(err)
     toast.error("Terjadi kesalahan saat generate proposal")
-
   }
 }
 

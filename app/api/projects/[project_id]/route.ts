@@ -112,18 +112,14 @@ export async function GET(
 )
 
 if (!projectRow) {
-  logger.warn(`[${requestId}] Project not found: ${project_id}`)
-  return NextResponse.json(
-    { error: "Project tidak ditemukan", code: "NOT_FOUND" },
-    { status: 404 }
-  )
+  logger.warn(`[${requestId}] Project not found`)
+  return NextResponse.json({ error: "Project tidak ditemukan" }, { status:404 })
 }
 
-const projectType = allowedTypes.includes(projectRow[9])
+const projectType = allowedTypes.includes(projectRow?.[9])
   ? projectRow[9]
   : "OTHER"
-      )
-    }
+    
 
     // Find customer
     const customerId = normalize(projectRow[2])

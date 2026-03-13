@@ -117,9 +117,9 @@ export default function SCurveChart({ data }: { data: MonthlyProgress[] }) {
           text: "Progress (%)",
           color: "rgb(107, 114, 128)",
           font: {
-            size: 11,
-            weight: "500",
-          },
+  size: 11,
+  weight: 500,
+},
         },
         ticks: {
           callback: (value: any) => `${value}%`,

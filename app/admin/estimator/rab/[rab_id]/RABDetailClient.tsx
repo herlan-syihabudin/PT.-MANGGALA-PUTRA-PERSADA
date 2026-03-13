@@ -977,8 +977,8 @@ const ws = wb.Sheets[sheetName]
 
       <button
   onClick={handleGenerateProposal}
-  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
-  disabled={!project_id || !rab_id}
+  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+  disabled={!data.header?.inquiry_id}
 >
   <FileText size={14}/>
   Generate Proposal

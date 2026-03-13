@@ -83,7 +83,7 @@ export async function GET(
     )
 
     if (!row) {
-      logger.warn(`[${requestId}] Proposal not found: ${proposal_id}`)
+      logger.info(`[${requestId}] Proposal not found: ${proposal_id}`)
       return NextResponse.json(
         { error: "Proposal not found", code: "NOT_FOUND" },
         { status: 404 }

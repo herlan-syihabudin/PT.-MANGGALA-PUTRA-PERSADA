@@ -691,7 +691,7 @@ async function handleGenerateProposal() {
     return
   }
 
-  const inquiryId = data?.header?.inquiry_id || data?.inquiry_id || ""
+  const inquiryId = data?.inquiry_id
 
   if (!inquiryId) {
     toast.error("Inquiry belum terhubung ke CRM")

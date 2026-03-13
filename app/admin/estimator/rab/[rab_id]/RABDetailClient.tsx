@@ -684,7 +684,11 @@ async function reload() {
     return
   }
 
-  const inquiryId = data.header?.inquiry_id
+  // ambil inquiry id dari header
+  const inquiryId =
+    data?.header?.inquiry_id ||
+    data?.inquiry_id ||
+    ""
 
   if (!inquiryId) {
     toast.error("Inquiry belum terhubung ke CRM")

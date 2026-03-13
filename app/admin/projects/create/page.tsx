@@ -111,17 +111,25 @@ export default function CreateProjectPage() {
      LOAD CUSTOMER MASTER
   ================================ */
   useEffect(() => {
-    fetch("/api/crm/customers", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data) => {
-        setCustomers(data)
-        setFilteredCustomers(data)
-      })
-      .catch((err) => {
-        console.error(err)
-        toast.error("Gagal memuat data customer")
-      })
-  }, [])
+  fetch("/api/crm/customers", { cache: "no-store" })
+    .then((res) => res.json())
+    .then((data) => {
+
+      const list = Array.isArray(data) ? data : data.data || []
+
+      if (!Array.isArray(list)) {
+        console.error("Customer data invalid", data)
+        return
+      }
+
+      setCustomers(list)
+      setFilteredCustomers(list)
+    })
+    .catch((err) => {
+      console.error(err)
+      toast.error("Gagal memuat data customer")
+    })
+}, [])
 
   /* ==============================
      FILTER CUSTOMER

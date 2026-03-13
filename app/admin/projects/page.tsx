@@ -271,7 +271,7 @@ const fetchProjects = async (showRefresh = false) => {
   if (showRefresh) setRefreshing(true)
   try {
     // Pakai endpoint yang benar dengan pagination
-    const url = new URL("/api/project", window.location.origin)
+    const url = new URL("/api/projects", window.location.origin)
     url.searchParams.set("page", page.toString())
     url.searchParams.set("limit", rowsPerPage.toString())
     

@@ -3,7 +3,7 @@ import { coverTemplate } from "@/lib/templates/quotation/cover"
 export default async function Preview({ params }: { params: { id: string } }) {
 
   const res = await fetch(
-    `/api/crm/proposal/${params.id}`,
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/crm/proposal/${params.id}`,
     { cache: "no-store" }
   )
 
@@ -12,6 +12,8 @@ export default async function Preview({ params }: { params: { id: string } }) {
   const html = coverTemplate(data)
 
   return (
-    <div dangerouslySetInnerHTML={{ __html: html }} />
+    <div
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   )
 }

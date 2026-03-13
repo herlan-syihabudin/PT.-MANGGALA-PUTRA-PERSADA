@@ -16,6 +16,8 @@
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.36.3",
     "@sparticuz/chromium": "^123.0.0",
+    "chart.js": "^4.4.0",
+  "react-chartjs-2": "^5.2.0",
     "axios": "^1.6.7",
     "bcryptjs": "^2.4.3",
     "bull": "^4.12.0",

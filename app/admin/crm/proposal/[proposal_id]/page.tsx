@@ -484,6 +484,50 @@ export default function ProposalDetail({
             )}
           </div>
 
+          {/* Proposal Preview */}
+{rab && rab.items && (
+  <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+    <h2 className="font-medium text-slate-800 mb-4 flex items-center gap-2">
+      <FileText size={18} className="text-slate-500" />
+      Proposal Preview
+    </h2>
+
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm border border-slate-200">
+        <thead className="bg-slate-50">
+          <tr>
+            <th className="text-left p-2 border">Item</th>
+            <th className="text-right p-2 border">Qty</th>
+            <th className="text-left p-2 border">Unit</th>
+            <th className="text-right p-2 border">Unit Price</th>
+            <th className="text-right p-2 border">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rab.items.map((item: any, i: number) => (
+            <tr key={i}>
+              <td className="p-2 border">{item.item_name}</td>
+              <td className="p-2 border text-right">{item.qty}</td>
+              <td className="p-2 border">{item.unit}</td>
+              <td className="p-2 border text-right">{formatIDR(item.unit_price)}</td>
+              <td className="p-2 border text-right">{formatIDR(item.total_price)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <div className="flex justify-end mt-4">
+      <div className="text-right">
+        <p className="text-xs text-slate-400">Total Proposal</p>
+        <p className="text-lg font-bold text-emerald-600">
+          {formatIDR(proposal.total_value)}
+        </p>
+      </div>
+    </div>
+  </div>
+)}
+          
           {/* Right Column - Stats & Actions */}
           <div className="space-y-6">
             

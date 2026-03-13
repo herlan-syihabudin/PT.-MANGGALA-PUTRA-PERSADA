@@ -449,40 +449,41 @@ async function reload() {
   try {
     const res = await fetch(`/api/estimator/rab/${rab_id}`, { cache: "no-store" })
 
-      if (!res.ok) {
-        toast.error("Gagal refresh data")
-        return
-      }
-
-      const raw = await res.json()
-
-      const normalized: RabResponse = {
-        rab_id: raw.rab_id,
-        project_id: raw.project_id ?? "",
-        header: {
-  inquiry_id: raw.inquiry_id,
-  status: raw.status,
-  created_by: raw.created_by,
-  created_at: raw.created_at,
-  customer_name: raw.customer_name,
-  project_name: raw.project_name,
-},
-        summary: {
-          total_items: raw.total_items ?? raw.items?.length ?? 0,
-          total_value: raw.total_value ?? 0,
-        },
-        items: raw.items ?? [],
-      }
-
-      setData(normalized)
-      toast.success("Data berhasil direfresh")
-    } catch {
+    if (!res.ok) {
       toast.error("Gagal refresh data")
-    } finally {
-  loadingRef.current = false
-  setLoading(false)
-}
+      return
+    }
+
+    const raw = await res.json()
+
+    // ✅ PERBAIKI NORMALISASI - pastikan inquiry_id terbaca
+    const normalized: RabResponse = {
+      rab_id: raw.rab_id,
+      project_id: raw.project_id ?? "",
+      header: {
+        inquiry_id: raw.inquiry_id || raw.project_id || "", // ✅ Coba baca dari berbagai sumber
+        status: raw.status,
+        created_by: raw.created_by,
+        created_at: raw.created_at,
+        customer_name: raw.customer_name,
+        project_name: raw.project_name,
+      },
+      summary: {
+        total_items: raw.total_items ?? raw.items?.length ?? 0,
+        total_value: raw.total_value ?? 0,
+      },
+      items: raw.items ?? [],
+    }
+
+    setData(normalized)
+    toast.success("Data berhasil direfresh")
+  } catch {
+    toast.error("Gagal refresh data")
+  } finally {
+    loadingRef.current = false
+    setLoading(false)
   }
+}
 
   const totalValue = useMemo(
     () => data.items.reduce((sum, i) => sum + safeNumber(i.total_price), 0),
@@ -677,6 +678,13 @@ async function reload() {
   const router = useRouter()
 
   async function handleGenerateProposal() {
+  // ✅ TAMBAHKAN LOGGING UNTUK DEBUG
+  console.log("=== DEBUG GENERATE PROPOSAL ===")
+  console.log("project_id:", project_id)
+  console.log("rab_id:", rab_id)
+  console.log("data.header:", data.header)
+  console.log("inquiry_id from header:", data.header?.inquiry_id)
+  console.log("sellTotal:", sellTotal)
 
   if (!project_id) {
     toast.error("Project ID tidak ditemukan")
@@ -688,20 +696,23 @@ async function reload() {
     return
   }
 
-  const inquiryId = data.header?.inquiry_id
+  // ✅ COBA BACA INQUIRY_ID DARI BEBERAPA SUMBER
+  const inquiryId = data.header?.inquiry_id || project_id || data.project_id
 
   if (!inquiryId) {
     toast.error("Inquiry ID tidak ditemukan. CRM belum terhubung.")
     return
   }
 
-  if (!confirm("Yakin ingin generate proposal dari RAB ini?")) {
+  console.log("Final inquiryId yang akan dikirim:", inquiryId)
+
+  if (!confirm(`Yakin ingin generate proposal dari RAB ini?\nInquiry ID: ${inquiryId}`)) {
     return
   }
 
   try {
-
-    const res = await fetch("/api/crm/proposal/create", {
+    // ✅ PASTIKAN ENDPOINT BENAR
+    const res = await fetch("/api/crm/proposal", {  // Ganti dari "/api/crm/proposal/create"
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -715,19 +726,16 @@ async function reload() {
     })
 
     const result = await res.json()
+    console.log("Response dari API:", result)
 
     if (!res.ok) {
-
       if (res.status === 409) {
         toast.error(`Proposal sudah ada: ${result.proposal_id}`)
-
         if (confirm("Buka proposal yang sudah ada?")) {
           router.push(`/admin/crm/proposal/${result.proposal_id}`)
         }
-
         return
       }
-
       toast.error(result.error || result.message || "Gagal membuat proposal")
       return
     }
@@ -741,10 +749,8 @@ async function reload() {
     }
 
   } catch (err: any) {
-
     console.error("Generate proposal error:", err)
     toast.error(err?.message || "Terjadi kesalahan saat generate proposal")
-
   }
 }
 
@@ -977,8 +983,8 @@ const ws = wb.Sheets[sheetName]
 
       <button
   onClick={handleGenerateProposal}
-  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
-  disabled={!data.header?.inquiry_id}
+  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+  disabled={!data.header?.inquiry_id && !project_id}  // ✅ Juga cek project_id sebagai fallback
 >
   <FileText size={14}/>
   Generate Proposal

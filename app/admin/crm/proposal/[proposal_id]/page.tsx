@@ -206,8 +206,8 @@ export default function ProposalDetail({
   }
 
   const handleDownloadPDF = () => {
-    toast.success("PDF akan diunduh (simulasi)")
-  }
+  window.open(`/api/crm/proposal/pdf/${proposal?.proposal_id}`)
+}
 
   const handleSendEmail = () => {
     toast.success("Email akan dikirim ke customer")

@@ -7,17 +7,20 @@ export async function GET(
   { params }: { params: { proposal_id: string } }
 ) {
 
-const { proposal_id } = params
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
 
-const data = await getProposalData(proposal_id)
+const res = await fetch(
+  `${baseUrl}/api/crm/proposal/${params.proposal_id}`,
+  { cache: "no-store" }
+)
+
+const data = await res.json()
 
 const html = quotationTemplate(data)
 
-const isDev = process.env.NODE_ENV === "development"
-
 const browser = await puppeteer.launch({
-  args: isDev ? [] : chromium.args,
-  executablePath: isDev ? undefined : await chromium.executablePath(),
+  args: chromium.args,
+  executablePath: await chromium.executablePath(),
   defaultViewport: chromium.defaultViewport,
   headless: true
 })
@@ -33,11 +36,10 @@ const pdf = await page.pdf({
 
 await browser.close()
 
-return new Response(pdf, {
-  headers: {
-    "Content-Type": "application/pdf",
-    "Content-Disposition": `inline; filename="proposal-${proposal_id}.pdf"`,
-    "Cache-Control": "no-store"
+return new Response(pdf,{
+  headers:{
+    "Content-Type":"application/pdf",
+    "Content-Disposition":`inline; filename="proposal-${params.proposal_id}.pdf"`
   }
 })
 

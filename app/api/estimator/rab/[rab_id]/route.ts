@@ -123,15 +123,14 @@ export async function GET(
     // Get items
     const itemRes = await withRetry(() => sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${RAB_ITEM}!A2:P`,
+      range: `${RAB_ITEM}!A2:Q`,
     }))
 
     const items = (itemRes.data.values || [])
-      .filter(r => r[RAB_ITEM_COLS.RAB_ID] === rab_id && r[RAB_ITEM_COLS.STATUS] !== "Deleted")
-      .map(r => ({
-        item_id: r[RAB_ITEM_COLS.ID] || "",
-        rab_id: r[RAB_ITEM_COLS.RAB_ID] || "",
-        project_id: r[RAB_ITEM_COLS.PROJECT_ID] || "",
+  .filter(r => r[RAB_ITEM_COLS.RAB_ID] === rab_id && r[RAB_ITEM_COLS.STATUS] !== "Deleted")
+  .map(r => ({
+    item_id: r[RAB_ITEM_COLS.ID] || "",
+    rab_id: r[RAB_ITEM_COLS.RAB_ID] || "",
         scope: r[RAB_ITEM_COLS.SCOPE] || "",
         item_name: r[RAB_ITEM_COLS.NAME] || "",
         category: r[RAB_ITEM_COLS.CATEGORY] || "",
@@ -251,7 +250,8 @@ export async function PATCH(
     if (body.project_name !== undefined) updates[RAB_HEADER.PROJECT_NAME] = body.project_name
     if (body.customer_name !== undefined) updates[RAB_HEADER.CUSTOMER_NAME] = body.customer_name
     if (body.status !== undefined) updates[RAB_HEADER.STATUS] = body.status
-    if (body.pipeline_id !== undefined) updates[RAB_HEADER.PIPELINE_ID] = body.pipeline_id
+    if (body.action !== undefined)
+  updates[RAB_HEADER.ACTION] = body.action
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ message: "Tidak ada data yang diupdate" }, { status: 400 })
@@ -331,7 +331,7 @@ export async function DELETE(
     // Find and soft delete items
     const itemRes = await withRetry(() => sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${RAB_ITEM}!A2:P`,
+      range: `${RAB_ITEM}!A2:Q`,
     }))
 
     const itemRows = itemRes.data.values || []

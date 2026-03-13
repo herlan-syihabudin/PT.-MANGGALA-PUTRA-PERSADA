@@ -1,6 +1,6 @@
-import { coverTemplate } from "@/lib/templates/coverTemplate"
+import { coverTemplate } from "@/lib/templates/quotation/cover"
 
-export default async function Preview({ params }: any) {
+export default async function Preview({ params }: { params: { id: string } }) {
 
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/api/crm/proposal/${params.id}`,
@@ -12,6 +12,8 @@ export default async function Preview({ params }: any) {
   const html = coverTemplate(data)
 
   return (
-    <div dangerouslySetInnerHTML={{ __html: html }} />
+    <div
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   )
 }

@@ -3,56 +3,97 @@ import { google } from "googleapis"
 
 export const dynamic = "force-dynamic"
 
-/* ==============================
-   GOOGLE AUTH
-================================ */
+// ===== ENVIRONMENT VALIDATION =====
+const REQUIRED_ENV = ['GOOGLE_CLIENT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'GSHEET_PROJECT_ID'] as const
+for (const env of REQUIRED_ENV) {
+  if (!process.env[env]) {
+    console.error(`Missing environment variable: ${env}`)
+    throw new Error(`Missing environment variable: ${env}`)
+  }
+}
+
+// Sanitize private key
+const privateKey = process.env.GOOGLE_PRIVATE_KEY!
+  .replace(/\\n/g, '\n')
+  .replace(/^["']|["']$/g, '')
+
+// ===== GOOGLE AUTH =====
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL,
   undefined,
-  process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+  privateKey,
   ["https://www.googleapis.com/auth/spreadsheets"]
 )
 
 const sheets = google.sheets({ version: "v4", auth })
 
-// 🔥 SATU SHEET ID UNTUK SEMUA
+// Sheet constants
 const SHEET_ID = process.env.GSHEET_PROJECT_ID!
-
 const PROJECT_SHEET = "PROJECT MASTER"
 const CUSTOMER_SHEET = "CUSTOMERS"
 const PROGRESS_SHEET = "PROJECT_SCOPE_PROGRESS"
 
+// ===== HELPER FUNCTIONS =====
 const normalize = (val: any) => String(val || "").trim()
-const toNumber = (val: any) =>
-  Number(String(val || "0").replace(/[^\d]/g, "")) || 0
+const toNumber = (val: any) => Number(String(val || "0").replace(/[^\d]/g, "")) || 0
+
+// ===== LOGGER =====
+const logger = {
+  error: (context: string, error: any, metadata: any = {}) => {
+    console.error(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'error',
+      context,
+      error: {
+        message: error?.message,
+        stack: error?.stack,
+        code: error?.code
+      },
+      ...metadata
+    }))
+  },
+  info: (context: string, metadata: any = {}) => {
+    console.log(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'info',
+      context,
+      ...metadata
+    }))
+  }
+}
 
 /* ==============================
    GET : PROJECT LIST (JOIN CUSTOMER + PROGRESS)
-   ✅ SUPPORT ?customer_id=
 ================================ */
 export async function GET(req: Request) {
+  const requestId = Math.random().toString(36).substring(7)
+  const startTime = Date.now()
+
   try {
     const { searchParams } = new URL(req.url)
     const filterCustomerId = normalize(searchParams.get("customer_id"))
+    const filterStatus = normalize(searchParams.get("status"))
+
+    logger.info(`[${requestId}] Fetching projects`, { filterCustomerId, filterStatus })
 
     const [projectRes, customerRes, progressRes] = await Promise.all([
       sheets.spreadsheets.values.get({
         spreadsheetId: SHEET_ID,
-        range: `${PROJECT_SHEET}!A:J`,
+        range: `${PROJECT_SHEET}!A2:J`, // Skip header
       }),
       sheets.spreadsheets.values.get({
         spreadsheetId: SHEET_ID,
-        range: `${CUSTOMER_SHEET}!A:P`,
+        range: `${CUSTOMER_SHEET}!A2:P`, // Skip header
       }),
       sheets.spreadsheets.values.get({
         spreadsheetId: SHEET_ID,
-        range: `${PROGRESS_SHEET}!A:F`,
+        range: `${PROGRESS_SHEET}!A2:F`, // Skip header
       }),
     ])
 
-    const projectRows = projectRes.data.values?.slice(1) || []
-    const customerRows = customerRes.data.values?.slice(1) || []
-    const progressRows = progressRes.data.values?.slice(1) || []
+    const projectRows = projectRes.data.values || []
+    const customerRows = customerRes.data.values || []
+    const progressRows = progressRes.data.values || []
 
     // ===== MAP CUSTOMER (by customer_id)
     const customerMap: Record<string, any> = Object.fromEntries(
@@ -62,9 +103,12 @@ export async function GET(req: Request) {
           normalize(r[0]), // customer_id
           {
             customer_id: normalize(r[0]),
-            company_name: r[1],
-            city: r[9],
-            province: r[10],
+            company_name: r[1] || "-",
+            pic_name: r[3] || "-",
+            email: r[5] || "-",
+            phone: r[6] || "-",
+            city: r[9] || "-",
+            province: r[10] || "-",
           },
         ])
     )
@@ -79,58 +123,96 @@ export async function GET(req: Request) {
           const steel = toNumber(r[3])
           const interior = toNumber(r[4])
 
-          const overall =
-            mep + civil + steel + interior === 0
-              ? 0
-              : Math.round((mep + civil + steel + interior) / 4)
+          const scopes = [mep, civil, steel, interior].filter(v => v > 0)
+
+const overall = scopes.length === 0
+  ? 0
+  : Math.round(scopes.reduce((a,b)=>a+b,0) / scopes.length)
 
           return [
             normalize(r[0]), // project_id
-            { mep, civil, steel, interior, overall },
+            { mep, civil, steel, interior, overall, updated_at: r[5] || "" },
           ]
         })
     )
 
-    // ✅ FILTER BY customer_id (kalau param ada)
-    const filteredProjectRows = projectRows.filter((r) => {
-      if (!filterCustomerId) return true
-      return normalize(r[2]) === filterCustomerId // C = customer_id
+    // ===== FILTER & BUILD RESPONSE
+    const projects = projectRows
+      .filter((r) => {
+        if (filterCustomerId && normalize(r[2]) !== filterCustomerId) return false
+        if (filterStatus && normalize(r[7]) !== filterStatus) return false
+        return true
+      })
+      .map((r) => {
+        const project_id = normalize(r[0])
+        const customer_id = normalize(r[2])
+        const customer = customerMap[customer_id]
+        const progress = progressMap[project_id]
+
+        return {
+          project_id,
+          project_name: r[1] || "",
+          customer_id,
+          customer: customer || {
+            company_name: "-",
+            pic_name: "-",
+            email: "-",
+            phone: "-",
+            city: "-",
+            province: "-",
+          },
+          lokasi: r[3] || "",
+          nilai_kontrak: toNumber(r[4]),
+          start_date: r[5] || "",
+          end_date: r[6] || "",
+          status: r[7] || "",
+          created_at: r[8] || "",
+          project_type: r[9] || "",
+          progress: progress?.overall ?? 0,
+          progress_detail: progress || {
+            mep: 0,
+            civil: 0,
+            steel: 0,
+            interior: 0,
+            overall: 0
+          }
+        }
+      })
+
+    const duration = Date.now() - startTime
+    logger.info(`[${requestId}] Success`, { 
+      count: projects.length,
+      duration_ms: duration 
     })
 
-    // ===== BUILD RESPONSE PROJECT LIST
-    const projects = filteredProjectRows.map((r) => {
-      const project_id = normalize(r[0])
-      const customer_id = normalize(r[2])
-
-      const customer = customerMap[customer_id]
-      const progress = progressMap[project_id]
-
-      return {
-        project_id,                 // A
-        project_name: r[1] || "",   // B
-        customer_id,                // C
-        client: customer?.company_name || "-", // join dari CUSTOMERS
-        lokasi: r[3] || "",         // D
-        nilai_kontrak: toNumber(r[4]), // E
-        start_date: r[5] || "",     // F
-        end_date: r[6] || "",       // G
-        status: r[7] || "",         // H
-        created_at: r[8] || "",     // I
-        project_type: (r[9] as "MEP" | "CIVIL" | "STEEL" | "INTERIOR") || null, // J
-
-        progress: progress?.overall ?? 0,
-        mep_progress: progress?.mep ?? 0,
-        civil_progress: progress?.civil ?? 0,
-        steel_progress: progress?.steel ?? 0,
-        interior_progress: progress?.interior ?? 0,
+    return NextResponse.json(projects, {
+      headers: {
+        'Cache-Control': 'no-store',
+        'X-Request-ID': requestId,
+        'X-Response-Time': `${duration}ms`
       }
     })
 
-    return NextResponse.json(projects)
-  } catch (error) {
-    console.error("GET PROJECT ERROR:", error)
+  } catch (error: any) {
+    const duration = Date.now() - startTime
+    logger.error(`[${requestId}] GET PROJECT ERROR`, error, { duration_ms: duration })
+
+    if (error.code === 404) {
+      return NextResponse.json(
+        { error: "Sheet tidak ditemukan", code: "SHEET_NOT_FOUND" },
+        { status: 404 }
+      )
+    }
+
+    if (error.code === 403) {
+      return NextResponse.json(
+        { error: "Akses ke Google Sheets ditolak", code: "ACCESS_DENIED" },
+        { status: 403 }
+      )
+    }
+
     return NextResponse.json(
-      { message: "Gagal mengambil data project" },
+      { error: "Gagal mengambil data project", code: "INTERNAL_ERROR" },
       { status: 500 }
     )
   }
@@ -140,8 +222,11 @@ export async function GET(req: Request) {
    POST : CREATE PROJECT
 ================================ */
 export async function POST(req: Request) {
+  const requestId = Math.random().toString(36).substring(7)
+  const startTime = Date.now()
+
   try {
-    const body = await req.json()
+    const body = await req.json().catch(() => ({}))
 
     const {
       project_code,
@@ -155,67 +240,117 @@ export async function POST(req: Request) {
       status,
     } = body
 
-    if (
-      !project_name ||
-      !customer_id ||
-      !project_type ||
-      !nilai_kontrak ||
-      !start_date ||
-      !status
-    ) {
+    // Validasi required fields
+    const missingFields = []
+    if (!project_name) missingFields.push('project_name')
+    if (!customer_id) missingFields.push('customer_id')
+    if (!project_type) missingFields.push('project_type')
+    if (!nilai_kontrak) missingFields.push('nilai_kontrak')
+    if (!start_date) missingFields.push('start_date')
+    if (!status) missingFields.push('status')
+
+    if (missingFields.length > 0) {
       return NextResponse.json(
-        { message: "Field wajib belum lengkap" },
+        { 
+          error: `Field wajib: ${missingFields.join(', ')}`,
+          code: "MISSING_FIELDS"
+        },
         { status: 400 }
       )
     }
 
-    const project_id = project_code || `PRJ-${Date.now()}`
-    const created_at = new Date().toISOString()
+    // Generate project_id
+    // Generate project_id
+const date = new Date()
+const y = date.getFullYear()
+const m = String(date.getMonth()+1).padStart(2,'0')
+const d = String(date.getDate()).padStart(2,'0')
 
+const project_id = project_code || `PRJ-${y}${m}${d}-${Math.floor(Math.random()*900+100)}`
+
+const created_at = new Date().toISOString()
+
+    logger.info(`[${requestId}] Creating project`, { project_id, project_name })
+
+    // Insert ke PROJECT MASTER
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: `${PROJECT_SHEET}!A:J`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          project_id,
-          project_name,
-          customer_id,
-          lokasi || "",
-          nilai_kontrak,
-          start_date,
-          end_date || "",
-          status,
-          created_at,
-          project_type,
-        ]],
+  project_id,
+  project_name,
+  customer_id,
+  lokasi || "",
+  toNumber(nilai_kontrak),   // ✅ FIX
+  start_date,
+  end_date || "",
+  status,
+  created_at,
+  project_type,
+]],
       },
     })
 
+    // Insert ke PROGRESS sheet (init 0)
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: `${PROGRESS_SHEET}!A:F`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          project_id,
-          0,
-          0,
-          0,
-          0,
-          created_at,
+          project_id,  // A
+          0,           // B (MEP)
+          0,           // C (CIVIL)
+          0,           // D (STEEL)
+          0,           // E (INTERIOR)
+          created_at,  // F (updated_at)
         ]],
       },
     })
 
+    const duration = Date.now() - startTime
+    logger.info(`[${requestId}] Project created`, { 
+      project_id, 
+      duration_ms: duration 
+    })
+
     return NextResponse.json(
-      { project_id, message: "Project berhasil dibuat" },
-      { status: 201 }
+      { 
+        success: true,
+        project_id, 
+        message: "Project berhasil dibuat" 
+      },
+      { 
+        status: 201,
+        headers: {
+          'X-Request-ID': requestId,
+          'X-Response-Time': `${duration}ms`
+        }
+      }
     )
-  } catch (error) {
-    console.error("CREATE PROJECT ERROR:", error)
+
+  } catch (error: any) {
+    const duration = Date.now() - startTime
+    logger.error(`[${requestId}] CREATE PROJECT ERROR`, error, { duration_ms: duration })
+
+    if (error.code === 404) {
+      return NextResponse.json(
+        { error: "Sheet tidak ditemukan", code: "SHEET_NOT_FOUND" },
+        { status: 404 }
+      )
+    }
+
+    if (error.code === 403) {
+      return NextResponse.json(
+        { error: "Akses ke Google Sheets ditolak", code: "ACCESS_DENIED" },
+        { status: 403 }
+      )
+    }
+
     return NextResponse.json(
-      { message: "Gagal menyimpan project" },
+      { error: "Gagal menyimpan project", code: "INTERNAL_ERROR" },
       { status: 500 }
     )
   }

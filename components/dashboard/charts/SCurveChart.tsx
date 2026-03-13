@@ -10,7 +10,7 @@ import {
   Tooltip,
   Legend,
   Filler,
-  ChartOptions
+  type ChartOptions  // ← PINDAHKAN KE SINI!
 } from "chart.js"
 
 import { Line } from "react-chartjs-2"
@@ -76,74 +76,72 @@ export default function SCurveChart({ data }: { data: MonthlyProgress[] }) {
     ]
   }
 
-  import type { ChartOptions } from "chart.js"
-
-const options: ChartOptions<"line"> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: "bottom",
-      labels: {
-        usePointStyle: true,
-        pointStyle: "circle",
-        padding: 20,
-        font: {
-          size: 12,
+  const options: ChartOptions<"line"> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: {
+          usePointStyle: true,
+          pointStyle: "circle",
+          padding: 20,
+          font: {
+            size: 12,
+          },
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(0,0,0,0.8)",
+        titleColor: "white",
+        bodyColor: "white",
+        padding: 12,
+        cornerRadius: 8,
+        callbacks: {
+          label: (context) => {
+            const label = context.dataset.label || ""
+            const value = context.raw || 0
+            return `${label}: ${value}%`
+          },
         },
       },
     },
-    tooltip: {
-      backgroundColor: "rgba(0,0,0,0.8)",
-      titleColor: "white",
-      bodyColor: "white",
-      padding: 12,
-      cornerRadius: 8,
-      callbacks: {
-        label: (context) => {
-          const label = context.dataset.label || ""
-          const value = context.raw || 0
-          return `${label}: ${value}%`
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 100,
+        grid: {
+          color: "rgba(0,0,0,0.05)",
+        },
+        title: {
+          display: true,
+          text: "Progress (%)",
+          color: "rgb(107,114,128)",
+          font: {
+            size: 11,
+            weight: 500,
+          },
+        },
+        ticks: {
+          callback: (value) => `${value}%`,
+        },
+      },
+      x: {
+        grid: {
+          display: false,
+        },
+        title: {
+          display: true,
+          text: "Timeline",
+          color: "rgb(107,114,128)",
+          font: {
+            size: 11,
+            weight: 500,
+          },
         },
       },
     },
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      max: 100,
-      grid: {
-        color: "rgba(0,0,0,0.05)",
-      },
-      title: {
-        display: true,
-        text: "Progress (%)",
-        color: "rgb(107,114,128)",
-        font: {
-          size: 11,
-          weight: 500,
-        },
-      },
-      ticks: {
-        callback: (value) => `${value}%`,
-      },
-    },
-    x: {
-      grid: {
-        display: false,
-      },
-      title: {
-        display: true,
-        text: "Timeline",
-        color: "rgb(107,114,128)",
-        font: {
-          size: 11,
-          weight: 500,
-        },
-      },
-    },
-  },
-}
+  }
 
   return (
     <div className="h-64 w-full">

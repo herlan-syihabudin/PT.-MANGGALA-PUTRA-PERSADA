@@ -9,19 +9,9 @@ import {
   FileText,
   Edit,
   AlertCircle,
-  CheckCircle,
-  Clock,
-  DollarSign,
-  TrendingUp,
-  Users,
-  Download,
-  Printer,
-  MoreVertical,
   AlertTriangle,
-  TrendingDown,
-  TrendingUp as TrendUp,
+  DollarSign,
   BarChart3,
-  PieChart,
 } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -270,43 +260,14 @@ function ProgressStack({ time, physical }: { time: number; physical: number }) {
 
   return (
     <div className="relative w-full h-3 bg-gray-200 rounded mt-2">
-      <div className="absolute h-3 bg-gray-400 rounded" style={{ width: `${time}%` }} />
+      <div
+        className="absolute h-3 bg-gray-400 rounded"
+        style={{ width: `${time}%` }}
+      />
       <div
         className={`absolute h-3 rounded ${danger ? "bg-red-500" : "bg-green-600"}`}
         style={{ width: `${physical}%` }}
       />
-    </div>
-  )
-}
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'bottom' as const,
-      },
-      tooltip: {
-        callbacks: {
-          label: (context: any) => `${context.dataset.label}: ${context.raw}%`,
-        },
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        max: 100,
-        title: {
-          display: true,
-          text: 'Progress (%)',
-        },
-      },
-    },
-  }
-
-  return (
-    <div className="h-64 w-full">
-      <Line data={chartData} options={options} />
     </div>
   )
 }
@@ -322,7 +283,8 @@ function DelayWarning({
   physical: number
   time: number
   diff: number
-})
+}) {
+
   if (physical >= time - 5) return null
 
   const severity = diff < -15 ? 'critical' : 'warning'

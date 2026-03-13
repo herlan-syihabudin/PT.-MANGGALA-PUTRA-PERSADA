@@ -72,15 +72,15 @@ export async function GET(
     // Fetch data dari sheet
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "PROPOSAL!A2:I",
+      range: "PROPOSAL!A2:L",
     })
 
     const rows = res.data.values || []
 
     // Cari proposal yang match
     const row = rows.find(
-      r => r?.[0]?.toString().trim() === proposal_id
-    )
+  r => r?.[0]?.toString().trim() === proposal_id
+) || []
 
     if (!row) {
       logger.info(`[${requestId}] Proposal not found: ${proposal_id}`)
@@ -94,23 +94,31 @@ export async function GET(
     logger.info(`[${requestId}] Proposal found in ${duration}ms`)
 
     // Return dengan default values untuk field yang mungkin kosong
-    return NextResponse.json({
-      proposal_id: row[0] || "",
-      inquiry_id: row[1] || "", // pipeline_id = inquiry_id
-      rab_id: row[2] || "",
-      total_value: Number(row[3] || 0),
-      status: row[4] || "DRAFT",
-      created_at: row[5] || new Date().toISOString(),
-      created_by: row[6] || "System",
-      approved_at: row[7] || null,
-      expiry_date: row[8] || null,
-    }, {
-      headers: {
-        'Cache-Control': 'no-store, must-revalidate',
-        'X-Request-ID': requestId,
-        'X-Response-Time': `${duration}ms`
-      }
-    })
+   return NextResponse.json(
+  {
+    proposal_id: row[0] || "",
+    inquiry_id: row[1] || "",
+    rab_id: row[2] || "",
+    total_value: parseFloat(row[3]) || 0,
+    status: row[4] || "DRAFT",
+    created_at: row[5] || new Date().toISOString(),
+    created_by: row[6] || "System",
+    approved_at: row[7] || null,
+    expiry_date: row[8] || null,
+
+    // tambahan untuk template
+    project_name: row[9] || "",
+    customer_name: row[10] || "",
+    location: row[11] || ""
+  },
+  {
+    headers: {
+      "Cache-Control": "no-store, must-revalidate",
+      "X-Request-ID": requestId,
+      "X-Response-Time": `${duration}ms`
+    }
+  }
+)
 
   } catch (error: any) {
     const duration = Date.now() - startTime

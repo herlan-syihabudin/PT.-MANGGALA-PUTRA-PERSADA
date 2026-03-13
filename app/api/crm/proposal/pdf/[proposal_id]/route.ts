@@ -29,14 +29,14 @@ const page = await browser.newPage()
 
 await page.setContent(html, { waitUntil: "networkidle0" })
 
-const pdf = await page.pdf({
-  format: "A4",
-  printBackground: true
+const pdfBuffer = await page.pdf({
+  format:"A4",
+  printBackground:true
 })
 
 await browser.close()
 
-return new Response(pdf,{
+return new Response(new Uint8Array(pdfBuffer),{
   headers:{
     "Content-Type":"application/pdf",
     "Content-Disposition":`inline; filename="proposal-${params.proposal_id}.pdf"`

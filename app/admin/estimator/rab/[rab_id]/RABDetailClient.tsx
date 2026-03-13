@@ -54,6 +54,7 @@ export type RabItem = {
 export type RabResponse = {
   rab_id?: string
   project_id: string
+  inquiry_id?: string   // ✅ TAMBAHKAN INI
   header?: any
   summary: { total_items: number; total_value: number }
   items: RabItem[]

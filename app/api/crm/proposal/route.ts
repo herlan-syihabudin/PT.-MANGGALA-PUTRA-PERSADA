@@ -160,12 +160,12 @@ export async function GET(req: Request) {
 
     const sheets = getSheets()
 
-    const response = await withRetry(() => 
-      sheets.spreadsheets.values.get({
-        spreadsheetId: process.env.GSHEET_CRM_ID!,
-        range: `${PROPOSAL_SHEET}!A2:I`, // Ambil sampai kolom I
-      })
-    )
+    const response: any = await withRetry(() => 
+  sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.GSHEET_CRM_ID!,
+    range: `${PROPOSAL_SHEET}!A2:I`,
+  })
+)
 
     const rows = response.data.values || []
 

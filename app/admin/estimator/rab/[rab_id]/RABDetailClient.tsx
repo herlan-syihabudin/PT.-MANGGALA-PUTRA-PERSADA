@@ -460,6 +460,7 @@ async function reload() {
     // ✅ PERBAIKI NORMALISASI - pastikan inquiry_id terbaca
     const normalized: RabResponse = {
   rab_id: raw.rab_id,
+  inquiry_id: raw.inquiry_id ?? "",   // ✅ TAMBAHKAN INI
   project_id: raw.project_id ?? "",
   header: {
     inquiry_id: raw.inquiry_id ?? "",
@@ -679,6 +680,13 @@ async function reload() {
   const router = useRouter()
 
   async function handleGenerateProposal() {
+    console.log("=== DEBUG RAB DATA ===")
+  console.log("Full data:", data)
+  console.log("Header:", data?.header)
+  console.log("inquiry_id in header:", data?.header?.inquiry_id)
+  console.log("inquiry_id in root:", data?.inquiry_id)
+  console.log("project_id:", project_id)
+  console.log("rab_id:", rab_id)
 
   if (!rab_id) {
     toast.error("RAB ID tidak ditemukan")

@@ -489,19 +489,19 @@ export default async function ProjectDetailPage({
 
   /* ================= HEALTH CALCULATION ================= */
   const scopeSafe: ScopeProgress = scope ?? {
-    project_id,
-    mep: 0,
-    civil: 0,
-    steel: 0,
-    interior: 0,
-    updated_at: null,
-  }
+  project_id,
+  mep_progress: 0,
+  civil_progress: 0,
+  steel_progress: 0,
+  interior_progress: 0,
+  updated_at: null
+}
 
   const scopes = [
-  { label: "MEP", value: scopeSafe.mep_progress },
-  { label: "Civil", value: scopeSafe.civil_progress },
-  { label: "Steel", value: scopeSafe.steel_progress },
-  { label: "Interior", value: scopeSafe.interior_progress },
+  { label: "MEP", value: scopeSafe.mep },        // ← Sekarang benar
+  { label: "Civil", value: scopeSafe.civil },    // ← Sekarang benar
+  { label: "Steel", value: scopeSafe.steel },    // ← Sekarang benar
+  { label: "Interior", value: scopeSafe.interior }, // ← Sekarang benar
 ]
 
   const activeScopes = scopes.filter((s) => s.value > 0)

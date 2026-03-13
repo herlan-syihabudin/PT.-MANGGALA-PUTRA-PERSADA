@@ -206,8 +206,8 @@ export default function ProposalDetail({
   }
 
   const handleDownloadPDF = () => {
-  window.open(`/api/crm/proposal/pdf/${proposal?.proposal_id}`)
-}
+    window.open(`/api/crm/proposal/pdf/${proposal?.proposal_id}`, '_blank')
+  }
 
   const handleSendEmail = () => {
     toast.success("Email akan dikirim ke customer")
@@ -238,7 +238,7 @@ export default function ProposalDetail({
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
-      {/* Header Premium Industrial */}
+      {/* HEADER - SAME AS BEFORE */}
       <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 text-white border-b border-slate-600/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <button
@@ -349,11 +349,95 @@ export default function ProposalDetail({
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* MAIN CONTENT */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        {/* PROPOSAL DOCUMENT PREVIEW - FULL WIDTH */}
+        {rab && rab.items && rab.items.length > 0 && (
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="border-b border-slate-200 px-6 py-4 bg-slate-50">
+              <h2 className="font-semibold text-lg flex items-center gap-2">
+                <FileText size={18} className="text-slate-600" />
+                Proposal Document Preview
+              </h2>
+            </div>
+            
+            <div className="p-8">
+              {/* COMPANY HEADER */}
+              <div className="mb-8 pb-6 border-b border-slate-200">
+                <h1 className="text-2xl font-bold text-slate-800">PT MANGGALA PUTRA PERSADA</h1>
+                <p className="text-sm text-slate-500 mt-1">Engineering • Procurement • Construction</p>
+              </div>
+
+              {/* PROPOSAL INFO */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                <div>
+                  <p className="text-xs text-slate-400">Proposal No</p>
+                  <p className="font-medium text-slate-800">{proposal.proposal_id}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">Date</p>
+                  <p className="font-medium text-slate-800">
+                    {new Date(proposal.created_at).toLocaleDateString("id-ID", {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </p>
+                </div>
+                {customer && (
+                  <>
+                    <div>
+                      <p className="text-xs text-slate-400">Customer</p>
+                      <p className="font-medium text-slate-800">{customer.company_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400">Project</p>
+                      <p className="font-medium text-slate-800">{rab?.project_name}</p>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* ITEMS TABLE */}
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="p-3 text-left text-xs font-medium text-slate-500 uppercase">Item</th>
+                      <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase">Qty</th>
+                      <th className="p-3 text-center text-xs font-medium text-slate-500 uppercase">Unit</th>
+                      <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase">Unit Price</th>
+                      <th className="p-3 text-right text-xs font-medium text-slate-500 uppercase">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {rab.items.map((item: any, i: number) => (
+                      <tr key={i} className="hover:bg-slate-50">
+                        <td className="p-3">{item.item_name}</td>
+                        <td className="p-3 text-center">{item.qty}</td>
+                        <td className="p-3 text-center">{item.unit}</td>
+                        <td className="p-3 text-right font-mono">{formatIDR(item.unit_price)}</td>
+                        <td className="p-3 text-right font-mono font-medium text-emerald-600">{formatIDR(item.total_price)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-slate-50 border-t border-slate-200">
+                    <tr>
+                      <td colSpan={4} className="p-3 text-right font-medium">TOTAL</td>
+                      <td className="p-3 text-right font-bold text-emerald-600">{formatIDR(proposal.total_value)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* GRID LAYOUT - 2 KOLOM (LEFT: CUSTOMER/PIPELINE/RAB, RIGHT: SUMMARY/TIMELINE/ACTIONS) */}
         <div className="grid lg:grid-cols-3 gap-6">
           
-          {/* Left Column - Main Info */}
+          {/* LEFT COLUMN - Customer, Pipeline, RAB Info */}
           <div className="lg:col-span-2 space-y-6">
             
             {/* Customer Information */}
@@ -484,51 +568,7 @@ export default function ProposalDetail({
             )}
           </div>
 
-          {/* Proposal Preview */}
-{rab && rab.items && (
-  <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-    <h2 className="font-medium text-slate-800 mb-4 flex items-center gap-2">
-      <FileText size={18} className="text-slate-500" />
-      Proposal Preview
-    </h2>
-
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm border border-slate-200">
-        <thead className="bg-slate-50">
-          <tr>
-            <th className="text-left p-2 border">Item</th>
-            <th className="text-right p-2 border">Qty</th>
-            <th className="text-left p-2 border">Unit</th>
-            <th className="text-right p-2 border">Unit Price</th>
-            <th className="text-right p-2 border">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rab.items.map((item: any, i: number) => (
-            <tr key={i}>
-              <td className="p-2 border">{item.item_name}</td>
-              <td className="p-2 border text-right">{item.qty}</td>
-              <td className="p-2 border">{item.unit}</td>
-              <td className="p-2 border text-right">{formatIDR(item.unit_price)}</td>
-              <td className="p-2 border text-right">{formatIDR(item.total_price)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-
-    <div className="flex justify-end mt-4">
-      <div className="text-right">
-        <p className="text-xs text-slate-400">Total Proposal</p>
-        <p className="text-lg font-bold text-emerald-600">
-          {formatIDR(proposal.total_value)}
-        </p>
-      </div>
-    </div>
-  </div>
-)}
-          
-          {/* Right Column - Stats & Actions */}
+          {/* RIGHT COLUMN - Summary, Timeline, Quick Actions */}
           <div className="space-y-6">
             
             {/* Summary Card */}

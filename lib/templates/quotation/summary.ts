@@ -1,5 +1,5 @@
-export function summaryTemplate(summary: any[], total: number) {
-  // Format angka ke Rupiah
+export function summaryTemplate(summary: any[] = [], total: number = 0) {
+
   const formatIDR = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -9,8 +9,11 @@ export function summaryTemplate(summary: any[], total: number) {
     }).format(amount)
   }
 
-  // Hitung total dari summary (validasi)
-  const calculatedTotal = summary.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+  const calculatedTotal = (summary || []).reduce(
+    (sum, item) => sum + (Number(item.amount) || 0),
+    0
+  )
+
   const displayTotal = total || calculatedTotal
 
   const rows = summary.map((s, i) => `

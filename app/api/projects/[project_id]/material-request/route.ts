@@ -436,6 +436,8 @@ export async function PATCH(req: Request) {
 
     const body = await req.json()
     const { status } = body
+    const approvedBy = body.approved_by || ""
+const approvedAt = new Date().toISOString()
 
     if (!status || !VALID_STATUSES.includes(status as any)) {
       return NextResponse.json(
@@ -462,13 +464,13 @@ const rowIndex = rows.findIndex(r => r[COLUMNS.ID] === id)
 
     // Update status (column K = index 10)
     await sheets.spreadsheets.values.update({
-      spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!K${rowIndex + 2}`, // +2 karena header + 1-based index
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [[status]]
-      }
-    })
+  spreadsheetId: SHEET_ID,
+  range: `${SHEET_NAME}!K${rowIndex + 2}:M${rowIndex + 2}`,
+  valueInputOption: "USER_ENTERED",
+  requestBody: {
+    values: [[status, approvedBy, approvedAt]]
+  }
+})
 
     return NextResponse.json({
       success: true,

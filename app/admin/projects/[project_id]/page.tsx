@@ -706,28 +706,38 @@ const overallProgress =
       </div>
 
       {/* TERMIN */}
-      <Section title="Termin Kontrak">
-        {termins.length === 0 ? (
-          <Empty />
-        ) : (
-          <SimpleTable
-            headers={["Termin", "Deskripsi", "% / Nilai", "Status", "Jatuh Tempo", "Dibayar"]}
-            rows={termins.map((t) => [
-              t.termin_no,
-              t.description,
-              `${t.percent}% • ${formatIDR(t.value)}`,
-              <span
-                key={`status-${t.termin_no}`}
-                className={`px-2 py-0.5 rounded text-[11px] font-medium inline-block ${getTerminStatusBadge(t.status)}`}
-              >
-                {t.status}
-              </span>,
-              t.due_date || "-",
-              t.paid_date || "-",
-            ])}
-          />
-        )}
-      </Section>
+<Section
+  title="Termin Kontrak"
+  meta={
+    <Link
+      href={`/admin/projects/${project_id}/termin`}
+      className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+    >
+      + Tambah Termin
+    </Link>
+  }
+>
+  {termins.length === 0 ? (
+    <Empty />
+  ) : (
+    <SimpleTable
+      headers={["Termin", "Deskripsi", "% / Nilai", "Status", "Jatuh Tempo", "Dibayar"]}
+      rows={termins.map((t) => [
+        t.termin_no,
+        t.description,
+        `${t.percent}% • ${formatIDR(t.value)}`,
+        <span
+          key={`status-${t.termin_no}`}
+          className={`px-2 py-0.5 rounded text-[11px] font-medium inline-block ${getTerminStatusBadge(t.status)}`}
+        >
+          {t.status}
+        </span>,
+        t.due_date || "-",
+        t.paid_date || "-",
+      ])}
+    />
+  )}
+</Section>
 
       {/* LOGS */}
       <Section title="Activity Log" meta={`${logs.length} aktivitas`}>

@@ -1,6 +1,6 @@
 // app/admin/projects/[project_id]/material-request/page.tsx
 import Link from "next/link"
-import { formatIDR } from "@/lib/format"
+import { headers } from "next/headers"
 
 export const dynamic = "force-dynamic"
 
@@ -31,9 +31,14 @@ const STATUS_COLORS = {
 // ========== FETCH ==========
 async function fetchMaterialRequests(project_id: string): Promise<MaterialRequest[]> {
   try {
-    const res = await fetch(`/api/projects/${project_id}/material-request`, {
-  cache: "no-store"
-})
+
+    const host = headers().get("host")
+    const protocol = process.env.NODE_ENV === "development" ? "http" : "https"
+
+    const res = await fetch(
+      `${protocol}://${host}/api/projects/${project_id}/material-request`,
+      { cache: "no-store" }
+    )
 
     if (!res.ok) {
       console.error("Failed to fetch material requests")
@@ -42,6 +47,7 @@ async function fetchMaterialRequests(project_id: string): Promise<MaterialReques
 
     const data = await res.json()
     return data.data || []
+
   } catch (error) {
     console.error("Error fetching material requests:", error)
     return []

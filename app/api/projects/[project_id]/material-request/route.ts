@@ -3,7 +3,7 @@ import { google } from "googleapis"
 
 // ========== CONSTANTS ==========
 const SHEET_ID = process.env.GSHEET_PROJECT_ID
-const SHEET_NAME = "MATERIAL_REQUEST"
+const SHEET_NAME = "MATRIAL_REQUESTS"
 
 if (!SHEET_ID) {
   throw new Error("GSHEET_PROJECT_ID is not defined")

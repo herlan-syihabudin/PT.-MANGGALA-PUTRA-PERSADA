@@ -464,13 +464,13 @@ const rowIndex = rows.findIndex(r => r[COLUMNS.ID] === id)
 
     // Update status (column K = index 10)
     await sheets.spreadsheets.values.update({
-  spreadsheetId: SHEET_ID,
-  range: `${SHEET_NAME}!K${rowIndex + 2}:M${rowIndex + 2}`,
-  valueInputOption: "USER_ENTERED",
-  requestBody: {
-    values: [[status, approvedBy, approvedAt]]
-  }
-})
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!K${rowIndex + 2}:M${rowIndex + 2}`
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+  values: [[status, approvedBy, approvedAt]]
+}
+    })
 
     return NextResponse.json({
       success: true,

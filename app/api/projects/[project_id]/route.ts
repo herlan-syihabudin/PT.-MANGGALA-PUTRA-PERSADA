@@ -223,10 +223,10 @@ export async function PATCH(
     logger.info(`[${requestId}] Updating project: ${project_id}`, body)
 
     // Get all projects to find the row
-    const projectRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `${PROJECT_SHEET}!A2:J`,
-    })
+   const projectRes = await sheets.spreadsheets.values.get({
+  spreadsheetId: PROJECT_SHEET_ID,
+  range: `${PROJECT_SHEET}!A2:J`,
+})
 
     const rows = projectRes.data.values || []
     const rowIndex = rows.findIndex((r) => normalize(r[0]) === project_id)
@@ -293,7 +293,7 @@ export async function PATCH(
 
     if (updates.length > 0) {
       await sheets.spreadsheets.values.batchUpdate({
-        spreadsheetId: SHEET_ID,
+  spreadsheetId: PROJECT_SHEET_ID,
         requestBody: {
           data: updates,
           valueInputOption: "USER_ENTERED",

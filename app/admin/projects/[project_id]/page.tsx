@@ -398,7 +398,7 @@ function Info({ label, value, highlight }: { label: string; value: string; highl
   )
 }
 
-function Section({ title, meta, children }: { title: string; meta?: string; children: React.ReactNode }) {
+function Section({ title, meta, children }: { title: string; meta?: React.ReactNode; children: React.ReactNode }) {
   return (
     <Card>
       <div className="flex justify-between mb-2">

@@ -377,7 +377,7 @@ export async function GET(req: Request) {
       valueRenderOption: "UNFORMATTED_VALUE",
     })
 
-    const rows = res.data.values || []
+   const rows = (res.data.values || []).slice(1)
     
     let filteredRows = rows
     
@@ -450,8 +450,8 @@ export async function PATCH(req: Request) {
       range: `${SHEET_NAME}!A:L`,
     })
 
-    const rows = res.data.values || []
-    const rowIndex = rows.findIndex(r => r[COLUMNS.ID] === id)
+    const rows = (res.data.values || []).slice(1)
+const rowIndex = rows.findIndex(r => r[COLUMNS.ID] === id)
 
     if (rowIndex === -1) {
       return NextResponse.json(

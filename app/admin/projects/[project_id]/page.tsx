@@ -200,6 +200,7 @@ function StatusBadge({ status }: { status: string }) {
     finish: { label: "Finish", className: "bg-green-100 text-green-700" },
     hold: { label: "On Hold", className: "bg-orange-100 text-orange-700" },
     cancelled: { label: "Cancelled", className: "bg-red-100 text-red-700" },
+    { id: "material", label: "Material", href: `/admin/projects/${projectId}/material-request` },
   }
 
   const { label, className } = config[status] || { 
@@ -761,6 +762,7 @@ const overallProgress =
         <Action href={`/admin/projects/${project_id}/contract`} label="Kontrak" color="blue" />
         <Action href={`/admin/projects/${project_id}/rab`} label="RAB" color="gray" />
         <Action href={`/admin/projects/${project_id}/progress`} label="Progress" color="green" />
+        <Action href={`/admin/projects/${project_id}/material-request`} label="Material Request" color="blue" />
       </div>
     </div>
   )

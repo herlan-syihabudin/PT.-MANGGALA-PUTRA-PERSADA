@@ -505,12 +505,14 @@ export default async function ProjectDetailPage({
   ]
 
   const activeScopes = scopes.filter((s) => s.value > 0)
-  const divisor = activeScopes.length || scopes.length
 
-  const overallProgress =
-    divisor > 0
-      ? Math.round(scopes.reduce((sum, s) => sum + s.value, 0) / divisor)
-      : 0
+const overallProgress =
+  activeScopes.length > 0
+    ? Math.round(
+        activeScopes.reduce((sum, s) => sum + s.value, 0) /
+        activeScopes.length
+      )
+    : 0
 
   const contractValue = project.nilai_kontrak || 0
   const estimatedUsed = contractValue > 0 ? Math.round((overallProgress / 100) * contractValue) : 0

@@ -27,6 +27,7 @@ type ProgressData = {
 const SHEET_ID = process.env.GSHEET_PROJECT_ID
 const SHEET_NAME = "PROJECT_SCOPE_PROGRESS"
 const CACHE_TTL = 5000 // 5 seconds
+const REQUEST_TIMEOUT = 10000 // 10 seconds
 
 // Validate environment
 if (!SHEET_ID) {
@@ -45,6 +46,7 @@ const sheets = google.sheets({ version: "v4", auth })
 
 // Simple cache
 const cache = new Map<string, { data: ProgressData; timestamp: number }>()
+const rowIndexCache = new Map<string, number>()
 
 // Rate limiting
 const rateLimit = new Map<string, number[]>()
@@ -82,10 +84,9 @@ export async function GET(
     }
 
     // ========== RATE LIMITING ==========
-    const ip =
-  req.headers.get("x-forwarded-for")?.split(",")[0] ||
-  req.headers.get("x-real-ip") ||
-  "unknown"
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ||
+               req.headers.get("x-real-ip") ||
+               "unknown"
     const now = Date.now()
     
     const requests = rateLimit.get(ip) || []
@@ -100,7 +101,14 @@ export async function GET(
     }
     
     recentRequests.push(now)
-    rateLimit.set(ip, recentRequests)
+    rateLimit.set(ip, recentRequests.slice(-RATE_LIMIT_MAX))
+    if (rateLimit.size > 500) {
+  for (const [key, times] of rateLimit.entries()) {
+    if (now - times[times.length - 1] > RATE_LIMIT_WINDOW) {
+      rateLimit.delete(key)
+    }
+  }
+}
 
     // ========== CHECK CACHE ==========
     const cached = cache.get(sanitizedId)
@@ -113,15 +121,23 @@ export async function GET(
     console.log(`[${requestId}] Fetching from sheets for project: ${sanitizedId}`)
     
     const res = await sheets.spreadsheets.values.get({
-  spreadsheetId: SHEET_ID,
-  range: `${SHEET_NAME}!A2:F`,
-  valueRenderOption: "UNFORMATTED_VALUE",
-})
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!A2:F`,
+      valueRenderOption: "UNFORMATTED_VALUE",
+    })
 
     const rows = (res.data.values || []) as SheetRow[]
     
     // Find project by ID (case-insensitive)
-    const row = rows.find((r) => r[0].toLowerCase() === sanitizedId.toLowerCase())
+    const rowIndex = rows.findIndex(
+      (r) => r[0]?.toLowerCase() === sanitizedId.toLowerCase()
+    )
+
+    const row = rowIndex !== -1 ? rows[rowIndex] : undefined
+
+    if (rowIndex !== -1) {
+      rowIndexCache.set(sanitizedId, rowIndex)
+    }
 
     // Prepare response
     let responseData: ProgressData
@@ -157,7 +173,7 @@ export async function GET(
       timestamp: now,
     })
 
-    // Cleanup old cache entries (optional)
+    // Cleanup old cache entries
     if (cache.size > 100) {
       const oldest = now - CACHE_TTL * 2
       for (const [key, value] of cache.entries()) {
@@ -174,9 +190,7 @@ export async function GET(
     // ========== ERROR HANDLING ==========
     console.error(`[${requestId}] Error:`, error)
     
-    // Differentiate error types
     if (error instanceof Error) {
-      // Google Sheets API errors
       if (error.message.includes('Google Sheets API')) {
         return NextResponse.json(
           { 
@@ -187,7 +201,6 @@ export async function GET(
         )
       }
       
-      // Rate limiting from Google
       if (error.message.includes('rate limit')) {
         return NextResponse.json(
           { message: "Service is busy. Please try again later." },
@@ -196,7 +209,6 @@ export async function GET(
       }
     }
     
-    // Generic error
     return NextResponse.json(
       { 
         message: "Failed to fetch project progress",
@@ -207,5 +219,138 @@ export async function GET(
   }
 }
 
-// Optional: Add revalidation for ISR
-export const revalidate = 5 // Revalidate every 5 seconds
+/**
+ * PATCH /api/projects/[project_id]/progress
+ * Update scope progress for a specific project
+ */
+export async function PATCH(
+  req: Request,
+  { params }: { params: { project_id: string } }
+) {
+  const requestId = crypto.randomUUID?.() || Date.now().toString()
+  
+  try {
+    // ========== VALIDATION ==========
+    const sanitizedId = params.project_id.trim().replace(/[^a-zA-Z0-9_-]/g, '')
+
+if (!sanitizedId) {
+  return NextResponse.json(
+    { message: "Project ID is required" },
+    { status: 400 }
+  )
+}
+
+    const body = await req.json()
+    const {
+      mep_progress,
+      civil_progress,
+      steel_progress,
+      interior_progress,
+    } = body
+
+    // Validate progress values (0-100)
+    const values = [mep_progress, civil_progress, steel_progress, interior_progress]
+    for (const val of values) {
+      if (typeof val !== 'number' || val < 0 || val > 100) {
+        return NextResponse.json(
+          { message: "Progress values must be numbers between 0 and 100" },
+          { status: 400 }
+        )
+      }
+    }
+
+    const updatedAt = new Date().toISOString()
+    const rowValues = [
+     sanitizedId,
+      mep_progress,
+      civil_progress,
+      steel_progress,
+      interior_progress,
+      updatedAt,
+    ]
+
+    // ========== UPDATE SHEETS ==========
+    console.log(`[${requestId}] Updating progress for project: ${sanitizedId}`)
+    
+    const rowIndex = rowIndexCache.get(sanitizedId)
+    let updateResult
+
+    // Setup timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
+
+    try {
+      if (rowIndex !== undefined) {
+        // Update existing row
+        updateResult = await sheets.spreadsheets.values.update({
+          spreadsheetId: SHEET_ID,
+          range: `${SHEET_NAME}!A${rowIndex + 2}:F${rowIndex + 2}`,
+          valueInputOption: "RAW",
+          requestBody: { values: [rowValues] },
+        }, {
+          signal: controller.signal
+        })
+      } else {
+        // Append new row
+        updateResult = await sheets.spreadsheets.values.append({
+          spreadsheetId: SHEET_ID,
+          range: `${SHEET_NAME}!A:F`,
+          valueInputOption: "RAW",
+          requestBody: { values: [rowValues] },
+        }, {
+          signal: controller.signal
+        })
+
+        // If append successful, update rowIndexCache with new index
+        if (updateResult.data.updates?.updatedRange) {
+          const match = updateResult.data.updates.updatedRange.match(/A(\d+)/)
+          if (match) {
+            const newIndex = parseInt(match[1]) - 2 // Convert to 0-based index from row 2
+            rowIndexCache.set(sanitizedId, newIndex)
+          }
+        }
+      }
+
+      clearTimeout(timeoutId)
+    } catch (error) {
+      clearTimeout(timeoutId)
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error("Request timeout")
+      }
+      throw error
+    }
+
+    // ========== CLEAR CACHE ==========
+    cache.delete(sanitizedId)
+
+   console.log(`[${requestId}] Success updating progress for project: ${sanitizedId}`)
+    return NextResponse.json({ 
+      success: true,
+      updated_at: updatedAt 
+    })
+
+  } catch (error) {
+    console.error(`[${requestId}] Error:`, error)
+    
+    if (error instanceof Error) {
+      if (error.message === "Request timeout") {
+        return NextResponse.json(
+          { message: "Request timeout. Please try again." },
+          { status: 504 }
+        )
+      }
+      
+      if (error.message.includes('Google Sheets API')) {
+        return NextResponse.json(
+          { message: "Sheets service unavailable" },
+          { status: 503 }
+        )
+      }
+    }
+    
+    return NextResponse.json(
+      { message: "Failed to update progress" },
+      { status: 500 }
+    )
+  }
+}

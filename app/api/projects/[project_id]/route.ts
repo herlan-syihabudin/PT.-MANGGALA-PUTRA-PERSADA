@@ -27,7 +27,9 @@ const allowedTypes = ["MEP","CIVIL","STEEL","INTERIOR","OTHER"]
 /* ==============================
    CONFIG (SATU SPREADSHEET)
 ================================ */
-const SHEET_ID = process.env.GSHEET_PROJECT_ID!
+const PROJECT_SHEET_ID = process.env.GSHEET_PROJECT_ID!
+const CRM_SHEET_ID = process.env.GSHEET_CRM_ID!
+
 const PROJECT_SHEET = "PROJECT MASTER"
 const CUSTOMER_SHEET = "CUSTOMERS"
 
@@ -93,15 +95,15 @@ export async function GET(
     logger.info(`[${requestId}] Fetching project: ${project_id}`)
 
     const [projectRes, customerRes] = await Promise.all([
-      sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: `${PROJECT_SHEET}!A2:J`, // A: project_id, B: project_name, C: customer_id, D: lokasi, E: nilai_kontrak, F: start_date, G: end_date, H: status, I: created_at, J: project_type
-      }),
-      sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: `${CUSTOMER_SHEET}!A2:P`, // A: customer_id, B: company_name, C: type, D: pic_name, E: pic_position, F: email, G: phone, H: npwp, I: address, J: city, K: province, L: postal_code, M: status
-      }),
-    ])
+  sheets.spreadsheets.values.get({
+    spreadsheetId: PROJECT_SHEET_ID,
+    range: `'${PROJECT_SHEET}'!A2:J`,
+  }),
+  sheets.spreadsheets.values.get({
+    spreadsheetId: CRM_SHEET_ID,
+    range: `'${CUSTOMER_SHEET}'!A2:P`,
+  }),
+])
 
     const projectRows = projectRes.data.values || []
     const customerRows = customerRes.data.values || []

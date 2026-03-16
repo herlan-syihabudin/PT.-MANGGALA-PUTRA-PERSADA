@@ -31,10 +31,9 @@ const STATUS_COLORS = {
 // ========== FETCH ==========
 async function fetchMaterialRequests(project_id: string): Promise<MaterialRequest[]> {
   try {
-    const base = process.env.NEXT_PUBLIC_APP_URL || `http://localhost:3000`
-    const res = await fetch(`${base}/api/projects/${project_id}/material-request`, {
-      cache: "no-store"
-    })
+    const res = await fetch(`/api/projects/${project_id}/material-request`, {
+  cache: "no-store"
+})
 
     if (!res.ok) {
       console.error("Failed to fetch material requests")

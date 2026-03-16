@@ -3,7 +3,7 @@ import { google } from "googleapis"
 
 // ========== CONSTANTS ==========
 const SHEET_ID = process.env.GSHEET_PROJECT_ID
-const SHEET_NAME = "MATRIAL_REQUESTS"
+const SHEET_NAME = "MATERIAL_REQUESTS"  // FIXED: typo
 
 if (!SHEET_ID) {
   throw new Error("GSHEET_PROJECT_ID is not defined")
@@ -21,7 +21,9 @@ const COLUMNS = {
   UNIT: 8,
   REMARK: 9,
   STATUS: 10,
-  CREATED_AT: 11
+  CREATED_AT: 11,
+  APPROVED_BY: 12,  // ADDED
+  APPROVED_AT: 13   // ADDED
 } as const
 
 const VALID_STATUSES = ["Pending", "Approved", "Rejected", "Delivered"] as const
@@ -286,6 +288,8 @@ export async function POST(req: Request) {
         item.remark || "",                    // REMARK
         "Pending",                           // STATUS
         now,                                 // CREATED_AT
+        "",                                  // APPROVED_BY (empty initially)
+        "",                                  // APPROVED_AT (empty initially)
       ])
 
       // ===== SAVE TO SHEETS =====
@@ -293,7 +297,7 @@ export async function POST(req: Request) {
 
       const appendResult = await sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_ID,
-        range: `${SHEET_NAME}!A:L`,
+        range: `${SHEET_NAME}!A:N`, // Updated to include all 14 columns
         valueInputOption: "USER_ENTERED",
         requestBody: { 
           values: rows 
@@ -364,7 +368,7 @@ export async function POST(req: Request) {
   }
 }
 
-// ========== OPTIONAL: GET METHOD ==========
+// ========== GET METHOD ==========
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const project_id = searchParams.get('project_id')
@@ -373,11 +377,11 @@ export async function GET(req: Request) {
   try {
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:L`,
+      range: `${SHEET_NAME}!A:N`, // Updated to include all columns
       valueRenderOption: "UNFORMATTED_VALUE",
     })
 
-   const rows = (res.data.values || []).slice(1)
+    const rows = (res.data.values || []).slice(1) // Skip header
     
     let filteredRows = rows
     
@@ -402,6 +406,8 @@ export async function GET(req: Request) {
       remark: row[COLUMNS.REMARK],
       status: row[COLUMNS.STATUS],
       created_at: row[COLUMNS.CREATED_AT],
+      approved_by: row[COLUMNS.APPROVED_BY] || null,
+      approved_at: row[COLUMNS.APPROVED_AT] || null,
     }))
 
     return NextResponse.json({
@@ -421,7 +427,7 @@ export async function GET(req: Request) {
   }
 }
 
-// ========== OPTIONAL: PATCH for updating status ==========
+// ========== PATCH for updating status ==========
 export async function PATCH(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
@@ -437,7 +443,7 @@ export async function PATCH(req: Request) {
     const body = await req.json()
     const { status } = body
     const approvedBy = body.approved_by || ""
-const approvedAt = new Date().toISOString()
+    const approvedAt = new Date().toISOString()
 
     if (!status || !VALID_STATUSES.includes(status as any)) {
       return NextResponse.json(
@@ -446,14 +452,14 @@ const approvedAt = new Date().toISOString()
       )
     }
 
-    // First, find the row
+    // Find the row
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:L`,
+      range: `${SHEET_NAME}!A:N`, // Updated range
     })
 
     const rows = (res.data.values || []).slice(1)
-const rowIndex = rows.findIndex(r => r[COLUMNS.ID] === id)
+    const rowIndex = rows.findIndex(r => r[COLUMNS.ID] === id)
 
     if (rowIndex === -1) {
       return NextResponse.json(
@@ -462,19 +468,25 @@ const rowIndex = rows.findIndex(r => r[COLUMNS.ID] === id)
       )
     }
 
-    // Update status (column K = index 10)
+    // Update status, approved_by, approved_at (columns K, L, M)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!K${rowIndex + 2}:M${rowIndex + 2}`
+      range: `${SHEET_NAME}!K${rowIndex + 2}:M${rowIndex + 2}`, // FIXED: added comma
       valueInputOption: "USER_ENTERED",
       requestBody: {
-  values: [[status, approvedBy, approvedAt]]
-}
+        values: [[status, approvedBy, approvedAt]]
+      }
     })
 
     return NextResponse.json({
       success: true,
-      message: `Status updated to ${status}`
+      message: `Status updated to ${status}`,
+      data: {
+        id,
+        status,
+        approved_by: approvedBy,
+        approved_at: approvedAt
+      }
     })
 
   } catch (error) {

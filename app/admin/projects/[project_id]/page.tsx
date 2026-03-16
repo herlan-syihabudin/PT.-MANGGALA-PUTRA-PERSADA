@@ -200,7 +200,6 @@ function StatusBadge({ status }: { status: string }) {
     finish: { label: "Finish", className: "bg-green-100 text-green-700" },
     hold: { label: "On Hold", className: "bg-orange-100 text-orange-700" },
     cancelled: { label: "Cancelled", className: "bg-red-100 text-red-700" },
-    { id: "material", label: "Material", href: `/admin/projects/${projectId}/material-request` },
   }
 
   const { label, className } = config[status] || { 
@@ -223,6 +222,7 @@ function ProjectTabs({ projectId, active }: { projectId: string; active: string 
     { id: "progress", label: "Progress", href: `/admin/projects/${projectId}/progress` },
     { id: "documents", label: "Dokumen", href: `/admin/projects/${projectId}/documents` },
     { id: "logs", label: "Logs", href: `/admin/projects/${projectId}/logs` },
+    { id: "material", label: "Material", href: `/admin/projects/${projectId}/material-request` },
   ]
 
   return (

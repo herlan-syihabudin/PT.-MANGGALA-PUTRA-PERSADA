@@ -5,6 +5,14 @@ import { useRouter } from "next/navigation"
 import { toast, Toaster } from "react-hot-toast"
 import { useDebouncedCallback } from "use-debounce"
 
+// ✅ TAMBAHKAN INI
+const SCOPES = [
+  { key: "mep", label: "MEP" },
+  { key: "civil", label: "Civil" },
+  { key: "steel", label: "Steel" },
+  { key: "interior", label: "Interior" },
+] as const
+
 type ScopeKey = typeof SCOPES[number]["key"]
 
 type ScopeProgress = {
@@ -454,24 +462,20 @@ export default function ProjectProgressPage({
           {/* Main Form Card */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="space-y-6">
-              {(["mep", "civil", "steel", "interior"] as const).map((k) => {
-                const error = fieldErrors.get(k)
-                const isTouched = touched.has(k)
-                const value = form[k]
-                
-                return (
+             {SCOPES.map((scope) => {
+  const k = scope.key
+  const error = fieldErrors.get(k)
+  const isTouched = touched.has(k)
+  const value = form[k]
+
+  return (
                   <div key={k} className="space-y-2">
                     <div className="flex justify-between items-center">
                       <label 
                         htmlFor={`progress-${k}`}
                         className="text-sm font-medium text-gray-700 uppercase tracking-wider"
                       >
-                        {{
-                          mep: "MEP",
-                          civil: "Civil",
-                          steel: "Steel",
-                          interior: "Interior",
-                        }[k]}
+                        {scope.label}
                       </label>
                       {isTouched && !error && (
                         <span className="text-xs text-green-600 flex items-center gap-1">

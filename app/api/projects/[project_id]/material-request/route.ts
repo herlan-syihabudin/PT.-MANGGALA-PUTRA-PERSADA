@@ -444,9 +444,13 @@ export async function POST(req: Request) {
 }
 
 // ========== GET ==========
-export async function GET(req: Request) {
+export async function GET(
+  req: Request,
+  { params }: { params: { project_id: string } }
+) {
+  const project_id = params.project_id
+
   const { searchParams } = new URL(req.url)
-  const project_id = searchParams.get('project_id')
   const request_no = searchParams.get('request_no')
 
   try {

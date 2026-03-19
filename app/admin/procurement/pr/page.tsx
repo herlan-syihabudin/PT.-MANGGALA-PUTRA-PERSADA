@@ -21,9 +21,11 @@ import Money from '@/components/dashboard/procurement/Money'
 import DateText from '@/components/dashboard/procurement/DateText'
 
 /** ================== CONFIG ================== */
-// 🔥 SATU PINTU ROUTE (biar ga 404 lagi)
-const BASE_PATH = '/admin/procurement/pr' // ganti ke '/admin/procurement/pr' kalau struktur kamu admin-based
+const BASE_PATH = '/admin/procurement/pr'
 const CREATE_PATH = `${BASE_PATH}/create`
+
+/** ================== TYPES ================== */
+type PRStatus = 'Pending' | 'Approved' | 'Rejected' | 'Delivered' | 'DRAFT' | 'SUBMITTED' | 'ORDERED'
 
 type SortField = 'pr_code' | 'request_date' | 'total' | 'status'
 type SortOrder = 'asc' | 'desc'
@@ -45,11 +47,12 @@ interface PR {
   requested_by: string
   request_date: string
   needed_date?: string
-  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'ORDERED'
+  status: PRStatus
   items: PRItem[]
-  total?: number // 🔥 TAMBAH INI
+  total?: number
 }
 
+/** ================== HOOKS ================== */
 function useDebouncedValue<T>(value: T, delay = 400) {
   const [debounced, setDebounced] = useState(value)
   useEffect(() => {
@@ -59,10 +62,17 @@ function useDebouncedValue<T>(value: T, delay = 400) {
   return debounced
 }
 
+/** ================== UTILS ================== */
 function cx(...classes: Array<string | false | undefined | null>) {
   return classes.filter(Boolean).join(' ')
 }
 
+function escapeCSV(val: any): string {
+  const str = String(val ?? '')
+  return `"${str.replace(/"/g, '""')}"`
+}
+
+/** ================== MAIN COMPONENT ================== */
 export default function PRListPage() {
   const router = useRouter()
   const abortRef = useRef<AbortController | null>(null)
@@ -78,6 +88,7 @@ export default function PRListPage() {
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebouncedValue(search, 450)
 
+  // 🔥 FIXED: Status filter menggunakan nilai yang match dengan backend
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [projectFilter, setProjectFilter] = useState<string>('')
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
@@ -95,9 +106,12 @@ export default function PRListPage() {
   // Selection
   const [selectedPRs, setSelectedPRs] = useState<string[]>([])
 
+  
+
   // Projects filter list
   const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([])
 
+  /** ================== FETCH PRs ================== */
   const fetchPRs = async () => {
     abortRef.current?.abort()
     const controller = new AbortController()
@@ -144,7 +158,7 @@ export default function PRListPage() {
     }
   }
 
-  // Load projects (filter dropdown)
+  /** ================== FETCH PROJECTS ================== */
   useEffect(() => {
     fetch('/api/projects')
       .then((res) => res.json())
@@ -153,40 +167,42 @@ export default function PRListPage() {
         if (!Array.isArray(arr)) return
         setProjects(
           arr.map((p: any) => ({
-            id: p.project_id,
-            name: p.project_name,
+            id: p.project_id || p.id,
+            name: p.project_name || p.name,
           }))
         )
       })
       .catch(() => {
-        // kalau endpoint projects beda, minimal list tetap jalan tanpa dropdown
         setProjects([])
       })
   }, [])
 
+  /** ================== AUTO FETCH ================== */
   useEffect(() => {
     fetchPRs()
     return () => abortRef.current?.abort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, limit, sortBy, sortOrder, statusFilter, projectFilter, dateRange.start, dateRange.end, debouncedSearch])
 
+  /** ================== COMPUTED ================== */
   const computedPRs = useMemo(() => {
     return prs.map((pr) => ({
       ...pr,
-      total:
-        pr.items?.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0) || 0,
+      // 🔥 Fallback: hitung dari items, tapi ideally backend sudah kirim total
+      total: pr.total ?? pr.items?.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0) || 0,
     }))
   }, [prs])
 
   const stats = useMemo(() => {
     const totalCount = computedPRs.length
-    const draft = computedPRs.filter((p) => p.status === 'DRAFT').length
+    const draft = computedPRs.filter((p) => p.status === 'DRAFT' || p.status === 'Pending').length
     const submitted = computedPRs.filter((p) => p.status === 'SUBMITTED').length
-    const approved = computedPRs.filter((p) => p.status === 'APPROVED').length
+    const approved = computedPRs.filter((p) => p.status === 'Approved').length
     const totalValue = computedPRs.reduce((sum, p) => sum + (p.total || 0), 0)
     return { total: totalCount, draft, submitted, approved, totalValue }
   }, [computedPRs])
 
+  /** ================== HANDLERS ================== */
   const toggleSelect = (id: string) => {
     setSelectedPRs((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }
@@ -214,25 +230,32 @@ export default function PRListPage() {
     setPage(1)
   }
 
+  const handleRowClick = (prId: string) => {
+    router.push(`${BASE_PATH}/${prId}`)
+  }
+
+  /** ================== EXPORT CSV ================== */
   const exportToCSV = () => {
     if (computedPRs.length === 0) return
 
-    const rows = computedPRs.map((pr) => ({
-      PR_Number: pr.pr_code,
-      Project: pr.project_name || pr.project_id,
-      Requested_By: pr.requested_by,
-      Request_Date: pr.request_date,
-      Need_By: pr.needed_date || '-',
-      Total: pr.total,
-      Status: pr.status,
-      Items: pr.items?.length || 0,
-    }))
+    const headers = ['PR Number', 'Project', 'Requested By', 'Request Date', 'Need By', 'Total', 'Status', 'Items']
+    const rows = computedPRs.map((pr) => [
+      pr.pr_code,
+      pr.project_name || pr.project_id,
+      pr.requested_by,
+      pr.request_date,
+      pr.needed_date || '-',
+      pr.total || 0,
+      pr.status,
+      pr.items?.length || 0,
+    ])
 
-    const headers = Object.keys(rows[0]).join(',')
-    const body = rows.map((r) => Object.values(r).join(',')).join('\n')
-    const csv = `${headers}\n${body}`
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(escapeCSV).join(','))
+    ].join('\n')
 
-    const blob = new Blob([csv], { type: 'text/csv' })
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -241,6 +264,7 @@ export default function PRListPage() {
     URL.revokeObjectURL(url)
   }
 
+  /** ================== LOADING STATE ================== */
   if (loading) {
     return (
       <div className="p-8 space-y-6 animate-pulse">
@@ -251,6 +275,7 @@ export default function PRListPage() {
     )
   }
 
+  /** ================== ERROR STATE ================== */
   if (error) {
     return (
       <div className="p-8 text-center space-y-4">
@@ -266,6 +291,7 @@ export default function PRListPage() {
     )
   }
 
+  /** ================== RENDER ================== */
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -330,11 +356,11 @@ export default function PRListPage() {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total PR" value={stats.total} color="blue" icon={FileText} />
         <StatCard
-          label="Draft"
+          label="Draft / Pending"
           value={stats.draft}
           color="gray"
           subtitle={`${((stats.draft / (stats.total || 1)) * 100).toFixed(0)}%`}
@@ -343,7 +369,7 @@ export default function PRListPage() {
         <StatCard label="Approved" value={stats.approved} color="green" subtitle="Siap PO" />
       </div>
 
-      {/* Filters */}
+      {/* Filters Panel */}
       {showFilters && (
         <div className="bg-white border rounded-xl p-4 space-y-4">
           <div className="flex justify-between items-center">
@@ -383,9 +409,11 @@ export default function PRListPage() {
               >
                 <option value="">All</option>
                 <option value="DRAFT">Draft</option>
+                <option value="Pending">Pending</option>
                 <option value="SUBMITTED">Submitted</option>
-                <option value="APPROVED">Approved</option>
-                <option value="REJECTED">Rejected</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Delivered">Delivered</option>
                 <option value="ORDERED">Ordered</option>
               </select>
             </div>
@@ -439,7 +467,7 @@ export default function PRListPage() {
         </div>
       )}
 
-      {/* Bulk action */}
+      {/* Bulk Action Bar */}
       {selectedPRs.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
@@ -530,7 +558,7 @@ export default function PRListPage() {
                   <tr
                     key={pr.pr_id}
                     className="border-b hover:bg-gray-50 cursor-pointer"
-                    onClick={() => router.push(`${BASE_PATH}/${pr.pr_id}`)}
+                    onClick={() => handleRowClick(pr.pr_id)}
                   >
                     <td className="p-4" onClick={(e) => e.stopPropagation()}>
                       <input
@@ -626,7 +654,7 @@ export default function PRListPage() {
   )
 }
 
-/** ================== UI SMALL PARTS ================== */
+/** ================== UI COMPONENTS ================== */
 function SortableTH({
   label,
   active,

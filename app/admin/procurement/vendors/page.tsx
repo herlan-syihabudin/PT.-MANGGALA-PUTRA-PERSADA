@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { 
@@ -15,10 +15,15 @@ import {
   Mail,
   MapPin,
   Filter,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react'
 
 import StatusBadge from '@/components/dashboard/procurement/StatusBadge'
+import { toast } from 'sonner'
 
 interface Vendor {
   vendor_id: string
@@ -29,6 +34,15 @@ interface Vendor {
   city?: string
   status: 'ACTIVE' | 'INACTIVE'
   created_at: string
+}
+
+interface PaginationMeta {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+  hasNext: boolean
+  hasPrev: boolean
 }
 
 type SortKey = 'vendor_code' | 'vendor_name' | 'city' | 'status' | 'created_at'
@@ -47,18 +61,6 @@ function useDebouncedValue<T>(value: T, delay = 300) {
   return debounced
 }
 
-function normalizeStr(v: any) {
-  return String(v || '').trim().toLowerCase()
-}
-
-function compare(a: any, b: any) {
-  const A = normalizeStr(a)
-  const B = normalizeStr(b)
-  if (A < B) return -1
-  if (A > B) return 1
-  return 0
-}
-
 export default function VendorsPage() {
   const router = useRouter()
 
@@ -66,23 +68,27 @@ export default function VendorsPage() {
   const [loading, setLoading] = useState(true)
   const [fetching, setFetching] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pagination, setPagination] = useState<PaginationMeta>({
+    page: 1,
+    limit: 15,
+    total: 0,
+    totalPages: 1,
+    hasNext: false,
+    hasPrev: false
+  })
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
-
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
-
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(15)
 
   const debouncedSearch = useDebouncedValue(search, 350)
   const abortRef = useRef<AbortController | null>(null)
 
-  async function fetchVendors(opts?: { silent?: boolean }) {
+  // 🔥 FETCH dengan pagination dari backend
+  const fetchVendors = useCallback(async (opts?: { silent?: boolean }) => {
     const silent = opts?.silent ?? false
 
-    // cancel previous
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
@@ -95,6 +101,10 @@ export default function VendorsPage() {
       const qs = new URLSearchParams()
       if (statusFilter) qs.set('status', statusFilter)
       if (debouncedSearch.trim()) qs.set('search', debouncedSearch.trim())
+      qs.set('page', String(pagination.page))
+      qs.set('limit', String(pagination.limit))
+      qs.set('sort_by', sortKey)
+      qs.set('sort_dir', sortDir)
 
       const res = await fetch(`/api/procurement/vendors?${qs.toString()}`, {
         signal: controller.signal,
@@ -107,63 +117,60 @@ export default function VendorsPage() {
         throw new Error(data?.error || 'Failed to load vendors')
       }
 
-      setVendors(Array.isArray(data.data) ? data.data : [])
+      setVendors(data.data || [])
+      setPagination(data.pagination || {
+        page: 1,
+        limit: pagination.limit,
+        total: 0,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false
+      })
     } catch (err: any) {
       if (err?.name === 'AbortError') return
       console.error('Fetch error:', err)
-      setError(err?.message || 'Failed to load vendors')
+      
+      // 🔥 Better error messages
+      if (err?.message?.includes('rate limit')) {
+        setError('Too many requests. Please wait a moment.')
+        toast.error('Rate limit exceeded')
+      } else {
+        setError(err?.message || 'Failed to load vendors')
+      }
+      
       setVendors([])
     } finally {
       setFetching(false)
       setLoading(false)
     }
-  }
+  }, [statusFilter, debouncedSearch, pagination.page, pagination.limit, sortKey, sortDir])
 
-  // initial + refetch on filter/search
+  // 🔥 Keyboard shortcuts
   useEffect(() => {
-    setPage(1) // reset pagination on new query
-    fetchVendors()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, debouncedSearch])
-
-  const sortedVendors = useMemo(() => {
-    const arr = [...vendors]
-    arr.sort((x, y) => {
-      let c = 0
-      switch (sortKey) {
-        case 'vendor_code':
-          c = compare(x.vendor_code, y.vendor_code)
-          break
-        case 'vendor_name':
-          c = compare(x.vendor_name, y.vendor_name)
-          break
-        case 'city':
-          c = compare(x.city, y.city)
-          break
-        case 'status':
-          c = compare(x.status, y.status)
-          break
-        case 'created_at':
-        default:
-          c = compare(x.created_at, y.created_at)
-          break
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + K untuk focus search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        document.querySelector<HTMLInputElement>('input[placeholder*="Search"]')?.focus()
       }
-      return sortDir === 'asc' ? c : -c
-    })
-    return arr
-  }, [vendors, sortKey, sortDir])
+      // Ctrl/Cmd + N untuk new vendor
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault()
+        router.push('/admin/procurement/vendors/create')
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [router])
 
-  const totalRows = sortedVendors.length
-  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize))
-
-  const pagedVendors = useMemo(() => {
-    const safePage = Math.min(page, totalPages)
-    const start = (safePage - 1) * pageSize
-    return sortedVendors.slice(start, start + pageSize)
-  }, [sortedVendors, page, pageSize, totalPages])
+  // initial + refetch on filter/search/sort
+  useEffect(() => {
+    fetchVendors()
+  }, [statusFilter, debouncedSearch, sortKey, sortDir, pagination.page, pagination.limit])
 
   function toggleSort(key: SortKey) {
-    setPage(1)
+    setPagination(prev => ({ ...prev, page: 1 }))
     if (sortKey === key) {
       setSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'))
     } else {
@@ -175,12 +182,17 @@ export default function VendorsPage() {
   function clearFilters() {
     setSearch('')
     setStatusFilter('')
-    setPage(1)
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }
+
+  function goToPage(newPage: number) {
+    setPagination(prev => ({ ...prev, page: Math.max(1, Math.min(newPage, prev.totalPages)) }))
   }
 
   const hasActiveFilters = search || statusFilter
-  const isEmpty = !loading && !error && totalRows === 0
+  const isEmpty = !loading && !error && vendors.length === 0
 
+  // 🔥 Loading skeleton
   if (loading) {
     return (
       <div className="p-6">
@@ -206,21 +218,28 @@ export default function VendorsPage() {
     )
   }
 
+  // 🔥 Error state dengan detail
   if (error) {
     return (
       <div className="p-6">
         <div className="bg-white border rounded-xl p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-lg font-semibold text-red-600">Gagal memuat Vendors</h1>
+              <h1 className="text-lg font-semibold text-red-600">
+                {error.includes('rate limit') ? 'Too Many Requests' : 'Failed to Load Vendors'}
+              </h1>
               <p className="text-sm text-gray-600 mt-1">{error}</p>
+              {error.includes('rate limit') && (
+                <p className="text-xs text-gray-500 mt-2">Please wait a moment before retrying</p>
+              )}
             </div>
             <button
               type="button"
               onClick={() => fetchVendors()}
-              className="inline-flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50"
+              disabled={fetching}
+              className="inline-flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50"
             >
-              <RefreshCcw size={16} />
+              <RefreshCcw size={16} className={cn(fetching && 'animate-spin')} />
               Retry
             </button>
           </div>
@@ -235,7 +254,9 @@ export default function VendorsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Vendors</h1>
-          <p className="text-sm text-gray-500">Manage supplier/vendor master data</p>
+          <p className="text-sm text-gray-500">
+            Manage supplier/vendor master data • <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">⌘K</kbd> search
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -247,7 +268,7 @@ export default function VendorsPage() {
               fetching && 'opacity-70'
             )}
             disabled={fetching}
-            title="Refresh"
+            title="Refresh (Ctrl+R)"
           >
             <RefreshCcw size={16} className={cn(fetching && 'animate-spin')} />
             <span className="hidden sm:inline">Refresh</span>
@@ -256,6 +277,7 @@ export default function VendorsPage() {
           <Link
             href="/admin/procurement/vendors/create"
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            title="Create new vendor (Ctrl+N)"
           >
             <Plus size={18} />
             <span className="hidden sm:inline">New Vendor</span>
@@ -271,9 +293,12 @@ export default function VendorsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
-              placeholder="Search by name / code / email..."
+              placeholder="Search by name / code / email... (⌘K)"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPagination(prev => ({ ...prev, page: 1 }))
+              }}
               className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -281,7 +306,10 @@ export default function VendorsPage() {
           <div className="flex items-center gap-3">
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => {
+                setStatusFilter(e.target.value)
+                setPagination(prev => ({ ...prev, page: 1 }))
+              }}
               className="px-4 py-2 border rounded-lg bg-white"
             >
               <option value="">All Status</option>
@@ -290,10 +318,9 @@ export default function VendorsPage() {
             </select>
 
             <select
-              value={pageSize}
+              value={pagination.limit}
               onChange={(e) => {
-                setPage(1)
-                setPageSize(Number(e.target.value))
+                setPagination({ page: 1, limit: Number(e.target.value), total: 0, totalPages: 1, hasNext: false, hasPrev: false })
               }}
               className="px-3 py-2 border rounded-lg bg-white"
               title="Rows per page"
@@ -318,7 +345,10 @@ export default function VendorsPage() {
         </div>
 
         <div className="mt-3 text-xs text-gray-500 flex items-center gap-2">
-          <span>Showing <span className="font-medium text-gray-700">{totalRows}</span> vendor(s)</span>
+          <span>
+            Showing <span className="font-medium text-gray-700">{vendors.length}</span> of{' '}
+            <span className="font-medium text-gray-700">{pagination.total}</span> vendor(s)
+          </span>
           {fetching && (
             <span className="inline-flex items-center gap-1">
               <RefreshCcw size={12} className="animate-spin" />
@@ -337,7 +367,7 @@ export default function VendorsPage() {
             <div className="text-sm text-gray-500 mt-2">
               {hasActiveFilters 
                 ? 'No vendors match your filters. Try different keywords or clear filters.'
-                : 'Coba ubah filter/search, atau buat vendor baru untuk mulai transaksi procurement.'}
+                : 'Start by creating your first vendor to begin procurement transactions.'}
             </div>
             <div className="mt-6 flex items-center justify-center gap-3">
               <Link
@@ -409,7 +439,7 @@ export default function VendorsPage() {
                 </thead>
 
                 <tbody>
-                  {pagedVendors.map((vendor) => (
+                  {vendors.map((vendor) => (
                     <tr
                       key={vendor.vendor_id}
                       className="border-b hover:bg-gray-50 cursor-pointer transition-colors"
@@ -418,12 +448,12 @@ export default function VendorsPage() {
                       <td className="p-4 font-mono text-sm whitespace-nowrap">{vendor.vendor_code}</td>
                       <td className="p-4 font-medium">{vendor.vendor_name}</td>
                       <td className="p-4">
-                        <div className="flex items-center gap-1 text-sm">
+                        <div className="flex items-center gap-1 text-sm" title="Phone">
                           <Phone size={12} className="text-gray-400" />
                           {vendor.phone || '-'}
                         </div>
                         {vendor.email && (
-                          <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                          <div className="flex items-center gap-1 text-xs text-gray-500 mt-1" title="Email">
                             <Mail size={10} className="text-gray-400" />
                             {vendor.email}
                           </div>
@@ -431,7 +461,7 @@ export default function VendorsPage() {
                       </td>
                       <td className="p-4">
                         {vendor.city ? (
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1" title="City">
                             <MapPin size={12} className="text-gray-400" />
                             {vendor.city}
                           </div>
@@ -469,46 +499,51 @@ export default function VendorsPage() {
             {/* Pagination Footer */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-t bg-white">
               <div className="text-sm text-gray-600">
-                Page <span className="font-medium text-gray-900">{page}</span> of{' '}
-                <span className="font-medium text-gray-900">{totalPages}</span>
-                {' '}· Showing <span className="font-medium">{pagedVendors.length}</span> vendors
+                Page <span className="font-medium text-gray-900">{pagination.page}</span> of{' '}
+                <span className="font-medium text-gray-900">{pagination.totalPages}</span>
+                {' '}· Showing <span className="font-medium">{vendors.length}</span> of{' '}
+                <span className="font-medium">{pagination.total}</span> vendors
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setPage(1)}
+                  onClick={() => goToPage(1)}
                   className="px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm"
-                  disabled={page <= 1}
+                  disabled={!pagination.hasPrev}
+                  title="First page"
                 >
-                  First
+                  <ChevronsLeft size={16} />
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  onClick={() => goToPage(pagination.page - 1)}
                   className="px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm"
-                  disabled={page <= 1}
+                  disabled={!pagination.hasPrev}
+                  title="Previous page"
                 >
-                  Prev
+                  <ChevronLeft size={16} />
                 </button>
                 <span className="px-3 py-2 text-sm">
-                  {page} / {totalPages}
+                  {pagination.page} / {pagination.totalPages}
                 </span>
                 <button
                   type="button"
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  onClick={() => goToPage(pagination.page + 1)}
                   className="px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm"
-                  disabled={page >= totalPages}
+                  disabled={!pagination.hasNext}
+                  title="Next page"
                 >
-                  Next
+                  <ChevronRight size={16} />
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPage(totalPages)}
+                  onClick={() => goToPage(pagination.totalPages)}
                   className="px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm"
-                  disabled={page >= totalPages}
+                  disabled={!pagination.hasNext}
+                  title="Last page"
                 >
-                  Last
+                  <ChevronsRight size={16} />
                 </button>
               </div>
             </div>

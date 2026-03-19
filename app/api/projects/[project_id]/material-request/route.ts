@@ -6,7 +6,7 @@ import { nanoid } from "nanoid"
 // ========== CONSTANTS ==========
 const SHEET_ID = process.env.GSHEET_PROJECT_ID
 const PROCUREMENT_SHEET_ID = process.env.GSHEET_PROCUREMENT_ID
-const MR_SHEET = "MATERIAL_REQUESTS"      // A:N (14 columns)
+const MR_SHEET = "MATRIAL_REQUESTS"      // A:N (14 columns)
 const PR_SHEET = "PURCHASE_REQUEST"       // A:O
 const PR_ITEM_SHEET = "PR_ITEMS"          // A:I
 const PROJECT_SHEET = "PROJECTS"          // minimal kolom A = project_id

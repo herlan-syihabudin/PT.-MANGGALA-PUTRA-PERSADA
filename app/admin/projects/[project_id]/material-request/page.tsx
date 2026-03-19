@@ -12,7 +12,9 @@ import {
   ChevronUp,
   CheckSquare,
   Square,
-  AlertCircle
+  AlertCircle,
+  Loader2,
+  History
 } from "lucide-react"
 
 // ========== TYPES ==========
@@ -42,6 +44,14 @@ type RequestGroup = {
   selected?: boolean
 }
 
+type AuditLog = {
+  id: string
+  request_no: string
+  action: "Approved" | "Rejected"
+  performed_by: string
+  performed_at: string
+}
+
 // ========== CONSTANTS ==========
 const STATUS_COLORS = {
   Pending: { bg: "bg-yellow-100", text: "text-yellow-800", label: "Pending" },
@@ -59,10 +69,14 @@ export default function MaterialRequestListPage() {
   const [requests, setRequests] = useState<MaterialRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
+  const [progress, setProgress] = useState(0)
   const [userName, setUserName] = useState("")
   const [selectedRequests, setSelectedRequests] = useState<string[]>([])
   const [selectAll, setSelectAll] = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const [showAuditModal, setShowAuditModal] = useState(false)
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
+  const [loadingAudit, setLoadingAudit] = useState(false)
 
   // Load user name from localStorage on mount
   useEffect(() => {
@@ -87,6 +101,21 @@ export default function MaterialRequestListPage() {
       toast.error("Gagal memuat data")
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Fetch audit logs
+  const fetchAuditLogs = async () => {
+    try {
+      setLoadingAudit(true)
+      // 🔥 Panggil endpoint audit trail
+      const res = await fetch(`/api/projects/${project_id}/material-request/audit`)
+      const data = await res.json()
+      setAuditLogs(data.data || [])
+    } catch (error) {
+      toast.error("Gagal memuat audit trail")
+    } finally {
+      setLoadingAudit(false)
     }
   }
 
@@ -154,7 +183,7 @@ export default function MaterialRequestListPage() {
     })
   }
 
-  // Bulk action handler
+  // 🔥 BULK ACTION dengan PROGRESS BAR
   const handleBulkAction = async (newStatus: "Approved" | "Rejected") => {
     if (selectedRequests.length === 0) {
       toast.error("Pilih minimal 1 request")
@@ -184,12 +213,88 @@ export default function MaterialRequestListPage() {
     }
 
     setProcessing(true)
+    setProgress(0)
+
+    try {
+      // 🔥 PAKAI BULK ENDPOINT (1 request aja)
+      const response = await fetch(`/api/projects/${project_id}/material-request/bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          request_nos: selectedRequests,
+          status: newStatus,
+          approved_by: userName || localStorage.getItem("mr_user_name"),
+          approved_at: new Date().toISOString()
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || "Gagal memproses bulk action")
+      }
+
+      // Simulasi progress (kalau backend ga kasih progress)
+      for (let i = 0; i <= 100; i += 10) {
+        setProgress(i)
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
+
+      toast.success(
+        <div>
+          <p className="font-medium">
+            {selectedRequests.length} Request {newStatus === "Approved" ? "Disetujui" : "Ditolak"}!
+          </p>
+          <p className="text-xs opacity-90">Oleh: {userName}</p>
+          {result.processed && (
+            <p className="text-xs opacity-90">Diproses: {result.processed} items</p>
+          )}
+        </div>
+      )
+
+      // Refresh data
+      await fetchRequests()
+
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : `Gagal ${action} request`)
+    } finally {
+      setProcessing(false)
+      setProgress(0)
+    }
+  }
+
+  // 🔥 INDIVIDUAL ACTION (fallback kalau bulk endpoint belum ada)
+  const handleIndividualAction = async (
+    requestNo: string,
+    newStatus: "Approved" | "Rejected"
+  ) => {
+    // Cek apakah user sudah set nama
+    if (!userName.trim()) {
+      const name = prompt(
+        "Masukkan nama Anda untuk konfirmasi tindakan ini:",
+        localStorage.getItem("mr_user_name") || ""
+      )
+      
+      if (!name || !name.trim()) {
+        toast.error("Nama harus diisi")
+        return
+      }
+      
+      localStorage.setItem("mr_user_name", name)
+      setUserName(name)
+    }
+
+    // Konfirmasi tindakan
+    const action = newStatus === "Approved" ? "menyetujui" : "menolak"
+    if (!confirm(`Yakin akan ${action} request ${requestNo}?`)) {
+      return
+    }
+
+    setProcessing(true)
 
     try {
       // Cari semua items dari request yang dipilih
-      const itemsToUpdate = requests.filter(r => 
-        selectedRequests.includes(r.request_no)
-      )
+      const itemsToUpdate = requests.filter(r => r.request_no === requestNo)
       
       // Update status untuk setiap item
       const updatePromises = itemsToUpdate.map(item => 
@@ -208,9 +313,7 @@ export default function MaterialRequestListPage() {
       
       toast.success(
         <div>
-          <p className="font-medium">
-            {selectedRequests.length} Request {newStatus === "Approved" ? "Disetujui" : "Ditolak"}!
-          </p>
+          <p className="font-medium">Request {newStatus === "Approved" ? "Disetujui" : "Ditolak"}!</p>
           <p className="text-xs opacity-90">Oleh: {userName}</p>
         </div>
       )
@@ -260,6 +363,58 @@ export default function MaterialRequestListPage() {
         }}
       />
 
+      {/* 🔥 AUDIT MODAL */}
+      {showAuditModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="font-semibold flex items-center gap-2">
+                <History size={18} />
+                Audit Trail
+              </h3>
+              <button
+                onClick={() => setShowAuditModal(false)}
+                className="p-1 hover:bg-gray-100 rounded"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="p-4 flex-1 overflow-auto">
+              {loadingAudit ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 size={24} className="animate-spin text-blue-600" />
+                </div>
+              ) : auditLogs.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">Belum ada aktivitas</p>
+              ) : (
+                <div className="space-y-3">
+                  {auditLogs.map((log) => (
+                    <div key={log.id} className="border rounded-lg p-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="font-medium">{log.request_no}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${
+                          log.action === "Approved" 
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}>
+                          {log.action === "Approved" ? "Disetujui" : "Ditolak"}
+                        </span>
+                      </div>
+                      <div className="mt-2 text-xs text-gray-500">
+                        <span>Oleh: {log.performed_by}</span>
+                        <span className="mx-2">•</span>
+                        <span>{new Date(log.performed_at).toLocaleString('id-ID')}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-6 p-4 md:p-6">
 
         {/* Header */}
@@ -277,6 +432,17 @@ export default function MaterialRequestListPage() {
           </div>
 
           <div className="flex gap-2">
+            <button
+              onClick={() => {
+                fetchAuditLogs()
+                setShowAuditModal(true)
+              }}
+              className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm hover:bg-gray-50"
+            >
+              <History size={16} />
+              Audit Trail
+            </button>
+
             <Link
               href={`/admin/projects/${project_id}`}
               className="text-xs text-gray-600 hover:text-gray-900 flex items-center gap-1 px-3 py-2 border rounded-lg"
@@ -323,8 +489,24 @@ export default function MaterialRequestListPage() {
           </div>
         </div>
 
+        {/* 🔥 PROGRESS BAR */}
+        {processing && (
+          <div className="bg-white border rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Memproses {selectedRequests.length} request...</span>
+              <span className="text-sm text-gray-600">{progress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div 
+                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Bulk Actions Bar */}
-        {hasPending && (
+        {hasPending && !processing && (
           <div className="bg-white border rounded-lg p-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
               {/* Selection Controls */}
@@ -356,7 +538,7 @@ export default function MaterialRequestListPage() {
                     disabled={processing}
                     className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50"
                   >
-                    <Check size={16} />
+                    {processing ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                     Setujui ({selectedRequests.length})
                   </button>
                   
@@ -365,7 +547,7 @@ export default function MaterialRequestListPage() {
                     disabled={processing}
                     className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 disabled:opacity-50"
                   >
-                    <X size={16} />
+                    {processing ? <Loader2 size={16} className="animate-spin" /> : <X size={16} />}
                     Tolak ({selectedRequests.length})
                   </button>
                 </div>
@@ -413,7 +595,7 @@ export default function MaterialRequestListPage() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-3">
                         {/* Checkbox untuk Pending requests */}
-                        {isPending && (
+                        {isPending && !processing && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
@@ -491,8 +673,8 @@ export default function MaterialRequestListPage() {
                     </div>
                   )}
 
-                  {/* Action Buttons (only for individual) */}
-                  {isPending && !isExpanded && (
+                  {/* Individual Action Buttons (fallback) */}
+                  {isPending && !processing && !selectedRequests.includes(request.request_no) && (
                     <div className="px-4 py-2 bg-gray-50 border-t flex justify-end gap-2">
                       <Link
                         href={`/admin/projects/${project_id}/material-request/${request.request_no}`}
@@ -500,6 +682,18 @@ export default function MaterialRequestListPage() {
                       >
                         Detail
                       </Link>
+                      <button
+                        onClick={() => handleIndividualAction(request.request_no, "Approved")}
+                        className="text-xs text-green-600 hover:text-green-700 px-2 py-1 hover:bg-green-50 rounded"
+                      >
+                        Setujui
+                      </button>
+                      <button
+                        onClick={() => handleIndividualAction(request.request_no, "Rejected")}
+                        className="text-xs text-red-600 hover:text-red-700 px-2 py-1 hover:bg-red-50 rounded"
+                      >
+                        Tolak
+                      </button>
                     </div>
                   )}
                 </div>

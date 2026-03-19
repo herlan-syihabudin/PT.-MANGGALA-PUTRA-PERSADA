@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { 
@@ -14,7 +14,8 @@ import {
   FileText,
   AlertCircle,
   CheckCircle,
-  XCircle
+  XCircle,
+  Info
 } from 'lucide-react'
 
 export default function CreateVendorPage() {
@@ -41,11 +42,39 @@ export default function CreateVendorPage() {
   const [checkingCode, setCheckingCode] = useState(false)
   const [codeExists, setCodeExists] = useState(false)
 
+  // 🔥 Format NPWP
+  const formatNPWP = (value: string) => {
+    const cleaned = value.replace(/\D/g, '')
+    if (cleaned.length <= 2) return cleaned
+    if (cleaned.length <= 5) return `${cleaned.slice(0,2)}.${cleaned.slice(2)}`
+    if (cleaned.length <= 8) return `${cleaned.slice(0,2)}.${cleaned.slice(2,5)}.${cleaned.slice(5)}`
+    if (cleaned.length <= 9) return `${cleaned.slice(0,2)}.${cleaned.slice(2,5)}.${cleaned.slice(5,8)}-${cleaned.slice(8)}`
+    return `${cleaned.slice(0,2)}.${cleaned.slice(2,5)}.${cleaned.slice(5,8)}-${cleaned.slice(8,9)}.${cleaned.slice(9,12)}`
+  }
+
   // Validation functions
   const isValidEmail = (email: string) => {
-    if (!email) return true // optional
+    if (!email) return true
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     return re.test(email)
+  }
+
+  const isValidPhone = (phone: string) => {
+    if (!phone) return true
+    const cleaned = phone.replace(/[-\s]/g, '')
+    const re = /^(\+62|62|0)[0-9]{9,13}$/
+    return re.test(cleaned)
+  }
+
+  const isValidNPWP = (npwp: string) => {
+    if (!npwp) return true
+    const cleaned = npwp.replace(/[.-]/g, '')
+    return /^\d{15}$/.test(cleaned)
+  }
+
+  const isValidBankAccount = (acc: string) => {
+    if (!acc) return true
+    return /^\d+$/.test(acc)
   }
 
   const validateField = (name: string, value: string): string | null => {
@@ -63,7 +92,13 @@ export default function CreateVendorPage() {
         if (value && !isValidEmail(value)) return 'Invalid email format'
         return null
       case 'phone':
-        if (value && !/^[0-9+\-\s]+$/.test(value)) return 'Invalid phone format'
+        if (value && !isValidPhone(value)) return 'Invalid phone format (contoh: 08123456789, +628123456789)'
+        return null
+      case 'npwp':
+        if (value && !isValidNPWP(value)) return 'Invalid NPWP format (harus 15 digit)'
+        return null
+      case 'bank_account':
+        if (value && !isValidBankAccount(value)) return 'Bank account must contain only numbers'
         return null
       default:
         return null
@@ -79,7 +114,8 @@ export default function CreateVendorPage() {
 
     setCheckingCode(true)
     try {
-      const res = await fetch(`/api/procurement/vendors?search=${code}`)
+      // 🔥 include_deleted=false untuk ignore soft deleted
+      const res = await fetch(`/api/procurement/vendors?search=${code}&include_deleted=false`)
       const data = await res.json()
       
       if (data.success) {
@@ -96,16 +132,13 @@ export default function CreateVendorPage() {
   }
 
   // Debounced code check
-  const handleCodeChange = (code: string) => {
-    setForm({ ...form, vendor_code: code })
-    setTouched({ ...touched, vendor_code: true })
-    
+  useEffect(() => {
     const timer = setTimeout(() => {
-      checkVendorCode(code)
+      checkVendorCode(form.vendor_code)
     }, 500)
 
     return () => clearTimeout(timer)
-  }
+  }, [form.vendor_code])
 
   // Form validation
   const errors = {
@@ -113,6 +146,8 @@ export default function CreateVendorPage() {
     vendor_name: validateField('vendor_name', form.vendor_name),
     email: validateField('email', form.email),
     phone: validateField('phone', form.phone),
+    npwp: validateField('npwp', form.npwp),
+    bank_account: validateField('bank_account', form.bank_account),
   }
 
   const hasErrors = Object.values(errors).some(err => err !== null)
@@ -132,6 +167,8 @@ export default function CreateVendorPage() {
         vendor_name: true,
         email: true,
         phone: true,
+        npwp: true,
+        bank_account: true,
       })
       return
     }
@@ -168,6 +205,19 @@ export default function CreateVendorPage() {
 
   const handleBlur = (field: string) => {
     setTouched({ ...touched, [field]: true })
+  }
+
+  // 🔥 Cancel with confirmation
+  const handleCancel = (e: React.MouseEvent) => {
+    e.preventDefault()
+    const hasInput = Object.values(form).some(v => v !== '')
+    if (hasInput) {
+      if (confirm('You have unsaved changes. Leave anyway?')) {
+        router.push('/admin/procurement/vendors')
+      }
+    } else {
+      router.push('/admin/procurement/vendors')
+    }
   }
 
   return (
@@ -217,8 +267,9 @@ export default function CreateVendorPage() {
           
           {/* Required Fields Notice */}
           <div className="p-4 bg-amber-50 border-b border-amber-200">
-            <p className="text-xs text-amber-700">
-              <span className="font-medium">Note:</span> Fields marked with * are required
+            <p className="text-xs text-amber-700 flex items-center gap-1">
+              <Info size={14} />
+              <span>Fields marked with * are required</span>
             </p>
           </div>
 
@@ -240,7 +291,7 @@ export default function CreateVendorPage() {
                   <input
                     type="text"
                     value={form.vendor_code}
-                    onChange={(e) => handleCodeChange(e.target.value)}
+                    onChange={(e) => setForm({ ...form, vendor_code: e.target.value.toUpperCase() })}
                     onBlur={() => handleBlur('vendor_code')}
                     className={`
                       w-full px-4 py-2 border rounded-lg pr-10
@@ -311,7 +362,7 @@ export default function CreateVendorPage() {
                     focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                     ${touched.phone && errors.phone ? 'border-red-500 bg-red-50' : ''}
                   `}
-                  placeholder="021-555-1234"
+                  placeholder="08123456789"
                   disabled={loading || success}
                 />
                 {touched.phone && errors.phone && (
@@ -411,10 +462,18 @@ export default function CreateVendorPage() {
                   type="text"
                   value={form.bank_account}
                   onChange={(e) => setForm({ ...form, bank_account: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  onBlur={() => handleBlur('bank_account')}
+                  className={`
+                    w-full px-4 py-2 border rounded-lg
+                    focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                    ${touched.bank_account && errors.bank_account ? 'border-red-500 bg-red-50' : ''}
+                  `}
                   placeholder="1234567890"
                   disabled={loading || success}
                 />
+                {touched.bank_account && errors.bank_account && (
+                  <p className="text-xs text-red-600 mt-1">{errors.bank_account}</p>
+                )}
               </div>
 
               {/* NPWP */}
@@ -426,17 +485,29 @@ export default function CreateVendorPage() {
                 <input
                   type="text"
                   value={form.npwp}
-                  onChange={(e) => setForm({ ...form, npwp: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  onChange={(e) => setForm({ ...form, npwp: formatNPWP(e.target.value) })}
+                  onBlur={() => handleBlur('npwp')}
+                  className={`
+                    w-full px-4 py-2 border rounded-lg
+                    focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                    ${touched.npwp && errors.npwp ? 'border-red-500 bg-red-50' : ''}
+                  `}
                   placeholder="01.234.567.8-123.000"
+                  maxLength={20}
                   disabled={loading || success}
                 />
+                {touched.npwp && errors.npwp && (
+                  <p className="text-xs text-red-600 mt-1">{errors.npwp}</p>
+                )}
+                {touched.npwp && !errors.npwp && form.npwp && (
+                  <p className="text-xs text-green-600 mt-1">✓ NPWP format valid</p>
+                )}
               </div>
             </div>
           </div>
 
           {/* Status */}
-          <div className="p-6">
+          <div className="p-6 border-b">
             <h2 className="text-lg font-semibold mb-4">Status</h2>
             
             <div className="flex items-center gap-4">
@@ -470,6 +541,7 @@ export default function CreateVendorPage() {
           <div className="p-6 bg-gray-50 border-t flex items-center justify-end gap-3">
             <Link
               href="/admin/procurement/vendors"
+              onClick={handleCancel}
               className="px-4 py-2 border rounded-lg hover:bg-white transition"
             >
               Cancel
@@ -503,7 +575,9 @@ export default function CreateVendorPage() {
                 {form.vendor_code && codeExists && <li>Vendor code already exists</li>}
                 {!form.vendor_name && <li>Vendor name is required</li>}
                 {form.email && !isValidEmail(form.email) && <li>Invalid email format</li>}
-                {form.phone && !/^[0-9+\-\s]+$/.test(form.phone) && <li>Invalid phone format</li>}
+                {form.phone && !isValidPhone(form.phone) && <li>Invalid phone format (contoh: 08123456789)</li>}
+                {form.npwp && !isValidNPWP(form.npwp) && <li>Invalid NPWP format (harus 15 digit)</li>}
+                {form.bank_account && !isValidBankAccount(form.bank_account) && <li>Bank account must contain only numbers</li>}
               </ul>
             </div>
           )}

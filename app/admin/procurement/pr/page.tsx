@@ -189,7 +189,7 @@ export default function PRListPage() {
     return prs.map((pr) => ({
       ...pr,
       // 🔥 Fallback: hitung dari items, tapi ideally backend sudah kirim total
-      total: pr.total ?? pr.items?.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0) || 0,
+      total: pr.total ?? (pr.items?.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0) || 0),
     }))
   }, [prs])
 

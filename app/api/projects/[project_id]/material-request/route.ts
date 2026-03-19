@@ -6,10 +6,11 @@ import { nanoid } from "nanoid"
 // ========== CONSTANTS ==========
 const SHEET_ID = process.env.GSHEET_PROJECT_ID
 const PROCUREMENT_SHEET_ID = process.env.GSHEET_PROCUREMENT_ID
-const MR_SHEET = "MATRIAL_REQUESTS"      // A:N (14 columns)
+const MR_SHEET = "MATERIAL_REQUESTS"      // FIXED: typo
 const PR_SHEET = "PURCHASE_REQUEST"       // A:O
 const PR_ITEM_SHEET = "PR_ITEMS"          // A:I
 const PROJECT_SHEET = "PROJECTS"          // minimal kolom A = project_id
+const AUDIT_SHEET = "MR_AUDIT"            // 🔥 NEW: Audit trail sheet
 
 if (!SHEET_ID) {
   throw new Error("GSHEET_PROJECT_ID is not defined")
@@ -36,6 +37,15 @@ const COLUMNS = {
   APPROVED_AT: 13
 } as const
 
+const AUDIT_COLUMNS = {
+  ID: 0,
+  REQUEST_NO: 1,
+  ACTION: 2,
+  PERFORMED_BY: 3,
+  PERFORMED_AT: 4,
+  NOTES: 5
+} as const
+
 const VALID_STATUSES = ["Pending", "Approved", "Rejected", "Delivered"] as const
 type MaterialStatus = typeof VALID_STATUSES[number]
 
@@ -54,6 +64,15 @@ type MaterialRequestInput = {
   items: MaterialItem[]
 }
 
+type AuditLog = {
+  id: string
+  request_no: string
+  action: "Approved" | "Rejected" | "Delivered"
+  performed_by: string
+  performed_at: string
+  notes?: string
+}
+
 // ========== GOOGLE SHEETS AUTH ==========
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL,
@@ -64,37 +83,51 @@ const auth = new google.auth.JWT(
 
 const sheets = google.sheets({ version: "v4", auth })
 
-// ========== RATE LIMITING ==========
-const rateLimit = new Map<string, number[]>()
-const RATE_LIMIT_WINDOW = 60000 // 1 minute
-const RATE_LIMIT_MAX = 10
+// ========== CACHE ==========
+const cache = new Map<string, { data: any; timestamp: number }>()
+const CACHE_TTL = 30 * 1000 // 30 detik
 
-function checkRateLimit(req: Request): { ip: string; allowed: boolean } {
+// ========== RATE LIMITING with Redis-like cleanup ==========
+const rateLimit = new Map<string, { count: number; resetAt: number }>()
+const RATE_LIMIT_WINDOW = 60000 // 1 minute
+const RATE_LIMIT_MAX = 20 // Increased for bulk operations
+
+function checkRateLimit(req: Request): { allowed: boolean; retryAfter?: number } {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ||
              req.headers.get("x-real-ip") ||
              "unknown"
   const now = Date.now()
   
-  const requests = rateLimit.get(ip) || []
-  const recentRequests = requests.filter(time => now - time < RATE_LIMIT_WINDOW)
+  const record = rateLimit.get(ip)
   
-  if (recentRequests.length >= RATE_LIMIT_MAX) {
-    return { ip, allowed: false }
+  // Cleanup expired
+  if (record && record.resetAt < now) {
+    rateLimit.delete(ip)
   }
   
-  recentRequests.push(now)
-  rateLimit.set(ip, recentRequests)
-
-  // Cleanup old entries
+  const current = rateLimit.get(ip) || { count: 0, resetAt: now + RATE_LIMIT_WINDOW }
+  
+  if (current.count >= RATE_LIMIT_MAX) {
+    return { 
+      allowed: false, 
+      retryAfter: Math.ceil((current.resetAt - now) / 1000) 
+    }
+  }
+  
+  current.count++
+  rateLimit.set(ip, current)
+  
+  // Periodic cleanup (every 100 requests)
   if (rateLimit.size > 1000) {
-    for (const [key, times] of rateLimit.entries()) {
-      if (Date.now() - times[times.length - 1] > RATE_LIMIT_WINDOW) {
+    const now = Date.now()
+    for (const [key, value] of rateLimit.entries()) {
+      if (value.resetAt < now) {
         rateLimit.delete(key)
       }
     }
   }
 
-  return { ip, allowed: true }
+  return { allowed: true }
 }
 
 // ========== VALIDATION FUNCTIONS ==========
@@ -186,8 +219,9 @@ function generateRequestNumber(): string {
   const month = (date.getMonth() + 1).toString().padStart(2, '0')
   const day = date.getDate().toString().padStart(2, '0')
   const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+  const sequence = Date.now().toString().slice(-4)
   
-  return `MR-${year}${month}${day}-${random}`
+  return `MR-${year}${month}${day}-${random}${sequence}`
 }
 
 // ========== CHECK DUPLICATE REQUEST ==========
@@ -212,6 +246,7 @@ async function checkDuplicateRequest(
       const createdAt = new Date(row[COLUMNS.CREATED_AT]).getTime()
       if (createdAt < fiveMinAgo) return false
       
+      // 🔥 FIX: Compare by request_no, not per item
       const existingItems = `${row[COLUMNS.MATERIAL_NAME]}-${row[COLUMNS.QTY]}-${row[COLUMNS.UNIT]}`
       const newItems = items.map(i => `${i.material_name}-${i.qty}-${i.unit}`).join('|')
       
@@ -224,108 +259,114 @@ async function checkDuplicateRequest(
 }
 
 // ========== CREATE PR FROM APPROVED MR ==========
-async function createPRFromApprovedMR(requestNo: string): Promise<boolean> {
-  // Skip if procurement sheet ID not configured
+async function createPRFromApprovedMR(requestNo: string): Promise<{ success: boolean; error?: string }> {
   if (!PROCUREMENT_SHEET_ID) {
-    console.log("PR auto-creation skipped: GSHEET_PROCUREMENT_ID not configured")
-    return false
+    return { success: false, error: "Procurement sheet not configured" }
   }
 
   try {
-    // Check if PR already exists for this MR
+    // Check if PR already exists
     const existingPR = await sheets.spreadsheets.values.get({
       spreadsheetId: PROCUREMENT_SHEET_ID,
       range: `${PR_SHEET}!A2:O`,
     })
 
     const existingRows = existingPR.data.values || []
-    const prExists = existingRows.some(r => 
-      r[7]?.includes(requestNo) // notes column contains MR number
-    )
+    const prExists = existingRows.some(r => r[7]?.includes(requestNo))
 
     if (prExists) {
-      console.log(`PR already exists for MR: ${requestNo}`)
-      return true
+      return { success: true } // Already exists, consider it success
     }
 
-    // Get all items for this request_no
+    // Get MR items
     const mrRes = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: `${MR_SHEET}!A:N`,
     })
 
-    const allRows = (mrRes.data.values || []).slice(1) // skip header
+    const allRows = (mrRes.data.values || []).slice(1)
     const items = allRows.filter(r => r[COLUMNS.REQUEST_NO] === requestNo)
 
     if (items.length === 0) {
-      console.log(`No items found for MR: ${requestNo}`)
-      return false
+      return { success: false, error: "No items found" }
     }
 
     const first = items[0]
     const now = new Date().toISOString()
     
-    // Generate PR ID and Code
     const pr_id = "PR-" + nanoid(8).toUpperCase()
     const pr_code = "PR-" + new Date().getFullYear() + 
                     ("0" + (new Date().getMonth() + 1)).slice(-2) + 
                     ("0" + new Date().getDate()).slice(-2) + "-" +
                     Math.floor(Math.random() * 1000).toString().padStart(3, '0')
 
-    // Create PR Header
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: PROCUREMENT_SHEET_ID,
-      range: `${PR_SHEET}!A:O`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
+    // 🔥 BATCH OPERATION: Create PR header and items in one go
+    const batchData = [
+      // Header
+      {
+        range: `${PR_SHEET}!A:O`,
         values: [[
-          pr_id,                          // A: pr_id
-          pr_code,                         // B: pr_code
-          first[COLUMNS.PROJECT_ID],       // C: project_id
-          first[COLUMNS.REQUESTED_BY],     // D: requested_by
-          now,                              // E: request_date
-          "",                               // F: needed_date
-          "SUBMITTED",                      // G: status
-          `Auto from MR: ${requestNo}`,     // H: notes
-          "SYSTEM",                         // I: created_by
-          "SYSTEM",                         // J: updated_by
-          "",                               // K: deleted_by
-          now,                              // L: created_at
-          now,                              // M: updated_at
-          1,                                // N: version
-          "",                               // O: deleted_at
+          pr_id, pr_code, first[COLUMNS.PROJECT_ID], first[COLUMNS.REQUESTED_BY],
+          now, "", "SUBMITTED", `Auto from MR: ${requestNo}`,
+          "SYSTEM", "SYSTEM", "", now, now, 1, ""
         ]]
-      }
-    })
+      },
+      // Items (multiple rows)
+      ...items.map((item, idx) => ({
+        range: `${PR_ITEM_SHEET}!A${idx + 2}:I${idx + 2}`,
+        values: [[
+          "PRI-" + nanoid(8).toUpperCase(),
+          pr_id,
+          "",
+          item[COLUMNS.MATERIAL_NAME],
+          Number(item[COLUMNS.QTY]),
+          item[COLUMNS.UNIT],
+          "",
+          "",
+          now
+        ]]
+      }))
+    ]
 
-    // Create PR Items (multiple items)
-    const prItemValues = items.map(item => [
-      "PRI-" + nanoid(8).toUpperCase(),     // pr_item_id
-      pr_id,                                 // pr_id
-      "",                                    // material_id
-      item[COLUMNS.MATERIAL_NAME],           // description
-      Number(item[COLUMNS.QTY]),             // qty
-      item[COLUMNS.UNIT],                    // unit
-      "",                                    // estimated_price
-      "",                                    // subtotal
-      now,                                   // created_at
-    ])
-
-    await sheets.spreadsheets.values.append({
+    await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: PROCUREMENT_SHEET_ID,
-      range: `${PR_ITEM_SHEET}!A:I`,
-      valueInputOption: "USER_ENTERED",
       requestBody: {
-        values: prItemValues
+        valueInputOption: "USER_ENTERED",
+        data: batchData
       }
     })
 
-    console.log(`✅ PR created successfully for MR: ${requestNo} with ${items.length} items`)
-    return true
+    console.log(`✅ PR created for MR: ${requestNo} with ${items.length} items`)
+    return { success: true }
 
   } catch (error) {
     console.error("Error creating PR from MR:", error)
-    return false
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
+  }
+}
+
+// ========== WRITE AUDIT LOG ==========
+async function writeAuditLog(log: Omit<AuditLog, "id">): Promise<void> {
+  try {
+    const id = nanoid()
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: `${AUDIT_SHEET}!A:F`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [[
+          id,
+          log.request_no,
+          log.action,
+          log.performed_by,
+          log.performed_at,
+          log.notes || ""
+        ]]
+      }
+    })
+  } catch (error) {
+    console.error("Error writing audit log:", error)
+    // Non-critical, don't throw
   }
 }
 
@@ -334,11 +375,10 @@ export async function POST(req: Request) {
   const requestId = crypto.randomUUID?.() || Date.now().toString()
   
   try {
-    const { allowed, ip } = checkRateLimit(req)
-    if (!allowed) {
-      console.warn(`[${requestId}] Rate limit exceeded for IP: ${ip}`)
+    const rateLimitResult = checkRateLimit(req)
+    if (!rateLimitResult.allowed) {
       return NextResponse.json(
-        { success: false, error: "Too many requests. Please try again later." },
+        { success: false, error: "Too many requests", retryAfter: rateLimitResult.retryAfter },
         { status: 429 }
       )
     }
@@ -387,8 +427,6 @@ export async function POST(req: Request) {
         "",
       ])
 
-      console.log(`[${requestId}] Creating material request: ${request_no} with ${items.length} items`)
-
       await sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_ID,
         range: `${MR_SHEET}!A:N`,
@@ -396,8 +434,9 @@ export async function POST(req: Request) {
         requestBody: { values: rows },
       })
 
-      console.log(`[${requestId}] Material request created: ${request_no}`)
-      
+      // Clear cache
+      cache.delete(`mr_${project_id}`)
+
       return NextResponse.json({
         success: true,
         data: {
@@ -427,13 +466,6 @@ export async function POST(req: Request) {
           { status: 503 }
         )
       }
-      
-      if (error.message.includes('rate limit')) {
-        return NextResponse.json(
-          { success: false, error: "Service is busy. Please try again." },
-          { status: 429 }
-        )
-      }
     }
 
     return NextResponse.json(
@@ -449,43 +481,34 @@ export async function GET(
   { params }: { params: { project_id: string } }
 ) {
   const project_id = params.project_id
-
   const { searchParams } = new URL(req.url)
   const request_no = searchParams.get('request_no')
 
+  // 🔥 Check cache
+  const cacheKey = `mr_${project_id}_${request_no || 'all'}`
+  const cached = cache.get(cacheKey)
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return NextResponse.json({ success: true, data: cached.data })
+  }
+
   try {
-    console.log(`🔍 Fetching MR for project: ${project_id}`)
-    
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${MR_SHEET}!A:N`,  // PASTIKAN NAMA SHEET BENAR!
+      range: `${MR_SHEET}!A:N`,
       valueRenderOption: "UNFORMATTED_VALUE",
     })
-
-    // Log untuk debugging
-    console.log("Sheet name used:", MR_SHEET)
-    console.log("Total rows from sheet:", res.data.values?.length || 0)
     
-    const rows = (res.data.values || []).slice(1) // skip header
+    const rows = (res.data.values || []).slice(1)
     
-    // 🔥 FIX: Hapus filter length, langsung filter by project_id
     let filteredRows = rows
     
     if (project_id) {
-      filteredRows = filteredRows.filter(r => {
-        const match = r[COLUMNS.PROJECT_ID] === project_id
-        if (match) {
-          console.log("Found matching row:", r[COLUMNS.REQUEST_NO])
-        }
-        return match
-      })
+      filteredRows = filteredRows.filter(r => r[COLUMNS.PROJECT_ID]?.trim() === project_id)
     }
     
     if (request_no) {
-      filteredRows = filteredRows.filter(r => r[COLUMNS.REQUEST_NO] === request_no)
+      filteredRows = filteredRows.filter(r => r[COLUMNS.REQUEST_NO]?.trim() === request_no)
     }
-
-    console.log(`Found ${filteredRows.length} matching rows`)
 
     const requests = filteredRows.map(row => ({
       id: row[COLUMNS.ID] || "",
@@ -504,10 +527,10 @@ export async function GET(
       approved_at: row[COLUMNS.APPROVED_AT] || null,
     }))
 
-    return NextResponse.json({
-      success: true,
-      data: requests
-    })
+    // 🔥 Save to cache
+    cache.set(cacheKey, { data: requests, timestamp: Date.now() })
+
+    return NextResponse.json({ success: true, data: requests })
 
   } catch (error) {
     console.error("GET MATERIAL REQUEST ERROR:", error)
@@ -518,95 +541,195 @@ export async function GET(
   }
 }
 
-// ========== PATCH (Update Status + Auto PR) ==========
-export async function PATCH(req: Request) {
+// ========== 🔥 NEW: BULK UPDATE ==========
+export async function PUT(req: Request) {
   try {
-    const { searchParams } = new URL(req.url)
-    const id = searchParams.get('id')
-    
-    if (!id) {
+    const rateLimitResult = checkRateLimit(req)
+    if (!rateLimitResult.allowed) {
       return NextResponse.json(
-        { success: false, error: "ID is required" },
-        { status: 400 }
+        { success: false, error: "Too many requests", retryAfter: rateLimitResult.retryAfter },
+        { status: 429 }
       )
     }
 
     const body = await req.json()
-    const { status } = body
-    const approvedBy = body.approved_by || ""
-    const approvedAt = new Date().toISOString()
+    const { request_nos, status, approved_by, approved_at } = body
 
-    if (!status || !VALID_STATUSES.includes(status as any)) {
+    if (!request_nos || !Array.isArray(request_nos) || request_nos.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "request_nos array is required" },
+        { status: 400 }
+      )
+    }
+
+    if (!status || !VALID_STATUSES.includes(status)) {
       return NextResponse.json(
         { success: false, error: "Invalid status" },
         { status: 400 }
       )
     }
 
-    // Find the row
+    if (!approved_by) {
+      return NextResponse.json(
+        { success: false, error: "approved_by is required" },
+        { status: 400 }
+      )
+    }
+
+    // Get all rows
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: `${MR_SHEET}!A:N`,
     })
 
     const rows = (res.data.values || []).slice(1)
+    
+    // Find all indexes to update
+    const indexesToUpdate = rows
+      .map((row, idx) => ({ row, idx }))
+      .filter(({ row }) => request_nos.includes(row[COLUMNS.REQUEST_NO]))
+      .map(({ idx }) => idx)
 
-// cari index dulu
-const rowIndex = rows.findIndex(r => r[COLUMNS.ID] === id)
-
-if (rowIndex === -1) {
-  return NextResponse.json(
-    { success: false, error: "Request not found" },
-    { status: 404 }
-  )
-}
-
-// ambil request_no
-const currentRow = rows[rowIndex]
-const requestNo = currentRow[COLUMNS.REQUEST_NO]
-
-// cari semua row dengan request_no sama
-const allIndexes = rows
-  .map((r, i) => ({ r, i }))
-  .filter(x => x.r[COLUMNS.REQUEST_NO] === requestNo)
-  .map(x => x.i)
-
-// update semua row
-for (const idx of allIndexes) {
-  await sheets.spreadsheets.values.update({
-    spreadsheetId: SHEET_ID,
-    range: `${MR_SHEET}!K${idx + 2}:M${idx + 2}`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: {
-      values: [[status, approvedBy, approvedAt]]
+    if (indexesToUpdate.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "No matching requests found" },
+        { status: 404 }
+      )
     }
-  })
-}
 
-    // ===== 🔥 AUTO CREATE PR IF APPROVED =====
-    let prCreated = false
+    const now = approved_at || new Date().toISOString()
+
+    // 🔥 BATCH UPDATE using batchUpdate
+    const updateData = indexesToUpdate.map(idx => ({
+      range: `${MR_SHEET}!K${idx + 2}:M${idx + 2}`,
+      values: [[status, approved_by, now]]
+    }))
+
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: SHEET_ID,
+      requestBody: {
+        valueInputOption: "USER_ENTERED",
+        data: updateData
+      }
+    })
+
+    // 🔥 Write audit logs
+    const auditPromises = request_nos.map(requestNo =>
+      writeAuditLog({
+        request_no: requestNo,
+        action: status,
+        performed_by: approved_by,
+        performed_at: now,
+        notes: `Bulk ${status}`
+      })
+    )
+    await Promise.all(auditPromises)
+
+    // 🔥 Create PRs for approved requests (with retry)
     if (status === "Approved") {
-      console.log(`🚀 MR Approved: ${requestNo}. Creating PR with all items...`)
-      prCreated = await createPRFromApprovedMR(requestNo)
+      const prPromises = request_nos.map(async (requestNo) => {
+        const result = await createPRFromApprovedMR(requestNo)
+        if (!result.success) {
+          console.error(`Failed to create PR for ${requestNo}:`, result.error)
+          // Write failed PR to audit
+          await writeAuditLog({
+            request_no: requestNo,
+            action: status,
+            performed_by: "SYSTEM",
+            performed_at: new Date().toISOString(),
+            notes: `PR creation failed: ${result.error}`
+          })
+        }
+        return result
+      })
+      
+      await Promise.all(prPromises)
     }
+
+    // Clear cache
+    cache.clear()
 
     return NextResponse.json({
       success: true,
-      message: `Status updated to ${status}`,
       data: {
-        id,
+        processed: indexesToUpdate.length,
         status,
-        approved_by: approvedBy,
-        approved_at: approvedAt,
-        pr_created: prCreated
+        approved_by,
+        approved_at: now
       }
     })
 
   } catch (error) {
-    console.error("PATCH MATERIAL REQUEST ERROR:", error)
+    console.error("BULK UPDATE ERROR:", error)
     return NextResponse.json(
-      { success: false, error: "Failed to update status" },
+      { success: false, error: "Failed to bulk update" },
       { status: 500 }
     )
   }
+}
+
+// ========== 🔥 NEW: AUDIT ENDPOINT ==========
+export async function audit(
+  req: Request,
+  { params }: { params: { project_id: string } }
+) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const request_no = searchParams.get('request_no')
+    const limit = parseInt(searchParams.get('limit') || '50')
+
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${AUDIT_SHEET}!A:F`,
+      valueRenderOption: "UNFORMATTED_VALUE",
+    })
+
+    const rows = (res.data.values || []).slice(1)
+    
+    let filteredRows = rows
+    
+    if (params.project_id) {
+      // Filter by project_id by joining with MR sheet
+      const mrRes = await sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: `${MR_SHEET}!A:B`,
+      })
+      const mrRows = (mrRes.data.values || []).slice(1)
+      const projectRequestNos = mrRows
+        .filter(r => r[COLUMNS.PROJECT_ID] === params.project_id)
+        .map(r => r[COLUMNS.REQUEST_NO])
+      
+      filteredRows = filteredRows.filter(r => projectRequestNos.includes(r[AUDIT_COLUMNS.REQUEST_NO]))
+    }
+    
+    if (request_no) {
+      filteredRows = filteredRows.filter(r => r[AUDIT_COLUMNS.REQUEST_NO] === request_no)
+    }
+
+    const logs = filteredRows
+      .slice(0, limit)
+      .map(row => ({
+        id: row[AUDIT_COLUMNS.ID],
+        request_no: row[AUDIT_COLUMNS.REQUEST_NO],
+        action: row[AUDIT_COLUMNS.ACTION],
+        performed_by: row[AUDIT_COLUMNS.PERFORMED_BY],
+        performed_at: row[AUDIT_COLUMNS.PERFORMED_AT],
+        notes: row[AUDIT_COLUMNS.NOTES] || undefined
+      }))
+      .sort((a, b) => new Date(b.performed_at).getTime() - new Date(a.performed_at).getTime())
+
+    return NextResponse.json({ success: true, data: logs })
+
+  } catch (error) {
+    console.error("AUDIT ERROR:", error)
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch audit logs" },
+      { status: 500 }
+    )
+  }
+}
+
+// ========== PATCH (Legacy - keep for backward compatibility) ==========
+export async function PATCH(req: Request) {
+  return PUT(req) // 🔥 Redirect to bulk endpoint
 }

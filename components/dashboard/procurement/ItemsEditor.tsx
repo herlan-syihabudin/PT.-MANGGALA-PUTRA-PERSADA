@@ -228,14 +228,15 @@ export default function ItemsEditor({
 
           <tbody>
             {items.map((item, index) => {
-              const itemError = errors[item.id || '']
+              const key = item.id || index.toString()
+const itemError = errors[key]
               const hasError = !!itemError
               
               return (
                 <tr 
-                  key={item.id} 
-                  className={`border-t ${hasError ? 'bg-red-50' : ''}`}
-                >
+  key={item.id || index}
+  className={`border-t ${hasError ? 'bg-red-50' : ''}`}
+>
                   <td className="p-3">
                     {readOnly ? (
                       item.description
@@ -250,8 +251,8 @@ export default function ItemsEditor({
                         <option value="">Pilih material</option>
                         {materials.map(m => (
                           <option key={m.id} value={m.id}>
-                            {m.name} - {formatIDR(m.price, { compact: true })}
-                          </option>
+  {m.name} - {formatIDR(m.price)}
+</option>
                         ))}
                       </select>
                     ) : (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   ArrowLeft, 
@@ -17,16 +17,54 @@ import {
   Trash2,
   Plus
 } from 'lucide-react'
+import { useDebounce } from 'use-debounce'
+import { toast } from 'sonner'
+
 import ProjectSelect from '@/components/dashboard/procurement/ProjectSelect'
 import ItemsEditor, { Item } from '@/components/dashboard/procurement/ItemsEditor'
 import Money from '@/components/dashboard/procurement/Money'
-import { toast } from 'sonner'
+import { formatIDR, parseIDR } from '@/lib/format'
 
+// ========== TYPES ==========
+interface LoadingState {
+  submit: boolean
+  draft: boolean
+  template: boolean
+  reference: boolean
+  project: boolean
+  budget: boolean
+}
+
+interface ErrorState {
+  project: string | null
+  budget: string | null
+  template: string | null
+  reference: string | null
+  submit: string | null
+}
+
+// ========== MAIN COMPONENT ==========
 export default function CreatePRPage() {
   const router = useRouter()
 
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  // States
+  const [loading, setLoading] = useState<LoadingState>({
+    submit: false,
+    draft: false,
+    template: false,
+    reference: false,
+    project: false,
+    budget: false
+  })
+  
+  const [errors, setErrors] = useState<ErrorState>({
+    project: null,
+    budget: null,
+    template: null,
+    reference: null,
+    submit: null
+  })
+
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [showConfirm, setShowConfirm] = useState(false)
   const [codeExists, setCodeExists] = useState(false)
@@ -37,6 +75,7 @@ export default function CreatePRPage() {
   const [approvers, setApprovers] = useState<any[]>([])
   const [reference, setReference] = useState('')
   const [draftLoaded, setDraftLoaded] = useState(false)
+  const [hasUnsaved, setHasUnsaved] = useState(false)
 
   const [form, setForm] = useState({
     pr_code: '',
@@ -48,23 +87,18 @@ export default function CreatePRPage() {
     items: [] as Item[],
   })
 
-  // 🔥 COMPUTED TOTAL
+  // 🔥 DEBOUNCE
+  const debouncedForm = useDebounce(form, 2000)
+  const debouncedCode = useDebounce(form.pr_code, 500)
+
+  // ===== COMPUTED =====
   const total = useMemo(() => {
     return form.items.reduce((sum, item) => {
       return sum + (item.qty || 0) * (item.estimated_price || 0)
     }, 0)
   }, [form.items])
 
-  // 🔥 VALIDATION
-  const isValid =
-    form.pr_code &&
-    form.project_id &&
-    form.requested_by &&
-    form.items.length > 0 &&
-    total > 0 &&
-    (!form.needed_date || form.needed_date >= form.request_date)
-
-  // 🔥 VALIDATION ERRORS
+  // 🔥 VALIDATION (single source)
   const computedErrors = useMemo(() => {
     const errors: string[] = []
     
@@ -72,7 +106,7 @@ export default function CreatePRPage() {
     if (!form.project_id) errors.push('Project required')
     if (!form.requested_by) errors.push('Requestor required')
     if (form.items.length === 0) errors.push('At least 1 item required')
-    if (total === 0) errors.push('Total value must be > 0')
+    if (total <= 0) errors.push('Total value must be > 0')
     if (form.needed_date && form.needed_date < form.request_date) {
       errors.push('Need date cannot be before request date')
     }
@@ -88,7 +122,32 @@ export default function CreatePRPage() {
     setValidationErrors(computedErrors)
   }, [computedErrors])
 
-  // 🔥 DRAFT AUTO-SAVE
+  const isValid = useMemo(() => {
+    return form.pr_code &&
+      form.project_id &&
+      form.requested_by &&
+      form.items.length > 0 &&
+      total > 0 &&
+      computedErrors.length === 0
+  }, [form, total, computedErrors])
+
+  // ===== UNSAVED CHANGES PROTECTION =====
+  useEffect(() => {
+    setHasUnsaved(draftLoaded)
+  }, [form, draftLoaded])
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsaved) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasUnsaved])
+
+  // ===== DRAFT AUTO-SAVE =====
   useEffect(() => {
     const saved = localStorage.getItem('pr-draft')
     if (saved && !draftLoaded) {
@@ -106,24 +165,22 @@ export default function CreatePRPage() {
   useEffect(() => {
     if (!draftLoaded) return
     
-    const timeout = setTimeout(() => {
-      localStorage.setItem('pr-draft', JSON.stringify(form))
-      toast.success('Draft saved', { duration: 2000 })
-    }, 2000)
-    
-    return () => clearTimeout(timeout)
-  }, [form, draftLoaded])
+    setLoading(prev => ({ ...prev, draft: true }))
+    localStorage.setItem('pr-draft', JSON.stringify(debouncedForm))
+    toast.success('Draft saved', { id: 'draft' })
+    setLoading(prev => ({ ...prev, draft: false }))
+  }, [debouncedForm])
 
-  // 🔥 DUPLICATE CHECK
+  // ===== DUPLICATE CHECK =====
   useEffect(() => {
-    if (form.pr_code.length < 3) {
+    if (debouncedCode.length < 3) {
       setCodeExists(false)
       return
     }
     
     const checkCode = async () => {
       try {
-        const res = await fetch(`/api/procurement/pr/check-code?code=${form.pr_code}`)
+        const res = await fetch(`/api/procurement/pr/check-code?code=${debouncedCode}`)
         const data = await res.json()
         setCodeExists(data.exists)
       } catch (err) {
@@ -131,11 +188,10 @@ export default function CreatePRPage() {
       }
     }
     
-    const timeout = setTimeout(checkCode, 500)
-    return () => clearTimeout(timeout)
-  }, [form.pr_code])
+    checkCode()
+  }, [debouncedCode])
 
-  // 🔥 PROJECT INFO
+  // ===== PROJECT INFO =====
   useEffect(() => {
     if (!form.project_id) {
       setProjectInfo(null)
@@ -143,23 +199,35 @@ export default function CreatePRPage() {
       return
     }
     
-    fetch(`/api/projects/${form.project_id}`)
-      .then(res => res.json())
-      .then(data => setProjectInfo(data))
-      .catch(console.error)
-      
-    fetch(`/api/projects/${form.project_id}/budget`)
-      .then(res => res.json())
-      .then(data => setBudgetInfo(data))
-      .catch(console.error)
+    setLoading(prev => ({ ...prev, project: true, budget: true }))
+    setErrors(prev => ({ ...prev, project: null, budget: null }))
+    
+    Promise.all([
+      fetch(`/api/projects/${form.project_id}`).then(res => res.json()),
+      fetch(`/api/projects/${form.project_id}/budget`).then(res => res.json())
+    ])
+      .then(([project, budget]) => {
+        setProjectInfo(project)
+        setBudgetInfo(budget)
+      })
+      .catch(err => {
+        setErrors(prev => ({ 
+          ...prev, 
+          project: 'Failed to load project info',
+          budget: 'Failed to load budget info'
+        }))
+      })
+      .finally(() => {
+        setLoading(prev => ({ ...prev, project: false, budget: false }))
+      })
   }, [form.project_id])
 
-  // 🔥 LOAD TEMPLATES
+  // ===== LOAD TEMPLATES =====
   useEffect(() => {
     fetch('/api/procurement/item-templates')
       .then(res => res.json())
       .then(data => setTemplates(data))
-      .catch(console.error)
+      .catch(() => setErrors(prev => ({ ...prev, template: 'Failed to load templates' })))
       
     fetch('/api/procurement/approvers')
       .then(res => res.json())
@@ -167,6 +235,7 @@ export default function CreatePRPage() {
       .catch(console.error)
   }, [])
 
+  // ===== HANDLERS =====
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     
@@ -175,24 +244,28 @@ export default function CreatePRPage() {
       return
     }
 
-    setLoading(true)
-    setError(null)
+    setLoading(prev => ({ ...prev, submit: true }))
+    setErrors(prev => ({ ...prev, submit: null }))
 
     try {
-      const formData = new FormData()
-      
-      // Add JSON data
-      formData.append('data', JSON.stringify(form))
-      
-      // Add files
-      files.forEach(file => {
-        formData.append('files', file)
-      })
+      const hasFiles = files.length > 0
+      let body: any
+      let headers: HeadersInit = {}
+
+      if (hasFiles) {
+        const formData = new FormData()
+        formData.append('data', JSON.stringify(form))
+        files.forEach(file => formData.append('files', file))
+        body = formData
+      } else {
+        headers = { 'Content-Type': 'application/json' }
+        body = JSON.stringify(form)
+      }
 
       const res = await fetch('/api/procurement/pr', {
         method: 'POST',
-        body: formData, // Untuk file upload
-        // headers: { 'Content-Type': 'application/json' } // Ganti kalo pake JSON biasa
+        headers,
+        body
       })
 
       const data = await res.json()
@@ -201,16 +274,16 @@ export default function CreatePRPage() {
         throw new Error(data.error || 'Failed to create PR')
       }
 
-      // Clear draft on success
       localStorage.removeItem('pr-draft')
       toast.success('PR created successfully')
+      setHasUnsaved(false)
       
       router.push(`/procurement/pr/${data.data.pr_id}`)
     } catch (err: any) {
-      setError(err?.message || 'Failed to create PR')
+      setErrors(prev => ({ ...prev, submit: err?.message || 'Failed to create PR' }))
       toast.error(err?.message || 'Failed to create PR')
     } finally {
-      setLoading(false)
+      setLoading(prev => ({ ...prev, submit: false }))
       setShowConfirm(false)
     }
   }
@@ -227,6 +300,9 @@ export default function CreatePRPage() {
   const loadFromReference = async () => {
     if (!reference) return
     
+    setLoading(prev => ({ ...prev, reference: true }))
+    setErrors(prev => ({ ...prev, reference: null }))
+    
     try {
       const res = await fetch(`/api/procurement/reference/${reference}`)
       const data = await res.json()
@@ -238,9 +314,32 @@ export default function CreatePRPage() {
       })
       toast.success(`Loaded from ${reference}`)
     } catch (err) {
+      setErrors(prev => ({ ...prev, reference: 'Failed to load reference' }))
       toast.error('Failed to load reference')
+    } finally {
+      setLoading(prev => ({ ...prev, reference: false }))
     }
   }
+
+  const loadTemplate = useCallback(() => {
+    setLoading(prev => ({ ...prev, template: true }))
+    try {
+      setForm({
+        ...form,
+        items: templates.map(t => ({
+          description: t.description,
+          qty: 1,
+          unit: t.unit,
+          estimated_price: t.estimated_price
+        }))
+      })
+      toast.success('Template loaded')
+    } catch (err) {
+      setErrors(prev => ({ ...prev, template: 'Failed to load template' }))
+    } finally {
+      setLoading(prev => ({ ...prev, template: false }))
+    }
+  }, [templates, form])
 
   const clearDraft = () => {
     localStorage.removeItem('pr-draft')
@@ -254,6 +353,7 @@ export default function CreatePRPage() {
       items: [],
     })
     setDraftLoaded(false)
+    setHasUnsaved(false)
     toast.success('Draft cleared')
   }
 
@@ -264,7 +364,15 @@ export default function CreatePRPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => router.back()}
+            onClick={() => {
+              if (hasUnsaved) {
+                if (confirm('You have unsaved changes. Leave anyway?')) {
+                  router.back()
+                }
+              } else {
+                router.back()
+              }
+            }}
             className="p-2 hover:bg-gray-100 rounded-lg"
           >
             <ArrowLeft size={20} />
@@ -275,8 +383,12 @@ export default function CreatePRPage() {
         {/* Draft indicator */}
         {draftLoaded && (
           <div className="flex items-center gap-2 text-sm text-gray-500">
-            <Clock size={16} />
-            <span>Draft auto-saved</span>
+            {loading.draft ? (
+              <RefreshCw size={16} className="animate-spin" />
+            ) : (
+              <Clock size={16} />
+            )}
+            <span>{loading.draft ? 'Saving...' : 'Draft auto-saved'}</span>
             <button
               onClick={clearDraft}
               className="text-xs text-red-600 hover:underline"
@@ -287,11 +399,11 @@ export default function CreatePRPage() {
         )}
       </div>
 
-      {/* Error */}
-      {error && (
+      {/* Error Summary */}
+      {errors.submit && (
         <div className="p-4 bg-red-50 text-red-600 border border-red-200 rounded-lg flex items-center gap-2">
           <AlertCircle size={18} />
-          {error}
+          {errors.submit}
         </div>
       )}
 
@@ -336,11 +448,19 @@ export default function CreatePRPage() {
             <button
               type="button"
               onClick={loadFromReference}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+              disabled={loading.reference}
+              className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50"
             >
-              <Copy size={16} />
+              {loading.reference ? (
+                <RefreshCw size={16} className="animate-spin" />
+              ) : (
+                <Copy size={16} />
+              )}
             </button>
           </div>
+          {errors.reference && (
+            <p className="text-xs text-red-600 mt-1">{errors.reference}</p>
+          )}
         </div>
 
         {/* Basic Info */}
@@ -352,21 +472,15 @@ export default function CreatePRPage() {
             {templates.length > 0 && (
               <button
                 type="button"
-                onClick={() => {
-                  setForm({
-                    ...form,
-                    items: templates.map(t => ({
-                      description: t.description,
-                      qty: 1,
-                      unit: t.unit,
-                      estimated_price: t.estimated_price
-                    }))
-                  })
-                  toast.success('Template loaded')
-                }}
-                className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                onClick={loadTemplate}
+                disabled={loading.template}
+                className="text-sm text-blue-600 hover:underline flex items-center gap-1 disabled:opacity-50"
               >
-                <Download size={14} />
+                {loading.template ? (
+                  <RefreshCw size={14} className="animate-spin" />
+                ) : (
+                  <Download size={14} />
+                )}
                 Load Template
               </button>
             )}
@@ -395,7 +509,20 @@ export default function CreatePRPage() {
               />
               
               {/* Project info preview */}
-              {projectInfo && (
+              {loading.project && (
+                <div className="mt-2 p-3 bg-gray-50 rounded-lg text-sm text-gray-500 flex items-center gap-2">
+                  <RefreshCw size={14} className="animate-spin" />
+                  Loading project info...
+                </div>
+              )}
+              
+              {errors.project && (
+                <div className="mt-2 p-3 bg-red-50 rounded-lg text-sm text-red-600">
+                  {errors.project}
+                </div>
+              )}
+              
+              {projectInfo && !loading.project && (
                 <div className="mt-2 p-3 bg-blue-50 rounded-lg text-sm">
                   <p className="font-medium">{projectInfo.project_name}</p>
                   <p className="text-xs text-gray-600">
@@ -451,10 +578,18 @@ export default function CreatePRPage() {
               <p className="text-2xl font-bold">
                 <Money value={total} />
               </p>
-              {budgetInfo && (
+              {loading.budget ? (
+                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1 justify-end">
+                  <RefreshCw size={12} className="animate-spin" />
+                  Loading budget...
+                </p>
+              ) : budgetInfo && (
                 <p className="text-xs text-gray-500 mt-1">
                   Budget remaining: <Money value={budgetInfo.remaining} />
                 </p>
+              )}
+              {errors.budget && (
+                <p className="text-xs text-red-500 mt-1">{errors.budget}</p>
               )}
             </div>
           </div>
@@ -541,7 +676,15 @@ export default function CreatePRPage() {
         <div className="flex justify-end gap-4">
           <button
             type="button"
-            onClick={() => router.back()}
+            onClick={() => {
+              if (hasUnsaved) {
+                if (confirm('You have unsaved changes. Leave anyway?')) {
+                  router.back()
+                }
+              } else {
+                router.back()
+              }
+            }}
             className="px-6 py-2 border rounded-lg hover:bg-gray-50"
           >
             Cancel
@@ -549,11 +692,15 @@ export default function CreatePRPage() {
 
           <button
             type="submit"
-            disabled={!isValid || loading || validationErrors.length > 0}
+            disabled={!isValid || loading.submit || validationErrors.length > 0}
             className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
-            {loading ? 'Creating...' : 'Create PR'}
+            {loading.submit ? (
+              <RefreshCw size={18} className="animate-spin" />
+            ) : (
+              <Save size={18} />
+            )}
+            {loading.submit ? 'Creating...' : 'Create PR'}
           </button>
         </div>
       </form>
@@ -575,9 +722,10 @@ export default function CreatePRPage() {
               </button>
               <button
                 onClick={() => handleSubmit()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                disabled={loading.submit}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                Confirm
+                {loading.submit ? 'Creating...' : 'Confirm'}
               </button>
             </div>
           </div>
@@ -629,6 +777,7 @@ function FormInput({
             w-full border rounded-lg px-3 py-2
             ${Icon ? 'pr-8' : ''}
             ${error ? 'border-red-500' : ''}
+            focus:outline-none focus:ring-2 focus:ring-blue-500
           `}
         />
         {IconComponent && (

@@ -6,7 +6,7 @@ import { nanoid } from "nanoid"
 // ========== CONSTANTS ==========
 const SHEET_ID = process.env.GSHEET_PROJECT_ID
 const PROCUREMENT_SHEET_ID = process.env.GSHEET_PROCUREMENT_ID
-const MR_SHEET = "MATERIAL_REQUESTS"      // FIXED: typo
+const MR_SHEET = "MATRIAL_REQUESTS"      // FIXED: typo
 const PR_SHEET = "PURCHASE_REQUEST"       // A:O
 const PR_ITEM_SHEET = "PR_ITEMS"          // A:I
 const PROJECT_SHEET = "PROJECTS"          // minimal kolom A = project_id
@@ -668,66 +668,6 @@ export async function PUT(req: Request) {
   }
 }
 
-// ========== 🔥 NEW: AUDIT ENDPOINT ==========
-export async function audit(
-  req: Request,
-  { params }: { params: { project_id: string } }
-) {
-  try {
-    const { searchParams } = new URL(req.url)
-    const request_no = searchParams.get('request_no')
-    const limit = parseInt(searchParams.get('limit') || '50')
-
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `${AUDIT_SHEET}!A:F`,
-      valueRenderOption: "UNFORMATTED_VALUE",
-    })
-
-    const rows = (res.data.values || []).slice(1)
-    
-    let filteredRows = rows
-    
-    if (params.project_id) {
-      // Filter by project_id by joining with MR sheet
-      const mrRes = await sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: `${MR_SHEET}!A:B`,
-      })
-      const mrRows = (mrRes.data.values || []).slice(1)
-      const projectRequestNos = mrRows
-        .filter(r => r[COLUMNS.PROJECT_ID] === params.project_id)
-        .map(r => r[COLUMNS.REQUEST_NO])
-      
-      filteredRows = filteredRows.filter(r => projectRequestNos.includes(r[AUDIT_COLUMNS.REQUEST_NO]))
-    }
-    
-    if (request_no) {
-      filteredRows = filteredRows.filter(r => r[AUDIT_COLUMNS.REQUEST_NO] === request_no)
-    }
-
-    const logs = filteredRows
-      .slice(0, limit)
-      .map(row => ({
-        id: row[AUDIT_COLUMNS.ID],
-        request_no: row[AUDIT_COLUMNS.REQUEST_NO],
-        action: row[AUDIT_COLUMNS.ACTION],
-        performed_by: row[AUDIT_COLUMNS.PERFORMED_BY],
-        performed_at: row[AUDIT_COLUMNS.PERFORMED_AT],
-        notes: row[AUDIT_COLUMNS.NOTES] || undefined
-      }))
-      .sort((a, b) => new Date(b.performed_at).getTime() - new Date(a.performed_at).getTime())
-
-    return NextResponse.json({ success: true, data: logs })
-
-  } catch (error) {
-    console.error("AUDIT ERROR:", error)
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch audit logs" },
-      { status: 500 }
-    )
-  }
-}
 
 // ========== PATCH (Legacy - keep for backward compatibility) ==========
 export async function PATCH(req: Request) {

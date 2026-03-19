@@ -462,7 +462,7 @@ export async function GET(
 
     const rows = (res.data.values || []).slice(1)
     
-    let filteredRows = rows
+    let filteredRows = rows.filter(r => r && r.length >= 12)
     
     if (project_id) {
       filteredRows = filteredRows.filter(r => r[COLUMNS.PROJECT_ID] === project_id)
@@ -473,21 +473,21 @@ export async function GET(
     }
 
     const requests = filteredRows.map(row => ({
-      id: row[COLUMNS.ID],
-      request_no: row[COLUMNS.REQUEST_NO],
-      project_id: row[COLUMNS.PROJECT_ID],
-      project_name: row[COLUMNS.PROJECT_NAME],
-      request_date: row[COLUMNS.REQUEST_DATE],
-      requested_by: row[COLUMNS.REQUESTED_BY],
-      material_name: row[COLUMNS.MATERIAL_NAME],
-      qty: Number(row[COLUMNS.QTY]) || 0,
-      unit: row[COLUMNS.UNIT],
-      remark: row[COLUMNS.REMARK],
-      status: row[COLUMNS.STATUS] as MaterialStatus,
-      created_at: row[COLUMNS.CREATED_AT],
-      approved_by: row[COLUMNS.APPROVED_BY] || null,
-      approved_at: row[COLUMNS.APPROVED_AT] || null,
-    }))
+  id: row[COLUMNS.ID] || "",
+  request_no: row[COLUMNS.REQUEST_NO] || "",
+  project_id: row[COLUMNS.PROJECT_ID] || "",
+  project_name: row[COLUMNS.PROJECT_NAME] || "",
+  request_date: row[COLUMNS.REQUEST_DATE] || "",
+  requested_by: row[COLUMNS.REQUESTED_BY] || "",
+  material_name: row[COLUMNS.MATERIAL_NAME] || "",
+  qty: Number(row[COLUMNS.QTY]) || 0,
+  unit: row[COLUMNS.UNIT] || "",
+  remark: row[COLUMNS.REMARK] || "",
+  status: (row[COLUMNS.STATUS] || "Pending") as MaterialStatus,
+  created_at: row[COLUMNS.CREATED_AT] || "",
+  approved_by: row[COLUMNS.APPROVED_BY] || null,
+  approved_at: row[COLUMNS.APPROVED_AT] || null,
+}))
 
     return NextResponse.json({
       success: true,

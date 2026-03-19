@@ -454,40 +454,55 @@ export async function GET(
   const request_no = searchParams.get('request_no')
 
   try {
+    console.log(`🔍 Fetching MR for project: ${project_id}`)
+    
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${MR_SHEET}!A:N`,
+      range: `${MR_SHEET}!A:N`,  // PASTIKAN NAMA SHEET BENAR!
       valueRenderOption: "UNFORMATTED_VALUE",
     })
 
-    const rows = (res.data.values || []).slice(1)
+    // Log untuk debugging
+    console.log("Sheet name used:", MR_SHEET)
+    console.log("Total rows from sheet:", res.data.values?.length || 0)
     
-    let filteredRows = rows.filter(r => r && r.length >= 12)
+    const rows = (res.data.values || []).slice(1) // skip header
+    
+    // 🔥 FIX: Hapus filter length, langsung filter by project_id
+    let filteredRows = rows
     
     if (project_id) {
-      filteredRows = filteredRows.filter(r => r[COLUMNS.PROJECT_ID] === project_id)
+      filteredRows = filteredRows.filter(r => {
+        const match = r[COLUMNS.PROJECT_ID] === project_id
+        if (match) {
+          console.log("Found matching row:", r[COLUMNS.REQUEST_NO])
+        }
+        return match
+      })
     }
     
     if (request_no) {
       filteredRows = filteredRows.filter(r => r[COLUMNS.REQUEST_NO] === request_no)
     }
 
+    console.log(`Found ${filteredRows.length} matching rows`)
+
     const requests = filteredRows.map(row => ({
-  id: row[COLUMNS.ID] || "",
-  request_no: row[COLUMNS.REQUEST_NO] || "",
-  project_id: row[COLUMNS.PROJECT_ID] || "",
-  project_name: row[COLUMNS.PROJECT_NAME] || "",
-  request_date: row[COLUMNS.REQUEST_DATE] || "",
-  requested_by: row[COLUMNS.REQUESTED_BY] || "",
-  material_name: row[COLUMNS.MATERIAL_NAME] || "",
-  qty: Number(row[COLUMNS.QTY]) || 0,
-  unit: row[COLUMNS.UNIT] || "",
-  remark: row[COLUMNS.REMARK] || "",
-  status: (row[COLUMNS.STATUS] || "Pending") as MaterialStatus,
-  created_at: row[COLUMNS.CREATED_AT] || "",
-  approved_by: row[COLUMNS.APPROVED_BY] || null,
-  approved_at: row[COLUMNS.APPROVED_AT] || null,
-}))
+      id: row[COLUMNS.ID] || "",
+      request_no: row[COLUMNS.REQUEST_NO] || "",
+      project_id: row[COLUMNS.PROJECT_ID] || "",
+      project_name: row[COLUMNS.PROJECT_NAME] || "",
+      request_date: row[COLUMNS.REQUEST_DATE] || "",
+      requested_by: row[COLUMNS.REQUESTED_BY] || "",
+      material_name: row[COLUMNS.MATERIAL_NAME] || "",
+      qty: Number(row[COLUMNS.QTY]) || 0,
+      unit: row[COLUMNS.UNIT] || "",
+      remark: row[COLUMNS.REMARK] || "",
+      status: (row[COLUMNS.STATUS] || "Pending") as MaterialStatus,
+      created_at: row[COLUMNS.CREATED_AT] || "",
+      approved_by: row[COLUMNS.APPROVED_BY] || null,
+      approved_at: row[COLUMNS.APPROVED_AT] || null,
+    }))
 
     return NextResponse.json({
       success: true,

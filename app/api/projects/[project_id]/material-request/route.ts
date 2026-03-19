@@ -1,12 +1,22 @@
+// app/api/projects/[project_id]/material-request/route.ts
 import { NextResponse } from "next/server"
 import { google } from "googleapis"
+import { nanoid } from "nanoid"
 
 // ========== CONSTANTS ==========
 const SHEET_ID = process.env.GSHEET_PROJECT_ID
-const SHEET_NAME = "MATERIAL_REQUESTS"  // FIXED: typo
+const PROCUREMENT_SHEET_ID = process.env.GSHEET_PROCUREMENT_ID
+const MR_SHEET = "MATERIAL_REQUESTS"      // A:N (14 columns)
+const PR_SHEET = "PURCHASE_REQUEST"       // A:O
+const PR_ITEM_SHEET = "PR_ITEMS"          // A:I
+const PROJECT_SHEET = "PROJECTS"          // minimal kolom A = project_id
 
 if (!SHEET_ID) {
   throw new Error("GSHEET_PROJECT_ID is not defined")
+}
+
+if (!PROCUREMENT_SHEET_ID) {
+  console.warn("GSHEET_PROCUREMENT_ID is not defined - PR auto-creation will be disabled")
 }
 
 const COLUMNS = {
@@ -22,8 +32,8 @@ const COLUMNS = {
   REMARK: 9,
   STATUS: 10,
   CREATED_AT: 11,
-  APPROVED_BY: 12,  // ADDED
-  APPROVED_AT: 13   // ADDED
+  APPROVED_BY: 12,
+  APPROVED_AT: 13
 } as const
 
 const VALID_STATUSES = ["Pending", "Approved", "Rejected", "Delivered"] as const
@@ -57,7 +67,7 @@ const sheets = google.sheets({ version: "v4", auth })
 // ========== RATE LIMITING ==========
 const rateLimit = new Map<string, number[]>()
 const RATE_LIMIT_WINDOW = 60000 // 1 minute
-const RATE_LIMIT_MAX = 10 // Max 10 requests per minute per IP
+const RATE_LIMIT_MAX = 10
 
 function checkRateLimit(req: Request): { ip: string; allowed: boolean } {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ||
@@ -106,7 +116,7 @@ function validateProjectName(name: string): string {
     throw new Error("Project name is required")
   }
   
-  return name.trim().substring(0, 200) // Max length
+  return name.trim().substring(0, 200)
 }
 
 function validateRequestedBy(name: string): string {
@@ -122,13 +132,11 @@ function validateMaterialItem(item: any, index: number): MaterialItem {
     throw new Error(`Item #${index + 1} is invalid`)
   }
 
-  // Material name
   if (!item.material_name || typeof item.material_name !== 'string') {
     throw new Error(`Item #${index + 1}: Material name is required`)
   }
   const material_name = item.material_name.trim().substring(0, 200)
 
-  // Quantity
   if (item.qty === undefined || item.qty === null) {
     throw new Error(`Item #${index + 1}: Quantity is required`)
   }
@@ -140,13 +148,11 @@ function validateMaterialItem(item: any, index: number): MaterialItem {
     throw new Error(`Item #${index + 1}: Quantity too large (max 1,000,000)`)
   }
 
-  // Unit
   if (!item.unit || typeof item.unit !== 'string') {
     throw new Error(`Item #${index + 1}: Unit is required`)
   }
   const unit = item.unit.trim().substring(0, 20)
 
-  // Remark (optional)
   const remark = item.remark ? item.remark.trim().substring(0, 500) : ""
 
   return {
@@ -192,13 +198,12 @@ async function checkDuplicateRequest(
   try {
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:L`,
+      range: `${MR_SHEET}!A:N`,
       valueRenderOption: "UNFORMATTED_VALUE",
     })
 
     const rows = res.data.values || []
     
-    // Check for identical request in last 5 minutes
     const fiveMinAgo = Date.now() - 5 * 60 * 1000
     
     return rows.some(row => {
@@ -207,7 +212,6 @@ async function checkDuplicateRequest(
       const createdAt = new Date(row[COLUMNS.CREATED_AT]).getTime()
       if (createdAt < fiveMinAgo) return false
       
-      // Check if same items (simplified check)
       const existingItems = `${row[COLUMNS.MATERIAL_NAME]}-${row[COLUMNS.QTY]}-${row[COLUMNS.UNIT]}`
       const newItems = items.map(i => `${i.material_name}-${i.qty}-${i.unit}`).join('|')
       
@@ -215,96 +219,183 @@ async function checkDuplicateRequest(
     })
   } catch (error) {
     console.error("Error checking duplicate:", error)
-    return false // Fail open - better to allow than block incorrectly
+    return false
   }
 }
 
-// ========== MAIN POST HANDLER ==========
+// ========== CREATE PR FROM APPROVED MR ==========
+async function createPRFromApprovedMR(requestNo: string): Promise<boolean> {
+  // Skip if procurement sheet ID not configured
+  if (!PROCUREMENT_SHEET_ID) {
+    console.log("PR auto-creation skipped: GSHEET_PROCUREMENT_ID not configured")
+    return false
+  }
+
+  try {
+    // Check if PR already exists for this MR
+    const existingPR = await sheets.spreadsheets.values.get({
+      spreadsheetId: PROCUREMENT_SHEET_ID,
+      range: `${PR_SHEET}!A2:O`,
+    })
+
+    const existingRows = existingPR.data.values || []
+    const prExists = existingRows.some(r => 
+      r[7]?.includes(requestNo) // notes column contains MR number
+    )
+
+    if (prExists) {
+      console.log(`PR already exists for MR: ${requestNo}`)
+      return true
+    }
+
+    // Get all items for this request_no
+    const mrRes = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${MR_SHEET}!A:N`,
+    })
+
+    const allRows = (mrRes.data.values || []).slice(1) // skip header
+    const items = allRows.filter(r => r[COLUMNS.REQUEST_NO] === requestNo)
+
+    if (items.length === 0) {
+      console.log(`No items found for MR: ${requestNo}`)
+      return false
+    }
+
+    const first = items[0]
+    const now = new Date().toISOString()
+    
+    // Generate PR ID and Code
+    const pr_id = "PR-" + nanoid(8).toUpperCase()
+    const pr_code = "PR-" + new Date().getFullYear() + 
+                    ("0" + (new Date().getMonth() + 1)).slice(-2) + 
+                    ("0" + new Date().getDate()).slice(-2) + "-" +
+                    Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+
+    // Create PR Header
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: PROCUREMENT_SHEET_ID,
+      range: `${PR_SHEET}!A:O`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [[
+          pr_id,                          // A: pr_id
+          pr_code,                         // B: pr_code
+          first[COLUMNS.PROJECT_ID],       // C: project_id
+          first[COLUMNS.REQUESTED_BY],     // D: requested_by
+          now,                              // E: request_date
+          "",                               // F: needed_date
+          "SUBMITTED",                      // G: status
+          `Auto from MR: ${requestNo}`,     // H: notes
+          "SYSTEM",                         // I: created_by
+          "SYSTEM",                         // J: updated_by
+          "",                               // K: deleted_by
+          now,                              // L: created_at
+          now,                              // M: updated_at
+          1,                                // N: version
+          "",                               // O: deleted_at
+        ]]
+      }
+    })
+
+    // Create PR Items (multiple items)
+    const prItemValues = items.map(item => [
+      "PRI-" + nanoid(8).toUpperCase(),     // pr_item_id
+      pr_id,                                 // pr_id
+      "",                                    // material_id
+      item[COLUMNS.MATERIAL_NAME],           // description
+      Number(item[COLUMNS.QTY]),             // qty
+      item[COLUMNS.UNIT],                    // unit
+      "",                                    // estimated_price
+      "",                                    // subtotal
+      now,                                   // created_at
+    ])
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: PROCUREMENT_SHEET_ID,
+      range: `${PR_ITEM_SHEET}!A:I`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: prItemValues
+      }
+    })
+
+    console.log(`✅ PR created successfully for MR: ${requestNo} with ${items.length} items`)
+    return true
+
+  } catch (error) {
+    console.error("Error creating PR from MR:", error)
+    return false
+  }
+}
+
+// ========== POST ==========
 export async function POST(req: Request) {
   const requestId = crypto.randomUUID?.() || Date.now().toString()
   
   try {
-    // ===== RATE LIMITING =====
     const { allowed, ip } = checkRateLimit(req)
     if (!allowed) {
       console.warn(`[${requestId}] Rate limit exceeded for IP: ${ip}`)
       return NextResponse.json(
-        { 
-          success: false,
-          error: "Too many requests. Please try again later." 
-        },
+        { success: false, error: "Too many requests. Please try again later." },
         { status: 429 }
       )
     }
 
-    // ===== PARSE BODY =====
     let body: any
     try {
       body = await req.json()
     } catch (error) {
       return NextResponse.json(
-        { 
-          success: false,
-          error: "Invalid JSON payload" 
-        },
+        { success: false, error: "Invalid JSON payload" },
         { status: 400 }
       )
     }
 
-    // ===== VALIDATION =====
     try {
       const project_id = validateProjectId(body.project_id)
       const project_name = validateProjectName(body.project_name)
       const requested_by = validateRequestedBy(body.requested_by)
       const items = validateItems(body.items)
 
-      // ===== CHECK DUPLICATE =====
       const isDuplicate = await checkDuplicateRequest(project_id, items)
       if (isDuplicate) {
         return NextResponse.json(
-          { 
-            success: false,
-            error: "Duplicate request detected. Please wait a few minutes." 
-          },
+          { success: false, error: "Duplicate request detected. Please wait a few minutes." },
           { status: 409 }
         )
       }
 
-      // ===== GENERATE REQUEST NUMBER =====
       const request_no = generateRequestNumber()
       const now = new Date().toISOString()
 
-      // ===== PREPARE ROWS =====
       const rows = items.map((item) => [
-        crypto.randomUUID(),                // ID
-        request_no,                          // REQUEST_NO
-        project_id,                          // PROJECT_ID
-        project_name,                        // PROJECT_NAME
-        now,                                 // REQUEST_DATE
-        requested_by,                        // REQUESTED_BY
-        item.material_name,                  // MATERIAL_NAME
-        item.qty,                            // QTY
-        item.unit,                           // UNIT
-        item.remark || "",                    // REMARK
-        "Pending",                           // STATUS
-        now,                                 // CREATED_AT
-        "",                                  // APPROVED_BY (empty initially)
-        "",                                  // APPROVED_AT (empty initially)
+        crypto.randomUUID(),
+        request_no,
+        project_id,
+        project_name,
+        now,
+        requested_by,
+        item.material_name,
+        item.qty,
+        item.unit,
+        item.remark || "",
+        "Pending",
+        now,
+        "",
+        "",
       ])
 
-      // ===== SAVE TO SHEETS =====
       console.log(`[${requestId}] Creating material request: ${request_no} with ${items.length} items`)
 
-      const appendResult = await sheets.spreadsheets.values.append({
+      await sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_ID,
-        range: `${SHEET_NAME}!A:N`, // Updated to include all 14 columns
+        range: `${MR_SHEET}!A:N`,
         valueInputOption: "USER_ENTERED",
-        requestBody: { 
-          values: rows 
-        },
+        requestBody: { values: rows },
       })
 
-      // ===== SUCCESS RESPONSE =====
       console.log(`[${requestId}] Material request created: ${request_no}`)
       
       return NextResponse.json({
@@ -312,18 +403,14 @@ export async function POST(req: Request) {
         data: {
           request_no,
           items_count: items.length,
-          created_at: now,
-          range: appendResult.data.updates?.updatedRange
+          created_at: now
         }
       })
 
     } catch (validationError) {
       if (validationError instanceof Error) {
         return NextResponse.json(
-          { 
-            success: false,
-            error: validationError.message 
-          },
+          { success: false, error: validationError.message },
           { status: 400 }
         )
       }
@@ -331,44 +418,32 @@ export async function POST(req: Request) {
     }
 
   } catch (error) {
-    // ===== ERROR HANDLING =====
     console.error(`[${requestId}] MATERIAL REQUEST ERROR:`, error)
 
-    // Check for Google Sheets API errors
     if (error instanceof Error) {
       if (error.message.includes('Google Sheets API')) {
         return NextResponse.json(
-          { 
-            success: false,
-            error: "Unable to save material request. Please try again later." 
-          },
+          { success: false, error: "Unable to save material request. Please try again later." },
           { status: 503 }
         )
       }
       
       if (error.message.includes('rate limit')) {
         return NextResponse.json(
-          { 
-            success: false,
-            error: "Service is busy. Please try again." 
-          },
+          { success: false, error: "Service is busy. Please try again." },
           { status: 429 }
         )
       }
     }
 
-    // Generic error
     return NextResponse.json(
-      { 
-        success: false,
-        error: "Failed to create material request" 
-      },
+      { success: false, error: "Failed to create material request" },
       { status: 500 }
     )
   }
 }
 
-// ========== GET METHOD ==========
+// ========== GET ==========
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const project_id = searchParams.get('project_id')
@@ -377,11 +452,11 @@ export async function GET(req: Request) {
   try {
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:N`, // Updated to include all columns
+      range: `${MR_SHEET}!A:N`,
       valueRenderOption: "UNFORMATTED_VALUE",
     })
 
-    const rows = (res.data.values || []).slice(1) // Skip header
+    const rows = (res.data.values || []).slice(1)
     
     let filteredRows = rows
     
@@ -404,7 +479,7 @@ export async function GET(req: Request) {
       qty: Number(row[COLUMNS.QTY]) || 0,
       unit: row[COLUMNS.UNIT],
       remark: row[COLUMNS.REMARK],
-      status: row[COLUMNS.STATUS],
+      status: row[COLUMNS.STATUS] as MaterialStatus,
       created_at: row[COLUMNS.CREATED_AT],
       approved_by: row[COLUMNS.APPROVED_BY] || null,
       approved_at: row[COLUMNS.APPROVED_AT] || null,
@@ -418,16 +493,13 @@ export async function GET(req: Request) {
   } catch (error) {
     console.error("GET MATERIAL REQUEST ERROR:", error)
     return NextResponse.json(
-      { 
-        success: false,
-        error: "Failed to fetch material requests" 
-      },
+      { success: false, error: "Failed to fetch material requests" },
       { status: 500 }
     )
   }
 }
 
-// ========== PATCH for updating status ==========
+// ========== PATCH (Update Status + Auto PR) ==========
 export async function PATCH(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
@@ -455,28 +527,49 @@ export async function PATCH(req: Request) {
     // Find the row
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:N`, // Updated range
+      range: `${MR_SHEET}!A:N`,
     })
 
     const rows = (res.data.values || []).slice(1)
-    const rowIndex = rows.findIndex(r => r[COLUMNS.ID] === id)
 
-    if (rowIndex === -1) {
-      return NextResponse.json(
-        { success: false, error: "Request not found" },
-        { status: 404 }
-      )
+// cari index dulu
+const rowIndex = rows.findIndex(r => r[COLUMNS.ID] === id)
+
+if (rowIndex === -1) {
+  return NextResponse.json(
+    { success: false, error: "Request not found" },
+    { status: 404 }
+  )
+}
+
+// ambil request_no
+const currentRow = rows[rowIndex]
+const requestNo = currentRow[COLUMNS.REQUEST_NO]
+
+// cari semua row dengan request_no sama
+const allIndexes = rows
+  .map((r, i) => ({ r, i }))
+  .filter(x => x.r[COLUMNS.REQUEST_NO] === requestNo)
+  .map(x => x.i)
+
+// update semua row
+for (const idx of allIndexes) {
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: `${MR_SHEET}!K${idx + 2}:M${idx + 2}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[status, approvedBy, approvedAt]]
     }
+  })
+}
 
-    // Update status, approved_by, approved_at (columns K, L, M)
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!K${rowIndex + 2}:M${rowIndex + 2}`, // FIXED: added comma
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [[status, approvedBy, approvedAt]]
-      }
-    })
+    // ===== 🔥 AUTO CREATE PR IF APPROVED =====
+    let prCreated = false
+    if (status === "Approved") {
+      console.log(`🚀 MR Approved: ${requestNo}. Creating PR with all items...`)
+      prCreated = await createPRFromApprovedMR(requestNo)
+    }
 
     return NextResponse.json({
       success: true,
@@ -485,7 +578,8 @@ export async function PATCH(req: Request) {
         id,
         status,
         approved_by: approvedBy,
-        approved_at: approvedAt
+        approved_at: approvedAt,
+        pr_created: prCreated
       }
     })
 

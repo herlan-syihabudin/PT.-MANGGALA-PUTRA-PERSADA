@@ -142,7 +142,7 @@ export const metadata: Metadata = {
 
   // ===== VERIFICATION =====
   verification: {
-    google: "your-google-verification-code",
+    google: "hcsf7ZlUsVW-euLt7vA568lrb6I-zpqc9BO4r-upnuU",
     yandex: "your-yandex-verification",
     yahoo: "your-yahoo-verification",
     other: {

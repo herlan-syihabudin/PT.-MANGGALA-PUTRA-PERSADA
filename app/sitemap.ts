@@ -2,35 +2,25 @@ import { MetadataRoute } from "next"
 import { projects } from "@/lib/projects"
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://mppindo.com"
-  const currentDate = new Date()
+  const baseUrl = "https://mppindo.com"  // ← hardcode biar pasti
+  const currentDate = new Date().toISOString().split('T')[0]  // ← 2026-04-07
   
-  // Tanggal untuk halaman statis (manual, biar akurat)
-  const lastModified = {
-    home: "2024-01-01",
-    tentang: "2024-01-01", 
-    layanan: "2024-01-15",
-    proyek: currentDate.toISOString().split('T')[0],
-    kontak: "2024-01-01",
-    services: "2024-01-15",
-  }
-
-  // ===== CORE PAGES (LOOP, TAPI PAKAI TANGGAL MANUAL) =====
+  // ===== CORE PAGES =====
   const corePages = [
-    { path: "", priority: 1.0, freq: "weekly", lastModKey: "home" },
-    { path: "tentang", priority: 0.8, freq: "monthly", lastModKey: "tentang" },
-    { path: "layanan", priority: 0.9, freq: "monthly", lastModKey: "layanan" },
-    { path: "proyek", priority: 0.9, freq: "weekly", lastModKey: "proyek" },
-    { path: "cara-kerja", priority: 0.7, freq: "monthly", lastModKey: "tentang" },
-    { path: "kontak", priority: 0.7, freq: "yearly", lastModKey: "kontak" },
+    { path: "", priority: 1.0, freq: "weekly" },
+    { path: "tentang", priority: 0.8, freq: "monthly" },
+    { path: "layanan", priority: 0.9, freq: "monthly" },
+    { path: "proyek", priority: 0.9, freq: "weekly" },
+    { path: "cara-kerja", priority: 0.7, freq: "monthly" },
+    { path: "kontak", priority: 0.7, freq: "yearly" },
   ].map((page) => ({
     url: `${baseUrl}/${page.path}`,
-    lastModified: lastModified[page.lastModKey as keyof typeof lastModified],
+    lastModified: currentDate,  // ← semua pake tanggal hari ini
     changeFrequency: page.freq as "weekly" | "monthly" | "yearly",
     priority: page.priority,
   }))
 
-  // ===== SERVICE PAGES (LOOP, PAKAI TANGGAL SAMA) =====
+  // ===== SERVICE PAGES =====
   const services = [
     { slug: "struktur-baja", priority: 0.95 },
     { slug: "mep", priority: 0.95 },
@@ -41,15 +31,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
   
   const servicePages = services.map((service) => ({
     url: `${baseUrl}/layanan/${service.slug}`,
-    lastModified: lastModified.services,
+    lastModified: currentDate,  // ← pake tanggal hari ini
     changeFrequency: "monthly" as const,
     priority: service.priority,
   }))
 
-  // ===== PROJECT PAGES (DARI DATA) =====
+  // ===== PROJECT PAGES =====
   const projectPages = projects.map((project) => ({
     url: `${baseUrl}/proyek/${project.slug}`,
-    lastModified: project.completionDate || lastModified.proyek,
+    lastModified: project.completionDate || currentDate,
     changeFrequency: "monthly" as const,
     priority: 0.8,
   }))

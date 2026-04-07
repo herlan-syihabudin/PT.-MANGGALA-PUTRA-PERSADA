@@ -129,7 +129,7 @@ export const metadata: Metadata = {
    
     yandex: "yandex-verification-code",
     yahoo: "yahoo-verification-code",
-    google: "google3aba9cb8f8f322a3",
+    google: "hcsf7ZlUsVW-euLt7vA568lrb6I-zpqc9BO4r-upnuU",
   },
   
   // ===== FORMAT DETECTION =====

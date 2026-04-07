@@ -82,13 +82,6 @@ export const metadata: Metadata = {
     canonical: "https://mppindo.com",
   },
 
-  // Verification (isi dengan token lu)
-  verification: {
-    google: "google-site-verification-token",
-    yandex: "yandex-verification-token",
-    yahoo: "yahoo-verification-token",
-  },
-
   // Icons
   icons: {
     icon: "/favicon.ico",

@@ -1,5 +1,6 @@
 import "./globals.css"
 import type { Metadata, Viewport } from "next"
+import { GoogleAnalytics } from '@next/third-parties/google'  // ← TAMBAHKAN INI
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -65,6 +66,9 @@ export default function RootLayout({
     <html lang="id" dir="ltr" className="scroll-smooth">
       <body className="antialiased bg-white text-gray-900 font-sans min-h-screen">
         {children}
+        
+        {/* Google Analytics - Taruh sebelum </body> */}
+        <GoogleAnalytics gaId="G-CEN997FLX2" />  // ← TAMBAHKAN INI
       </body>
     </html>
   )

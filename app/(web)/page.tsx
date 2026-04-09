@@ -90,7 +90,7 @@ export const metadata: Metadata = {
   },
 
   // Manifest
-  manifest: "/site.webmanifest",
+  manifest: "/manifest.json",
 }
 
 export default function Home() {
